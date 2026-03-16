@@ -1,6 +1,8 @@
 # Supervisor meeting outcomes and notes
 meeting_outcome
 
+.vscode
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
