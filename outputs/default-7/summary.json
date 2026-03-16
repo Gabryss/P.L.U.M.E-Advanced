@@ -1,0 +1,23 @@
+{
+  "run_id": "default",
+  "seed": 7,
+  "output_dir": "outputs/default-7",
+  "mesh_method": "marching_cubes",
+  "mesh_vertex_count": 1144,
+  "mesh_face_count": 2156,
+  "final_metrics": {
+    "iteration": 80,
+    "elapsed_seconds": 7.4411,
+    "cave_volume_fraction": 0.05544270833333333,
+    "void_voxel_count": 2129,
+    "porous_voxel_count": 3950,
+    "mean_porosity": 0.1447427806404101,
+    "mean_solid_fraction": 0.8534719798728002,
+    "mean_effective_permeability": 0.16741354470243447,
+    "max_effective_permeability": 0.8999004112285153,
+    "mean_water_flux": 0.008216564365077608,
+    "max_water_flux": 0.12612057223483636,
+    "connected_components": 1,
+    "largest_component_size": 2129
+  }
+}

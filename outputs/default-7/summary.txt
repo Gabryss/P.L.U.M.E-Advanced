@@ -1,0 +1,7 @@
+run_id: default
+seed: 7
+mesh_method: marching_cubes
+mesh_vertex_count: 1144
+mesh_face_count: 2156
+cave_volume_fraction: 0.05544270833333333
+connected_components: 1

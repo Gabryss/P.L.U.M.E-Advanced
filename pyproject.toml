@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plume-advanced"
+version = "0.1.0"
+description = "Physically motivated volumetric cave generation prototype."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "matplotlib>=3.8",
+  "numpy>=1.26",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+full = [
+  "scikit-image>=0.24",
+  "tqdm>=4.66",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
