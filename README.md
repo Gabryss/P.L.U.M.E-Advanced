@@ -1,46 +1,231 @@
-# P.L.U.M.E-Advanced
+# PLUME-Advanced
 
-P.L.U.M.E. Advanced is a voxel-based cave generation prototype built from the project specifications in [`meeting_outcome`](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/meeting_outcome).
+`PLUME-Advanced` is a staged procedural pyroduct / lava-tube prototype.
 
-The implementation follows the required causal pipeline:
+The current implementation focuses on the part that matters before mesh
+generation: build a readable terrain substrate, derive a few structural layers,
+and grow a first downhill centerline graph. The later geometry and texturing
+stages are intentionally not implemented yet.
 
-`geology -> hydro -> dissolution -> void formation -> mesh extraction -> dataset export`
+## Pipeline
 
-## Structure
+| Stage | Status | Purpose | Current Output |
+|---|---|---|---|
+| A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
+| B. Graph | Implemented | Grow a first downhill trunk centerline | `outputs/stage_b_trunk_graph.png` |
+| C. Section Field | Placeholder | Width, height, and orientation along arc length | TODO |
+| D. Geometry | Placeholder | Sweep sections into a continuous volume / mesh | TODO |
+| E. Geological Events | Placeholder | Skylights, choke points, collapse, infill | TODO |
+| F. Surface Detail / Texturing | Placeholder | Wall detail, floor variation, material masks | TODO |
 
-- `src/geology`: layered material and fracture-field generation
-- `src/hydro`: reduced hydraulic-head solver and flow estimation
-- `src/speleogenesis`: dissolution, porosity, permeability feedback, void formation
-- `src/meshing`: mesh extraction and OBJ export
-- `src/dataset`: batch generation entrypoint
-- `src/visualization`: metrics, plots, slices, mesh previews, progress helpers
-- `config/default.yaml`: reproducible default configuration
-- `tests/`: deterministic unit and integration coverage
+## Current Outputs
+
+### Stage A: Host Field
+
+![Stage A Host Field](outputs/stage_a_host_field.png)
+
+Stage A produces the terrain substrate and the main scalar layers used by later
+stages: elevation, slope, cover thickness, roof competence, and growth cost.
+
+### Stage B: Trunk Graph
+
+![Stage B Trunk Graph](outputs/stage_b_trunk_graph.png)
+
+Stage B grows a first downhill trunk path over the host field and visualizes it
+in plan view and in longitudinal profile.
+
+## How It Works
+
+### Stage A: Host Field
+
+Implemented in `src/stages/host_field.py`.
+
+The terrain is not a full volcanic edifice. It is a simplified pyroduct-oriented
+host slab:
+
+- high on the left, low on the right
+- shaped by a broad central corridor
+- perturbed by a few low-frequency directional waves
+
+Conceptually:
+
+```text
+terrain = large-scale directional grade
+        - corridor depression
+        + low-frequency waves
+```
+
+Once the terrain exists, the remaining host-field layers are either derived from
+it or authored on top of it.
+
+| Layer | Built From | Used Now | Intended Later Use |
+|---|---|---|---|
+| `elevation` | directional grade + corridor + waves | terrain profile, downhill direction | surface interaction, skylights |
+| `gradient_x`, `gradient_y` | `np.gradient(elevation)` | downhill steering for graph growth | path-cost and event logic |
+| `slope_degrees` | gradient magnitude | cover thickness, diagnostics, growth cost | gating unstable or unrealistic zones |
+| `cover_thickness` | base thickness + relief bonus - slope penalty | growth cost, graph diagnostics | collapse and skylight rules |
+| `roof_competence` | structural bands + fracture corridor + edge weathering | growth cost, graph diagnostics | ceiling roughness, collapse, material masks |
+| `growth_cost` | weighted slope, cover, and competence penalties | visualization, summaries | future explicit path scoring |
+
+The `HostField` API currently exposes:
+
+- `sample(x, y)`: bilinear sample of all fields
+- `contains(x, y, margin=0.0)`: map bounds check
+- `downhill_direction(x, y, fallback_angle_degrees=None)`: normalized downhill vector
+
+### Stage B: Graph
+
+Implemented in `src/stages/graph.py`.
+
+Stage B currently generates a single trunk only:
+
+- no branches yet
+- no merges yet
+- no spline fitting yet
+- no geometry yet
+
+The trunk starts from `host_field.config.seed_point` and advances one step at a
+time. At each step, the tangent is built from these components:
+
+| Steering Component | Role |
+|---|---|
+| downhill direction | follows the local terrain gradient |
+| global flow bias | preserves large-scale left-to-right progression |
+| corridor pull | keeps the path near the broad host corridor |
+| meander | adds smooth lateral variation without random jitter |
+| tangent blend | smooths turning from one step to the next |
+| forward-flow constraint | prevents local backward reversal |
+
+The trunk stops when:
+
+- `max_steps` is reached
+- the next step would leave the map margin
+- the next step climbs more than `max_uphill_step`
+
+Important implementation detail: Stage B does **not** use `growth_cost`
+directly for steering yet. It currently uses terrain gradient and flow control,
+while `growth_cost` is visualized and sampled for later stages.
+
+## Configuration
+
+The single source of truth is:
+
+```text
+config/project.toml
+```
+
+It is loaded by `src/config.py`, which converts TOML sections into dataclass
+configs for the generators.
+
+Execution flow:
+
+1. load `config/project.toml`
+2. build `HostFieldConfig` and `GraphConfig`
+3. run the stage generator
+4. run the stage plotter
+5. write the image in `outputs/`
+
+### Host Field Config
+
+| Key Group | Purpose |
+|---|---|
+| `seed_point` | starting region for the graph |
+| `high_side_elevation`, `longitudinal_drop`, `flow_angle_degrees` | define the large-scale terrain grade |
+| `corridor_depth`, `corridor_width` | shape the broad host corridor |
+| `volcanic_layer_thickness`, `minimum_stable_cover` | control the cover-thickness proxy |
+| `roof_competence_baseline`, `roof_competence_variation` | control the base structural field |
+| `fracture_zone_*` | carve the weakened roof corridor |
+| `[host_field.grid]` | map dimensions and sample resolution |
+| `[[host_field.waves]]` | low-frequency terrain deformation layers |
+
+### Graph Config
+
+| Key Group | Purpose |
+|---|---|
+| `step_length`, `max_steps`, `boundary_margin` | control graph growth length and bounds |
+| `tangent_blend` | smooth directional updates |
+| `downhill_weight`, `flow_bias_weight`, `corridor_pull_weight` | steering weights |
+| `meander_amplitude_degrees`, `meander_wavelength` | lateral wandering pattern |
+| `minimum_flow_component` | enforce forward motion |
+| `max_uphill_step` | reject overly uphill moves |
+
+## Project Layout
+
+- `config/`: project configuration
+- `scripts/`: stage entrypoints
+- `src/config.py`: TOML loader
+- `src/stages/`: stage implementations
+- `src/visualization/`: stage visualizations
+- `outputs/`: generated images
+- `tests/`: smoke tests
 
 ## Run
 
-Single run:
+Install dependencies:
 
 ```bash
-python3 -m src.cli run --config config/default.yaml
+python -m pip install -e .
 ```
 
-Batch run:
+Generate the implemented stages:
 
 ```bash
-python3 -m src.cli batch --config config/default.yaml --samples 3
+python scripts/render_host_field.py
+python scripts/render_graph.py
 ```
 
-Outputs are written under `outputs/` by default and include:
+Both scripts read `config/project.toml` by default.
 
-- `config_snapshot.yaml`
-- `run.log`
-- `metrics.csv`
-- `debug/` plots and slice images
-- `mesh/cave.obj`
-- `summary.json`
+## Planned Stages
 
-## Notes
+These are placeholders for the next implementation passes.
 
-- `tqdm` is optional. If unavailable, the project falls back to simple console progress messages.
-- `scikit-image` is optional. If unavailable, meshing falls back to voxel-surface extraction instead of marching cubes.
+### Stage C: Section Field
+
+Placeholder.
+
+Planned role:
+
+- assign width, height, and section orientation along the graph
+- keep radius evolution smooth over arc length
+- prepare the data needed for swept geometry
+
+### Stage D: Geometry
+
+Placeholder.
+
+Planned role:
+
+- sweep the section field along the centerline
+- build an implicit volume / SDF
+- extract a continuous mesh
+
+### Stage E: Geological Events
+
+Placeholder.
+
+Planned role:
+
+- inject skylights, choke points, collapse, and infill
+- tie those events to graph position and host-field conditions
+
+### Stage F: Surface Detail / Texturing
+
+Placeholder.
+
+Planned role:
+
+- add wall and floor detail
+- derive texturing masks from competence, events, and geometry
+- avoid using detail noise to define topology
+
+## Summary
+
+The current project state is intentionally narrow:
+
+- Stage A builds the terrain and structural substrate
+- Stage B builds the first readable downhill trunk graph
+- stages C-F are kept as explicit placeholders for the next passes
+
+That keeps the pipeline inspectable while still leaving a clear path toward the
+final pyroduct mesh and texture stages.

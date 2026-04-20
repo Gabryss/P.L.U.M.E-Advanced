@@ -1,2 +1,3 @@
-"""P.L.U.M.E. Advanced volumetric cave generation prototype."""
+"""PLUME-Advanced package."""
 
+__all__ = ["config", "stages", "visualization"]

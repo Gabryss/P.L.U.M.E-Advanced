@@ -1,2 +1,0 @@
-"""Mesh extraction and export."""
-

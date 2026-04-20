@@ -1,0 +1,51 @@
+[host_field]
+seed_point = [-1200.0, 0.0]
+high_side_elevation = 182.0
+longitudinal_drop = 84.0
+flow_angle_degrees = 0.0
+corridor_depth = 12.0
+corridor_width = 520.0
+volcanic_layer_thickness = 64.0
+minimum_stable_cover = 18.0
+roof_competence_baseline = 0.72
+roof_competence_variation = 0.18
+fracture_zone_angle_degrees = 82.0
+fracture_zone_center_offset = -140.0
+fracture_zone_width = 240.0
+
+[host_field.grid]
+width = 3000.0
+height = 2400.0
+nx = 220
+ny = 180
+
+[[host_field.waves]]
+amplitude = 12.0
+wavelength = 1600.0
+angle_degrees = 20.0
+phase = 0.25
+
+[[host_field.waves]]
+amplitude = 8.0
+wavelength = 1050.0
+angle_degrees = 74.0
+phase = 1.05
+
+[[host_field.waves]]
+amplitude = 4.5
+wavelength = 620.0
+angle_degrees = -32.0
+phase = -0.65
+
+[graph]
+step_length = 22.0
+max_steps = 135
+boundary_margin = 90.0
+tangent_blend = 0.22
+downhill_weight = 0.56
+flow_bias_weight = 0.29
+corridor_pull_weight = 0.15
+meander_amplitude_degrees = 9.0
+meander_wavelength = 430.0
+minimum_flow_component = 0.45
+max_uphill_step = 1.4

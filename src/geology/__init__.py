@@ -1,2 +1,0 @@
-"""Geology generation module."""
-
