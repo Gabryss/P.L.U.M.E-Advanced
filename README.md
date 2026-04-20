@@ -13,6 +13,7 @@ stages are intentionally not implemented yet.
 |---|---|---|---|
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
 | B. Graph | Implemented | Grow a first downhill trunk centerline | `outputs/stage_b_trunk_graph.png` |
+| B.1 Branch / Merge Sub-Stage | Implemented, isolated | Generate side branches and reconnections without changing the stable trunk stage | `outputs/stage_b1_branch_merge.png` |
 | C. Section Field | Placeholder | Width, height, and orientation along arc length | TODO |
 | D. Geometry | Placeholder | Sweep sections into a continuous volume / mesh | TODO |
 | E. Geological Events | Placeholder | Skylights, choke points, collapse, infill | TODO |
@@ -33,6 +34,13 @@ stages: elevation, slope, cover thickness, roof competence, and growth cost.
 
 Stage B grows a first downhill trunk path over the host field and visualizes it
 in plan view and in longitudinal profile.
+
+### Stage B.1: Branch / Merge Review
+
+![Stage B.1 Branch / Merge Review](outputs/stage_b1_branch_merge.png)
+
+Stage B.1 visualizes candidate branch junctions, generated side paths, and any
+accepted merge targets without modifying the stable Stage B trunk output.
 
 ## How It Works
 
@@ -106,6 +114,26 @@ Important implementation detail: Stage B does **not** use `growth_cost`
 directly for steering yet. It currently uses terrain gradient and flow control,
 while `growth_cost` is visualized and sampled for later stages.
 
+### Stage B.1: Branch / Merge Sub-Stage
+
+Implemented in `src/stages/branching.py`.
+
+This sub-stage is intentionally separated from `src/stages/graph.py` so the
+current trunk generator remains stable. The branch/merge generator works from:
+
+- the existing `HostField`
+- the already-generated `TrunkGraph`
+
+It currently:
+
+- scores candidate junctions along the trunk
+- launches side branches from those junctions
+- pulls those branches back toward a later trunk target
+- records merge events when a branch reconnects to the spine
+
+The key design choice is structural isolation: branch and merge experimentation
+can evolve independently without destabilizing the central trunk stage.
+
 ## Configuration
 
 The single source of truth is:
@@ -149,6 +177,18 @@ Execution flow:
 | `minimum_flow_component` | enforce forward motion |
 | `max_uphill_step` | reject overly uphill moves |
 
+### Branch / Merge Config
+
+| Key Group | Purpose |
+|---|---|
+| `max_branch_count`, `junction_margin_points`, `min_junction_arc_separation` | control how many branches can spawn and how densely they can appear |
+| `merge_target_offset_points` | choose how far downstream a branch tries to reconnect |
+| `branch_step_length`, `branch_max_steps`, `branch_boundary_margin` | control branch growth length and bounds |
+| `branch_angle_degrees`, `tangent_blend` | control launch shape and directional smoothness |
+| `downhill_weight`, `launch_weight`, `lateral_bias_weight`, `merge_pull_weight` | branch steering weights |
+| `merge_capture_distance`, `min_steps_before_merge` | control when a reconnection is accepted |
+| `max_uphill_step` | reject overly uphill branch steps |
+
 ## Project Layout
 
 - `config/`: project configuration
@@ -172,6 +212,7 @@ Generate the implemented stages:
 ```bash
 python scripts/render_host_field.py
 python scripts/render_graph.py
+python scripts/render_branching.py
 ```
 
 Both scripts read `config/project.toml` by default.

@@ -49,3 +49,21 @@ meander_amplitude_degrees = 9.0
 meander_wavelength = 430.0
 minimum_flow_component = 0.45
 max_uphill_step = 1.4
+
+[branching]
+max_branch_count = 2
+junction_margin_points = 10
+min_junction_arc_separation = 320.0
+merge_target_offset_points = 20
+branch_step_length = 18.0
+branch_max_steps = 26
+branch_angle_degrees = 34.0
+tangent_blend = 0.24
+downhill_weight = 0.36
+launch_weight = 0.28
+lateral_bias_weight = 0.42
+merge_pull_weight = 0.38
+branch_boundary_margin = 75.0
+merge_capture_distance = 32.0
+min_steps_before_merge = 5
+max_uphill_step = 1.2

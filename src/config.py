@@ -8,6 +8,7 @@ import tomllib
 from typing import Any
 
 from stages import (
+    BranchMergeConfig,
     GraphConfig,
     GridConfig,
     HostFieldConfig,
@@ -21,6 +22,7 @@ class ProjectConfig:
 
     host_field: HostFieldConfig
     graph: GraphConfig
+    branching: BranchMergeConfig
 
 
 def load_project_config(path: str | Path) -> ProjectConfig:
@@ -33,6 +35,7 @@ def load_project_config(path: str | Path) -> ProjectConfig:
     return ProjectConfig(
         host_field=_build_host_field_config(raw_config.get("host_field", {})),
         graph=_build_graph_config(raw_config.get("graph", {})),
+        branching=_build_branching_config(raw_config.get("branching", {})),
     )
 
 
@@ -55,3 +58,7 @@ def _build_host_field_config(raw_config: dict[str, Any]) -> HostFieldConfig:
 
 def _build_graph_config(raw_config: dict[str, Any]) -> GraphConfig:
     return GraphConfig(**raw_config)
+
+
+def _build_branching_config(raw_config: dict[str, Any]) -> BranchMergeConfig:
+    return BranchMergeConfig(**raw_config)

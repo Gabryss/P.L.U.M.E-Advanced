@@ -1,5 +1,14 @@
 """Simulation stages for the lava tube pipeline."""
 
+from .branching import (
+    BranchCandidate,
+    BranchMergeConfig,
+    BranchMergeGenerator,
+    BranchMergeNetwork,
+    BranchPath,
+    BranchPoint,
+    MergeEvent,
+)
 from .graph import (
     CenterlineEdge,
     CenterlinePoint,
@@ -17,6 +26,12 @@ from .host_field import (
 )
 
 __all__ = [
+    "BranchCandidate",
+    "BranchMergeConfig",
+    "BranchMergeGenerator",
+    "BranchMergeNetwork",
+    "BranchPath",
+    "BranchPoint",
     "CenterlineEdge",
     "CenterlinePoint",
     "GraphConfig",
@@ -25,6 +40,7 @@ __all__ = [
     "HostFieldConfig",
     "HostFieldGenerator",
     "HostFieldSample",
+    "MergeEvent",
     "TerrainWave",
     "TrunkGraph",
     "TrunkGraphGenerator",
