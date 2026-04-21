@@ -39,8 +39,8 @@ in plan view and in longitudinal profile.
 
 ![Stage B.1 Branch / Merge Review](outputs/stage_b1_branch_merge.png)
 
-Stage B.1 visualizes candidate branch junctions, generated side paths, and any
-accepted merge targets without modifying the stable Stage B trunk output.
+Stage B.1 visualizes a loop-heavy branch mix around the stable trunk: local
+bypass loops, longer downstream reconnect loops, and shorter dead-end spurs.
 
 ## How It Works
 
@@ -127,9 +127,10 @@ current trunk generator remains stable. The branch/merge generator works from:
 It currently:
 
 - scores candidate junctions along the trunk
-- launches side branches from those junctions
-- pulls those branches back toward a later trunk target
-- records merge events when a branch reconnects to the spine
+- builds a loop-heavy branch plan with separate local-bypass loops, downstream reconnect loops, and spurs
+- generates reconnecting loops in `src/stages/branching_loop_astar.py` using an off-trunk waypoint plus two A* legs
+- generates dead-end spurs in `src/stages/branching_spur.py` with a lighter local-growth solver
+- records merge events only for the reconnecting loop classes
 
 The key design choice is structural isolation: branch and merge experimentation
 can evolve independently without destabilizing the central trunk stage.
@@ -181,13 +182,11 @@ Execution flow:
 
 | Key Group | Purpose |
 |---|---|
-| `max_branch_count`, `junction_margin_points`, `min_junction_arc_separation` | control how many branches can spawn and how densely they can appear |
-| `merge_target_offset_points` | choose how far downstream a branch tries to reconnect |
-| `branch_step_length`, `branch_max_steps`, `branch_boundary_margin` | control branch growth length and bounds |
-| `branch_angle_degrees`, `tangent_blend` | control launch shape and directional smoothness |
-| `downhill_weight`, `launch_weight`, `lateral_bias_weight`, `merge_pull_weight` | branch steering weights |
-| `merge_capture_distance`, `min_steps_before_merge` | control when a reconnection is accepted |
-| `max_uphill_step` | reject overly uphill branch steps |
+| `max_branch_count`, `candidate_pool_multiplier`, `junction_margin_points`, `min_junction_arc_separation` | control candidate density and total branch budget |
+| `minimum_local_bypass_count`, `minimum_downstream_loop_count` | guarantee that both loop classes appear in the review stage |
+| `local_bypass_weight`, `downstream_reconnect_weight`, `spur_weight` | bias the branch-kind mix |
+| `[branching.loop]` | configure reconnecting-loop pathfinding, waypoint search, clearance, detour, and area thresholds |
+| `[branching.spur]` | configure local dead-end spur growth and stop conditions |
 
 ## Project Layout
 

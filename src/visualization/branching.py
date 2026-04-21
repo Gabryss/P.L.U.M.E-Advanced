@@ -1,24 +1,35 @@
-"""Visualization helpers for the stage-B.1 branch/merge sub-stage."""
+"""Visualization helpers for the stage-B.1 mixed branching sub-stage."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
 
-from stages.branching import BranchMergeNetwork
+from stages.branching_models import (
+    DOWNSTREAM_RECONNECT_LOOP,
+    LOCAL_BYPASS_LOOP,
+    SPUR,
+    BranchMergeNetwork,
+)
 from stages.host_field import HostField
 
 
 @dataclass(frozen=True)
 class BranchMergePlotConfig:
-    """Figure settings for the branch/merge visualization."""
+    """Figure settings for the branch / merge visualization."""
 
     figure_size: tuple[float, float] = (15.0, 11.0)
     dpi: int = 180
 
 
 class BranchMergePlotter:
-    """Render the branch/merge sub-stage into a reviewable artifact."""
+    """Render the branch / merge sub-stage into a reviewable artifact."""
+
+    BRANCH_COLORS = {
+        LOCAL_BYPASS_LOOP: '#f97316',
+        DOWNSTREAM_RECONNECT_LOOP: '#ec4899',
+        SPUR: '#14b8a6',
+    }
 
     def __init__(self, config: BranchMergePlotConfig | None = None) -> None:
         self.config = config or BranchMergePlotConfig()
@@ -40,14 +51,14 @@ class BranchMergePlotter:
             figsize=self.config.figure_size,
             constrained_layout=True,
         )
-        fig.suptitle('Stage B.1 - Branch / Merge Review', fontsize=16)
+        fig.suptitle('Stage B.1 - Mixed Branch / Merge Review', fontsize=16)
 
         self._draw_map_panel(
             ax=axes[0, 0],
             host_field=host_field,
             values=host_field.elevation,
             branch_network=branch_network,
-            title='Terrain With Branch Network',
+            title='Terrain With Mixed Branch Network',
             cmap='terrain',
             colorbar_label='Elevation',
             draw_contours=True,
@@ -76,8 +87,9 @@ class BranchMergePlotter:
         summary_line = (
             f"Candidates: {int(summary['candidate_count'])} | "
             f"Branches: {int(summary['branch_count'])} | "
-            f"Merged: {int(summary['merged_branch_count'])} | "
-            f"Total branch length: {summary['total_branch_length']:.1f}"
+            f"Local loops: {int(summary['local_bypass_count'])} | "
+            f"Downstream loops: {int(summary['downstream_reconnect_count'])} | "
+            f"Spurs: {int(summary['spur_count'])}"
         )
         fig.text(0.5, 0.01, summary_line, ha='center', fontsize=10)
 
@@ -118,26 +130,22 @@ class BranchMergePlotter:
 
         for candidate in branch_network.candidates:
             source = branch_network.trunk_graph.points[candidate.trunk_index]
-            target = branch_network.trunk_graph.points[candidate.target_trunk_index]
-            ax.scatter([source.x], [source.y], c='#38bdf8', s=28, marker='s')
-            ax.scatter([target.x], [target.y], c='#a3e635', s=28, marker='D')
-            ax.plot(
-                [source.x, target.x],
-                [source.y, target.y],
-                color='white',
-                linewidth=0.9,
-                alpha=0.25,
-                linestyle='--',
-            )
+            ax.scatter([source.x], [source.y], c='#38bdf8', s=22, marker='s', alpha=0.7)
 
         for branch in branch_network.branches:
             branch_x = [point.x for point in branch.points]
             branch_y = [point.y for point in branch.points]
-            ax.plot(branch_x, branch_y, color='#f97316', linewidth=1.8)
-            ax.scatter([branch_x[-1]], [branch_y[-1]], c='#fb7185', s=24, marker='o')
+            color = self.BRANCH_COLORS.get(branch.branch_kind, '#f97316')
+            ax.plot(branch_x, branch_y, color=color, linewidth=1.9)
+            ax.scatter([branch_x[-1]], [branch_y[-1]], c=color, s=24, marker='o')
+            source = branch_network.trunk_graph.points[branch.source_trunk_index]
+            ax.scatter([source.x], [source.y], c=color, s=32, marker='s', edgecolors='black', linewidths=0.4)
+            if branch.target_trunk_index is not None:
+                target = branch_network.trunk_graph.points[branch.target_trunk_index]
+                ax.scatter([target.x], [target.y], c=color, s=34, marker='D', edgecolors='white', linewidths=0.5)
             if branch.merge_event is not None:
                 merge_target = branch_network.trunk_graph.points[branch.merge_event.target_trunk_index]
-                ax.scatter([merge_target.x], [merge_target.y], c='#22c55e', s=34, marker='*')
+                ax.scatter([merge_target.x], [merge_target.y], c=color, s=46, marker='*', edgecolors='black', linewidths=0.4)
 
         if draw_contours:
             ax.contour(
@@ -171,8 +179,14 @@ class BranchMergePlotter:
             for branch in branch_network.branches:
                 branch_arc = [point.arc_length for point in branch.points]
                 branch_elevation = [point.elevation for point in branch.points]
-                label = f'Branch {branch.branch_id} ({branch.termination_reason})'
-                ax.plot(branch_arc, branch_elevation, linewidth=1.5, label=label)
+                label = f"Branch {branch.branch_id} ({branch.branch_kind})"
+                ax.plot(
+                    branch_arc,
+                    branch_elevation,
+                    linewidth=1.5,
+                    color=self.BRANCH_COLORS.get(branch.branch_kind, '#f97316'),
+                    label=label,
+                )
         else:
             ax.text(0.5, 0.5, 'No branches generated', ha='center', va='center', transform=ax.transAxes)
 

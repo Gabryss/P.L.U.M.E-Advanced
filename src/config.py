@@ -12,6 +12,8 @@ from stages import (
     GraphConfig,
     GridConfig,
     HostFieldConfig,
+    LoopPathConfig,
+    SpurBranchConfig,
     TerrainWave,
 )
 
@@ -61,4 +63,11 @@ def _build_graph_config(raw_config: dict[str, Any]) -> GraphConfig:
 
 
 def _build_branching_config(raw_config: dict[str, Any]) -> BranchMergeConfig:
-    return BranchMergeConfig(**raw_config)
+    config_data = dict(raw_config)
+    loop_data = config_data.pop('loop', {})
+    spur_data = config_data.pop('spur', {})
+    return BranchMergeConfig(
+        loop=LoopPathConfig(**loop_data),
+        spur=SpurBranchConfig(**spur_data),
+        **config_data,
+    )
