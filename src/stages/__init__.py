@@ -23,6 +23,14 @@ from .graph import (
     TrunkGraph,
     TrunkGraphGenerator,
 )
+from .network import (
+    CaveNetwork,
+    CaveNetworkConfig,
+    CaveNetworkGenerator,
+    CaveNode,
+    CavePoint,
+    CaveSegment,
+)
 from .host_field import (
     GridConfig,
     HostField,
@@ -44,6 +52,12 @@ __all__ = [
     "BranchMergeNetwork",
     "BranchPath",
     "BranchPoint",
+    "CaveNetwork",
+    "CaveNetworkConfig",
+    "CaveNetworkGenerator",
+    "CaveNode",
+    "CavePoint",
+    "CaveSegment",
     "CenterlineEdge",
     "CenterlinePoint",
     "GraphConfig",

@@ -9,6 +9,7 @@ from typing import Any
 
 from stages import (
     BranchMergeConfig,
+    CaveNetworkConfig,
     GraphConfig,
     GridConfig,
     HostFieldConfig,
@@ -25,6 +26,7 @@ class ProjectConfig:
     host_field: HostFieldConfig
     graph: GraphConfig
     branching: BranchMergeConfig
+    network: CaveNetworkConfig
 
 
 def load_project_config(path: str | Path) -> ProjectConfig:
@@ -38,6 +40,7 @@ def load_project_config(path: str | Path) -> ProjectConfig:
         host_field=_build_host_field_config(raw_config.get("host_field", {})),
         graph=_build_graph_config(raw_config.get("graph", {})),
         branching=_build_branching_config(raw_config.get("branching", {})),
+        network=_build_network_config(raw_config.get("network", {})),
     )
 
 
@@ -71,3 +74,7 @@ def _build_branching_config(raw_config: dict[str, Any]) -> BranchMergeConfig:
         spur=SpurBranchConfig(**spur_data),
         **config_data,
     )
+
+
+def _build_network_config(raw_config: dict[str, Any]) -> CaveNetworkConfig:
+    return CaveNetworkConfig(**raw_config)

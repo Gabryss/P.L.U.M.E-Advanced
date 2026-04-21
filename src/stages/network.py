@@ -1,0 +1,1386 @@
+"""Stage B: host-driven braided cave network generation."""
+
+from __future__ import annotations
+
+from collections import defaultdict
+from dataclasses import dataclass
+import heapq
+import math
+
+import numpy as np
+
+from stages.host_field import HostField
+
+
+@dataclass(frozen=True)
+class CaveNetworkConfig:
+    """Parameters controlling the host-driven braided cave-network generator."""
+
+    random_seed: int = 17
+    source_count: int = 8
+    source_band_length: float = 90.0
+    source_band_half_width: float = 180.0
+    sink_margin: float = 80.0
+    trace_max_steps: int = 460
+    max_uphill_step: float = 1.2
+    forward_alignment_weight: float = 2.2
+    downhill_alignment_weight: float = 3.4
+    elevation_drop_weight: float = 2.6
+    growth_cost_weight: float = 3.2
+    roof_weight: float = 1.5
+    cover_weight: float = 0.8
+    slope_penalty_weight: float = 0.45
+    inertia_weight: float = 0.9
+    corridor_weight: float = 0.35
+    outlet_potential_weight: float = 3.4
+    small_trace_count: int = 96
+    medium_trace_count: int = 36
+    large_trace_count: int = 12
+    small_attraction_weight: float = 0.65
+    medium_attraction_weight: float = 0.42
+    large_attraction_weight: float = 0.20
+    small_congestion_threshold: float = 9.0
+    medium_congestion_threshold: float = 5.0
+    large_congestion_threshold: float = 3.0
+    small_congestion_weight: float = 0.12
+    medium_congestion_weight: float = 0.32
+    large_congestion_weight: float = 0.60
+    small_temperature: float = 0.22
+    medium_temperature: float = 0.38
+    large_temperature: float = 0.55
+    small_flux_threshold_quantile: float = 0.58
+    medium_flux_threshold_quantile: float = 0.45
+    large_flux_threshold_quantile: float = 0.25
+    total_flux_threshold_quantile: float = 0.60
+    prune_iterations: int = 3
+    chamber_flux_quantile: float = 0.82
+    base_passage_radius: float = 18.0
+    chamber_radius: float = 46.0
+    occupancy_smoothing_passes: int = 1
+    spur_count: int = 5
+    spur_max_steps: int = 24
+    spur_lateral_bias: float = 1.3
+    spur_congestion_weight: float = 0.85
+    channel_count_samples: int = 28
+    selected_small_paths: int = 12
+    selected_medium_paths: int = 5
+    selected_large_paths: int = 2
+    selected_spur_paths: int = 3
+    maximum_path_overlap: float = 0.72
+
+
+@dataclass(frozen=True)
+class CaveNode:
+    """One topological junction in the cave network."""
+
+    node_id: int
+    x: float
+    y: float
+    along_position: float
+    lateral_offset: float
+    kind: str
+
+
+@dataclass(frozen=True)
+class CavePoint:
+    """One sampled point along a cave-network segment."""
+
+    index: int
+    x: float
+    y: float
+    elevation: float
+    slope_degrees: float
+    cover_thickness: float
+    roof_competence: float
+    growth_cost: float
+    arc_length: float
+    width: float
+
+
+@dataclass(frozen=True)
+class CaveSegment:
+    """One directed segment between two cave-network nodes."""
+
+    segment_id: int
+    start_node_id: int
+    end_node_id: int
+    kind: str
+    z_level: int
+    points: tuple[CavePoint, ...]
+
+    @property
+    def total_length(self) -> float:
+        return 0.0 if not self.points else self.points[-1].arc_length
+
+    @property
+    def mean_width(self) -> float:
+        if not self.points:
+            return 0.0
+        return sum(point.width for point in self.points) / len(self.points)
+
+
+@dataclass(frozen=True)
+class CaveNetwork:
+    """Stage-B output for the host-driven braided cave network."""
+
+    config: CaveNetworkConfig
+    nodes: tuple[CaveNode, ...]
+    segments: tuple[CaveSegment, ...]
+    occupancy: np.ndarray
+    width_field: np.ndarray
+    dominant_route_node_ids: tuple[int, ...]
+    slice_along_positions: tuple[float, ...]
+    slice_channel_counts: tuple[int, ...]
+
+    def summary(self) -> dict[str, float]:
+        """Return scalar summaries for quick inspection."""
+
+        occupied_area = float(self.occupancy.sum())
+        segment_lengths = [segment.total_length for segment in self.segments]
+        mean_segment_width = (
+            sum(segment.mean_width for segment in self.segments) / len(self.segments)
+            if self.segments
+            else 0.0
+        )
+        loop_count = float(self._loop_rank())
+        terminal_count = float(sum(1 for degree in self._degrees().values() if degree == 1))
+        spur_count = float(sum(1 for segment in self.segments if segment.kind == "spur"))
+
+        return {
+            "node_count": float(len(self.nodes)),
+            "segment_count": float(len(self.segments)),
+            "loop_count": loop_count,
+            "terminal_count": terminal_count,
+            "spur_count": spur_count,
+            "occupied_cell_count": occupied_area,
+            "total_length": float(sum(segment_lengths)),
+            "dominant_route_length": self.dominant_route_length,
+            "mean_segment_width": mean_segment_width,
+            "max_parallel_channels": float(
+                max(self.slice_channel_counts) if self.slice_channel_counts else 0
+            ),
+        }
+
+    @property
+    def dominant_route_length(self) -> float:
+        if len(self.dominant_route_node_ids) < 2:
+            return 0.0
+        node_pairs = set(zip(self.dominant_route_node_ids, self.dominant_route_node_ids[1:]))
+        return sum(
+            segment.total_length
+            for segment in self.segments
+            if (segment.start_node_id, segment.end_node_id) in node_pairs
+        )
+
+    def _degrees(self) -> dict[int, int]:
+        degrees = {node.node_id: 0 for node in self.nodes}
+        for segment in self.segments:
+            degrees[segment.start_node_id] += 1
+            degrees[segment.end_node_id] += 1
+        return degrees
+
+    def _loop_rank(self) -> int:
+        if not self.nodes:
+            return 0
+
+        adjacency = {node.node_id: set() for node in self.nodes}
+        for segment in self.segments:
+            adjacency[segment.start_node_id].add(segment.end_node_id)
+            adjacency[segment.end_node_id].add(segment.start_node_id)
+
+        visited: set[int] = set()
+        components = 0
+        for node in adjacency:
+            if node in visited:
+                continue
+            components += 1
+            stack = [node]
+            visited.add(node)
+            while stack:
+                current = stack.pop()
+                for neighbor in adjacency[current]:
+                    if neighbor in visited:
+                        continue
+                    visited.add(neighbor)
+                    stack.append(neighbor)
+
+        return max(0, len(self.segments) - len(self.nodes) + components)
+
+
+@dataclass(frozen=True)
+class _FlowGeometry:
+    flow_x: float
+    flow_y: float
+    cross_x: float
+    cross_y: float
+    seed_x: float
+    seed_y: float
+    along_grid: np.ndarray
+    cross_grid: np.ndarray
+    along_extent: float
+    cell_scale: float
+
+
+@dataclass(frozen=True)
+class _TraceFamily:
+    label: str
+    count: int
+    attraction_weight: float
+    congestion_threshold: float
+    congestion_weight: float
+    temperature: float
+
+
+class CaveNetworkGenerator:
+    """Generate a host-driven braided cave network and raster occupancy."""
+
+    FAMILY_LABELS = ("small", "medium", "large", "spur")
+
+    def __init__(self, config: CaveNetworkConfig | None = None) -> None:
+        self.config = config or CaveNetworkConfig()
+
+    def generate(self, host_field: HostField) -> CaveNetwork:
+        geometry = self._build_flow_geometry(host_field)
+        rng = np.random.default_rng(self.config.random_seed)
+        source_cells = self._select_source_cells(host_field, geometry)
+        support_field = self._build_support_field(host_field, geometry)
+        downstream_potential = self._build_downstream_potential(
+            host_field=host_field,
+            geometry=geometry,
+            support_field=support_field,
+        )
+
+        total_flux = np.zeros_like(host_field.growth_cost, dtype=float)
+        family_flux = {
+            label: np.zeros_like(host_field.growth_cost, dtype=float)
+            for label in self.FAMILY_LABELS
+        }
+        traced_paths: list[tuple[str, list[tuple[int, int]]]] = []
+
+        families = (
+            _TraceFamily(
+                label="small",
+                count=self.config.small_trace_count,
+                attraction_weight=self.config.small_attraction_weight,
+                congestion_threshold=self.config.small_congestion_threshold,
+                congestion_weight=self.config.small_congestion_weight,
+                temperature=self.config.small_temperature,
+            ),
+            _TraceFamily(
+                label="medium",
+                count=self.config.medium_trace_count,
+                attraction_weight=self.config.medium_attraction_weight,
+                congestion_threshold=self.config.medium_congestion_threshold,
+                congestion_weight=self.config.medium_congestion_weight,
+                temperature=self.config.medium_temperature,
+            ),
+            _TraceFamily(
+                label="large",
+                count=self.config.large_trace_count,
+                attraction_weight=self.config.large_attraction_weight,
+                congestion_threshold=self.config.large_congestion_threshold,
+                congestion_weight=self.config.large_congestion_weight,
+                temperature=self.config.large_temperature,
+            ),
+        )
+
+        for family in families:
+            for trace_index in range(family.count):
+                source_cell = source_cells[trace_index % len(source_cells)]
+                path = self._trace_downstream(
+                    host_field=host_field,
+                    geometry=geometry,
+                    support_field=support_field,
+                    downstream_potential=downstream_potential,
+                    start_cell=source_cell,
+                    total_flux=total_flux,
+                    family=family,
+                    rng=rng,
+                )
+                self._deposit_path(path, total_flux, family_flux[family.label])
+                if path:
+                    traced_paths.append((family.label, path))
+
+        spur_starts = self._select_spur_start_cells(total_flux, geometry)
+        for spur_index, start_cell in enumerate(spur_starts):
+            path = self._trace_spur(
+                host_field=host_field,
+                geometry=geometry,
+                support_field=support_field,
+                start_cell=start_cell,
+                total_flux=total_flux,
+                lateral_sign=-1.0 if spur_index % 2 == 0 else 1.0,
+                rng=rng,
+            )
+            self._deposit_path(path, total_flux, family_flux["spur"])
+            if path:
+                traced_paths.append(("spur", path))
+
+        selected_paths = self._select_representative_paths(
+            traced_paths=traced_paths,
+            total_flux=total_flux,
+            geometry=geometry,
+        )
+        skeleton_mask, selected_flux, selected_family_flux = self._build_representative_fields(
+            shape=host_field.growth_cost.shape,
+            selected_paths=selected_paths,
+        )
+        family_label_grid = self._build_family_label_grid(selected_family_flux)
+
+        nodes, segments, dominant_route_node_ids = self._extract_graph_from_paths(
+            host_field=host_field,
+            geometry=geometry,
+            selected_paths=selected_paths,
+            total_flux=selected_flux,
+        )
+
+        occupancy = np.zeros_like(host_field.growth_cost, dtype=bool)
+        width_field = np.zeros_like(host_field.growth_cost, dtype=float)
+        for segment in segments:
+            self._rasterize_segment(host_field, occupancy, width_field, segment)
+        self._paint_chambers(host_field, occupancy, width_field, total_flux)
+        occupancy = self._smooth_occupancy(occupancy)
+
+        slice_along_positions, slice_channel_counts = self._measure_parallel_channels(
+            host_field=host_field,
+            geometry=geometry,
+            mask=skeleton_mask,
+        )
+
+        return CaveNetwork(
+            config=self.config,
+            nodes=tuple(nodes),
+            segments=tuple(segments),
+            occupancy=occupancy,
+            width_field=width_field,
+            dominant_route_node_ids=dominant_route_node_ids,
+            slice_along_positions=slice_along_positions,
+            slice_channel_counts=slice_channel_counts,
+        )
+
+    def _build_flow_geometry(self, host_field: HostField) -> _FlowGeometry:
+        angle_radians = math.radians(host_field.config.flow_angle_degrees)
+        flow_x = math.cos(angle_radians)
+        flow_y = math.sin(angle_radians)
+        cross_x = math.cos(angle_radians + math.pi / 2.0)
+        cross_y = math.sin(angle_radians + math.pi / 2.0)
+        seed_x, seed_y = host_field.config.seed_point
+
+        x_grid, y_grid = np.meshgrid(host_field.x_coords, host_field.y_coords)
+        along_grid = (x_grid - seed_x) * flow_x + (y_grid - seed_y) * flow_y
+        cross_grid = (x_grid - seed_x) * cross_x + (y_grid - seed_y) * cross_y
+        along_extent = float(np.max(along_grid)) - self.config.sink_margin
+        cell_scale = math.hypot(
+            float(host_field.x_coords[1] - host_field.x_coords[0]),
+            float(host_field.y_coords[1] - host_field.y_coords[0]),
+        )
+        return _FlowGeometry(
+            flow_x=flow_x,
+            flow_y=flow_y,
+            cross_x=cross_x,
+            cross_y=cross_y,
+            seed_x=seed_x,
+            seed_y=seed_y,
+            along_grid=along_grid,
+            cross_grid=cross_grid,
+            along_extent=along_extent,
+            cell_scale=cell_scale,
+        )
+
+    def _build_support_field(self, host_field: HostField, geometry: _FlowGeometry) -> np.ndarray:
+        cover_norm = self._normalize_cover_field(host_field)
+        slope_norm = np.clip(host_field.slope_degrees / 25.0, 0.0, 1.0)
+        corridor_score = np.exp(
+            -np.square(
+                geometry.cross_grid / max(host_field.config.corridor_width, 1.0)
+            )
+        )
+        support = (
+            self.config.growth_cost_weight * (1.0 - host_field.growth_cost)
+            + self.config.roof_weight * host_field.roof_competence
+            + self.config.cover_weight * cover_norm
+            - self.config.slope_penalty_weight * slope_norm
+            + self.config.corridor_weight * corridor_score
+        )
+        return support
+
+    def _select_source_cells(
+        self,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+    ) -> tuple[tuple[int, int], ...]:
+        support = self._build_support_field(host_field, geometry)
+        source_band = (
+            (geometry.along_grid >= 0.0)
+            & (geometry.along_grid <= self.config.source_band_length)
+        )
+        cross_band = np.abs(geometry.cross_grid) <= self.config.source_band_half_width
+        candidate_mask = source_band & cross_band
+        candidate_indices = np.argwhere(candidate_mask)
+        if candidate_indices.size == 0:
+            source_cell = self._world_to_cell(
+                host_field,
+                host_field.config.seed_point[0],
+                host_field.config.seed_point[1],
+            )
+            return (source_cell,)
+
+        scored_candidates = []
+        for y_index, x_index in candidate_indices:
+            downhill_x, downhill_y = host_field.downhill_direction(
+                float(host_field.x_coords[x_index]),
+                float(host_field.y_coords[y_index]),
+                fallback_angle_degrees=host_field.config.flow_angle_degrees,
+            )
+            flow_alignment = downhill_x * geometry.flow_x + downhill_y * geometry.flow_y
+            score = float(support[y_index, x_index]) + 0.35 * flow_alignment
+            scored_candidates.append(((int(y_index), int(x_index)), score))
+        scored_candidates.sort(key=lambda item: item[1], reverse=True)
+
+        selected: list[tuple[int, int]] = []
+        lateral_separation = max(2.0 * geometry.cell_scale, 18.0)
+        for (y_index, x_index), _score in scored_candidates:
+            x_coord = float(host_field.x_coords[x_index])
+            y_coord = float(host_field.y_coords[y_index])
+            cross_position = self._project_cross(geometry, x_coord, y_coord)
+            if any(
+                abs(
+                    cross_position
+                    - self._project_cross(
+                        geometry,
+                        float(host_field.x_coords[selected_x]),
+                        float(host_field.y_coords[selected_y]),
+                    )
+                )
+                < lateral_separation
+                for selected_y, selected_x in selected
+            ):
+                continue
+            selected.append((y_index, x_index))
+            if len(selected) >= self.config.source_count:
+                break
+
+        if not selected:
+            selected.append(
+                self._world_to_cell(
+                    host_field,
+                    host_field.config.seed_point[0],
+                    host_field.config.seed_point[1],
+                )
+            )
+        return tuple(selected)
+
+    def _trace_downstream(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        support_field: np.ndarray,
+        downstream_potential: np.ndarray,
+        start_cell: tuple[int, int],
+        total_flux: np.ndarray,
+        family: _TraceFamily,
+        rng,
+    ) -> list[tuple[int, int]]:
+        path = [start_cell]
+        previous_step: tuple[float, float] | None = None
+
+        for _ in range(self.config.trace_max_steps):
+            current = path[-1]
+            current_world = self._cell_to_world(host_field, current)
+            current_elevation = float(host_field.elevation[current])
+            current_along = float(geometry.along_grid[current])
+            current_potential = float(downstream_potential[current])
+            if current_along >= geometry.along_extent:
+                break
+            if not math.isfinite(current_potential):
+                break
+
+            downhill_x, downhill_y = host_field.downhill_direction(
+                current_world[0],
+                current_world[1],
+                fallback_angle_degrees=host_field.config.flow_angle_degrees,
+            )
+
+            candidates: list[tuple[tuple[int, int], float]] = []
+            for next_cell in self._neighbor_cells(host_field, current):
+                if next_cell in path[-4:]:
+                    continue
+                next_world = self._cell_to_world(host_field, next_cell)
+                step_x = next_world[0] - current_world[0]
+                step_y = next_world[1] - current_world[1]
+                step_length = math.hypot(step_x, step_y)
+                if math.isclose(step_length, 0.0):
+                    continue
+                step_unit_x = step_x / step_length
+                step_unit_y = step_y / step_length
+                flow_alignment = step_unit_x * geometry.flow_x + step_unit_y * geometry.flow_y
+                next_along = float(geometry.along_grid[next_cell])
+                along_delta = next_along - current_along
+                if flow_alignment < -0.05 or along_delta < -0.15 * geometry.cell_scale:
+                    continue
+                next_potential = float(downstream_potential[next_cell])
+                if not math.isfinite(next_potential):
+                    continue
+                next_elevation = float(host_field.elevation[next_cell])
+                uphill = next_elevation - current_elevation
+                if uphill > self.config.max_uphill_step:
+                    continue
+                downhill_gain = max(current_elevation - next_elevation, 0.0)
+
+                downhill_alignment = step_unit_x * downhill_x + step_unit_y * downhill_y
+                if downhill_alignment < -0.35:
+                    continue
+                score = float(support_field[next_cell])
+                score += self.config.forward_alignment_weight * flow_alignment
+                score += 1.15 * along_delta / max(geometry.cell_scale, 1.0)
+                score += 0.45 * next_along / max(geometry.along_extent, 1.0)
+                score += self.config.outlet_potential_weight * (
+                    (current_potential - next_potential) / max(geometry.cell_scale, 1.0)
+                )
+                score += self.config.downhill_alignment_weight * downhill_alignment
+                score += self.config.elevation_drop_weight * downhill_gain / max(geometry.cell_scale, 1.0)
+                score += family.attraction_weight * math.log1p(float(total_flux[next_cell]))
+                score -= family.congestion_weight * max(
+                    0.0,
+                    float(total_flux[next_cell]) - family.congestion_threshold,
+                )
+                if previous_step is not None:
+                    previous_length = math.hypot(previous_step[0], previous_step[1])
+                    if previous_length > 0.0:
+                        score += self.config.inertia_weight * (
+                            (step_x * previous_step[0] + step_y * previous_step[1])
+                            / (step_length * previous_length)
+                        )
+
+                candidates.append((next_cell, score))
+
+            if not candidates:
+                break
+
+            next_cell = self._sample_candidate(candidates, family.temperature, rng)
+            next_world = self._cell_to_world(host_field, next_cell)
+            previous_step = (
+                next_world[0] - current_world[0],
+                next_world[1] - current_world[1],
+            )
+            path.append(next_cell)
+
+        if path and float(geometry.along_grid[path[-1]]) < geometry.along_extent:
+            path = self._extend_path_to_sink(
+                host_field=host_field,
+                geometry=geometry,
+                support_field=support_field,
+                downstream_potential=downstream_potential,
+                path=path,
+            )
+
+        return path if len(path) > 2 else []
+
+    def _trace_spur(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        support_field: np.ndarray,
+        start_cell: tuple[int, int],
+        total_flux: np.ndarray,
+        lateral_sign: float,
+        rng,
+    ) -> list[tuple[int, int]]:
+        path = [start_cell]
+        current_world = self._cell_to_world(host_field, start_cell)
+        side_target_x = geometry.cross_x * lateral_sign
+        side_target_y = geometry.cross_y * lateral_sign
+
+        for _ in range(self.config.spur_max_steps):
+            current = path[-1]
+            current_world = self._cell_to_world(host_field, current)
+            current_elevation = float(host_field.elevation[current])
+            candidates: list[tuple[tuple[int, int], float]] = []
+            for next_cell in self._neighbor_cells(host_field, current):
+                if next_cell in path[-3:]:
+                    continue
+                next_world = self._cell_to_world(host_field, next_cell)
+                step_x = next_world[0] - current_world[0]
+                step_y = next_world[1] - current_world[1]
+                step_length = math.hypot(step_x, step_y)
+                if math.isclose(step_length, 0.0):
+                    continue
+                next_elevation = float(host_field.elevation[next_cell])
+                uphill = next_elevation - current_elevation
+                if uphill > self.config.max_uphill_step:
+                    continue
+                step_unit_x = step_x / step_length
+                step_unit_y = step_y / step_length
+                side_alignment = step_unit_x * side_target_x + step_unit_y * side_target_y
+                score = float(support_field[next_cell])
+                score += self.config.spur_lateral_bias * side_alignment
+                score -= self.config.spur_congestion_weight * float(total_flux[next_cell])
+                candidates.append((next_cell, score))
+
+            if not candidates:
+                break
+
+            next_cell = self._sample_candidate(candidates, 0.45, rng)
+            path.append(next_cell)
+            if float(total_flux[next_cell]) <= 0.0 and len(path) > 8:
+                break
+
+        return path if len(path) > 4 else []
+
+    @staticmethod
+    def _deposit_path(path, total_flux: np.ndarray, family_flux: np.ndarray) -> None:
+        for cell in path:
+            total_flux[cell] += 1.0
+            family_flux[cell] += 1.0
+
+    def _build_skeleton_mask(
+        self,
+        total_flux: np.ndarray,
+        family_flux: dict[str, np.ndarray],
+    ) -> np.ndarray:
+        mask = np.zeros_like(total_flux, dtype=bool)
+        thresholds = {
+            "small": self._quantile_threshold(
+                family_flux["small"],
+                self.config.small_flux_threshold_quantile,
+                minimum=3.0,
+            ),
+            "medium": self._quantile_threshold(
+                family_flux["medium"],
+                self.config.medium_flux_threshold_quantile,
+                minimum=2.0,
+            ),
+            "large": self._quantile_threshold(
+                family_flux["large"],
+                self.config.large_flux_threshold_quantile,
+                minimum=1.0,
+            ),
+            "spur": self._quantile_threshold(family_flux["spur"], 0.45, minimum=1.0),
+            "total": self._quantile_threshold(
+                total_flux,
+                self.config.total_flux_threshold_quantile,
+                minimum=4.0,
+            ),
+        }
+        for label in self.FAMILY_LABELS:
+            mask |= family_flux[label] >= thresholds[label]
+        mask |= total_flux >= thresholds["total"]
+        local_max = self._local_maximum(total_flux)
+        ridge_mask = total_flux >= (0.92 * local_max)
+        ridge_mask |= total_flux >= max(thresholds["total"] * 1.35, 6.0)
+        return mask & ridge_mask
+
+    def _select_representative_paths(
+        self,
+        *,
+        traced_paths: list[tuple[str, list[tuple[int, int]]]],
+        total_flux: np.ndarray,
+        geometry: _FlowGeometry,
+    ) -> tuple[tuple[str, tuple[tuple[int, int], ...]], ...]:
+        selected: list[tuple[str, tuple[tuple[int, int], ...]]] = []
+        selected_sets: list[set[tuple[int, int]]] = []
+        targets = {
+            "small": self.config.selected_small_paths,
+            "medium": self.config.selected_medium_paths,
+            "large": self.config.selected_large_paths,
+            "spur": self.config.selected_spur_paths,
+        }
+        non_spur_candidates = [
+            (path_label, path, self._score_path(path, total_flux, geometry, path_label))
+            for path_label, path in traced_paths
+            if path_label != "spur" and path
+        ]
+        if non_spur_candidates:
+            best_label, best_path, _score = max(non_spur_candidates, key=lambda item: item[2])
+            selected.append((best_label, tuple(best_path)))
+            selected_sets.append(set(best_path))
+        for label in ("large", "medium", "small", "spur"):
+            selected_count = sum(1 for selected_label, _ in selected if selected_label == label)
+            for minimum_progress in (0.72, 0.58, 0.42, 0.22, -math.inf):
+                candidates = [
+                    (path, self._score_path(path, total_flux, geometry, label))
+                    for path_label, path in traced_paths
+                    if path_label == label
+                    and path
+                    and (
+                        label == "spur"
+                        or float(geometry.along_grid[path[-1]]) >= minimum_progress * geometry.along_extent
+                    )
+                ]
+                candidates.sort(key=lambda item: item[1], reverse=True)
+                for path, _score in candidates:
+                    path_set = set(path)
+                    if any(
+                        len(path_set & other_set) / max(len(path_set), 1) > self.config.maximum_path_overlap
+                        for other_set in selected_sets
+                    ):
+                        continue
+                    selected.append((label, tuple(path)))
+                    selected_sets.append(path_set)
+                    selected_count += 1
+                    if selected_count >= targets[label]:
+                        break
+                if selected_count >= targets[label]:
+                    break
+        return tuple(selected)
+
+    @staticmethod
+    def _score_path(
+        path: list[tuple[int, int]],
+        total_flux: np.ndarray,
+        geometry: _FlowGeometry,
+        label: str,
+    ) -> float:
+        if len(path) < 2:
+            return -math.inf
+        start_along = float(geometry.along_grid[path[0]])
+        end_along = float(geometry.along_grid[path[-1]])
+        progress = end_along - start_along
+        unique_cells = len(set(path))
+        mean_flux = float(np.mean([total_flux[cell] for cell in path]))
+        label_bonus = {"small": 0.0, "medium": 25.0, "large": 50.0, "spur": -20.0}[label]
+        return progress + 0.35 * unique_cells + 1.5 * mean_flux + label_bonus
+
+    def _build_representative_fields(
+        self,
+        *,
+        shape: tuple[int, int],
+        selected_paths: tuple[tuple[str, tuple[tuple[int, int], ...]], ...],
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, np.ndarray]]:
+        mask = np.zeros(shape, dtype=bool)
+        flux = np.zeros(shape, dtype=float)
+        family_flux = {
+            label: np.zeros(shape, dtype=float)
+            for label in self.FAMILY_LABELS
+        }
+        for label, path in selected_paths:
+            for cell in path:
+                mask[cell] = True
+                flux[cell] += 1.0
+                family_flux[label][cell] += 1.0
+        return mask, flux, family_flux
+
+    def _prune_skeleton_mask(self, mask: np.ndarray) -> np.ndarray:
+        current = mask.copy()
+        for _ in range(self.config.prune_iterations):
+            neighbor_count = self._neighbor_count(current)
+            current = np.where(current, neighbor_count >= 2, False)
+        return current
+
+    def _build_family_label_grid(self, family_flux: dict[str, np.ndarray]) -> np.ndarray:
+        stacked = np.stack(
+            [family_flux[label] for label in self.FAMILY_LABELS],
+            axis=0,
+        )
+        dominant = np.argmax(stacked, axis=0)
+        support = stacked.max(axis=0)
+        dominant = np.where(support > 0.0, dominant, -1)
+        return dominant
+
+    def _extract_graph_from_paths(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        selected_paths: tuple[tuple[str, tuple[tuple[int, int], ...]], ...],
+        total_flux: np.ndarray,
+    ) -> tuple[list[CaveNode], list[CaveSegment], tuple[int, ...]]:
+        if not selected_paths:
+            return [], [], ()
+
+        path_use_counts: defaultdict[tuple[int, int], int] = defaultdict(int)
+        for _label, path in selected_paths:
+            for cell in path:
+                path_use_counts[cell] += 1
+
+        source_cell = min(
+            path_use_counts,
+            key=lambda cell: (float(geometry.along_grid[cell]), abs(float(geometry.cross_grid[cell]))),
+        )
+        sink_cell = max(
+            path_use_counts,
+            key=lambda cell: (float(geometry.along_grid[cell]), -abs(float(geometry.cross_grid[cell]))),
+        )
+
+        node_cell_set: set[tuple[int, int]] = {source_cell, sink_cell}
+        for _label, path in selected_paths:
+            node_cell_set.add(path[0])
+            node_cell_set.add(path[-1])
+        for cell, count in path_use_counts.items():
+            if count > 1:
+                node_cell_set.add(cell)
+
+        node_cells: dict[tuple[int, int], int] = {}
+        nodes: list[CaveNode] = []
+        for cell in sorted(node_cell_set, key=lambda item: float(geometry.along_grid[item])):
+            node_id = len(nodes)
+            x_coord, y_coord = self._cell_to_world(host_field, cell)
+            node_kind = "junction"
+            if cell == source_cell:
+                node_kind = "entry"
+            elif cell == sink_cell:
+                node_kind = "exit"
+            elif path_use_counts[cell] == 1:
+                node_kind = "terminal"
+            nodes.append(
+                CaveNode(
+                    node_id=node_id,
+                    x=x_coord,
+                    y=y_coord,
+                    along_position=float(geometry.along_grid[cell]),
+                    lateral_offset=float(geometry.cross_grid[cell]),
+                    kind=node_kind,
+                )
+            )
+            node_cells[cell] = node_id
+
+        segments: list[CaveSegment] = []
+        seen_signatures: set[tuple[int, int, tuple[tuple[int, int], ...]]] = set()
+        for label, path in selected_paths:
+            current_cells = [path[0]]
+            for cell in path[1:]:
+                current_cells.append(cell)
+                if cell not in node_cells:
+                    continue
+                start_node_id = node_cells[current_cells[0]]
+                end_node_id = node_cells[cell]
+                if start_node_id != end_node_id and len(current_cells) >= 2:
+                    signature_cells = tuple(current_cells)
+                    signature = (min(start_node_id, end_node_id), max(start_node_id, end_node_id), signature_cells)
+                    reverse_signature = (
+                        min(start_node_id, end_node_id),
+                        max(start_node_id, end_node_id),
+                        tuple(reversed(signature_cells)),
+                    )
+                    if signature not in seen_signatures and reverse_signature not in seen_signatures:
+                        segment = self._build_segment_from_cells(
+                            host_field=host_field,
+                            path_cells=current_cells,
+                            start_node_id=start_node_id,
+                            end_node_id=end_node_id,
+                            segment_id=len(segments),
+                            total_flux=total_flux,
+                            kind="spur" if label == "spur" else "braid",
+                        )
+                        if segment is not None:
+                            segments.append(segment)
+                            seen_signatures.add(signature)
+                current_cells = [cell]
+
+        dominant_route_node_ids = self._dominant_route(nodes, segments, total_flux)
+        return nodes, segments, dominant_route_node_ids
+
+    def _build_segment_from_cells(
+        self,
+        *,
+        host_field: HostField,
+        path_cells: list[tuple[int, int]],
+        start_node_id: int,
+        end_node_id: int,
+        segment_id: int,
+        total_flux: np.ndarray,
+        kind: str,
+    ) -> CaveSegment | None:
+        coordinates = [
+            self._cell_to_world(host_field, cell)
+            for cell in path_cells
+        ]
+        coordinates = self._deduplicate_coordinates(coordinates)
+        if len(coordinates) < 2:
+            return None
+
+        points: list[CavePoint] = []
+        arc_length = 0.0
+        for index, ((x_coord, y_coord), cell) in enumerate(zip(coordinates, path_cells, strict=False)):
+            if index > 0:
+                previous_x, previous_y = coordinates[index - 1]
+                arc_length += math.hypot(x_coord - previous_x, y_coord - previous_y)
+            sample = host_field.sample(x_coord, y_coord)
+            width = 2.0 * self._local_radius(host_field, sample, float(total_flux[cell]))
+            points.append(
+                CavePoint(
+                    index=index,
+                    x=x_coord,
+                    y=y_coord,
+                    elevation=sample.elevation,
+                    slope_degrees=sample.slope_degrees,
+                    cover_thickness=sample.cover_thickness,
+                    roof_competence=sample.roof_competence,
+                    growth_cost=sample.growth_cost,
+                    arc_length=arc_length,
+                    width=width,
+                )
+            )
+
+        return CaveSegment(
+            segment_id=segment_id,
+            start_node_id=start_node_id,
+            end_node_id=end_node_id,
+            kind=kind,
+            z_level=0,
+            points=tuple(points),
+        )
+
+    def _dominant_route(
+        self,
+        nodes: list[CaveNode],
+        segments: list[CaveSegment],
+        total_flux: np.ndarray,
+    ) -> tuple[int, ...]:
+        if not nodes or not segments:
+            return ()
+
+        entry = min(nodes, key=lambda node: node.along_position)
+        exit_node = max(nodes, key=lambda node: node.along_position)
+        adjacency: dict[int, list[tuple[int, float]]] = defaultdict(list)
+        for segment in segments:
+            mean_flux = np.mean([point.width for point in segment.points]) if segment.points else 1.0
+            cost = segment.total_length / max(mean_flux, 1.0)
+            adjacency[segment.start_node_id].append((segment.end_node_id, cost))
+            adjacency[segment.end_node_id].append((segment.start_node_id, cost))
+
+        distances = {node.node_id: math.inf for node in nodes}
+        predecessor: dict[int, int] = {}
+        distances[entry.node_id] = 0.0
+        heap = [(0.0, entry.node_id)]
+        while heap:
+            current_distance, node_id = heapq.heappop(heap)
+            if current_distance > distances[node_id]:
+                continue
+            if node_id == exit_node.node_id:
+                break
+            for neighbor_id, edge_cost in adjacency[node_id]:
+                next_distance = current_distance + edge_cost
+                if next_distance >= distances[neighbor_id]:
+                    continue
+                distances[neighbor_id] = next_distance
+                predecessor[neighbor_id] = node_id
+                heapq.heappush(heap, (next_distance, neighbor_id))
+
+        if math.isinf(distances[exit_node.node_id]):
+            return ()
+
+        route = [exit_node.node_id]
+        current = exit_node.node_id
+        while current != entry.node_id:
+            current = predecessor[current]
+            route.append(current)
+        route.reverse()
+        return tuple(route)
+
+    def _select_spur_start_cells(
+        self,
+        total_flux: np.ndarray,
+        geometry: _FlowGeometry,
+    ) -> tuple[tuple[int, int], ...]:
+        occupied_cells = np.argwhere(total_flux > 0.0)
+        if occupied_cells.size == 0 or self.config.spur_count <= 0:
+            return ()
+
+        candidates: list[tuple[tuple[int, int], float]] = []
+        for y_index, x_index in occupied_cells:
+            along_position = float(geometry.along_grid[y_index, x_index])
+            if along_position < 0.18 * geometry.along_extent or along_position > 0.82 * geometry.along_extent:
+                continue
+            score = float(total_flux[y_index, x_index])
+            candidates.append(((int(y_index), int(x_index)), score))
+        candidates.sort(key=lambda item: item[1], reverse=True)
+
+        selected: list[tuple[int, int]] = []
+        minimum_separation = 120.0
+        for cell, _score in candidates:
+            if any(
+                math.hypot(cell[1] - other[1], cell[0] - other[0]) < minimum_separation / max(geometry.cell_scale, 1.0)
+                for other in selected
+            ):
+                continue
+            selected.append(cell)
+            if len(selected) >= self.config.spur_count:
+                break
+        return tuple(selected)
+
+    def _measure_parallel_channels(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        mask: np.ndarray,
+    ) -> tuple[tuple[float, ...], tuple[int, ...]]:
+        along_positions = np.linspace(
+            0.0,
+            geometry.along_extent,
+            self.config.channel_count_samples,
+            dtype=float,
+        )
+        band_half_width = 0.7 * geometry.cell_scale
+        counts: list[int] = []
+        for along_position in along_positions:
+            band_cells = np.argwhere(
+                mask
+                & (np.abs(geometry.along_grid - along_position) <= band_half_width)
+            )
+            if band_cells.size == 0:
+                counts.append(0)
+                continue
+            lateral_positions = sorted(float(geometry.cross_grid[y_index, x_index]) for y_index, x_index in band_cells)
+            channel_count = 1
+            for previous, current in zip(lateral_positions, lateral_positions[1:]):
+                if current - previous > 1.8 * geometry.cell_scale:
+                    channel_count += 1
+            counts.append(channel_count)
+        return tuple(float(value) for value in along_positions), tuple(int(value) for value in counts)
+
+    def _build_downstream_potential(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        support_field: np.ndarray,
+    ) -> np.ndarray:
+        height, width = host_field.growth_cost.shape
+        potential = np.full((height, width), math.inf, dtype=float)
+        sink_band = geometry.along_grid >= geometry.along_extent
+        sink_candidates = np.argwhere(sink_band)
+        if sink_candidates.size == 0:
+            fallback_cell = (height // 2, width - 1)
+            sink_candidates = np.array([fallback_cell], dtype=int)
+
+        heap: list[tuple[float, tuple[int, int]]] = []
+        for y_index, x_index in sink_candidates:
+            cell = (int(y_index), int(x_index))
+            potential[cell] = 0.0
+            heapq.heappush(heap, (0.0, cell))
+
+        while heap:
+            current_potential, cell = heapq.heappop(heap)
+            if current_potential > float(potential[cell]):
+                continue
+            for previous_cell in self._neighbor_cells(host_field, cell):
+                transition = self._transition_cost(
+                    host_field=host_field,
+                    geometry=geometry,
+                    support_field=support_field,
+                    current_cell=previous_cell,
+                    next_cell=cell,
+                )
+                next_potential = current_potential + transition
+                if next_potential >= float(potential[previous_cell]):
+                    continue
+                potential[previous_cell] = next_potential
+                heapq.heappush(heap, (next_potential, previous_cell))
+
+        return potential
+
+    def _rasterize_segment(
+        self,
+        host_field: HostField,
+        occupancy: np.ndarray,
+        width_field: np.ndarray,
+        segment: CaveSegment,
+    ) -> None:
+        for point in segment.points:
+            self._paint_disk(
+                host_field=host_field,
+                occupancy=occupancy,
+                width_field=width_field,
+                x_coord=point.x,
+                y_coord=point.y,
+                radius=0.5 * point.width,
+            )
+
+    def _paint_chambers(
+        self,
+        host_field: HostField,
+        occupancy: np.ndarray,
+        width_field: np.ndarray,
+        total_flux: np.ndarray,
+    ) -> None:
+        threshold = self._quantile_threshold(
+            total_flux,
+            self.config.chamber_flux_quantile,
+            minimum=6.0,
+        )
+        chamber_cells = np.argwhere(total_flux >= threshold)
+        if chamber_cells.size == 0:
+            return
+        for y_index, x_index in chamber_cells[:: max(1, len(chamber_cells) // 10)]:
+            x_coord = float(host_field.x_coords[x_index])
+            y_coord = float(host_field.y_coords[y_index])
+            self._paint_disk(
+                host_field=host_field,
+                occupancy=occupancy,
+                width_field=width_field,
+                x_coord=x_coord,
+                y_coord=y_coord,
+                radius=self.config.chamber_radius,
+            )
+
+    def _paint_disk(
+        self,
+        *,
+        host_field: HostField,
+        occupancy: np.ndarray,
+        width_field: np.ndarray,
+        x_coord: float,
+        y_coord: float,
+        radius: float,
+    ) -> None:
+        x_spacing = float(host_field.x_coords[1] - host_field.x_coords[0])
+        y_spacing = float(host_field.y_coords[1] - host_field.y_coords[0])
+        x_index = self._coordinate_to_index(host_field.x_coords, x_coord)
+        y_index = self._coordinate_to_index(host_field.y_coords, y_coord)
+        x_radius = max(1, int(math.ceil(radius / max(x_spacing, 1.0))))
+        y_radius = max(1, int(math.ceil(radius / max(y_spacing, 1.0))))
+
+        for sample_y in range(
+            max(0, y_index - y_radius),
+            min(len(host_field.y_coords), y_index + y_radius + 1),
+        ):
+            y_world = float(host_field.y_coords[sample_y])
+            for sample_x in range(
+                max(0, x_index - x_radius),
+                min(len(host_field.x_coords), x_index + x_radius + 1),
+            ):
+                x_world = float(host_field.x_coords[sample_x])
+                distance = math.hypot(x_world - x_coord, y_world - y_coord)
+                if distance > radius:
+                    continue
+                occupancy[sample_y, sample_x] = True
+                width_field[sample_y, sample_x] = max(width_field[sample_y, sample_x], 2.0 * radius)
+
+    def _smooth_occupancy(self, occupancy: np.ndarray) -> np.ndarray:
+        current = occupancy.copy()
+        for _ in range(self.config.occupancy_smoothing_passes):
+            neighbor_count = self._neighbor_count(current)
+            current = np.where(current, neighbor_count >= 2, neighbor_count >= 5)
+        return current
+
+    def _local_radius(self, host_field: HostField, sample, flux_value: float) -> float:
+        cover_score = max(
+            0.0,
+            min(
+                1.0,
+                (sample.cover_thickness - host_field.config.minimum_stable_cover)
+                / max(host_field.config.volcanic_layer_thickness, 1.0),
+            ),
+        )
+        radius = self.config.base_passage_radius
+        radius *= 0.82 + 0.42 * (1.0 - sample.growth_cost)
+        radius *= 0.88 + 0.24 * sample.roof_competence
+        radius *= 0.92 + 0.18 * cover_score
+        radius *= 1.0 + 0.09 * math.log1p(max(flux_value, 0.0))
+        return max(radius, 8.0)
+
+    def _normalize_cover_field(self, host_field: HostField) -> np.ndarray:
+        return np.clip(
+            (host_field.cover_thickness - host_field.config.minimum_stable_cover)
+            / max(host_field.config.volcanic_layer_thickness, 1.0),
+            0.0,
+            1.0,
+        )
+
+    def _transition_cost(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        support_field: np.ndarray,
+        current_cell: tuple[int, int],
+        next_cell: tuple[int, int],
+    ) -> float:
+        current_world = self._cell_to_world(host_field, current_cell)
+        next_world = self._cell_to_world(host_field, next_cell)
+        step_x = next_world[0] - current_world[0]
+        step_y = next_world[1] - current_world[1]
+        step_length = math.hypot(step_x, step_y)
+        if math.isclose(step_length, 0.0):
+            return math.inf
+
+        step_unit_x = step_x / step_length
+        step_unit_y = step_y / step_length
+        flow_alignment = step_unit_x * geometry.flow_x + step_unit_y * geometry.flow_y
+        downhill_x, downhill_y = host_field.downhill_direction(
+            current_world[0],
+            current_world[1],
+            fallback_angle_degrees=host_field.config.flow_angle_degrees,
+        )
+        downhill_alignment = step_unit_x * downhill_x + step_unit_y * downhill_y
+        current_elevation = float(host_field.elevation[current_cell])
+        next_elevation = float(host_field.elevation[next_cell])
+        uphill = max(next_elevation - current_elevation, 0.0)
+        along_delta = float(geometry.along_grid[next_cell] - geometry.along_grid[current_cell])
+
+        support_cost = max(0.1, 1.45 - float(support_field[next_cell]))
+        transition_cost = step_length * support_cost
+        transition_cost += step_length * 0.55 * max(0.0, 0.1 - flow_alignment)
+        transition_cost += step_length * 0.75 * max(0.0, 0.15 - downhill_alignment)
+        transition_cost += step_length * 0.85 * max(0.0, -along_delta / max(geometry.cell_scale, 1.0))
+        transition_cost += 7.5 * uphill
+        return transition_cost
+
+    def _extend_path_to_sink(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        support_field: np.ndarray,
+        downstream_potential: np.ndarray,
+        path: list[tuple[int, int]],
+    ) -> list[tuple[int, int]]:
+        extended = list(path)
+        max_extension_steps = max(24, self.config.trace_max_steps // 2)
+        for _ in range(max_extension_steps):
+            current = extended[-1]
+            current_potential = float(downstream_potential[current])
+            current_along = float(geometry.along_grid[current])
+            if current_along >= geometry.along_extent or not math.isfinite(current_potential):
+                break
+
+            best_cell: tuple[int, int] | None = None
+            best_cost = math.inf
+            for next_cell in self._neighbor_cells(host_field, current):
+                if next_cell in extended[-8:]:
+                    continue
+                next_potential = float(downstream_potential[next_cell])
+                if not math.isfinite(next_potential) or next_potential >= current_potential:
+                    continue
+                current_elevation = float(host_field.elevation[current])
+                next_elevation = float(host_field.elevation[next_cell])
+                if next_elevation - current_elevation > 1.5 * self.config.max_uphill_step:
+                    continue
+                transition = self._transition_cost(
+                    host_field=host_field,
+                    geometry=geometry,
+                    support_field=support_field,
+                    current_cell=current,
+                    next_cell=next_cell,
+                )
+                if transition < best_cost:
+                    best_cost = transition
+                    best_cell = next_cell
+
+            if best_cell is None:
+                break
+            extended.append(best_cell)
+
+        return extended
+
+    @staticmethod
+    def _sample_candidate(
+        candidates: list[tuple[tuple[int, int], float]],
+        temperature: float,
+        rng,
+    ) -> tuple[int, int]:
+        scores = np.array([score for _, score in candidates], dtype=float)
+        scaled = (scores - float(scores.max())) / max(temperature, 1e-6)
+        probabilities = np.exp(scaled)
+        probabilities /= probabilities.sum()
+        index = int(rng.choice(len(candidates), p=probabilities))
+        return candidates[index][0]
+
+    @staticmethod
+    def _quantile_threshold(values: np.ndarray, quantile: float, minimum: float) -> float:
+        positive = values[values > 0.0]
+        if positive.size == 0:
+            return minimum
+        return max(minimum, float(np.quantile(positive, quantile)))
+
+    @staticmethod
+    def _neighbor_count(mask: np.ndarray) -> np.ndarray:
+        padded = np.pad(mask.astype(int), 1, mode="constant")
+        return (
+            padded[:-2, :-2]
+            + padded[:-2, 1:-1]
+            + padded[:-2, 2:]
+            + padded[1:-1, :-2]
+            + padded[1:-1, 2:]
+            + padded[2:, :-2]
+            + padded[2:, 1:-1]
+            + padded[2:, 2:]
+        )
+
+    @staticmethod
+    def _local_maximum(values: np.ndarray) -> np.ndarray:
+        padded = np.pad(values, 1, mode="edge")
+        maxima = padded[1:-1, 1:-1].copy()
+        for delta_y in (-1, 0, 1):
+            for delta_x in (-1, 0, 1):
+                view = padded[
+                    1 + delta_y : 1 + delta_y + values.shape[0],
+                    1 + delta_x : 1 + delta_x + values.shape[1],
+                ]
+                maxima = np.maximum(maxima, view)
+        return maxima
+
+    def _occupied_neighbors(
+        self,
+        cell: tuple[int, int],
+        occupied_cells: set[tuple[int, int]],
+    ) -> list[tuple[int, int]]:
+        neighbors = []
+        for delta_y in (-1, 0, 1):
+            for delta_x in (-1, 0, 1):
+                if delta_y == 0 and delta_x == 0:
+                    continue
+                neighbor = (cell[0] + delta_y, cell[1] + delta_x)
+                if neighbor in occupied_cells:
+                    neighbors.append(neighbor)
+        return neighbors
+
+    def _neighbor_cells(
+        self,
+        host_field: HostField,
+        cell: tuple[int, int],
+    ) -> list[tuple[int, int]]:
+        height, width = host_field.elevation.shape
+        neighbors = []
+        current_y, current_x = cell
+        for delta_y in (-1, 0, 1):
+            for delta_x in (-1, 0, 1):
+                if delta_y == 0 and delta_x == 0:
+                    continue
+                next_y = current_y + delta_y
+                next_x = current_x + delta_x
+                if 0 <= next_y < height and 0 <= next_x < width:
+                    neighbors.append((next_y, next_x))
+        return neighbors
+
+    @staticmethod
+    def _deduplicate_coordinates(
+        coordinates: list[tuple[float, float]],
+    ) -> list[tuple[float, float]]:
+        deduplicated: list[tuple[float, float]] = []
+        for x_coord, y_coord in coordinates:
+            if deduplicated and math.isclose(x_coord, deduplicated[-1][0]) and math.isclose(y_coord, deduplicated[-1][1]):
+                continue
+            deduplicated.append((x_coord, y_coord))
+        return deduplicated
+
+    @staticmethod
+    def _coordinate_to_index(coords, value: float) -> int:
+        if value <= float(coords[0]):
+            return 0
+        if value >= float(coords[-1]):
+            return len(coords) - 1
+        spacing = float(coords[1] - coords[0])
+        return int(round((value - float(coords[0])) / spacing))
+
+    def _world_to_cell(self, host_field: HostField, x_coord: float, y_coord: float) -> tuple[int, int]:
+        return (
+            self._coordinate_to_index(host_field.y_coords, y_coord),
+            self._coordinate_to_index(host_field.x_coords, x_coord),
+        )
+
+    @staticmethod
+    def _cell_to_world(host_field: HostField, cell: tuple[int, int]) -> tuple[float, float]:
+        y_index, x_index = cell
+        return float(host_field.x_coords[x_index]), float(host_field.y_coords[y_index])
+
+    @staticmethod
+    def _project_cross(geometry: _FlowGeometry, x_coord: float, y_coord: float) -> float:
+        return (
+            (x_coord - geometry.seed_x) * geometry.cross_x
+            + (y_coord - geometry.seed_y) * geometry.cross_y
+        )

@@ -220,6 +220,27 @@ Both scripts read `config/project.toml` by default.
 
 These are placeholders for the next implementation passes.
 
+### Stage B: Cave Network
+
+Alternative implementation path now available.
+
+Implemented role:
+
+- generate a braided cave network from an occupancy-first field rather than a single trunk
+- allow repeated split/merge behavior and internal islands
+- support nested scales with a fine local braid plus medium and large bypass-loop structure
+- derive the dominant route after the network is built instead of assuming it upfront
+- rasterize a cave occupancy mask and keep a graph representation for later stages
+
+Entrypoint:
+
+```bash
+python scripts/render_network.py
+```
+
+The older `branching` sub-stage remains in the repository, but the default
+project configuration is now tuned for the network-first Stage B path.
+
 ### Stage C: Section Field
 
 Placeholder.
