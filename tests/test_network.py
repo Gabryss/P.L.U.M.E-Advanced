@@ -24,18 +24,25 @@ class CaveNetworkTests(unittest.TestCase):
         cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
 
         summary = cave_network.summary()
-        self.assertGreaterEqual(int(summary["node_count"]), 200)
-        self.assertGreaterEqual(int(summary["segment_count"]), 220)
-        self.assertGreaterEqual(int(summary["loop_count"]), 20)
+        self.assertGreaterEqual(int(summary["node_count"]), 18)
+        self.assertGreaterEqual(int(summary["segment_count"]), 20)
+        self.assertGreaterEqual(int(summary["loop_count"]), 4)
         self.assertGreaterEqual(int(summary["max_parallel_channels"]), 3)
-        self.assertGreater(summary["dominant_route_length"], 1500.0)
-        self.assertGreater(summary["occupied_cell_count"], 1000.0)
+        self.assertGreater(summary["dominant_route_length"], 4000.0)
+        self.assertGreater(summary["occupied_cell_count"], 2500.0)
 
         entry_nodes = [node for node in cave_network.nodes if node.kind == "entry"]
         exit_nodes = [node for node in cave_network.nodes if node.kind == "exit"]
         self.assertEqual(len(entry_nodes), 1)
         self.assertEqual(len(exit_nodes), 1)
         self.assertGreater(len(cave_network.dominant_route_node_ids), 2)
+
+        occupied_cells = np.argwhere(cave_network.occupancy)
+        y0, x0 = occupied_cells.min(axis=0)
+        y1, x1 = occupied_cells.max(axis=0)
+        bbox_width = float(host_field.x_coords[x1] - host_field.x_coords[x0])
+        bbox_height = float(host_field.y_coords[y1] - host_field.y_coords[y0])
+        self.assertGreater(max(bbox_width, bbox_height) / max(min(bbox_width, bbox_height), 1e-6), 6.0)
 
         segment_kinds = {segment.kind for segment in cave_network.segments}
         self.assertIn("braid", segment_kinds)
@@ -58,8 +65,8 @@ class CaveNetworkTests(unittest.TestCase):
                 alignments.append((dx / length) * flow_direction[0] + (dy / length) * flow_direction[1])
 
         self.assertTrue(alignments)
-        self.assertGreater(float(np.mean(alignments)), 0.55)
-        self.assertGreater(float(np.quantile(alignments, 0.5)), 0.55)
+        self.assertGreater(float(np.mean(alignments)), 0.7)
+        self.assertGreater(float(np.quantile(alignments, 0.5)), 0.7)
         self.assertTrue(elevation_drops)
         self.assertGreater(float(np.quantile(elevation_drops, 0.5)), 0.0)
 
@@ -76,7 +83,7 @@ class CaveNetworkTests(unittest.TestCase):
         overlap = np.logical_and(cave_network.occupancy, stripped_network.occupancy).sum()
         union = np.logical_or(cave_network.occupancy, stripped_network.occupancy).sum()
         self.assertGreater(union, 0)
-        self.assertLess(float(overlap / union), 0.45)
+        self.assertLess(float(overlap / union), 0.35)
 
 
 if __name__ == "__main__":
