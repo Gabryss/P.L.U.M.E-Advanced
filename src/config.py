@@ -7,6 +7,7 @@ from pathlib import Path
 import tomllib
 from typing import Any
 
+from stages.geometry import GeometryConfig
 from stages.host_field import GridConfig, HostFieldConfig, TerrainWave
 from stages.network import CaveNetworkConfig
 from stages.section_field import SectionFieldConfig
@@ -20,6 +21,7 @@ class ProjectConfig:
     host_field: HostFieldConfig
     network: CaveNetworkConfig
     section_field: SectionFieldConfig
+    geometry: GeometryConfig
 
 
 def load_project_config(path: str | Path) -> ProjectConfig:
@@ -43,6 +45,10 @@ def load_project_config(path: str | Path) -> ProjectConfig:
         ),
         section_field=_build_section_field_config(
             raw_config.get("section_field", {}),
+            procedural_seed=procedural_seed,
+        ),
+        geometry=_build_geometry_config(
+            raw_config.get("geometry", {}),
             procedural_seed=procedural_seed,
         ),
     )
@@ -100,3 +106,14 @@ def _build_section_field_config(
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
     return SectionFieldConfig(**config_data)
+
+
+def _build_geometry_config(
+    raw_config: dict[str, Any],
+    *,
+    procedural_seed: int | None,
+) -> GeometryConfig:
+    config_data = dict(raw_config)
+    if "random_seed" not in config_data:
+        config_data["random_seed"] = procedural_seed
+    return GeometryConfig(**config_data)

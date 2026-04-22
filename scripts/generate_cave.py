@@ -20,9 +20,11 @@ os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE))
 sys.path.insert(0, str(ROOT / "src"))
 
 from config import load_project_config
+from stages.geometry import GeometryGenerator
 from stages.host_field import HostFieldGenerator
 from stages.network import CaveNetworkGenerator
 from stages.section_field import SectionFieldGenerator
+from visualization.geometry import GeometryPlotter
 from visualization.host_field import HostFieldPlotter
 from visualization.network import CaveNetworkPlotter
 from visualization.section_field import SectionFieldPlotter
@@ -60,6 +62,15 @@ def parse_args() -> argparse.Namespace:
             "Defaults to a sibling file named stage_c_section_field.png."
         ),
     )
+    parser.add_argument(
+        "--geometry-output",
+        type=Path,
+        default=None,
+        help=(
+            "Path for the generated geometry-stage visualization. "
+            "Defaults to a sibling file named stage_d_geometry.png."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -68,6 +79,7 @@ def main() -> int:
     project_config = load_project_config(args.config)
     host_output = args.host_output or args.output.with_name("stage_a_host_field.png")
     section_output = args.section_output or args.output.with_name("stage_c_section_field.png")
+    geometry_output = args.geometry_output or args.output.with_name("stage_d_geometry.png")
 
     host_field = HostFieldGenerator(project_config.host_field).generate()
     host_output_path = HostFieldPlotter().render(host_field, host_output)
@@ -79,18 +91,30 @@ def main() -> int:
         section_field,
         section_output,
     )
+    cave_geometry = GeometryGenerator(project_config.geometry).generate(
+        cave_network,
+        section_field,
+    )
+    geometry_output_path = GeometryPlotter().render(
+        cave_network,
+        cave_geometry,
+        geometry_output,
+    )
 
     print("Generated cave pipeline artifacts.")
     print(f"Configuration: {args.config}")
     print(f"Stage A visualization: {host_output_path}")
     print(f"Stage B visualization: {network_output_path}")
     print(f"Stage C visualization: {section_output_path}")
+    print(f"Stage D visualization: {geometry_output_path}")
     for key, value in host_field.summary().items():
         print(f"host_{key}: {value:.3f}")
     for key, value in cave_network.summary().items():
         print(f"network_{key}: {value:.3f}")
     for key, value in section_field.summary().items():
         print(f"section_{key}: {value:.3f}")
+    for key, value in cave_geometry.summary().items():
+        print(f"geometry_{key}: {value:.3f}")
 
     return 0
 

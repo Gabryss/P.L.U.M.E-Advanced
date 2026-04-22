@@ -8,6 +8,14 @@ from .host_field import (
     HostFieldSample,
     TerrainWave,
 )
+from .geometry import (
+    CaveGeometry,
+    GeometryConfig,
+    GeometryGenerator,
+    JunctionGeometryPatch,
+    SegmentGeometrySpan,
+    SkylightGeometry,
+)
 from .network import (
     CaveJunction,
     CaveNetwork,
@@ -28,12 +36,15 @@ from .section_field import (
 
 __all__ = [
     "CaveJunction",
+    "CaveGeometry",
     "CaveNetwork",
     "CaveNetworkConfig",
     "CaveNetworkGenerator",
     "CaveNode",
     "CavePoint",
     "CaveSegment",
+    "GeometryConfig",
+    "GeometryGenerator",
     "GridConfig",
     "HostField",
     "HostFieldConfig",
@@ -44,6 +55,9 @@ __all__ = [
     "SectionFieldGenerator",
     "SectionJunctionInfluence",
     "SectionSample",
+    "JunctionGeometryPatch",
+    "SegmentGeometrySpan",
+    "SkylightGeometry",
     "SegmentSectionField",
     "TerrainWave",
 ]
