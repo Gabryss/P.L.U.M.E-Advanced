@@ -4,8 +4,9 @@
 
 The current implementation focuses on the part that matters before mesh
 generation: build a readable terrain substrate, derive a cave-network skeleton,
-and generate a geometry-ready section field around that skeleton. The later
-full geometry and texturing stages are intentionally not implemented yet.
+generate a geometry-ready section field around that skeleton, and build a first
+connected cave geometry pass. Full non-planar geometry, watertight export, and
+later surface/texturing stages are still intentionally incomplete.
 
 ## Pipeline
 
@@ -14,7 +15,7 @@ full geometry and texturing stages are intentionally not implemented yet.
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
 | B. Cave Network | Implemented | Generate a host-driven braided cave-network skeleton | `outputs/stage_b_cave_network.png` |
 | C. Section Field | Implemented | Build adaptive lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png` |
-| D. Geometry | Placeholder | Sweep sections into a continuous volume / mesh | TODO |
+| D. Geometry | Implemented (D1/D2 partial) | Assemble a connected primary cave shell from swept spans, stitched junctions, and one skylight | `outputs/stage_d_geometry.png` |
 | E. Geological Events | Placeholder | Skylights, choke points, collapse, infill | TODO |
 | F. Surface Detail / Texturing | Placeholder | Wall detail, floor variation, material masks | TODO |
 
@@ -43,6 +44,15 @@ Stage C generates geometry-ready cross-section samples along the network:
 adaptive sample spacing, underground centerline placement, 3D local frames,
 lava-tube profile controls, and junction-aware blending through split/merge
 regions.
+
+### Stage D: Geometry
+
+![Stage D Geometry](outputs/stage_d_geometry.png)
+
+Stage D sweeps the Stage-C profiles into a first connected cave shell for the
+primary network component. It currently combines ordinary span sweeps,
+junction-region patches, continuity connector spans through high-blend zones,
+and one highest-point skylight opening.
 
 ## How It Works
 
@@ -113,6 +123,20 @@ The generator:
 - records per-sample junction influences for later split/merge volume construction
 - stores closed local 2D section contours that are ready for a later sweep/geometry stage
 
+### Stage D: Geometry
+
+Implemented in `src/stages/geometry.py` and its geometry submodules.
+
+Stage D turns the section field into a first connected geometry pass. The
+generator currently:
+
+- sweeps ordinary low-risk section spans into shell meshes
+- adds explicit connector spans where the dominant route would otherwise remain disconnected through high-blend regions
+- stitches split/merge/chamber junctions, plus surface-level crossing neighborhoods, with local patch geometry
+- keeps non-planar underpass geometry excluded for now
+- adds one mostly vertical skylight at the highest internal cave centerline point
+- assembles the resulting pieces into one connected primary cave component for inspection
+
 ## Configuration
 
 The single source of truth is:
@@ -127,14 +151,16 @@ configs for the generators.
 Execution flow:
 
 1. load `config/project.toml`
-2. build `HostFieldConfig`, `CaveNetworkConfig`, and `SectionFieldConfig`
+2. build `HostFieldConfig`, `CaveNetworkConfig`, `SectionFieldConfig`, and `GeometryConfig`
 3. generate the host field
 4. render the host-field plot
 5. generate the cave network
 6. render the network plot
 7. generate the section field
 8. render the section-field plot
-9. write the images in `outputs/`
+9. generate the geometry stage
+10. render the geometry plot
+11. write the images in `outputs/`
 
 `procedural_seed` is the top-level seed for the active pipeline. By default it
 feeds the host-field, cave-network, and section-field generators, so changing
@@ -175,6 +201,17 @@ one value produces a different geology and a different cave family.
 | `floor_flatness_*`, `roof_arch_*`, `lateral_skew_amplitude` | shape the lava-tube profile |
 | `junction_*_gain` | control how strongly junction regions widen or stay tight through splits/merges |
 
+### Geometry Config
+
+| Key Group | Purpose |
+|---|---|
+| `junction_exclusion_weight` | keep D1 sweeps away from split/merge neighborhoods |
+| `minimum_span_samples` | require a minimum number of section samples before sweeping a mesh span |
+| `exclude_crossing_segments`, `exclude_underpass_segments` | defer non-planar and crossing-heavy spans to later geometry work |
+| `enable_junction_patches`, `junction_*_scale` | control non-crossing split/merge/chamber patch generation |
+| `enable_skylight`, `skylight_*` | control the highest-point skylight shaft, drift, and jagged rim |
+| `weld_tolerance` | control how Stage D welds vertices when assembling one connected component |
+
 ## Project Layout
 
 - `config/`: project configuration
@@ -204,6 +241,7 @@ That one command produces:
 - `outputs/stage_a_host_field.png`
 - `outputs/stage_b_cave_network.png`
 - `outputs/stage_c_section_field.png`
+- `outputs/stage_d_geometry.png`
 
 Optional:
 
@@ -212,7 +250,8 @@ python scripts/generate_cave.py \
   --config config/project.toml \
   --output outputs/stage_b_cave_network.png \
   --host-output outputs/stage_a_host_field.png \
-  --section-output outputs/stage_c_section_field.png
+  --section-output outputs/stage_c_section_field.png \
+  --geometry-output outputs/stage_d_geometry.png
 ```
 
 Optional host-field debug render:
@@ -229,13 +268,19 @@ These are placeholders for the next implementation passes.
 
 ### Stage D: Geometry
 
-Placeholder.
+Implemented in constrained `D1/D2` form.
 
-Planned role:
+What exists now:
 
-- sweep the section field along the centerline
-- build an implicit volume / SDF
-- extract a continuous mesh
+- one connected primary cave component assembled from swept spans, connector spans, junction patches, and a skylight opening
+- surface-level crossing neighborhoods can now be stitched into the primary shell
+- underpass geometry remains intentionally excluded from the assembled shell
+
+Still deferred:
+
+- true non-planar underpass/crossing geometry
+- watertight versus blend-ready export modes
+- more robust manifold junction stitching across all remaining edge cases
 
 ### Stage E: Geological Events
 
@@ -243,7 +288,7 @@ Placeholder.
 
 Planned role:
 
-- inject skylights, choke points, collapse, and infill
+- inject choke points, collapse debris, and infill
 - tie those events to graph position and host-field conditions
 
 ### Stage F: Surface Detail / Texturing
@@ -263,7 +308,8 @@ The current project state is intentionally narrow:
 - Stage A builds the terrain and structural substrate
 - Stage B builds the current braided cave-network skeleton
 - Stage C builds adaptive lava-tube cross-sections around that skeleton
-- stages D-F are kept as explicit placeholders for the next passes
+- Stage D now sweeps ordinary section spans, stitches non-crossing junction patches, and adds one highest-point skylight
+- stages E-F and crossing-heavy / watertight `D2` work remain for the next passes
 
 That keeps the pipeline inspectable while still leaving a clear path toward the
 final pyroduct mesh and texture stages.
