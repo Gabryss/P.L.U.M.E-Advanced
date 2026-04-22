@@ -3,17 +3,18 @@
 `PLUME-Advanced` is a staged procedural pyroduct / lava-tube prototype.
 
 The current implementation focuses on the part that matters before mesh
-generation: build a readable terrain substrate, derive a few structural layers,
-and grow a first downhill centerline graph. The later geometry and texturing
-stages are intentionally not implemented yet.
+generation: build a readable terrain substrate, derive a cave-network skeleton,
+and keep enough structural metadata to support later geometry work. The later
+geometry and texturing stages are intentionally not implemented yet.
 
 ## Pipeline
 
 | Stage | Status | Purpose | Current Output |
 |---|---|---|---|
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
-| B. Graph | Implemented | Grow a first downhill trunk centerline | `outputs/stage_b_trunk_graph.png` |
-| B.1 Branch / Merge Sub-Stage | Implemented, isolated | Generate side branches and reconnections without changing the stable trunk stage | `outputs/stage_b1_branch_merge.png` |
+| B. Cave Network | Implemented | Generate a host-driven braided cave-network skeleton | `outputs/stage_b_cave_network.png` |
+| B. Graph | Legacy | Earlier single-trunk centerline experiment kept for reference | `outputs/stage_b_trunk_graph.png` |
+| B.1 Branch / Merge Sub-Stage | Legacy | Earlier trunk-relative loop and spur experiment kept for reference | `outputs/stage_b1_branch_merge.png` |
 | C. Section Field | Placeholder | Width, height, and orientation along arc length | TODO |
 | D. Geometry | Placeholder | Sweep sections into a continuous volume / mesh | TODO |
 | E. Geological Events | Placeholder | Skylights, choke points, collapse, infill | TODO |
@@ -28,19 +29,13 @@ stages are intentionally not implemented yet.
 Stage A produces the terrain substrate and the main scalar layers used by later
 stages: elevation, slope, cover thickness, roof competence, and growth cost.
 
-### Stage B: Trunk Graph
+### Stage B: Cave Network
 
-![Stage B Trunk Graph](outputs/stage_b_trunk_graph.png)
+![Stage B Cave Network](outputs/stage_b_cave_network.png)
 
-Stage B grows a first downhill trunk path over the host field and visualizes it
-in plan view and in longitudinal profile.
-
-### Stage B.1: Branch / Merge Review
-
-![Stage B.1 Branch / Merge Review](outputs/stage_b1_branch_merge.png)
-
-Stage B.1 visualizes a loop-heavy branch mix around the stable trunk: local
-bypass loops, longer downstream reconnect loops, and shorter dead-end spurs.
+Stage B generates the current default output: a host-driven braided cave-network
+skeleton with split/rejoin structure, islands, chamber-like expansions, and
+segment metadata for later geometry stages.
 
 ## How It Works
 
@@ -81,59 +76,22 @@ The `HostField` API currently exposes:
 - `contains(x, y, margin=0.0)`: map bounds check
 - `downhill_direction(x, y, fallback_angle_degrees=None)`: normalized downhill vector
 
-### Stage B: Graph
+### Stage B: Cave Network
 
-Implemented in `src/stages/graph.py`.
+Implemented in `src/stages/network.py`.
 
-Stage B currently generates a single trunk only:
+Stage B now builds the cave skeleton directly instead of starting from a single
+trunk. The generator:
 
-- no branches yet
-- no merges yet
-- no spline fitting yet
-- no geometry yet
+- uses the host field and the configured `procedural_seed`
+- traces a downhill backbone with host-guided branch motifs
+- builds localized asymmetric braid zones
+- supports `backbone`, `island_bypass`, `chamber_braid`, `ladder`, `spur`, and `underpass` segment kinds
+- records graph metadata such as `z_level`, `merge_behavior`, `crossing_group_id`, `island_id`, and `chamber_id`
+- derives occupancy and graph summaries from the resulting network
 
-The trunk starts from `host_field.config.seed_point` and advances one step at a
-time. At each step, the tangent is built from these components:
-
-| Steering Component | Role |
-|---|---|
-| downhill direction | follows the local terrain gradient |
-| global flow bias | preserves large-scale left-to-right progression |
-| corridor pull | keeps the path near the broad host corridor |
-| meander | adds smooth lateral variation without random jitter |
-| tangent blend | smooths turning from one step to the next |
-| forward-flow constraint | prevents local backward reversal |
-
-The trunk stops when:
-
-- `max_steps` is reached
-- the next step would leave the map margin
-- the next step climbs more than `max_uphill_step`
-
-Important implementation detail: Stage B does **not** use `growth_cost`
-directly for steering yet. It currently uses terrain gradient and flow control,
-while `growth_cost` is visualized and sampled for later stages.
-
-### Stage B.1: Branch / Merge Sub-Stage
-
-Implemented in `src/stages/branching.py`.
-
-This sub-stage is intentionally separated from `src/stages/graph.py` so the
-current trunk generator remains stable. The branch/merge generator works from:
-
-- the existing `HostField`
-- the already-generated `TrunkGraph`
-
-It currently:
-
-- scores candidate junctions along the trunk
-- builds a loop-heavy branch plan with separate local-bypass loops, downstream reconnect loops, and spurs
-- generates reconnecting loops in `src/stages/branching_loop_astar.py` using an off-trunk waypoint plus two A* legs
-- generates dead-end spurs in `src/stages/branching_spur.py` with a lighter local-growth solver
-- records merge events only for the reconnecting loop classes
-
-The key design choice is structural isolation: branch and merge experimentation
-can evolve independently without destabilizing the central trunk stage.
+The older trunk and branch/merge implementations remain in the repository as
+legacy reference stages. They are no longer the primary pipeline.
 
 ## Configuration
 
@@ -149,16 +107,21 @@ configs for the generators.
 Execution flow:
 
 1. load `config/project.toml`
-2. build `HostFieldConfig` and `GraphConfig`
-3. run the stage generator
-4. run the stage plotter
-5. write the image in `outputs/`
+2. build `HostFieldConfig` and `CaveNetworkConfig`
+3. generate the host field
+4. generate the cave network
+5. render the network plot
+6. write the image in `outputs/`
+
+`procedural_seed` is the top-level seed for the active pipeline. By default it
+feeds both the host-field generator and the cave-network generator, so changing
+one value produces a different geology and a different cave family.
 
 ### Host Field Config
 
 | Key Group | Purpose |
 |---|---|
-| `seed_point` | starting region for the graph |
+| `seed_point` | starting region for the cave system |
 | `high_side_elevation`, `longitudinal_drop`, `flow_angle_degrees` | define the large-scale terrain grade |
 | `corridor_depth`, `corridor_width` | shape the broad host corridor |
 | `volcanic_layer_thickness`, `minimum_stable_cover` | control the cover-thickness proxy |
@@ -167,26 +130,22 @@ Execution flow:
 | `[host_field.grid]` | map dimensions and sample resolution |
 | `[[host_field.waves]]` | low-frequency terrain deformation layers |
 
-### Graph Config
+### Network Config
 
 | Key Group | Purpose |
 |---|---|
-| `step_length`, `max_steps`, `boundary_margin` | control graph growth length and bounds |
-| `tangent_blend` | smooth directional updates |
-| `downhill_weight`, `flow_bias_weight`, `corridor_pull_weight` | steering weights |
-| `meander_amplitude_degrees`, `meander_wavelength` | lateral wandering pattern |
-| `minimum_flow_component` | enforce forward motion |
-| `max_uphill_step` | reject overly uphill moves |
+| `source_*`, `sink_margin`, `trace_max_steps` | control network source/sink setup and trace extent |
+| `*_alignment_weight`, `elevation_drop_weight`, `growth_cost_weight`, `roof_weight`, `cover_weight`, `slope_penalty_weight` | bias path selection through the host field |
+| `small_*`, `medium_*`, `large_*` | control multi-scale trace counts, attraction, congestion, and flux thresholds |
+| `prune_iterations`, `occupancy_smoothing_passes` | simplify the network and clean occupancy artifacts |
+| `chamber_*`, `base_passage_radius` | control chamber detection and occupancy painting |
+| `spur_*`, `channel_count_samples` | control terminal spur generation and braid sampling |
 
-### Branch / Merge Config
+### Legacy Config
 
-| Key Group | Purpose |
-|---|---|
-| `max_branch_count`, `candidate_pool_multiplier`, `junction_margin_points`, `min_junction_arc_separation` | control candidate density and total branch budget |
-| `minimum_local_bypass_count`, `minimum_downstream_loop_count` | guarantee that both loop classes appear in the review stage |
-| `local_bypass_weight`, `downstream_reconnect_weight`, `spur_weight` | bias the branch-kind mix |
-| `[branching.loop]` | configure reconnecting-loop pathfinding, waypoint search, clearance, detour, and area thresholds |
-| `[branching.spur]` | configure local dead-end spur growth and stop conditions |
+`[graph]` and `[branching]` are still parsed and tested, but they exist for the
+older trunk-first experimental path rather than the default cave-network
+pipeline.
 
 ## Project Layout
 
@@ -218,7 +177,7 @@ Optional:
 python scripts/generate_cave.py --config config/project.toml --output outputs/stage_b_cave_network.png
 ```
 
-Legacy stage-specific scripts remain available:
+Legacy stage-specific scripts remain available for the older exploratory path:
 
 ```bash
 python scripts/render_host_field.py
@@ -232,27 +191,6 @@ All scripts read `config/project.toml` by default.
 ## Planned Stages
 
 These are placeholders for the next implementation passes.
-
-### Stage B: Cave Network
-
-Alternative implementation path now available.
-
-Implemented role:
-
-- generate a braided cave network from an occupancy-first field rather than a single trunk
-- allow repeated split/merge behavior and internal islands
-- support nested scales with a fine local braid plus medium and large bypass-loop structure
-- derive the dominant route after the network is built instead of assuming it upfront
-- rasterize a cave occupancy mask and keep a graph representation for later stages
-
-Entrypoint:
-
-```bash
-python scripts/render_network.py
-```
-
-The older `branching` sub-stage remains in the repository, but the default
-project configuration is now tuned for the network-first Stage B path.
 
 ### Stage C: Section Field
 
@@ -298,7 +236,8 @@ Planned role:
 The current project state is intentionally narrow:
 
 - Stage A builds the terrain and structural substrate
-- Stage B builds the first readable downhill trunk graph
+- Stage B builds the current braided cave-network skeleton
+- legacy trunk and branch/merge stages remain available for comparison and regression coverage
 - stages C-F are kept as explicit placeholders for the next passes
 
 That keeps the pipeline inspectable while still leaving a clear path toward the
