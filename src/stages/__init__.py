@@ -1,27 +1,12 @@
-"""Simulation stages for the lava tube pipeline."""
+"""Active simulation stages for the cave-network pipeline."""
 
-from .branching import BranchMergeGenerator
-from .branching_models import (
-    BRANCH_KINDS,
-    LOOP_KINDS,
-    DOWNSTREAM_RECONNECT_LOOP,
-    LOCAL_BYPASS_LOOP,
-    SPUR,
-    BranchCandidate,
-    BranchMergeConfig,
-    BranchMergeNetwork,
-    BranchPath,
-    BranchPoint,
-    LoopPathConfig,
-    MergeEvent,
-    SpurBranchConfig,
-)
-from .graph import (
-    CenterlineEdge,
-    CenterlinePoint,
-    GraphConfig,
-    TrunkGraph,
-    TrunkGraphGenerator,
+from .host_field import (
+    GridConfig,
+    HostField,
+    HostFieldConfig,
+    HostFieldGenerator,
+    HostFieldSample,
+    TerrainWave,
 )
 from .network import (
     CaveNetwork,
@@ -31,45 +16,18 @@ from .network import (
     CavePoint,
     CaveSegment,
 )
-from .host_field import (
-    GridConfig,
-    HostField,
-    HostFieldConfig,
-    HostFieldGenerator,
-    HostFieldSample,
-    TerrainWave,
-)
 
 __all__ = [
-    "BRANCH_KINDS",
-    "LOOP_KINDS",
-    "DOWNSTREAM_RECONNECT_LOOP",
-    "LOCAL_BYPASS_LOOP",
-    "SPUR",
-    "BranchCandidate",
-    "BranchMergeConfig",
-    "BranchMergeGenerator",
-    "BranchMergeNetwork",
-    "BranchPath",
-    "BranchPoint",
     "CaveNetwork",
     "CaveNetworkConfig",
     "CaveNetworkGenerator",
     "CaveNode",
     "CavePoint",
     "CaveSegment",
-    "CenterlineEdge",
-    "CenterlinePoint",
-    "GraphConfig",
     "GridConfig",
     "HostField",
     "HostFieldConfig",
     "HostFieldGenerator",
     "HostFieldSample",
-    "LoopPathConfig",
-    "MergeEvent",
-    "SpurBranchConfig",
     "TerrainWave",
-    "TrunkGraph",
-    "TrunkGraphGenerator",
 ]

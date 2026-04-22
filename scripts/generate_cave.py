@@ -20,8 +20,10 @@ os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE))
 sys.path.insert(0, str(ROOT / "src"))
 
 from config import load_project_config
-from stages import CaveNetworkGenerator, HostFieldGenerator
-from visualization import CaveNetworkPlotter
+from stages.host_field import HostFieldGenerator
+from stages.network import CaveNetworkGenerator
+from visualization.host_field import HostFieldPlotter
+from visualization.network import CaveNetworkPlotter
 
 
 def parse_args() -> argparse.Namespace:
@@ -38,22 +40,36 @@ def parse_args() -> argparse.Namespace:
         default=ROOT / "outputs" / "stage_b_cave_network.png",
         help="Path for the generated cave-network visualization.",
     )
+    parser.add_argument(
+        "--host-output",
+        type=Path,
+        default=None,
+        help=(
+            "Path for the generated host-field visualization. "
+            "Defaults to a sibling file named stage_a_host_field.png."
+        ),
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     project_config = load_project_config(args.config)
+    host_output = args.host_output or args.output.with_name("stage_a_host_field.png")
 
     host_field = HostFieldGenerator(project_config.host_field).generate()
+    host_output_path = HostFieldPlotter().render(host_field, host_output)
     cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
-    output_path = CaveNetworkPlotter().render(host_field, cave_network, args.output)
+    network_output_path = CaveNetworkPlotter().render(host_field, cave_network, args.output)
 
-    print("Generated cave network.")
+    print("Generated cave pipeline artifacts.")
     print(f"Configuration: {args.config}")
-    print(f"Visualization: {output_path}")
+    print(f"Stage A visualization: {host_output_path}")
+    print(f"Stage B visualization: {network_output_path}")
+    for key, value in host_field.summary().items():
+        print(f"host_{key}: {value:.3f}")
     for key, value in cave_network.summary().items():
-        print(f"{key}: {value:.3f}")
+        print(f"network_{key}: {value:.3f}")
 
     return 0
 

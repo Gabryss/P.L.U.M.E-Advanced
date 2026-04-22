@@ -13,8 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from config import load_project_config
-from stages import CaveNetworkGenerator, HostFieldGenerator
-from stages.host_field import HostFieldConfig
+from stages.host_field import HostFieldConfig, HostFieldGenerator
+from stages.network import CaveNetworkGenerator
 
 
 class CaveNetworkTests(unittest.TestCase):

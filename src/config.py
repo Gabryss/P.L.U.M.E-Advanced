@@ -1,4 +1,4 @@
-"""Project configuration loading utilities."""
+"""Project configuration loading utilities for the active cave-network pipeline."""
 
 from __future__ import annotations
 
@@ -7,16 +7,8 @@ from pathlib import Path
 import tomllib
 from typing import Any
 
-from stages import (
-    BranchMergeConfig,
-    CaveNetworkConfig,
-    GraphConfig,
-    GridConfig,
-    HostFieldConfig,
-    LoopPathConfig,
-    SpurBranchConfig,
-    TerrainWave,
-)
+from stages.host_field import GridConfig, HostFieldConfig, TerrainWave
+from stages.network import CaveNetworkConfig
 
 
 @dataclass(frozen=True)
@@ -25,8 +17,6 @@ class ProjectConfig:
 
     procedural_seed: int | None
     host_field: HostFieldConfig
-    graph: GraphConfig
-    branching: BranchMergeConfig
     network: CaveNetworkConfig
 
 
@@ -45,8 +35,6 @@ def load_project_config(path: str | Path) -> ProjectConfig:
             raw_config.get("host_field", {}),
             procedural_seed=procedural_seed,
         ),
-        graph=_build_graph_config(raw_config.get("graph", {})),
-        branching=_build_branching_config(raw_config.get("branching", {})),
         network=_build_network_config(
             raw_config.get("network", {}),
             procedural_seed=procedural_seed,
@@ -75,23 +63,6 @@ def _build_host_field_config(
         return HostFieldConfig(grid=grid, **config_data)
 
     return HostFieldConfig(grid=grid, waves=waves, **config_data)
-
-
-def _build_graph_config(raw_config: dict[str, Any]) -> GraphConfig:
-    return GraphConfig(**raw_config)
-
-
-def _build_branching_config(raw_config: dict[str, Any]) -> BranchMergeConfig:
-    config_data = dict(raw_config)
-    loop_data = config_data.pop('loop', {})
-    spur_data = config_data.pop('spur', {})
-    return BranchMergeConfig(
-        loop=LoopPathConfig(**loop_data),
-        spur=SpurBranchConfig(**spur_data),
-        **config_data,
-    )
-
-
 def _build_network_config(
     raw_config: dict[str, Any],
     *,

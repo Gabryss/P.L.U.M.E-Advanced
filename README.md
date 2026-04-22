@@ -13,8 +13,6 @@ geometry and texturing stages are intentionally not implemented yet.
 |---|---|---|---|
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
 | B. Cave Network | Implemented | Generate a host-driven braided cave-network skeleton | `outputs/stage_b_cave_network.png` |
-| B. Graph | Legacy | Earlier single-trunk centerline experiment kept for reference | `outputs/stage_b_trunk_graph.png` |
-| B.1 Branch / Merge Sub-Stage | Legacy | Earlier trunk-relative loop and spur experiment kept for reference | `outputs/stage_b1_branch_merge.png` |
 | C. Section Field | Placeholder | Width, height, and orientation along arc length | TODO |
 | D. Geometry | Placeholder | Sweep sections into a continuous volume / mesh | TODO |
 | E. Geological Events | Placeholder | Skylights, choke points, collapse, infill | TODO |
@@ -90,9 +88,6 @@ trunk. The generator:
 - records graph metadata such as `z_level`, `merge_behavior`, `crossing_group_id`, `island_id`, and `chamber_id`
 - derives occupancy and graph summaries from the resulting network
 
-The older trunk and branch/merge implementations remain in the repository as
-legacy reference stages. They are no longer the primary pipeline.
-
 ## Configuration
 
 The single source of truth is:
@@ -109,9 +104,10 @@ Execution flow:
 1. load `config/project.toml`
 2. build `HostFieldConfig` and `CaveNetworkConfig`
 3. generate the host field
-4. generate the cave network
-5. render the network plot
-6. write the image in `outputs/`
+4. render the host-field plot
+5. generate the cave network
+6. render the network plot
+7. write the images in `outputs/`
 
 `procedural_seed` is the top-level seed for the active pipeline. By default it
 feeds both the host-field generator and the cave-network generator, so changing
@@ -141,12 +137,6 @@ one value produces a different geology and a different cave family.
 | `chamber_*`, `base_passage_radius` | control chamber detection and occupancy painting |
 | `spur_*`, `channel_count_samples` | control terminal spur generation and braid sampling |
 
-### Legacy Config
-
-`[graph]` and `[branching]` are still parsed and tested, but they exist for the
-older trunk-first experimental path rather than the default cave-network
-pipeline.
-
 ## Project Layout
 
 - `config/`: project configuration
@@ -171,22 +161,27 @@ Generate the current cave network with the single entrypoint:
 python scripts/generate_cave.py
 ```
 
+That one command produces:
+
+- `outputs/stage_a_host_field.png`
+- `outputs/stage_b_cave_network.png`
+
 Optional:
 
 ```bash
-python scripts/generate_cave.py --config config/project.toml --output outputs/stage_b_cave_network.png
+python scripts/generate_cave.py \
+  --config config/project.toml \
+  --output outputs/stage_b_cave_network.png \
+  --host-output outputs/stage_a_host_field.png
 ```
 
-Legacy stage-specific scripts remain available for the older exploratory path:
+Optional host-field debug render:
 
 ```bash
 python scripts/render_host_field.py
-python scripts/render_graph.py
-python scripts/render_branching.py
-python scripts/render_network.py
 ```
 
-All scripts read `config/project.toml` by default.
+Both scripts read `config/project.toml` by default.
 
 ## Planned Stages
 
@@ -237,7 +232,6 @@ The current project state is intentionally narrow:
 
 - Stage A builds the terrain and structural substrate
 - Stage B builds the current braided cave-network skeleton
-- legacy trunk and branch/merge stages remain available for comparison and regression coverage
 - stages C-F are kept as explicit placeholders for the next passes
 
 That keeps the pipeline inspectable while still leaving a clear path toward the

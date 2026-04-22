@@ -20,8 +20,8 @@ os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE))
 sys.path.insert(0, str(ROOT / "src"))
 
 from config import load_project_config
-from stages import HostFieldGenerator
-from visualization import HostFieldPlotter
+from stages.host_field import HostFieldGenerator
+from visualization.host_field import HostFieldPlotter
 
 
 def parse_args() -> argparse.Namespace:
