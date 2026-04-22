@@ -111,3 +111,17 @@ chamber_widen_gain = 0.45
 minimum_roof_thickness = 6.5
 maximum_centerline_depth = 26.0
 preferred_cover_fraction = 0.34
+
+[geometry]
+junction_exclusion_weight = 0.32
+minimum_span_samples = 3
+exclude_crossing_segments = true
+exclude_underpass_segments = true
+enable_junction_patches = true
+enable_skylight = true
+skylight_bottom_radius_scale = 0.38
+skylight_top_radius_scale = 0.62
+skylight_ring_count = 7
+skylight_drift_ratio = 0.26
+skylight_rim_jaggedness = 0.18
+skylight_surface_margin = 0.8
