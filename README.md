@@ -206,15 +206,28 @@ Install dependencies:
 python -m pip install -e .
 ```
 
-Generate the implemented stages:
+Generate the current cave network with the single entrypoint:
+
+```bash
+python scripts/generate_cave.py
+```
+
+Optional:
+
+```bash
+python scripts/generate_cave.py --config config/project.toml --output outputs/stage_b_cave_network.png
+```
+
+Legacy stage-specific scripts remain available:
 
 ```bash
 python scripts/render_host_field.py
 python scripts/render_graph.py
 python scripts/render_branching.py
+python scripts/render_network.py
 ```
 
-Both scripts read `config/project.toml` by default.
+All scripts read `config/project.toml` by default.
 
 ## Planned Stages
 

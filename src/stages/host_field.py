@@ -64,6 +64,7 @@ class HostFieldConfig:
     """Parameters controlling stage-A host field generation."""
 
     grid: GridConfig = field(default_factory=GridConfig)
+    random_seed: int | None = None
     seed_point: tuple[float, float] = (-1200.0, 0.0)
     high_side_elevation: float = 182.0
     longitudinal_drop: float = 84.0
@@ -213,12 +214,13 @@ class HostFieldGenerator:
     def generate(self) -> HostField:
         x_coords, y_coords = self._build_axes()
         x_grid, y_grid = np.meshgrid(x_coords, y_coords)
+        variation = self._build_variation_fields(x_grid, y_grid)
 
-        elevation = self._build_terrain(x_grid, y_grid)
+        elevation = self._build_terrain(x_grid, y_grid, variation)
         gradient_y, gradient_x = self._build_gradient(elevation)
         slope_degrees = self._build_slope_degrees(gradient_x, gradient_y)
         cover_thickness = self._build_cover_thickness(elevation, slope_degrees)
-        roof_competence = self._build_roof_competence(x_grid, y_grid)
+        roof_competence = self._build_roof_competence(x_grid, y_grid, variation)
         growth_cost = self._build_growth_cost(
             slope_degrees=slope_degrees,
             cover_thickness=cover_thickness,
@@ -244,7 +246,128 @@ class HostFieldGenerator:
         y_coords = np.linspace(-grid.height / 2.0, grid.height / 2.0, grid.ny, dtype=float)
         return x_coords, y_coords
 
-    def _build_terrain(self, x_grid: Array2D, y_grid: Array2D) -> Array2D:
+    def _build_variation_fields(
+        self,
+        x_grid: Array2D,
+        y_grid: Array2D,
+    ) -> dict[str, Array2D | tuple[float, ...] | float]:
+        wave_phase_offsets = tuple(0.0 for _ in self.config.waves)
+        corridor_depth_scale = np.ones_like(x_grid, dtype=float)
+        corridor_width_scale = np.ones_like(x_grid, dtype=float)
+        competence_bias = np.zeros_like(x_grid, dtype=float)
+        fracture_center_offset = 0.0
+        fracture_width_scale = 1.0
+        drainage_phase_offset = 0.0
+        cross_drainage_phase_offset = 0.0
+
+        if self.config.random_seed is None:
+            return {
+                "wave_phase_offsets": wave_phase_offsets,
+                "corridor_depth_scale": corridor_depth_scale,
+                "corridor_width_scale": corridor_width_scale,
+                "competence_bias": competence_bias,
+                "fracture_center_offset": fracture_center_offset,
+                "fracture_width_scale": fracture_width_scale,
+                "drainage_phase_offset": drainage_phase_offset,
+                "cross_drainage_phase_offset": cross_drainage_phase_offset,
+            }
+
+        rng = np.random.default_rng(self.config.random_seed)
+        seed_x, seed_y = self.config.seed_point
+        relative_x = x_grid - seed_x
+        relative_y = y_grid - seed_y
+        drainage = self._project_along_angle(
+            relative_x,
+            relative_y,
+            self.config.flow_angle_degrees,
+        )
+        cross_drainage = self._project_along_angle(
+            relative_x,
+            relative_y,
+            self.config.flow_angle_degrees + 90.0,
+        )
+        fracture_axis = self._project_along_angle(
+            relative_x,
+            relative_y,
+            self.config.fracture_zone_angle_degrees,
+        )
+
+        wave_phase_offsets = tuple(
+            float(rng.uniform(-0.25, 0.25)) for _ in self.config.waves
+        )
+
+        long_wavelength = float(rng.uniform(1800.0, 3400.0))
+        cross_wavelength = float(rng.uniform(950.0, 1800.0))
+        corridor_depth_scale = np.clip(
+            1.0
+            + 0.10 * np.sin(2.0 * math.pi * drainage / long_wavelength + rng.uniform(-math.pi, math.pi))
+            + 0.03 * np.cos(2.0 * math.pi * cross_drainage / cross_wavelength + rng.uniform(-math.pi, math.pi)),
+            0.82,
+            1.18,
+        )
+        corridor_width_scale = np.clip(
+            1.0
+            + 0.08 * np.cos(2.0 * math.pi * drainage / (long_wavelength * 0.82) + rng.uniform(-math.pi, math.pi))
+            + 0.03 * np.sin(2.0 * math.pi * cross_drainage / (cross_wavelength * 1.35) + rng.uniform(-math.pi, math.pi)),
+            0.88,
+            1.18,
+        )
+
+        fracture_center_offset = float(
+            rng.normal(0.0, self.config.fracture_zone_width * 0.12)
+        )
+        fracture_width_scale = float(
+            np.clip(rng.normal(1.0, 0.08), 0.88, 1.18)
+        )
+        drainage_phase_offset = float(rng.uniform(-0.25, 0.25))
+        cross_drainage_phase_offset = float(rng.uniform(-0.20, 0.20))
+
+        competence_bias = np.zeros_like(x_grid, dtype=float)
+        along_min = float(drainage.min())
+        along_max = float(drainage.max())
+        cross_span = max(self.config.grid.width * 0.42, 1.0)
+        pod_count = int(rng.integers(1, 4))
+        for _ in range(pod_count):
+            along_center = float(rng.uniform(along_min, along_max))
+            cross_center = float(rng.uniform(-cross_span, cross_span))
+            along_sigma = float(rng.uniform(320.0, 880.0))
+            cross_sigma = float(rng.uniform(110.0, 300.0))
+            amplitude = float(rng.uniform(-0.05, 0.05))
+            competence_bias += amplitude * np.exp(
+                -np.square((drainage - along_center) / along_sigma)
+                - np.square((cross_drainage - cross_center) / cross_sigma)
+            )
+
+        if rng.random() < 0.7:
+            band_center = float(
+                self.config.fracture_zone_center_offset
+                + rng.normal(0.0, self.config.fracture_zone_width * 0.25)
+            )
+            band_width = float(
+                self.config.fracture_zone_width * rng.uniform(0.85, 1.45)
+            )
+            band_strength = float(rng.uniform(-0.03, 0.04))
+            competence_bias += band_strength * np.exp(
+                -np.square((fracture_axis - band_center) / max(band_width, 1.0))
+            )
+
+        return {
+            "wave_phase_offsets": wave_phase_offsets,
+            "corridor_depth_scale": corridor_depth_scale,
+            "corridor_width_scale": corridor_width_scale,
+            "competence_bias": competence_bias,
+            "fracture_center_offset": fracture_center_offset,
+            "fracture_width_scale": fracture_width_scale,
+            "drainage_phase_offset": drainage_phase_offset,
+            "cross_drainage_phase_offset": cross_drainage_phase_offset,
+        }
+
+    def _build_terrain(
+        self,
+        x_grid: Array2D,
+        y_grid: Array2D,
+        variation: dict[str, Array2D | tuple[float, ...] | float],
+    ) -> Array2D:
         seed_x, seed_y = self.config.seed_point
         relative_x = x_grid - seed_x
         relative_y = y_grid - seed_y
@@ -267,18 +390,23 @@ class HostFieldGenerator:
             self.config.high_side_elevation
             - self.config.longitudinal_drop * normalized_flow
         )
-        terrain -= self.config.corridor_depth * np.exp(
-            -np.square(cross_projection / self.config.corridor_width)
+        corridor_width = self.config.corridor_width * variation["corridor_width_scale"]
+        corridor_depth = self.config.corridor_depth * variation["corridor_depth_scale"]
+        terrain -= corridor_depth * np.exp(
+            -np.square(cross_projection / np.maximum(corridor_width, 1.0))
         )
 
-        for wave in self.config.waves:
+        wave_phase_offsets = variation["wave_phase_offsets"]
+        for index, wave in enumerate(self.config.waves):
             directional_offset = self._project_along_angle(
                 relative_x,
                 relative_y,
                 wave.angle_degrees,
             )
             terrain += wave.amplitude * np.sin(
-                2.0 * math.pi * directional_offset / wave.wavelength + wave.phase
+                2.0 * math.pi * directional_offset / wave.wavelength
+                + wave.phase
+                + wave_phase_offsets[index]
             )
 
         return terrain
@@ -308,7 +436,12 @@ class HostFieldGenerator:
         maximum_cover = self.config.volcanic_layer_thickness * 1.35
         return np.clip(cover, minimum_cover, maximum_cover)
 
-    def _build_roof_competence(self, x_grid: Array2D, y_grid: Array2D) -> Array2D:
+    def _build_roof_competence(
+        self,
+        x_grid: Array2D,
+        y_grid: Array2D,
+        variation: dict[str, Array2D | tuple[float, ...] | float],
+    ) -> Array2D:
         """Build an explicit roof-stability field for later geometry and texturing."""
 
         seed_x, seed_y = self.config.seed_point
@@ -332,13 +465,32 @@ class HostFieldGenerator:
         )
 
         structural_bands = (
-            0.55 * np.sin(2.0 * math.pi * drainage / 1550.0 + 0.35)
-            + 0.45 * np.cos(2.0 * math.pi * cross_drainage / 980.0 - 0.2)
+            0.55
+            * np.sin(
+                2.0 * math.pi * drainage / 1550.0
+                + 0.35
+                + variation["drainage_phase_offset"]
+            )
+            + 0.45
+            * np.cos(
+                2.0 * math.pi * cross_drainage / 980.0
+                - 0.2
+                + variation["cross_drainage_phase_offset"]
+            )
         )
         fracture_zone = np.exp(
             -np.square(
-                (fracture_axis - self.config.fracture_zone_center_offset)
-                / self.config.fracture_zone_width
+                (
+                    fracture_axis
+                    - (
+                        self.config.fracture_zone_center_offset
+                        + variation["fracture_center_offset"]
+                    )
+                )
+                / max(
+                    self.config.fracture_zone_width * variation["fracture_width_scale"],
+                    1.0,
+                )
             )
         )
         edge_weathering = np.clip(
@@ -352,6 +504,7 @@ class HostFieldGenerator:
             + self.config.roof_competence_variation * structural_bands
             - 0.32 * fracture_zone
             - 0.10 * edge_weathering
+            + variation["competence_bias"]
         )
         return np.clip(competence, 0.0, 1.0)
 

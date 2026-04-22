@@ -41,7 +41,10 @@ def load_project_config(path: str | Path) -> ProjectConfig:
 
     return ProjectConfig(
         procedural_seed=procedural_seed,
-        host_field=_build_host_field_config(raw_config.get("host_field", {})),
+        host_field=_build_host_field_config(
+            raw_config.get("host_field", {}),
+            procedural_seed=procedural_seed,
+        ),
         graph=_build_graph_config(raw_config.get("graph", {})),
         branching=_build_branching_config(raw_config.get("branching", {})),
         network=_build_network_config(
@@ -51,8 +54,14 @@ def load_project_config(path: str | Path) -> ProjectConfig:
     )
 
 
-def _build_host_field_config(raw_config: dict[str, Any]) -> HostFieldConfig:
+def _build_host_field_config(
+    raw_config: dict[str, Any],
+    *,
+    procedural_seed: int | None,
+) -> HostFieldConfig:
     config_data = dict(raw_config)
+    if "random_seed" not in config_data:
+        config_data["random_seed"] = procedural_seed
 
     grid_data = config_data.pop("grid", {})
     wave_data = config_data.pop("waves", None)

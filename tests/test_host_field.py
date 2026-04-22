@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from stages import HostFieldGenerator
+from stages.host_field import HostFieldConfig
 
 
 class HostFieldTests(unittest.TestCase):
@@ -43,6 +44,34 @@ class HostFieldTests(unittest.TestCase):
         self.assertLessEqual(sample.growth_cost, 1.0)
         self.assertIsInstance(sample.gradient_x, float)
         self.assertIsInstance(sample.gradient_y, float)
+
+    def test_seeded_host_field_is_reproducible_and_varies_with_seed(self) -> None:
+        seeded_config = HostFieldConfig(random_seed=17)
+        host_field_a = HostFieldGenerator(seeded_config).generate()
+        host_field_b = HostFieldGenerator(seeded_config).generate()
+        alternate_host_field = HostFieldGenerator(
+            HostFieldConfig(random_seed=23)
+        ).generate()
+
+        self.assertTrue(np.allclose(host_field_a.elevation, host_field_b.elevation))
+        self.assertTrue(
+            np.allclose(host_field_a.roof_competence, host_field_b.roof_competence)
+        )
+        self.assertTrue(np.allclose(host_field_a.growth_cost, host_field_b.growth_cost))
+
+        mean_elevation_difference = float(
+            np.mean(np.abs(host_field_a.elevation - alternate_host_field.elevation))
+        )
+        mean_roof_difference = float(
+            np.mean(
+                np.abs(
+                    host_field_a.roof_competence - alternate_host_field.roof_competence
+                )
+            )
+        )
+
+        self.assertGreater(mean_elevation_difference, 0.25)
+        self.assertGreater(mean_roof_difference, 0.01)
 
 
 if __name__ == "__main__":

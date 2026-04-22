@@ -1,5 +1,6 @@
 """Smoke tests for the stage-B trunk graph."""
 
+import math
 from pathlib import Path
 import sys
 import unittest
@@ -23,7 +24,13 @@ class TrunkGraphTests(unittest.TestCase):
 
         start_point = trunk_graph.points[0]
         end_point = trunk_graph.points[-1]
-        self.assertGreater(end_point.x, start_point.x)
+        flow_angle = math.radians(project_config.host_field.flow_angle_degrees)
+        flow_direction = (math.cos(flow_angle), math.sin(flow_angle))
+        downstream_progress = (
+            (end_point.x - start_point.x) * flow_direction[0]
+            + (end_point.y - start_point.y) * flow_direction[1]
+        )
+        self.assertGreater(downstream_progress, 0.0)
         self.assertLess(end_point.elevation, start_point.elevation)
 
         arc_lengths = [point.arc_length for point in trunk_graph.points]
