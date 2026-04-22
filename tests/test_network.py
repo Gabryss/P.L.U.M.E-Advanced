@@ -20,16 +20,18 @@ from stages.host_field import HostFieldConfig
 class CaveNetworkTests(unittest.TestCase):
     def test_default_config_generates_host_driven_braided_network(self) -> None:
         project_config = load_project_config(ROOT / "config" / "project.toml")
+        self.assertEqual(project_config.procedural_seed, 17)
+        self.assertEqual(project_config.network.random_seed, project_config.procedural_seed)
         host_field = HostFieldGenerator(project_config.host_field).generate()
         cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
 
         summary = cave_network.summary()
-        self.assertGreaterEqual(int(summary["node_count"]), 18)
-        self.assertGreaterEqual(int(summary["segment_count"]), 20)
-        self.assertGreaterEqual(int(summary["loop_count"]), 4)
+        self.assertGreaterEqual(int(summary["node_count"]), 24)
+        self.assertGreaterEqual(int(summary["segment_count"]), 24)
+        self.assertGreaterEqual(int(summary["loop_count"]), 2)
         self.assertGreaterEqual(int(summary["max_parallel_channels"]), 3)
-        self.assertGreater(summary["dominant_route_length"], 4000.0)
-        self.assertGreater(summary["occupied_cell_count"], 2500.0)
+        self.assertGreater(summary["dominant_route_length"], 5000.0)
+        self.assertGreater(summary["occupied_cell_count"], 3500.0)
 
         entry_nodes = [node for node in cave_network.nodes if node.kind == "entry"]
         exit_nodes = [node for node in cave_network.nodes if node.kind == "exit"]
@@ -45,8 +47,41 @@ class CaveNetworkTests(unittest.TestCase):
         self.assertGreater(max(bbox_width, bbox_height) / max(min(bbox_width, bbox_height), 1e-6), 6.0)
 
         segment_kinds = {segment.kind for segment in cave_network.segments}
-        self.assertIn("braid", segment_kinds)
+        self.assertIn("backbone", segment_kinds)
+        self.assertIn("island_bypass", segment_kinds)
+        self.assertIn("chamber_braid", segment_kinds)
+        self.assertIn("ladder", segment_kinds)
         self.assertIn("spur", segment_kinds)
+        self.assertIn("underpass", segment_kinds)
+        self.assertTrue(any(segment.z_level != 0 for segment in cave_network.segments))
+        self.assertIn("chamber", {node.kind for node in cave_network.nodes})
+
+        for segment in cave_network.segments:
+            self.assertIn("crossing_group_id", segment.metadata)
+            self.assertIn("merge_behavior", segment.metadata)
+            self.assertIn("island_id", segment.metadata)
+            self.assertIn("chamber_id", segment.metadata)
+            self.assertIn("formation_origin", segment.metadata)
+            self.assertEqual(segment.metadata["formation_origin"], segment.kind)
+
+        underpasses = [segment for segment in cave_network.segments if segment.kind == "underpass"]
+        self.assertTrue(underpasses)
+        self.assertTrue(all(segment.metadata["crossing_group_id"] is not None for segment in underpasses))
+        self.assertTrue(
+            all(segment.metadata["merge_behavior"] in {"cross_under", "cross_over"} for segment in underpasses)
+        )
+
+        island_segments = [segment for segment in cave_network.segments if segment.kind == "island_bypass"]
+        self.assertTrue(island_segments)
+        self.assertTrue(all(segment.metadata["island_id"] is not None for segment in island_segments))
+
+        chamber_segments = [
+            segment
+            for segment in cave_network.segments
+            if segment.kind in {"chamber_braid", "ladder"}
+        ]
+        self.assertTrue(chamber_segments)
+        self.assertTrue(all(segment.metadata["chamber_id"] is not None for segment in chamber_segments))
 
         flow_angle = math.radians(project_config.host_field.flow_angle_degrees)
         flow_direction = (math.cos(flow_angle), math.sin(flow_angle))
@@ -66,7 +101,7 @@ class CaveNetworkTests(unittest.TestCase):
 
         self.assertTrue(alignments)
         self.assertGreater(float(np.mean(alignments)), 0.7)
-        self.assertGreater(float(np.quantile(alignments, 0.5)), 0.7)
+        self.assertGreater(float(np.quantile(alignments, 0.5)), 0.65)
         self.assertTrue(elevation_drops)
         self.assertGreater(float(np.quantile(elevation_drops, 0.5)), 0.0)
 

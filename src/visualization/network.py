@@ -132,16 +132,37 @@ class CaveNetworkPlotter:
             x_coords = [point.x for point in segment.points]
             y_coords = [point.y for point in segment.points]
             is_dominant = (segment.start_node_id, segment.end_node_id) in dominant_pairs
+            linestyle = "-"
             if is_dominant:
                 color = "#22d3ee"
                 linewidth = 1.4 if dense_graph else 1.8
-            elif segment.kind == "braid":
+            elif segment.kind in {"backbone", "braid"}:
                 color = "#f8fafc"
                 linewidth = 0.55 if dense_graph else 0.8
+            elif segment.kind == "island_bypass":
+                color = "#e5e7eb"
+                linewidth = 0.7 if dense_graph else 0.95
+            elif segment.kind == "chamber_braid":
+                color = "#fb7185"
+                linewidth = 0.8 if dense_graph else 1.0
+            elif segment.kind == "ladder":
+                color = "#f59e0b"
+                linewidth = 0.65 if dense_graph else 0.9
+            elif segment.kind == "underpass":
+                color = "#c084fc"
+                linewidth = 0.7 if dense_graph else 0.95
+                linestyle = (0, (3, 2))
             else:
                 color = "#facc15"
                 linewidth = 0.6 if dense_graph else 0.85
-            ax.plot(x_coords, y_coords, color=color, linewidth=linewidth, alpha=0.82 if dense_graph else 0.9)
+            ax.plot(
+                x_coords,
+                y_coords,
+                color=color,
+                linewidth=linewidth,
+                linestyle=linestyle,
+                alpha=0.82 if dense_graph else 0.9,
+            )
 
         degrees = {node.node_id: 0 for node in cave_network.nodes}
         for segment in cave_network.segments:
@@ -155,6 +176,8 @@ class CaveNetworkPlotter:
                 color = "#ef4444"
             elif node.kind == "spur_terminal":
                 color = "#fb923c"
+            elif node.kind == "chamber":
+                color = "#fb7185"
             node_size = 4 + 1.4 * degrees[node.node_id] if dense_graph else 8 + 3.0 * degrees[node.node_id]
             ax.scatter(
                 [node.x],
@@ -188,7 +211,7 @@ class CaveNetworkPlotter:
         braid_widths = [
             segment.mean_width
             for segment in cave_network.segments
-            if segment.kind == "braid"
+            if segment.kind != "spur"
         ]
         if braid_widths:
             percentiles = np.percentile(braid_widths, [25, 50, 75])

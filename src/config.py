@@ -23,6 +23,7 @@ from stages import (
 class ProjectConfig:
     """Top-level project configuration."""
 
+    procedural_seed: int | None
     host_field: HostFieldConfig
     graph: GraphConfig
     branching: BranchMergeConfig
@@ -36,11 +37,17 @@ def load_project_config(path: str | Path) -> ProjectConfig:
     with config_path.open("rb") as config_file:
         raw_config = tomllib.load(config_file)
 
+    procedural_seed = raw_config.get("procedural_seed")
+
     return ProjectConfig(
+        procedural_seed=procedural_seed,
         host_field=_build_host_field_config(raw_config.get("host_field", {})),
         graph=_build_graph_config(raw_config.get("graph", {})),
         branching=_build_branching_config(raw_config.get("branching", {})),
-        network=_build_network_config(raw_config.get("network", {})),
+        network=_build_network_config(
+            raw_config.get("network", {}),
+            procedural_seed=procedural_seed,
+        ),
     )
 
 
@@ -76,5 +83,12 @@ def _build_branching_config(raw_config: dict[str, Any]) -> BranchMergeConfig:
     )
 
 
-def _build_network_config(raw_config: dict[str, Any]) -> CaveNetworkConfig:
-    return CaveNetworkConfig(**raw_config)
+def _build_network_config(
+    raw_config: dict[str, Any],
+    *,
+    procedural_seed: int | None,
+) -> CaveNetworkConfig:
+    config_data = dict(raw_config)
+    if "random_seed" not in config_data:
+        config_data["random_seed"] = procedural_seed
+    return CaveNetworkConfig(**config_data)

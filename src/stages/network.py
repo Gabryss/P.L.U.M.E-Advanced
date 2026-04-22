@@ -11,12 +11,14 @@ import numpy as np
 
 from stages.host_field import HostField
 
+SegmentMetadataValue = str | int | float | bool | None
+
 
 @dataclass(frozen=True)
 class CaveNetworkConfig:
     """Parameters controlling the host-driven braided cave-network generator."""
 
-    random_seed: int = 17
+    random_seed: int | None = None
     source_count: int = 8
     source_band_length: float = 90.0
     source_band_half_width: float = 180.0
@@ -107,6 +109,7 @@ class CaveSegment:
     kind: str
     z_level: int
     points: tuple[CavePoint, ...]
+    metadata: dict[str, SegmentMetadataValue]
 
     @property
     def total_length(self) -> float:
@@ -235,7 +238,31 @@ class _TraceFamily:
 class _BraidZone:
     center_fraction: float
     half_length_fraction: float
-    offsets: tuple[float, ...]
+    branches: tuple["_ZoneBranch", ...]
+    ladder_rungs: tuple[float, ...] = ()
+    chamber_radius_scale: float = 1.0
+
+
+@dataclass(frozen=True)
+class _ZoneBranch:
+    kind: str
+    lateral_offset: float
+    start_shift_fraction: float = 0.0
+    end_shift_fraction: float = 0.0
+    skew: float = 0.0
+    wobble: float = 0.0
+    phase: float = 0.0
+    z_level: int = 0
+    merge_shared_cells: bool = True
+
+
+@dataclass(frozen=True)
+class _SelectedPath:
+    kind: str
+    path: tuple[tuple[int, int], ...]
+    z_level: int = 0
+    merge_shared_cells: bool = True
+    metadata: dict[str, SegmentMetadataValue] | None = None
 
 
 class CaveNetworkGenerator:
@@ -280,13 +307,17 @@ class CaveNetworkGenerator:
                 slice_channel_counts=(),
             )
 
-        selected_paths: list[tuple[str, tuple[tuple[int, int], ...]]] = [
-            ("large", tuple(self._simplify_path(backbone_path)))
+        selected_paths: list[_SelectedPath] = [
+            _SelectedPath(
+                kind="backbone",
+                path=tuple(self._simplify_path(backbone_path)),
+                metadata=self._build_segment_metadata(kind="backbone"),
+            )
         ]
         occupied_cells = set(backbone_path)
         backbone_alongs, backbone_crosses = self._build_backbone_profile(backbone_path, geometry)
         braid_zones = self._build_braid_zones(host_field, geometry)
-        for zone in braid_zones:
+        for zone_index, zone in enumerate(braid_zones):
             zone_paths = self._build_zone_paths(
                 host_field=host_field,
                 geometry=geometry,
@@ -296,10 +327,11 @@ class CaveNetworkGenerator:
                 backbone_crosses=backbone_crosses,
                 zone=zone,
                 occupied_cells=occupied_cells,
+                zone_index=zone_index,
             )
-            for path in zone_paths:
-                selected_paths.append(("medium" if len(path) > 24 else "small", tuple(path)))
-                occupied_cells.update(path[2:-2])
+            for selected_path in zone_paths:
+                selected_paths.append(selected_path)
+                occupied_cells.update(selected_path.path[2:-2])
 
         _skeleton_mask, total_flux, _family_flux = self._build_representative_fields(
             shape=host_field.growth_cost.shape,
@@ -318,7 +350,13 @@ class CaveNetworkGenerator:
                 rng=rng,
             )
             if path:
-                selected_paths.append(("spur", tuple(self._simplify_path(path))))
+                selected_paths.append(
+                    _SelectedPath(
+                        kind="spur",
+                        path=tuple(self._simplify_path(path)),
+                        metadata=self._build_segment_metadata(kind="spur"),
+                    )
+                )
 
         skeleton_mask, selected_flux, selected_family_flux = self._build_representative_fields(
             shape=host_field.growth_cost.shape,
@@ -336,6 +374,7 @@ class CaveNetworkGenerator:
         width_field = np.zeros_like(host_field.growth_cost, dtype=float)
         for segment in segments:
             self._rasterize_segment(host_field, occupancy, width_field, segment)
+        self._paint_structural_chambers(host_field, occupancy, width_field, nodes, segments)
         self._paint_chambers(host_field, occupancy, width_field, total_flux)
         occupancy = self._smooth_occupancy(occupancy)
 
@@ -753,11 +792,55 @@ class CaveNetworkGenerator:
     ) -> tuple[_BraidZone, ...]:
         spread = 0.34 * host_field.config.corridor_width
         return (
-            _BraidZone(0.14, 0.07, (-0.9 * spread, 0.9 * spread)),
-            _BraidZone(0.31, 0.05, (-0.6 * spread, 0.6 * spread)),
-            _BraidZone(0.49, 0.08, (-1.0 * spread, 0.0, 1.0 * spread)),
-            _BraidZone(0.68, 0.07, (-1.15 * spread, -0.4 * spread, 0.5 * spread, 1.2 * spread)),
-            _BraidZone(0.84, 0.05, (-0.7 * spread, 0.7 * spread)),
+            _BraidZone(
+                0.16,
+                0.065,
+                branches=(
+                    _ZoneBranch("island_bypass", -0.95 * spread, -0.10, 0.18, skew=-0.45, wobble=0.28, phase=0.7),
+                    _ZoneBranch("island_bypass", 0.58 * spread, 0.08, -0.05, skew=0.20, wobble=0.16, phase=2.1),
+                ),
+                chamber_radius_scale=1.15,
+            ),
+            _BraidZone(
+                0.33,
+                0.055,
+                branches=(
+                    _ZoneBranch("chamber_braid", 0.92 * spread, -0.18, 0.12, skew=0.50, wobble=0.26, phase=1.4),
+                    _ZoneBranch("ladder", -0.42 * spread, 0.08, -0.08, skew=-0.10, wobble=0.12, phase=2.7),
+                ),
+                ladder_rungs=(0.34, 0.68),
+                chamber_radius_scale=1.35,
+            ),
+            _BraidZone(
+                0.51,
+                0.078,
+                branches=(
+                    _ZoneBranch("island_bypass", -1.05 * spread, -0.05, 0.10, skew=-0.35, wobble=0.22, phase=0.4),
+                    _ZoneBranch("underpass", 0.78 * spread, 0.22, -0.18, skew=0.65, wobble=0.30, phase=1.9, z_level=-1, merge_shared_cells=False),
+                    _ZoneBranch("inner_bypass", 0.22 * spread, -0.10, 0.02, skew=0.15, wobble=0.10, phase=2.8),
+                ),
+                chamber_radius_scale=1.1,
+            ),
+            _BraidZone(
+                0.69,
+                0.085,
+                branches=(
+                    _ZoneBranch("chamber_braid", -1.15 * spread, -0.22, 0.16, skew=-0.55, wobble=0.34, phase=1.2),
+                    _ZoneBranch("island_bypass", 0.52 * spread, 0.06, -0.18, skew=0.18, wobble=0.18, phase=2.2),
+                    _ZoneBranch("ladder", 0.98 * spread, 0.18, -0.05, skew=0.38, wobble=0.26, phase=0.9),
+                ),
+                ladder_rungs=(0.28,),
+                chamber_radius_scale=1.5,
+            ),
+            _BraidZone(
+                0.86,
+                0.055,
+                branches=(
+                    _ZoneBranch("island_bypass", -0.62 * spread, -0.08, 0.02, skew=-0.15, wobble=0.12, phase=0.3),
+                    _ZoneBranch("underpass", 0.96 * spread, 0.20, -0.12, skew=0.55, wobble=0.20, phase=2.5, z_level=1, merge_shared_cells=False),
+                ),
+                chamber_radius_scale=1.0,
+            ),
         )
 
     def _build_zone_paths(
@@ -771,24 +854,23 @@ class CaveNetworkGenerator:
         backbone_crosses: np.ndarray,
         zone: _BraidZone,
         occupied_cells: set[tuple[int, int]],
-    ) -> tuple[list[tuple[int, int]], ...]:
+        zone_index: int,
+    ) -> tuple[_SelectedPath, ...]:
         center_along = zone.center_fraction * geometry.along_extent
         half_length = zone.half_length_fraction * geometry.along_extent
-        start_along = center_along - half_length
-        end_along = center_along + half_length
-        backbone_segment = self._extract_backbone_segment(
-            backbone_path=backbone_path,
-            geometry=geometry,
-            start_along=start_along,
-            end_along=end_along,
-        )
-        if len(backbone_segment) < 8:
-            return ()
-        start_cell = backbone_segment[0]
-        end_cell = backbone_segment[-1]
-
-        zone_paths: list[list[tuple[int, int]]] = []
-        for lateral_offset in zone.offsets:
+        zone_paths: list[_SelectedPath] = []
+        built_branch_paths: list[tuple[_ZoneBranch, tuple[tuple[int, int], ...]]] = []
+        for branch in zone.branches:
+            start_along = center_along - half_length + branch.start_shift_fraction * half_length
+            end_along = center_along + half_length + branch.end_shift_fraction * half_length
+            backbone_segment = self._extract_backbone_segment(
+                backbone_path=backbone_path,
+                geometry=geometry,
+                start_along=start_along,
+                end_along=end_along,
+            )
+            if len(backbone_segment) < 8:
+                continue
             path = self._build_offset_zone_path(
                 host_field=host_field,
                 geometry=geometry,
@@ -796,7 +878,7 @@ class CaveNetworkGenerator:
                 backbone_segment=backbone_segment,
                 backbone_alongs=backbone_alongs,
                 backbone_crosses=backbone_crosses,
-                lateral_offset=lateral_offset,
+                branch=branch,
             )
             if not path:
                 continue
@@ -807,12 +889,37 @@ class CaveNetworkGenerator:
                 abs(
                     float(geometry.cross_grid[cell])
                     - float(np.interp(float(geometry.along_grid[cell]), backbone_alongs, backbone_crosses))
-                )
+                    )
                 for cell in simplified
             )
             if max_cross_delta < max(0.18 * host_field.config.corridor_width, 18.0):
                 continue
-            zone_paths.append(simplified)
+            selected = _SelectedPath(
+                kind=branch.kind,
+                path=tuple(simplified),
+                z_level=branch.z_level,
+                merge_shared_cells=branch.merge_shared_cells,
+                metadata=self._build_segment_metadata(
+                    kind=branch.kind,
+                    zone_index=zone_index,
+                    z_level=branch.z_level,
+                ),
+            )
+            zone_paths.append(selected)
+            built_branch_paths.append((branch, selected.path))
+
+        if zone.ladder_rungs and built_branch_paths:
+            ladder_paths = self._build_zone_ladders(
+                host_field=host_field,
+                geometry=geometry,
+                support_field=support_field,
+                backbone_alongs=backbone_alongs,
+                backbone_crosses=backbone_crosses,
+                branches=built_branch_paths,
+                rungs=zone.ladder_rungs,
+                zone_index=zone_index,
+            )
+            zone_paths.extend(ladder_paths)
         return tuple(zone_paths)
 
     def _extract_backbone_segment(
@@ -845,7 +952,7 @@ class CaveNetworkGenerator:
         backbone_segment: list[tuple[int, int]],
         backbone_alongs: np.ndarray,
         backbone_crosses: np.ndarray,
-        lateral_offset: float,
+        branch: _ZoneBranch,
     ) -> list[tuple[int, int]]:
         if len(backbone_segment) < 2:
             return []
@@ -854,11 +961,30 @@ class CaveNetworkGenerator:
         segment_end = float(geometry.along_grid[backbone_segment[-1]])
         along_span = max(segment_end - segment_start, geometry.cell_scale)
 
+        left_exponent = max(0.35, 1.0 - branch.skew)
+        right_exponent = max(0.35, 1.0 + branch.skew)
+        peak_t = left_exponent / max(left_exponent + right_exponent, 1e-6)
+        peak_raw = max(
+            peak_t ** left_exponent * (1.0 - peak_t) ** right_exponent,
+            1e-6,
+        )
+
         for index, cell in enumerate(backbone_segment[1:-1], start=1):
             along = float(geometry.along_grid[cell])
             progress = (along - segment_start) / along_span
-            envelope = math.sin(math.pi * np.clip(progress, 0.0, 1.0))
-            target_cross = float(np.interp(along, backbone_alongs, backbone_crosses)) + lateral_offset * envelope
+            clamped_progress = float(np.clip(progress, 0.0, 1.0))
+            envelope = (
+                clamped_progress ** left_exponent
+                * (1.0 - clamped_progress) ** right_exponent
+            ) / peak_raw
+            wobble = branch.wobble * envelope * math.sin(
+                2.0 * math.pi * (1.25 * clamped_progress + branch.phase)
+            )
+            target_cross = (
+                float(np.interp(along, backbone_alongs, backbone_crosses))
+                + branch.lateral_offset * envelope
+                + 0.35 * host_field.config.corridor_width * wobble
+            )
             target_x = geometry.seed_x + geometry.flow_x * along + geometry.cross_x * target_cross
             target_y = geometry.seed_y + geometry.flow_y * along + geometry.cross_y * target_cross
             snapped = self._snap_target_cell(
@@ -875,6 +1001,107 @@ class CaveNetworkGenerator:
         if backbone_segment[-1] != built_path[-1]:
             built_path.append(backbone_segment[-1])
         return built_path
+
+    def _build_zone_ladders(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        support_field: np.ndarray,
+        backbone_alongs: np.ndarray,
+        backbone_crosses: np.ndarray,
+        branches: list[tuple[_ZoneBranch, tuple[tuple[int, int], ...]]],
+        rungs: tuple[float, ...],
+        zone_index: int,
+    ) -> tuple[_SelectedPath, ...]:
+        if len(branches) < 2:
+            return ()
+        ordered = sorted(
+            branches,
+            key=lambda item: np.mean([float(geometry.cross_grid[cell]) for cell in item[1]]),
+        )
+        ladders: list[_SelectedPath] = []
+        for rung_fraction in rungs:
+            left_branch = ordered[0][1]
+            right_branch = ordered[-1][1]
+            left_cell = left_branch[min(int(rung_fraction * (len(left_branch) - 1)), len(left_branch) - 1)]
+            right_cell = right_branch[min(int(rung_fraction * (len(right_branch) - 1)), len(right_branch) - 1)]
+            connector = self._build_connector_path(
+                host_field=host_field,
+                geometry=geometry,
+                support_field=support_field,
+                start_cell=left_cell,
+                end_cell=right_cell,
+                backbone_alongs=backbone_alongs,
+                backbone_crosses=backbone_crosses,
+            )
+            simplified = self._simplify_path(connector)
+            if len(simplified) < 3:
+                continue
+            ladders.append(
+                _SelectedPath(
+                    kind="ladder",
+                    path=tuple(simplified),
+                    metadata=self._build_segment_metadata(
+                        kind="ladder",
+                        zone_index=zone_index,
+                    ),
+                )
+            )
+        return tuple(ladders)
+
+    def _build_connector_path(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        support_field: np.ndarray,
+        start_cell: tuple[int, int],
+        end_cell: tuple[int, int],
+        backbone_alongs: np.ndarray,
+        backbone_crosses: np.ndarray,
+    ) -> list[tuple[int, int]]:
+        start_world = self._cell_to_world(host_field, start_cell)
+        end_world = self._cell_to_world(host_field, end_cell)
+        samples = max(
+            3,
+            int(
+                math.ceil(
+                    math.hypot(end_world[0] - start_world[0], end_world[1] - start_world[1])
+                    / max(geometry.cell_scale, 1.0)
+                )
+            ),
+        )
+        path = [start_cell]
+        for sample_index in range(1, samples):
+            t = sample_index / samples
+            x_coord = (1.0 - t) * start_world[0] + t * end_world[0]
+            y_coord = (1.0 - t) * start_world[1] + t * end_world[1]
+            target_along = (
+                (1.0 - t) * float(geometry.along_grid[start_cell])
+                + t * float(geometry.along_grid[end_cell])
+            )
+            target_cross = (
+                0.35
+                * (
+                    float(geometry.cross_grid[start_cell])
+                    + float(geometry.cross_grid[end_cell])
+                )
+                + 0.65 * float(np.interp(target_along, backbone_alongs, backbone_crosses))
+            )
+            snapped = self._snap_target_cell(
+                host_field=host_field,
+                geometry=geometry,
+                support_field=support_field,
+                target_x=x_coord,
+                target_y=y_coord,
+                target_cross=target_cross,
+            )
+            if snapped != path[-1]:
+                path.append(snapped)
+        if path[-1] != end_cell:
+            path.append(end_cell)
+        return path
 
     def _snap_target_cell(
         self,
@@ -1145,11 +1372,49 @@ class CaveNetworkGenerator:
         label_bonus = {"small": 0.0, "medium": 25.0, "large": 50.0, "spur": -20.0}[label]
         return progress + 0.35 * unique_cells + 1.5 * mean_flux + label_bonus
 
+    @staticmethod
+    def _family_label_for_kind(kind: str) -> str:
+        if kind == "spur":
+            return "spur"
+        if kind in {"backbone", "chamber_braid"}:
+            return "large"
+        if kind in {"island_bypass", "underpass"}:
+            return "medium"
+        return "small"
+
+    @staticmethod
+    def _build_segment_metadata(
+        *,
+        kind: str,
+        zone_index: int | None = None,
+        z_level: int = 0,
+    ) -> dict[str, SegmentMetadataValue]:
+        crossing_group_id: str | None = None
+        merge_behavior = "merge"
+        island_id: str | None = None
+        chamber_id: str | None = None
+
+        if kind in {"island_bypass", "inner_bypass"} and zone_index is not None:
+            island_id = f"island_zone_{zone_index}"
+        if kind in {"chamber_braid", "ladder"} and zone_index is not None:
+            chamber_id = f"chamber_zone_{zone_index}"
+        if kind == "underpass" and zone_index is not None:
+            crossing_group_id = f"crossing_zone_{zone_index}"
+            merge_behavior = "cross_under" if z_level < 0 else "cross_over"
+
+        return {
+            "crossing_group_id": crossing_group_id,
+            "merge_behavior": merge_behavior,
+            "island_id": island_id,
+            "chamber_id": chamber_id,
+            "formation_origin": kind,
+        }
+
     def _build_representative_fields(
         self,
         *,
         shape: tuple[int, int],
-        selected_paths: tuple[tuple[str, tuple[tuple[int, int], ...]], ...],
+        selected_paths: tuple[_SelectedPath, ...],
     ) -> tuple[np.ndarray, np.ndarray, dict[str, np.ndarray]]:
         mask = np.zeros(shape, dtype=bool)
         flux = np.zeros(shape, dtype=float)
@@ -1157,11 +1422,12 @@ class CaveNetworkGenerator:
             label: np.zeros(shape, dtype=float)
             for label in self.FAMILY_LABELS
         }
-        for label, path in selected_paths:
-            for cell in path:
+        for selected_path in selected_paths:
+            family_label = self._family_label_for_kind(selected_path.kind)
+            for cell in selected_path.path:
                 mask[cell] = True
                 flux[cell] += 1.0
-                family_flux[label][cell] += 1.0
+                family_flux[family_label][cell] += 1.0
         return mask, flux, family_flux
 
     def _prune_skeleton_mask(self, mask: np.ndarray) -> np.ndarray:
@@ -1186,30 +1452,37 @@ class CaveNetworkGenerator:
         *,
         host_field: HostField,
         geometry: _FlowGeometry,
-        selected_paths: tuple[tuple[str, tuple[tuple[int, int], ...]], ...],
+        selected_paths: tuple[_SelectedPath, ...],
         total_flux: np.ndarray,
     ) -> tuple[list[CaveNode], list[CaveSegment], tuple[int, ...]]:
         if not selected_paths:
             return [], [], ()
 
         path_use_counts: defaultdict[tuple[int, int], int] = defaultdict(int)
-        for _label, path in selected_paths:
-            for cell in path:
+        all_path_cells: set[tuple[int, int]] = set()
+        for selected_path in selected_paths:
+            all_path_cells.update(selected_path.path)
+            if not selected_path.merge_shared_cells:
+                continue
+            for cell in selected_path.path:
                 path_use_counts[cell] += 1
 
         source_cell = min(
-            path_use_counts,
+            all_path_cells,
             key=lambda cell: (float(geometry.along_grid[cell]), abs(float(geometry.cross_grid[cell]))),
         )
         sink_cell = max(
-            path_use_counts,
+            all_path_cells,
             key=lambda cell: (float(geometry.along_grid[cell]), -abs(float(geometry.cross_grid[cell]))),
         )
 
         node_cell_set: set[tuple[int, int]] = {source_cell, sink_cell}
-        for _label, path in selected_paths:
-            node_cell_set.add(path[0])
-            node_cell_set.add(path[-1])
+        chamber_cells: set[tuple[int, int]] = set()
+        for selected_path in selected_paths:
+            node_cell_set.add(selected_path.path[0])
+            node_cell_set.add(selected_path.path[-1])
+            if selected_path.kind in {"chamber_braid", "ladder"}:
+                chamber_cells.update(selected_path.path)
         for cell, count in path_use_counts.items():
             if count > 1:
                 node_cell_set.add(cell)
@@ -1224,7 +1497,9 @@ class CaveNetworkGenerator:
                 node_kind = "entry"
             elif cell == sink_cell:
                 node_kind = "exit"
-            elif path_use_counts[cell] == 1:
+            elif cell in chamber_cells and path_use_counts.get(cell, 0) >= 2:
+                node_kind = "chamber"
+            elif path_use_counts.get(cell, 0) == 1:
                 node_kind = "terminal"
             nodes.append(
                 CaveNode(
@@ -1240,11 +1515,17 @@ class CaveNetworkGenerator:
 
         segments: list[CaveSegment] = []
         seen_signatures: set[tuple[int, int, tuple[tuple[int, int], ...]]] = set()
-        for label, path in selected_paths:
+        for selected_path in selected_paths:
+            path = selected_path.path
             current_cells = [path[0]]
             for cell in path[1:]:
                 current_cells.append(cell)
                 if cell not in node_cells:
+                    continue
+                if (
+                    not selected_path.merge_shared_cells
+                    and cell not in {path[0], path[-1]}
+                ):
                     continue
                 start_node_id = node_cells[current_cells[0]]
                 end_node_id = node_cells[cell]
@@ -1264,7 +1545,12 @@ class CaveNetworkGenerator:
                             end_node_id=end_node_id,
                             segment_id=len(segments),
                             total_flux=total_flux,
-                            kind="spur" if label == "spur" else "braid",
+                            kind=selected_path.kind,
+                            z_level=selected_path.z_level,
+                            metadata=selected_path.metadata or self._build_segment_metadata(
+                                kind=selected_path.kind,
+                                z_level=selected_path.z_level,
+                            ),
                         )
                         if segment is not None:
                             segments.append(segment)
@@ -1284,6 +1570,8 @@ class CaveNetworkGenerator:
         segment_id: int,
         total_flux: np.ndarray,
         kind: str,
+        z_level: int,
+        metadata: dict[str, SegmentMetadataValue],
     ) -> CaveSegment | None:
         coordinates = [
             self._cell_to_world(host_field, cell)
@@ -1321,8 +1609,9 @@ class CaveNetworkGenerator:
             start_node_id=start_node_id,
             end_node_id=end_node_id,
             kind=kind,
-            z_level=0,
+            z_level=z_level,
             points=tuple(points),
+            metadata=dict(metadata),
         )
 
     def _dominant_route(
@@ -1517,6 +1806,39 @@ class CaveNetworkGenerator:
                 x_coord=x_coord,
                 y_coord=y_coord,
                 radius=self.config.chamber_radius,
+            )
+
+    def _paint_structural_chambers(
+        self,
+        host_field: HostField,
+        occupancy: np.ndarray,
+        width_field: np.ndarray,
+        nodes: list[CaveNode],
+        segments: list[CaveSegment],
+    ) -> None:
+        for node in nodes:
+            if node.kind != "chamber":
+                continue
+            self._paint_disk(
+                host_field=host_field,
+                occupancy=occupancy,
+                width_field=width_field,
+                x_coord=node.x,
+                y_coord=node.y,
+                radius=1.18 * self.config.chamber_radius,
+            )
+        for segment in segments:
+            if segment.kind not in {"chamber_braid", "ladder"} or len(segment.points) < 3:
+                continue
+            midpoint = segment.points[len(segment.points) // 2]
+            radius = self.config.chamber_radius * (1.25 if segment.kind == "chamber_braid" else 0.78)
+            self._paint_disk(
+                host_field=host_field,
+                occupancy=occupancy,
+                width_field=width_field,
+                x_coord=midpoint.x,
+                y_coord=midpoint.y,
+                radius=radius,
             )
 
     def _paint_disk(
