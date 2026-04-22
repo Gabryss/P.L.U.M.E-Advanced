@@ -21,6 +21,7 @@ class CaveNetworkTests(unittest.TestCase):
     def test_default_config_generates_host_driven_braided_network(self) -> None:
         project_config = load_project_config(ROOT / "config" / "project.toml")
         self.assertEqual(project_config.procedural_seed, 17)
+        self.assertIsInstance(project_config.host_field.seed_point, tuple)
         self.assertEqual(project_config.host_field.random_seed, project_config.procedural_seed)
         self.assertEqual(project_config.network.random_seed, project_config.procedural_seed)
         host_field = HostFieldGenerator(project_config.host_field).generate()
@@ -29,10 +30,12 @@ class CaveNetworkTests(unittest.TestCase):
         summary = cave_network.summary()
         self.assertGreaterEqual(int(summary["node_count"]), 24)
         self.assertGreaterEqual(int(summary["segment_count"]), 22)
+        self.assertGreaterEqual(int(summary["junction_count"]), 3)
         self.assertGreaterEqual(int(summary["loop_count"]), 1)
         self.assertGreaterEqual(int(summary["max_parallel_channels"]), 3)
         self.assertGreater(summary["dominant_route_length"], 5000.0)
-        self.assertGreater(summary["occupied_cell_count"], 3500.0)
+        self.assertGreater(summary["occupied_cell_count"], 700.0)
+        self.assertLessEqual(summary["mean_segment_width"], 12.0)
 
         entry_nodes = [node for node in cave_network.nodes if node.kind == "entry"]
         exit_nodes = [node for node in cave_network.nodes if node.kind == "exit"]
@@ -56,6 +59,15 @@ class CaveNetworkTests(unittest.TestCase):
         self.assertIn("underpass", segment_kinds)
         self.assertTrue(any(segment.z_level != 0 for segment in cave_network.segments))
         self.assertIn("chamber", {node.kind for node in cave_network.nodes})
+        self.assertIn("spur_terminal", {node.kind for node in cave_network.nodes})
+        self.assertTrue(cave_network.junctions)
+        self.assertTrue(any(junction.kind == "chamber" for junction in cave_network.junctions))
+        self.assertTrue(
+            any(
+                junction.split_style == "pre_widen_then_split"
+                for junction in cave_network.junctions
+            )
+        )
 
         for segment in cave_network.segments:
             self.assertIn("crossing_group_id", segment.metadata)

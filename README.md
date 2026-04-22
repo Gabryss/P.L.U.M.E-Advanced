@@ -4,8 +4,8 @@
 
 The current implementation focuses on the part that matters before mesh
 generation: build a readable terrain substrate, derive a cave-network skeleton,
-and keep enough structural metadata to support later geometry work. The later
-geometry and texturing stages are intentionally not implemented yet.
+and generate a geometry-ready section field around that skeleton. The later
+full geometry and texturing stages are intentionally not implemented yet.
 
 ## Pipeline
 
@@ -13,7 +13,7 @@ geometry and texturing stages are intentionally not implemented yet.
 |---|---|---|---|
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
 | B. Cave Network | Implemented | Generate a host-driven braided cave-network skeleton | `outputs/stage_b_cave_network.png` |
-| C. Section Field | Placeholder | Width, height, and orientation along arc length | TODO |
+| C. Section Field | Implemented | Build adaptive lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png` |
 | D. Geometry | Placeholder | Sweep sections into a continuous volume / mesh | TODO |
 | E. Geological Events | Placeholder | Skylights, choke points, collapse, infill | TODO |
 | F. Surface Detail / Texturing | Placeholder | Wall detail, floor variation, material masks | TODO |
@@ -34,6 +34,15 @@ stages: elevation, slope, cover thickness, roof competence, and growth cost.
 Stage B generates the current default output: a host-driven braided cave-network
 skeleton with split/rejoin structure, islands, chamber-like expansions, and
 segment metadata for later geometry stages.
+
+### Stage C: Section Field
+
+![Stage C Section Field](outputs/stage_c_section_field.png)
+
+Stage C generates geometry-ready cross-section samples along the network:
+adaptive sample spacing, underground centerline placement, 3D local frames,
+lava-tube profile controls, and junction-aware blending through split/merge
+regions.
 
 ## How It Works
 
@@ -86,7 +95,23 @@ trunk. The generator:
 - builds localized asymmetric braid zones
 - supports `backbone`, `island_bypass`, `chamber_braid`, `ladder`, `spur`, and `underpass` segment kinds
 - records graph metadata such as `z_level`, `merge_behavior`, `crossing_group_id`, `island_id`, and `chamber_id`
+- clusters morphologically meaningful split/merge/crossing regions into explicit junction objects
 - derives occupancy and graph summaries from the resulting network
+
+### Stage C: Section Field
+
+Implemented in `src/stages/section_field.py`.
+
+Stage C wraps a lava-tube-shaped section field around the Stage-B skeleton.
+The generator:
+
+- resamples each segment adaptively based on curvature, width gradient, and junction proximity
+- moves the section centerline below the host surface using cover thickness and roof-thickness heuristics
+- builds geometry-ready local frames (`tangent`, `normal`, `binormal`)
+- derives smooth section controls such as width, height, floor flattening, roof arch, and lateral skew
+- uses explicit Stage-B junction regions to blend split/merge morphology without hard jumps at nodes
+- records per-sample junction influences for later split/merge volume construction
+- stores closed local 2D section contours that are ready for a later sweep/geometry stage
 
 ## Configuration
 
@@ -102,15 +127,17 @@ configs for the generators.
 Execution flow:
 
 1. load `config/project.toml`
-2. build `HostFieldConfig` and `CaveNetworkConfig`
+2. build `HostFieldConfig`, `CaveNetworkConfig`, and `SectionFieldConfig`
 3. generate the host field
 4. render the host-field plot
 5. generate the cave network
 6. render the network plot
-7. write the images in `outputs/`
+7. generate the section field
+8. render the section-field plot
+9. write the images in `outputs/`
 
 `procedural_seed` is the top-level seed for the active pipeline. By default it
-feeds both the host-field generator and the cave-network generator, so changing
+feeds the host-field, cave-network, and section-field generators, so changing
 one value produces a different geology and a different cave family.
 
 ### Host Field Config
@@ -136,6 +163,17 @@ one value produces a different geology and a different cave family.
 | `prune_iterations`, `occupancy_smoothing_passes` | simplify the network and clean occupancy artifacts |
 | `chamber_*`, `base_passage_radius` | control chamber detection and occupancy painting |
 | `spur_*`, `channel_count_samples` | control terminal spur generation and braid sampling |
+
+### Section Field Config
+
+| Key Group | Purpose |
+|---|---|
+| `base_height_ratio`, `minimum_height_ratio`, `maximum_height_ratio` | control the default lava-tube width/height relationship |
+| `minimum_sample_spacing`, `maximum_sample_spacing` | bound adaptive section-sample spacing |
+| `curvature_spacing_weight`, `width_gradient_spacing_weight`, `junction_spacing_weight` | make sampling denser where the skeleton or morphology changes faster |
+| `profile_resolution` | control local section contour resolution |
+| `floor_flatness_*`, `roof_arch_*`, `lateral_skew_amplitude` | shape the lava-tube profile |
+| `junction_*_gain` | control how strongly junction regions widen or stay tight through splits/merges |
 
 ## Project Layout
 
@@ -165,6 +203,7 @@ That one command produces:
 
 - `outputs/stage_a_host_field.png`
 - `outputs/stage_b_cave_network.png`
+- `outputs/stage_c_section_field.png`
 
 Optional:
 
@@ -172,7 +211,8 @@ Optional:
 python scripts/generate_cave.py \
   --config config/project.toml \
   --output outputs/stage_b_cave_network.png \
-  --host-output outputs/stage_a_host_field.png
+  --host-output outputs/stage_a_host_field.png \
+  --section-output outputs/stage_c_section_field.png
 ```
 
 Optional host-field debug render:
@@ -186,16 +226,6 @@ Both scripts read `config/project.toml` by default.
 ## Planned Stages
 
 These are placeholders for the next implementation passes.
-
-### Stage C: Section Field
-
-Placeholder.
-
-Planned role:
-
-- assign width, height, and section orientation along the graph
-- keep radius evolution smooth over arc length
-- prepare the data needed for swept geometry
 
 ### Stage D: Geometry
 
@@ -232,7 +262,8 @@ The current project state is intentionally narrow:
 
 - Stage A builds the terrain and structural substrate
 - Stage B builds the current braided cave-network skeleton
-- stages C-F are kept as explicit placeholders for the next passes
+- Stage C builds adaptive lava-tube cross-sections around that skeleton
+- stages D-F are kept as explicit placeholders for the next passes
 
 That keeps the pipeline inspectable while still leaving a clear path toward the
 final pyroduct mesh and texture stages.

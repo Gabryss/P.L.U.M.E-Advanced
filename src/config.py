@@ -9,6 +9,7 @@ from typing import Any
 
 from stages.host_field import GridConfig, HostFieldConfig, TerrainWave
 from stages.network import CaveNetworkConfig
+from stages.section_field import SectionFieldConfig
 
 
 @dataclass(frozen=True)
@@ -18,6 +19,7 @@ class ProjectConfig:
     procedural_seed: int | None
     host_field: HostFieldConfig
     network: CaveNetworkConfig
+    section_field: SectionFieldConfig
 
 
 def load_project_config(path: str | Path) -> ProjectConfig:
@@ -37,6 +39,10 @@ def load_project_config(path: str | Path) -> ProjectConfig:
         ),
         network=_build_network_config(
             raw_config.get("network", {}),
+            procedural_seed=procedural_seed,
+        ),
+        section_field=_build_section_field_config(
+            raw_config.get("section_field", {}),
             procedural_seed=procedural_seed,
         ),
     )
@@ -60,9 +66,20 @@ def _build_host_field_config(
         waves = tuple(TerrainWave(**wave) for wave in wave_data)
 
     if waves is None:
-        return HostFieldConfig(grid=grid, **config_data)
+        return HostFieldConfig(
+            grid=grid,
+            seed_point=tuple(config_data.pop("seed_point", HostFieldConfig.seed_point)),
+            **config_data,
+        )
 
-    return HostFieldConfig(grid=grid, waves=waves, **config_data)
+    return HostFieldConfig(
+        grid=grid,
+        waves=waves,
+        seed_point=tuple(config_data.pop("seed_point", HostFieldConfig.seed_point)),
+        **config_data,
+    )
+
+
 def _build_network_config(
     raw_config: dict[str, Any],
     *,
@@ -72,3 +89,14 @@ def _build_network_config(
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
     return CaveNetworkConfig(**config_data)
+
+
+def _build_section_field_config(
+    raw_config: dict[str, Any],
+    *,
+    procedural_seed: int | None,
+) -> SectionFieldConfig:
+    config_data = dict(raw_config)
+    if "random_seed" not in config_data:
+        config_data["random_seed"] = procedural_seed
+    return SectionFieldConfig(**config_data)

@@ -56,7 +56,9 @@ class CaveNetworkConfig:
     total_flux_threshold_quantile: float = 0.60
     prune_iterations: int = 3
     chamber_flux_quantile: float = 0.82
-    base_passage_radius: float = 18.0
+    base_passage_radius: float = 4.6
+    minimum_passage_radius: float = 3.2
+    maximum_passage_radius: float = 6.0
     chamber_radius: float = 46.0
     occupancy_smoothing_passes: int = 1
     spur_count: int = 5
@@ -123,12 +125,30 @@ class CaveSegment:
 
 
 @dataclass(frozen=True)
+class CaveJunction:
+    """One higher-level morphological transition region in the cave network."""
+
+    junction_id: int
+    kind: str
+    node_ids: tuple[int, ...]
+    segment_ids: tuple[int, ...]
+    center_x: float
+    center_y: float
+    along_position: float
+    blend_length: float
+    split_style: str
+    merge_style: str
+    capacity_bias: float
+
+
+@dataclass(frozen=True)
 class CaveNetwork:
     """Stage-B output for the host-driven braided cave network."""
 
     config: CaveNetworkConfig
     nodes: tuple[CaveNode, ...]
     segments: tuple[CaveSegment, ...]
+    junctions: tuple[CaveJunction, ...]
     occupancy: np.ndarray
     width_field: np.ndarray
     dominant_route_node_ids: tuple[int, ...]
@@ -152,6 +172,7 @@ class CaveNetwork:
         return {
             "node_count": float(len(self.nodes)),
             "segment_count": float(len(self.segments)),
+            "junction_count": float(len(self.junctions)),
             "loop_count": loop_count,
             "terminal_count": terminal_count,
             "spur_count": spur_count,
@@ -300,6 +321,7 @@ class CaveNetworkGenerator:
                 config=self.config,
                 nodes=(),
                 segments=(),
+                junctions=(),
                 occupancy=np.zeros_like(host_field.growth_cost, dtype=bool),
                 width_field=np.zeros_like(host_field.growth_cost, dtype=float),
                 dominant_route_node_ids=(),
@@ -369,6 +391,7 @@ class CaveNetworkGenerator:
             selected_paths=tuple(selected_paths),
             total_flux=selected_flux,
         )
+        junctions = self._build_junctions(nodes, segments)
 
         occupancy = np.zeros_like(host_field.growth_cost, dtype=bool)
         width_field = np.zeros_like(host_field.growth_cost, dtype=float)
@@ -388,6 +411,7 @@ class CaveNetworkGenerator:
             config=self.config,
             nodes=tuple(nodes),
             segments=tuple(segments),
+            junctions=tuple(junctions),
             occupancy=occupancy,
             width_field=width_field,
             dominant_route_node_ids=dominant_route_node_ids,
@@ -1500,7 +1524,11 @@ class CaveNetworkGenerator:
             elif cell in chamber_cells and path_use_counts.get(cell, 0) >= 2:
                 node_kind = "chamber"
             elif path_use_counts.get(cell, 0) == 1:
-                node_kind = "terminal"
+                node_kind = "spur_terminal" if any(
+                    selected_path.kind == "spur"
+                    and cell in {selected_path.path[0], selected_path.path[-1]}
+                    for selected_path in selected_paths
+                ) else "terminal"
             nodes.append(
                 CaveNode(
                     node_id=node_id,
@@ -1559,6 +1587,120 @@ class CaveNetworkGenerator:
 
         dominant_route_node_ids = self._dominant_route(nodes, segments, total_flux)
         return nodes, segments, dominant_route_node_ids
+
+    def _build_junctions(
+        self,
+        nodes: list[CaveNode],
+        segments: list[CaveSegment],
+    ) -> list[CaveJunction]:
+        if not nodes or not segments:
+            return []
+
+        adjacency: dict[int, list[CaveSegment]] = defaultdict(list)
+        for segment in segments:
+            adjacency[segment.start_node_id].append(segment)
+            adjacency[segment.end_node_id].append(segment)
+
+        candidate_node_ids = {
+            node.node_id
+            for node in nodes
+            if node.kind in {"junction", "chamber"}
+            or len(adjacency[node.node_id]) >= 3
+        }
+        if not candidate_node_ids:
+            return []
+
+        node_lookup = {node.node_id: node for node in nodes}
+        visited: set[int] = set()
+        clusters: list[set[int]] = []
+        max_along_gap = 110.0
+        max_distance = 140.0
+        for node_id in sorted(candidate_node_ids, key=lambda item: node_lookup[item].along_position):
+            if node_id in visited:
+                continue
+            cluster = {node_id}
+            queue = [node_id]
+            visited.add(node_id)
+            while queue:
+                current_id = queue.pop()
+                current = node_lookup[current_id]
+                for neighbor_id in candidate_node_ids:
+                    if neighbor_id in visited:
+                        continue
+                    neighbor = node_lookup[neighbor_id]
+                    along_gap = abs(neighbor.along_position - current.along_position)
+                    distance = math.hypot(neighbor.x - current.x, neighbor.y - current.y)
+                    shared_segment = any(
+                        segment.start_node_id in {current_id, neighbor_id}
+                        and segment.end_node_id in {current_id, neighbor_id}
+                        for segment in segments
+                    )
+                    if along_gap <= max_along_gap and (
+                        distance <= max_distance or shared_segment
+                    ):
+                        visited.add(neighbor_id)
+                        cluster.add(neighbor_id)
+                        queue.append(neighbor_id)
+            clusters.append(cluster)
+
+        junctions: list[CaveJunction] = []
+        for cluster in clusters:
+            cluster_nodes = [node_lookup[node_id] for node_id in sorted(cluster)]
+            segment_ids = sorted(
+                {
+                    segment.segment_id
+                    for node_id in cluster
+                    for segment in adjacency[node_id]
+                }
+            )
+            cluster_segments = [segments[segment_id] for segment_id in segment_ids]
+            segment_kinds = {segment.kind for segment in cluster_segments}
+            if any(segment.kind == "underpass" for segment in cluster_segments):
+                kind = "crossing"
+                split_style = "constant_envelope_then_divide"
+                merge_style = "constant_envelope_then_divide"
+                capacity_bias = 0.92
+            elif any(node.kind == "chamber" for node in cluster_nodes) or any(
+                segment.kind == "chamber_braid" for segment in cluster_segments
+            ):
+                kind = "chamber"
+                split_style = "pre_widen_then_split"
+                merge_style = "pre_widen_then_split"
+                capacity_bias = 1.18
+            elif any(segment.kind == "island_bypass" for segment in cluster_segments):
+                kind = "split_merge"
+                split_style = "constant_envelope_then_divide"
+                merge_style = "constant_envelope_then_divide"
+                capacity_bias = 0.98
+            else:
+                kind = "junction"
+                split_style = "constant_envelope_then_divide"
+                merge_style = "constant_envelope_then_divide"
+                capacity_bias = 1.0
+
+            segment_widths = [
+                segment.mean_width
+                for segment in cluster_segments
+                if segment.points
+            ]
+            mean_width = float(np.mean(segment_widths)) if segment_widths else 24.0
+            blend_length = float(np.clip(2.35 * mean_width, 70.0, 210.0))
+            junctions.append(
+                CaveJunction(
+                    junction_id=len(junctions),
+                    kind=kind,
+                    node_ids=tuple(node.node_id for node in cluster_nodes),
+                    segment_ids=tuple(segment_ids),
+                    center_x=float(np.mean([node.x for node in cluster_nodes])),
+                    center_y=float(np.mean([node.y for node in cluster_nodes])),
+                    along_position=float(np.mean([node.along_position for node in cluster_nodes])),
+                    blend_length=blend_length,
+                    split_style=split_style,
+                    merge_style=merge_style,
+                    capacity_bias=capacity_bias,
+                )
+            )
+        return junctions
 
     def _build_segment_from_cells(
         self,
@@ -1895,7 +2037,13 @@ class CaveNetworkGenerator:
         radius *= 0.88 + 0.24 * sample.roof_competence
         radius *= 0.92 + 0.18 * cover_score
         radius *= 1.0 + 0.09 * math.log1p(max(flux_value, 0.0))
-        return max(radius, 8.0)
+        return float(
+            np.clip(
+                radius,
+                self.config.minimum_passage_radius,
+                self.config.maximum_passage_radius,
+            )
+        )
 
     def _normalize_cover_field(self, host_field: HostField) -> np.ndarray:
         return np.clip(
