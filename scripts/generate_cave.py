@@ -20,6 +20,7 @@ os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE))
 sys.path.insert(0, str(ROOT / "src"))
 
 from config import load_project_config
+from stages.geometry_export import export_geometry_obj
 from stages.geometry import GeometryGenerator
 from stages.host_field import HostFieldGenerator
 from stages.network import CaveNetworkGenerator
@@ -71,6 +72,15 @@ def parse_args() -> argparse.Namespace:
             "Defaults to a sibling file named stage_d_geometry.png."
         ),
     )
+    parser.add_argument(
+        "--geometry-mesh-output",
+        type=Path,
+        default=None,
+        help=(
+            "Path for the generated geometry-stage OBJ export. "
+            "Defaults to a sibling file named stage_d_geometry.obj."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -80,6 +90,9 @@ def main() -> int:
     host_output = args.host_output or args.output.with_name("stage_a_host_field.png")
     section_output = args.section_output or args.output.with_name("stage_c_section_field.png")
     geometry_output = args.geometry_output or args.output.with_name("stage_d_geometry.png")
+    geometry_mesh_output = (
+        args.geometry_mesh_output or args.output.with_name("stage_d_geometry.obj")
+    )
 
     host_field = HostFieldGenerator(project_config.host_field).generate()
     host_output_path = HostFieldPlotter().render(host_field, host_output)
@@ -100,6 +113,7 @@ def main() -> int:
         cave_geometry,
         geometry_output,
     )
+    geometry_mesh_output_path = export_geometry_obj(cave_geometry, geometry_mesh_output)
 
     print("Generated cave pipeline artifacts.")
     print(f"Configuration: {args.config}")
@@ -107,6 +121,7 @@ def main() -> int:
     print(f"Stage B visualization: {network_output_path}")
     print(f"Stage C visualization: {section_output_path}")
     print(f"Stage D visualization: {geometry_output_path}")
+    print(f"Stage D mesh export: {geometry_mesh_output_path}")
     for key, value in host_field.summary().items():
         print(f"host_{key}: {value:.3f}")
     for key, value in cave_network.summary().items():

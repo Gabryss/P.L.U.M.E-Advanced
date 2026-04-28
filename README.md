@@ -2,11 +2,11 @@
 
 `PLUME-Advanced` is a staged procedural pyroduct / lava-tube prototype.
 
-The current implementation focuses on the part that matters before mesh
-generation: build a readable terrain substrate, derive a cave-network skeleton,
-generate a geometry-ready section field around that skeleton, and build a first
-connected cave geometry pass. Full non-planar geometry, watertight export, and
-later surface/texturing stages are still intentionally incomplete.
+The current implementation focuses on the full inspectable cave-shape pipeline:
+build a readable terrain substrate, derive a cave-network skeleton, generate a
+geometry-ready section field around that skeleton, stamp that network into a
+voxel density grid, and mesh the carved volume. Later surface/texturing stages
+are still intentionally incomplete.
 
 ## Pipeline
 
@@ -15,7 +15,7 @@ later surface/texturing stages are still intentionally incomplete.
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
 | B. Cave Network | Implemented | Generate a host-driven braided cave-network skeleton | `outputs/stage_b_cave_network.png` |
 | C. Section Field | Implemented | Build adaptive lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png` |
-| D. Geometry | Implemented (D1/D2 partial) | Assemble a connected primary cave shell from swept spans, stitched junctions, and one skylight | `outputs/stage_d_geometry.png` |
+| D. Geometry | Implemented | Stamp the cave network into a voxel grid and polygonize the density field | `outputs/stage_d_geometry.png` |
 | E. Geological Events | Placeholder | Skylights, choke points, collapse, infill | TODO |
 | F. Surface Detail / Texturing | Placeholder | Wall detail, floor variation, material masks | TODO |
 
@@ -49,10 +49,9 @@ regions.
 
 ![Stage D Geometry](outputs/stage_d_geometry.png)
 
-Stage D sweeps the Stage-C profiles into a first connected cave shell for the
-primary network component. It currently combines ordinary span sweeps,
-junction-region patches, continuity connector spans through high-blend zones,
-and one highest-point skylight opening.
+Stage D converts the Stage-C samples into a carved density field. It stamps
+capsule tunnels and widened junction/chamber regions into a voxel grid, then
+meshes the zero-density isosurface in chunks.
 
 ## How It Works
 
@@ -121,21 +120,18 @@ The generator:
 - derives smooth section controls such as width, height, floor flattening, roof arch, and lateral skew
 - uses explicit Stage-B junction regions to blend split/merge morphology without hard jumps at nodes
 - records per-sample junction influences for later split/merge volume construction
-- stores closed local 2D section contours that are ready for a later sweep/geometry stage
+- stores closed local 2D section contours and scalar profile controls for the voxel geometry stage
 
 ### Stage D: Geometry
 
-Implemented in `src/stages/geometry.py` and its geometry submodules.
+Implemented in `src/stages/geometry.py`.
 
-Stage D turns the section field into a first connected geometry pass. The
-generator currently:
+Stage D turns the section field into a voxel-first mesh. The generator currently:
 
-- sweeps ordinary low-risk section spans into shell meshes
-- adds explicit connector spans where the dominant route would otherwise remain disconnected through high-blend regions
-- stitches split/merge/chamber junctions, plus surface-level crossing neighborhoods, with local patch geometry
-- keeps non-planar underpass geometry excluded for now
-- adds one mostly vertical skylight at the highest internal cave centerline point
-- assembles the resulting pieces into one connected primary cave component for inspection
+- stamps capsule tunnel densities along every segment, with higher density meaning carved space
+- stamps widened junction/chamber regions into the same field
+- processes the field in 3D chunks
+- polygonizes chunk meshes for review and welds one assembled OBJ-ready mesh
 
 ## Configuration
 
@@ -205,12 +201,11 @@ one value produces a different geology and a different cave family.
 
 | Key Group | Purpose |
 |---|---|
-| `junction_exclusion_weight` | keep D1 sweeps away from split/merge neighborhoods |
-| `minimum_span_samples` | require a minimum number of section samples before sweeping a mesh span |
-| `exclude_crossing_segments`, `exclude_underpass_segments` | defer non-planar and crossing-heavy spans to later geometry work |
-| `enable_junction_patches`, `junction_*_scale` | control non-crossing split/merge/chamber patch generation |
-| `enable_skylight`, `skylight_*` | control the highest-point skylight shaft, drift, and jagged rim |
-| `weld_tolerance` | control how Stage D welds vertices when assembling one connected component |
+| `voxel_size`, `density_margin` | control field resolution and padding around the stamped cave network |
+| `chunk_size` | controls how much of the density grid is polygonized at once |
+| `iso_level` | defines the density threshold used for the cave wall surface |
+| `tunnel_radius_scale`, `junction_radius_scale`, `chamber_radius_scale` | control how section samples widen while stamping |
+| `minimum_radius`, `weld_tolerance` | keep thin passages meshable and weld repeated isosurface vertices |
 
 ## Project Layout
 
@@ -242,6 +237,7 @@ That one command produces:
 - `outputs/stage_b_cave_network.png`
 - `outputs/stage_c_section_field.png`
 - `outputs/stage_d_geometry.png`
+- `outputs/stage_d_geometry.obj`
 
 Optional:
 
@@ -251,7 +247,8 @@ python scripts/generate_cave.py \
   --output outputs/stage_b_cave_network.png \
   --host-output outputs/stage_a_host_field.png \
   --section-output outputs/stage_c_section_field.png \
-  --geometry-output outputs/stage_d_geometry.png
+  --geometry-output outputs/stage_d_geometry.png \
+  --geometry-mesh-output outputs/stage_d_geometry.obj
 ```
 
 Optional host-field debug render:
@@ -268,19 +265,19 @@ These are placeholders for the next implementation passes.
 
 ### Stage D: Geometry
 
-Implemented in constrained `D1/D2` form.
+Implemented as a voxel-density meshing pass.
 
 What exists now:
 
-- one connected primary cave component assembled from swept spans, connector spans, junction patches, and a skylight opening
-- surface-level crossing neighborhoods can now be stitched into the primary shell
-- underpass geometry remains intentionally excluded from the assembled shell
+- one density grid containing the full stamped tunnel network
+- chunked isosurface generation for review/progress visualization
+- OBJ export of one assembled mesh for simulation engines
 
 Still deferred:
 
-- true non-planar underpass/crossing geometry
 - watertight versus blend-ready export modes
-- more robust manifold junction stitching across all remaining edge cases
+- higher-quality normal generation and surface cleanup
+- detail/event carving for skylights, collapse, choke points, and infill
 
 ### Stage E: Geological Events
 
@@ -308,8 +305,8 @@ The current project state is intentionally narrow:
 - Stage A builds the terrain and structural substrate
 - Stage B builds the current braided cave-network skeleton
 - Stage C builds adaptive lava-tube cross-sections around that skeleton
-- Stage D now sweeps ordinary section spans, stitches non-crossing junction patches, and adds one highest-point skylight
-- stages E-F and crossing-heavy / watertight `D2` work remain for the next passes
+- Stage D stamps that network into a voxel density field and meshes the isosurface
+- stages E-F and watertight/detail work remain for the next passes
 
 That keeps the pipeline inspectable while still leaving a clear path toward the
 final pyroduct mesh and texture stages.

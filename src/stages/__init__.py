@@ -10,11 +10,10 @@ from .host_field import (
 )
 from .geometry import (
     CaveGeometry,
+    GeometryChunkMesh,
     GeometryConfig,
     GeometryGenerator,
-    JunctionGeometryPatch,
-    SegmentGeometrySpan,
-    SkylightGeometry,
+    VoxelGrid,
 )
 from .network import (
     CaveJunction,
@@ -44,6 +43,7 @@ __all__ = [
     "CavePoint",
     "CaveSegment",
     "GeometryConfig",
+    "GeometryChunkMesh",
     "GeometryGenerator",
     "GridConfig",
     "HostField",
@@ -55,9 +55,7 @@ __all__ = [
     "SectionFieldGenerator",
     "SectionJunctionInfluence",
     "SectionSample",
-    "JunctionGeometryPatch",
-    "SegmentGeometrySpan",
-    "SkylightGeometry",
     "SegmentSectionField",
     "TerrainWave",
+    "VoxelGrid",
 ]
