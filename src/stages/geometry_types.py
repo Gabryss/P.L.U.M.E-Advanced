@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from scipy import ndimage
 
 
 @dataclass(frozen=True)
@@ -101,42 +102,9 @@ def _count_voxel_components(voxel_grid: VoxelGrid) -> int:
     carved = voxel_grid.density >= voxel_grid.iso_level
     if not bool(np.any(carved)):
         return 0
-
-    visited = np.zeros(carved.shape, dtype=bool)
-    component_count = 0
-    starts = np.argwhere(carved)
-    for start in starts:
-        start_tuple = tuple(int(value) for value in start)
-        if visited[start_tuple]:
-            continue
-        component_count += 1
-        stack = [start_tuple]
-        visited[start_tuple] = True
-        while stack:
-            ix, iy, iz = stack.pop()
-            for neighbor in (
-                (ix - 1, iy, iz),
-                (ix + 1, iy, iz),
-                (ix, iy - 1, iz),
-                (ix, iy + 1, iz),
-                (ix, iy, iz - 1),
-                (ix, iy, iz + 1),
-            ):
-                nx, ny, nz = neighbor
-                if (
-                    nx < 0
-                    or ny < 0
-                    or nz < 0
-                    or nx >= carved.shape[0]
-                    or ny >= carved.shape[1]
-                    or nz >= carved.shape[2]
-                    or visited[neighbor]
-                    or not carved[neighbor]
-                ):
-                    continue
-                visited[neighbor] = True
-                stack.append(neighbor)
-    return component_count
+    structure = ndimage.generate_binary_structure(rank=3, connectivity=1)
+    _labels, component_count = ndimage.label(carved, structure=structure)
+    return int(component_count)
 
 
 __all__ = [

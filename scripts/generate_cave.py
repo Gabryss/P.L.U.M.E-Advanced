@@ -8,7 +8,15 @@ import os
 from pathlib import Path
 import sys
 import tempfile
-import time
+
+from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE_ROOT = Path(tempfile.gettempdir()) / "plume-advanced-cache"
@@ -33,58 +41,57 @@ from visualization.section_field import SectionFieldPlotter
 
 
 class TerminalProgress:
-    """Small dependency-free progress reporter for long pipeline runs."""
+    """Rich-backed progress reporter for long pipeline runs."""
 
     def __init__(self, *, width: int = 32) -> None:
-        self.width = width
-        self._active_label: str | None = None
-        self._started_at = 0.0
-        self._last_line_length = 0
+        self.console = Console()
+        self._progress = Progress(
+            TextColumn("[bold cyan]{task.description:<28}"),
+            BarColumn(bar_width=width),
+            TaskProgressColumn(),
+            TextColumn("({task.completed:.0f}/{task.total:.0f})"),
+            TimeElapsedColumn(),
+            TextColumn("[dim]{task.fields[detail]}"),
+            console=self.console,
+        )
+        self._progress.start()
+        self._active_task_id: int | None = None
         self._last_total = 1
 
     def log(self, message: str) -> None:
-        self._clear_line()
-        print(message, flush=True)
+        self.console.print(message)
 
     def start(self, label: str, detail: str = "") -> None:
-        self._active_label = label
-        self._started_at = time.perf_counter()
         self._last_total = 1
-        self.update(0, 1, detail or "starting")
+        self._active_task_id = self._progress.add_task(
+            label,
+            total=1,
+            completed=0,
+            detail=detail or "starting",
+        )
 
     def update(self, current: int, total: int, detail: str = "") -> None:
-        if self._active_label is None:
+        if self._active_task_id is None:
             return
         total = max(total, 1)
         current = min(max(current, 0), total)
         self._last_total = total
-        ratio = current / total
-        filled = int(round(ratio * self.width))
-        bar = "#" * filled + "-" * (self.width - filled)
-        elapsed = time.perf_counter() - self._started_at
-        suffix = f" | {detail}" if detail else ""
-        line = (
-            f"\r{self._active_label:<28} "
-            f"[{bar}] {ratio * 100:6.2f}% "
-            f"({current}/{total}) {elapsed:6.1f}s{suffix}"
+        self._progress.update(
+            self._active_task_id,
+            total=total,
+            completed=current,
+            detail=detail,
         )
-        padding = " " * max(self._last_line_length - len(line), 0)
-        print(line + padding, end="", flush=True)
-        self._last_line_length = len(line)
 
     def finish(self, detail: str = "done") -> None:
-        if self._active_label is None:
+        if self._active_task_id is None:
             return
         self.update(self._last_total, self._last_total, detail)
-        print(flush=True)
-        self._active_label = None
-        self._last_line_length = 0
+        self._progress.stop_task(self._active_task_id)
+        self._active_task_id = None
 
-    def _clear_line(self) -> None:
-        if self._active_label is None and self._last_line_length == 0:
-            return
-        print("\r" + " " * self._last_line_length + "\r", end="", flush=True)
-        self._last_line_length = 0
+    def close(self) -> None:
+        self._progress.stop()
 
 
 def parse_args() -> argparse.Namespace:
@@ -259,6 +266,7 @@ def main() -> int:
     geometry_mesh_output_path = export_geometry_obj(cave_geometry, geometry_mesh_output)
     progress.finish(f"wrote {geometry_mesh_output_path.name}")
 
+    progress.close()
     progress.log("Generated cave pipeline artifacts.")
     progress.log(f"Configuration: {args.config}")
     progress.log(f"Stage A visualization: {host_output_path}")

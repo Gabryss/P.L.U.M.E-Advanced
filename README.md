@@ -66,12 +66,16 @@ Y/Z chunk spans. The presentation render gives a cleaner plan/mesh preview.
 
 Implemented in `src/stages/host_field.py`.
 
-The terrain is not a full volcanic edifice. It is a simplified pyroduct-oriented
-host slab:
+The terrain is not a full volcanic edifice. It is a seed-driven,
+pyroduct-oriented host slab. The project config defines ranges for the broad
+geological controls, and `procedural_seed` resolves those ranges into a
+concrete host field for the run:
 
-- high on the left, low on the right
-- shaped by a broad central corridor
-- perturbed by a few low-frequency directional waves
+- a sampled source region and dominant flow direction
+- a sampled large-scale downhill grade
+- a sampled broad host corridor
+- a sampled fracture corridor and roof-competence structure
+- a sampled set of low-frequency directional terrain waves
 
 Conceptually:
 
@@ -82,7 +86,7 @@ terrain = large-scale directional grade
 ```
 
 Once the terrain exists, the remaining host-field layers are either derived from
-it or authored on top of it.
+it or generated from the same seed-resolved structural controls.
 
 | Layer | Built From | Used Now | Intended Later Use |
 |---|---|---|---|
@@ -138,7 +142,8 @@ Stage D turns the section field into a voxel-first mesh. The generator currently
 - stamps capsule tunnel densities along every segment, with higher density meaning carved space
 - stamps widened junction/chamber regions into the same field
 - processes the field in 3D chunks
-- polygonizes chunk meshes for review and welds one assembled OBJ-ready mesh
+- polygonizes chunk meshes with `scikit-image`
+- validates/exports the assembled OBJ-ready mesh with `trimesh`
 
 ## Configuration
 
@@ -167,21 +172,22 @@ Execution flow:
 12. write the artifacts in `outputs/`
 
 `procedural_seed` is the top-level seed for the active pipeline. By default it
-feeds the host-field, cave-network, and section-field generators, so changing
-one value produces a different geology and a different cave family.
+samples the host-field ranges, then feeds the cave-network, section-field, and
+geometry generators, so changing one value produces a different geology and a
+different cave family.
 
 ### Host Field Config
 
 | Key Group | Purpose |
 |---|---|
-| `seed_point` | starting region for the cave system |
-| `high_side_elevation`, `longitudinal_drop`, `flow_angle_degrees` | define the large-scale terrain grade |
-| `corridor_depth`, `corridor_width` | shape the broad host corridor |
-| `volcanic_layer_thickness`, `minimum_stable_cover` | control the cover-thickness proxy |
-| `roof_competence_baseline`, `roof_competence_variation` | control the base structural field |
-| `fracture_zone_*` | carve the weakened roof corridor |
 | `[host_field.grid]` | map dimensions and sample resolution |
-| `[[host_field.waves]]` | low-frequency terrain deformation layers |
+| `[host_field.ranges]` | `[min, max]` ranges for sampled source, terrain, corridor, cover, roof, and fracture controls |
+| `[host_field.wave_ranges]` | sampled wave count and `[min, max]` ranges for low-frequency terrain deformation layers |
+
+The runtime `HostFieldConfig` remains concrete: `src/config.py` samples the
+range blocks with `procedural_seed` before stage generation starts. Fixed
+legacy values and `[[host_field.waves]]` are still accepted for targeted tests
+or hand-authored scenarios, but the default project config is range-driven.
 
 ### Network Config
 
@@ -230,13 +236,24 @@ one value produces a different geology and a different cave family.
 Install dependencies:
 
 ```bash
-python -m pip install -e .
+python3 -m venv .venv
+.venv/bin/python -m pip install -e .
 ```
+
+The project intentionally uses external libraries where they improve the core
+algorithm or developer workflow:
+
+- `numpy`: scalar fields, density grids, and vectorized stamping
+- `scipy`: voxel connected-component labeling
+- `scikit-image`: marching-cubes isosurface extraction
+- `trimesh`: mesh validation metadata and OBJ export
+- `matplotlib`: stage visualizations
+- `rich`: CLI progress bars
 
 Generate the current cave network with the single entrypoint:
 
 ```bash
-python scripts/generate_cave.py
+.venv/bin/python scripts/generate_cave.py
 ```
 
 The generator prints progress bars for configuration loading, stages A-C,

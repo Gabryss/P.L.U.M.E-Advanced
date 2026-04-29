@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 import numpy as np
@@ -9,6 +10,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from config import load_project_config
 from stages.host_field import HostFieldConfig, HostFieldGenerator
 
 
@@ -71,6 +73,27 @@ class HostFieldTests(unittest.TestCase):
 
         self.assertGreater(mean_elevation_difference, 0.25)
         self.assertGreater(mean_roof_difference, 0.01)
+
+    def test_project_seed_resolves_high_level_host_ranges(self) -> None:
+        config_text = (ROOT / "config" / "project.toml").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_a_path = Path(temp_dir) / "seed_1.toml"
+            config_b_path = Path(temp_dir) / "seed_2.toml"
+            config_a_path.write_text(config_text, encoding="utf-8")
+            config_b_path.write_text(
+                config_text.replace("procedural_seed = 1", "procedural_seed = 2", 1),
+                encoding="utf-8",
+            )
+
+            config_a = load_project_config(config_a_path).host_field
+            config_b = load_project_config(config_b_path).host_field
+
+        self.assertEqual(config_a.random_seed, 1)
+        self.assertEqual(config_b.random_seed, 2)
+        self.assertNotEqual(config_a.seed_point, config_b.seed_point)
+        self.assertNotEqual(config_a.flow_angle_degrees, config_b.flow_angle_degrees)
+        self.assertNotEqual(config_a.corridor_width, config_b.corridor_width)
+        self.assertNotEqual(config_a.waves, config_b.waves)
 
 
 if __name__ == "__main__":

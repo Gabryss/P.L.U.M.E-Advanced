@@ -1,4 +1,4 @@
-"""Stage D voxel stamping and marching-cubes-style isosurface generation."""
+"""Stage D voxel stamping and marching-cubes isosurface generation."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from collections import defaultdict
 import math
 
 import numpy as np
+from skimage import measure
 
 from stages.geometry_types import CaveGeometry, GeometryChunkMesh, GeometryConfig, VoxelGrid
 from stages.network import CaveNetwork
@@ -17,33 +18,6 @@ GeometryProgressCallback = Callable[[str, int, int, str], None]
 
 class GeometryGenerator:
     """Build cave geometry by stamping a density grid and polygonizing it."""
-
-    _CUBE_OFFSETS = (
-        (0, 0, 0),
-        (1, 0, 0),
-        (1, 1, 0),
-        (0, 1, 0),
-        (0, 0, 1),
-        (1, 0, 1),
-        (1, 1, 1),
-        (0, 1, 1),
-    )
-    _TETRAHEDRA = (
-        (0, 5, 1, 6),
-        (0, 1, 2, 6),
-        (0, 2, 3, 6),
-        (0, 3, 7, 6),
-        (0, 7, 4, 6),
-        (0, 4, 5, 6),
-    )
-    _TETRA_EDGES = (
-        (0, 1),
-        (0, 2),
-        (0, 3),
-        (1, 2),
-        (1, 3),
-        (2, 3),
-    )
 
     def __init__(self, config: GeometryConfig | None = None) -> None:
         self.config = config or GeometryConfig()
@@ -452,202 +426,33 @@ class GeometryGenerator:
         bounds: tuple[int, int, int, int, int, int],
     ) -> GeometryChunkMesh:
         x_start, x_end, y_start, y_end, z_start, z_end = bounds
-        vertices: list[tuple[float, float, float]] = []
-        faces: list[tuple[int, int, int]] = []
-        density = voxel_grid.density
-        origin = np.array(voxel_grid.origin, dtype=float)
-        voxel_size = voxel_grid.voxel_size
-
-        for ix in range(x_start, x_end):
-            for iy in range(y_start, y_end):
-                for iz in range(z_start, z_end):
-                    corner_values = np.array(
-                        [density[ix + dx, iy + dy, iz + dz] for dx, dy, dz in self._CUBE_OFFSETS],
-                        dtype=float,
-                    )
-                    if np.all(corner_values < voxel_grid.iso_level) or np.all(corner_values >= voxel_grid.iso_level):
-                        continue
-                    corner_positions = np.array(
-                        [
-                            origin + np.array((ix + dx, iy + dy, iz + dz), dtype=float) * voxel_size
-                            for dx, dy, dz in self._CUBE_OFFSETS
-                        ],
-                        dtype=float,
-                    )
-                    self._polygonize_cube(
-                        corner_positions=corner_positions,
-                        corner_values=corner_values,
-                        iso_level=voxel_grid.iso_level,
-                        vertices=vertices,
-                        faces=faces,
-                    )
+        chunk_density = voxel_grid.density[
+            x_start : x_end + 1,
+            y_start : y_end + 1,
+            z_start : z_end + 1,
+        ]
+        local_vertices, faces, _normals, _values = measure.marching_cubes(
+            chunk_density,
+            level=voxel_grid.iso_level,
+            spacing=(
+                voxel_grid.voxel_size,
+                voxel_grid.voxel_size,
+                voxel_grid.voxel_size,
+            ),
+            allow_degenerate=False,
+        )
+        chunk_origin = np.array(voxel_grid.origin, dtype=float) + np.array(
+            (x_start, y_start, z_start),
+            dtype=float,
+        ) * voxel_grid.voxel_size
+        world_vertices = local_vertices + chunk_origin
 
         return GeometryChunkMesh(
             chunk_id=chunk_id,
             grid_bounds=bounds,
-            vertices=tuple(vertices),
-            faces=tuple(faces),
+            vertices=tuple(tuple(float(value) for value in vertex) for vertex in world_vertices),
+            faces=tuple(tuple(int(value) for value in face) for face in faces),
         )
-
-    def _polygonize_cube(
-        self,
-        *,
-        corner_positions: np.ndarray,
-        corner_values: np.ndarray,
-        iso_level: float,
-        vertices: list[tuple[float, float, float]],
-        faces: list[tuple[int, int, int]],
-    ) -> None:
-        for tetra in self._TETRAHEDRA:
-            positions = corner_positions[list(tetra)]
-            values = corner_values[list(tetra)]
-            self._polygonize_tetra(
-                positions=positions,
-                values=values,
-                iso_level=iso_level,
-                vertices=vertices,
-                faces=faces,
-            )
-
-    def _polygonize_tetra(
-        self,
-        *,
-        positions: np.ndarray,
-        values: np.ndarray,
-        iso_level: float,
-        vertices: list[tuple[float, float, float]],
-        faces: list[tuple[int, int, int]],
-    ) -> None:
-        inside_indices = [index for index, value in enumerate(values) if value >= iso_level]
-        outside_indices = [index for index, value in enumerate(values) if value < iso_level]
-        if len(inside_indices) == 0 or len(inside_indices) == 4:
-            return
-
-        if len(inside_indices) == 1:
-            inside = inside_indices[0]
-            points = [
-                self._interpolate_vertex(
-                    positions[inside],
-                    positions[outside],
-                    values[inside],
-                    values[outside],
-                    iso_level,
-                )
-                for outside in outside_indices
-            ]
-            self._append_oriented_triangle(
-                vertices=vertices,
-                faces=faces,
-                points=points,
-                inside_position=positions[inside],
-                outside_position=np.mean(positions[outside_indices], axis=0),
-            )
-            return
-
-        if len(inside_indices) == 3:
-            outside = outside_indices[0]
-            points = [
-                self._interpolate_vertex(
-                    positions[inside],
-                    positions[outside],
-                    values[inside],
-                    values[outside],
-                    iso_level,
-                )
-                for inside in inside_indices
-            ]
-            self._append_oriented_triangle(
-                vertices=vertices,
-                faces=faces,
-                points=points,
-                inside_position=np.mean(positions[inside_indices], axis=0),
-                outside_position=positions[outside],
-            )
-            return
-
-        first_inside, second_inside = inside_indices
-        first_outside, second_outside = outside_indices
-        quad_points = [
-            self._interpolate_vertex(
-                positions[first_inside],
-                positions[first_outside],
-                values[first_inside],
-                values[first_outside],
-                iso_level,
-            ),
-            self._interpolate_vertex(
-                positions[first_inside],
-                positions[second_outside],
-                values[first_inside],
-                values[second_outside],
-                iso_level,
-            ),
-            self._interpolate_vertex(
-                positions[second_inside],
-                positions[second_outside],
-                values[second_inside],
-                values[second_outside],
-                iso_level,
-            ),
-            self._interpolate_vertex(
-                positions[second_inside],
-                positions[first_outside],
-                values[second_inside],
-                values[first_outside],
-                iso_level,
-            ),
-        ]
-        inside_position = np.mean(positions[inside_indices], axis=0)
-        outside_position = np.mean(positions[outside_indices], axis=0)
-        self._append_oriented_triangle(
-            vertices=vertices,
-            faces=faces,
-            points=[quad_points[0], quad_points[1], quad_points[2]],
-            inside_position=inside_position,
-            outside_position=outside_position,
-        )
-        self._append_oriented_triangle(
-            vertices=vertices,
-            faces=faces,
-            points=[quad_points[0], quad_points[2], quad_points[3]],
-            inside_position=inside_position,
-            outside_position=outside_position,
-        )
-
-    @staticmethod
-    def _append_oriented_triangle(
-        *,
-        vertices: list[tuple[float, float, float]],
-        faces: list[tuple[int, int, int]],
-        points: list[np.ndarray],
-        inside_position: np.ndarray,
-        outside_position: np.ndarray,
-    ) -> None:
-        first, second, third = points
-        normal = np.cross(second - first, third - first)
-        outward = outside_position - inside_position
-        if float(np.dot(normal, outward)) < 0.0:
-            second, third = third, second
-        base = len(vertices)
-        vertices.extend(
-            tuple(float(value) for value in point)
-            for point in (first, second, third)
-        )
-        faces.append((base, base + 1, base + 2))
-
-    @staticmethod
-    def _interpolate_vertex(
-        first_position: np.ndarray,
-        second_position: np.ndarray,
-        first_value: float,
-        second_value: float,
-        iso_level: float,
-    ) -> np.ndarray:
-        denominator = second_value - first_value
-        if abs(denominator) < 1e-12:
-            return (first_position + second_position) * 0.5
-        ratio = float(np.clip((iso_level - first_value) / denominator, 0.0, 1.0))
-        return first_position + ratio * (second_position - first_position)
 
     def _assemble_chunks(
         self,
