@@ -11,7 +11,7 @@ import numpy as np
 
 from stages.geometry import GeometryConfig
 from stages.host_field import GridConfig, HostFieldConfig, TerrainWave
-from stages.network import CaveNetworkConfig
+from stages.network import BraidGrammarConfig, CaveNetworkConfig
 from stages.section_field import SectionFieldConfig
 
 
@@ -173,7 +173,23 @@ def _build_network_config(
     config_data = dict(raw_config)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
+    braid_grammar_data = config_data.pop("braid_grammar", {})
+    if braid_grammar_data:
+        config_data["braid_grammar"] = BraidGrammarConfig(
+            **{
+                key: _to_range_tuple(value)
+                if isinstance(value, list)
+                else value
+                for key, value in braid_grammar_data.items()
+            }
+        )
     return CaveNetworkConfig(**config_data)
+
+
+def _to_range_tuple(value: list[Any]) -> tuple[Any, Any]:
+    if len(value) != 2:
+        raise ValueError(f"Expected a [min, max] range, got {value!r}")
+    return (value[0], value[1])
 
 
 def _build_section_field_config(

@@ -16,6 +16,7 @@ from .geometry import (
     VoxelGrid,
 )
 from .network import (
+    BraidGrammarConfig,
     CaveJunction,
     CaveNetwork,
     CaveNetworkConfig,
@@ -35,6 +36,7 @@ from .section_field import (
 
 __all__ = [
     "CaveJunction",
+    "BraidGrammarConfig",
     "CaveGeometry",
     "CaveNetwork",
     "CaveNetworkConfig",

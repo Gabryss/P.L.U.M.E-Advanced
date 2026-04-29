@@ -103,6 +103,12 @@ class SectionField:
                 "sample_count": 0.0,
                 "dominant_route_segment_count": 0.0,
                 "max_junction_blend_weight": 0.0,
+                "mean_tube_width": 0.0,
+                "min_tube_width": 0.0,
+                "max_tube_width": 0.0,
+                "mean_tube_height": 0.0,
+                "min_tube_height": 0.0,
+                "max_tube_height": 0.0,
             }
 
         all_samples = [
@@ -110,6 +116,8 @@ class SectionField:
             for segment_field in self.segment_fields
             for sample in segment_field.samples
         ]
+        tube_widths = np.array([sample.tube_width for sample in all_samples], dtype=float)
+        tube_heights = np.array([sample.tube_height for sample in all_samples], dtype=float)
         return {
             "segment_field_count": float(len(self.segment_fields)),
             "sample_count": float(sample_count),
@@ -117,6 +125,12 @@ class SectionField:
             "max_junction_blend_weight": float(
                 max(sample.junction_blend_weight for sample in all_samples)
             ),
+            "mean_tube_width": float(np.mean(tube_widths)),
+            "min_tube_width": float(np.min(tube_widths)),
+            "max_tube_width": float(np.max(tube_widths)),
+            "mean_tube_height": float(np.mean(tube_heights)),
+            "min_tube_height": float(np.min(tube_heights)),
+            "max_tube_height": float(np.max(tube_heights)),
         }
 
 

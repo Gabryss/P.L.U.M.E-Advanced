@@ -276,6 +276,29 @@ def main() -> int:
     progress.log(f"Stage D presentation visualization: {geometry_presentation_output_path}")
     progress.log(f"Stage D chunk diagnostics: {geometry_chunk_output_path}")
     progress.log(f"Stage D mesh export: {geometry_mesh_output_path}")
+    progress.log("")
+    progress.log("[bold]Key cave metrics[/bold]")
+    progress.log(f"total_lava_tube_length_m: {network_summary['total_length']:.3f}")
+    progress.log(f"dominant_route_length_m: {network_summary['dominant_route_length']:.3f}")
+    progress.log(
+        "network_segment_width_m: "
+        f"avg={network_summary['mean_segment_width']:.3f}, "
+        f"min={network_summary['min_segment_width']:.3f}, "
+        f"max={network_summary['max_segment_width']:.3f}"
+    )
+    progress.log(
+        "section_tube_width_m: "
+        f"avg={section_summary['mean_tube_width']:.3f}, "
+        f"min={section_summary['min_tube_width']:.3f}, "
+        f"max={section_summary['max_tube_width']:.3f}"
+    )
+    progress.log(
+        "section_tube_height_m: "
+        f"avg={section_summary['mean_tube_height']:.3f}, "
+        f"min={section_summary['min_tube_height']:.3f}, "
+        f"max={section_summary['max_tube_height']:.3f}"
+    )
+    progress.log("")
     for key, value in host_field.summary().items():
         progress.log(f"host_{key}: {value:.3f}")
     for key, value in network_summary.items():

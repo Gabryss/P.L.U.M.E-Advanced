@@ -108,15 +108,22 @@ The `HostField` API currently exposes:
 Implemented in `src/stages/network.py`.
 
 Stage B now builds the cave skeleton directly instead of starting from a single
-trunk. The generator:
+trunk. Its branch/split/merge grammar is seed-sampled from
+`[network.braid_grammar]`, then fitted to the generated host field. The
+generator:
 
 - uses the host field and the configured `procedural_seed`
 - traces a downhill backbone with host-guided branch motifs
-- builds localized asymmetric braid zones
+- samples localized asymmetric braid zones, branch counts, lateral offsets, ladders, and underpasses
 - supports `backbone`, `island_bypass`, `chamber_braid`, `ladder`, `spur`, and `underpass` segment kinds
 - records graph metadata such as `z_level`, `merge_behavior`, `crossing_group_id`, `island_id`, and `chamber_id`
 - clusters morphologically meaningful split/merge/crossing regions into explicit junction objects
 - derives occupancy and graph summaries from the resulting network
+
+The Stage B visualization includes a longitudinal diagnostics panel. It reads
+left to right along the main flow direction: the filled step trace shows how
+many parallel channels are present at each slice, the green line/band shows
+mean and min/max tube width, and vertical markers indicate junction regions.
 
 ### Stage C: Section Field
 
@@ -199,6 +206,7 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `prune_iterations`, `occupancy_smoothing_passes` | simplify the network and clean occupancy artifacts |
 | `chamber_*`, `base_passage_radius` | control chamber detection and occupancy painting |
 | `spur_*`, `channel_count_samples` | control terminal spur generation and braid sampling |
+| `[network.braid_grammar]` | `[min, max]` ranges and probabilities for sampled braid zones, branch counts, offsets, ladders, and underpasses |
 
 ### Section Field Config
 

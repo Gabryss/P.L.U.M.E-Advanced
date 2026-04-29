@@ -15,10 +15,31 @@ SegmentMetadataValue = str | int | float | bool | None
 
 
 @dataclass(frozen=True)
+class BraidGrammarConfig:
+    """Seed-sampled controls for network split/merge motifs."""
+
+    zone_count: tuple[int, int] = (4, 6)
+    center_fraction: tuple[float, float] = (0.14, 0.88)
+    min_center_spacing: float = 0.11
+    half_length_fraction: tuple[float, float] = (0.045, 0.09)
+    branches_per_zone: tuple[int, int] = (2, 4)
+    lateral_offset_scale: tuple[float, float] = (0.35, 1.25)
+    start_shift_fraction: tuple[float, float] = (-0.24, 0.24)
+    end_shift_fraction: tuple[float, float] = (-0.24, 0.24)
+    skew: tuple[float, float] = (-0.65, 0.65)
+    wobble: tuple[float, float] = (0.08, 0.36)
+    underpass_probability: float = 0.22
+    ladder_probability: float = 0.48
+    ladder_rung_count: tuple[int, int] = (1, 2)
+    chamber_radius_scale: tuple[float, float] = (1.0, 1.55)
+
+
+@dataclass(frozen=True)
 class CaveNetworkConfig:
     """Parameters controlling the host-driven braided cave-network generator."""
 
     random_seed: int | None = None
+    braid_grammar: BraidGrammarConfig = BraidGrammarConfig()
     source_count: int = 8
     source_band_length: float = 90.0
     source_band_half_width: float = 180.0
@@ -160,11 +181,14 @@ class CaveNetwork:
 
         occupied_area = float(self.occupancy.sum())
         segment_lengths = [segment.total_length for segment in self.segments]
-        mean_segment_width = (
-            sum(segment.mean_width for segment in self.segments) / len(self.segments)
-            if self.segments
-            else 0.0
-        )
+        point_widths = [
+            point.width
+            for segment in self.segments
+            for point in segment.points
+        ]
+        mean_segment_width = float(np.mean(point_widths)) if point_widths else 0.0
+        min_segment_width = float(np.min(point_widths)) if point_widths else 0.0
+        max_segment_width = float(np.max(point_widths)) if point_widths else 0.0
         loop_count = float(self._loop_rank())
         terminal_count = float(sum(1 for degree in self._degrees().values() if degree == 1))
         spur_count = float(sum(1 for segment in self.segments if segment.kind == "spur"))
@@ -180,6 +204,8 @@ class CaveNetwork:
             "total_length": float(sum(segment_lengths)),
             "dominant_route_length": self.dominant_route_length,
             "mean_segment_width": mean_segment_width,
+            "min_segment_width": min_segment_width,
+            "max_segment_width": max_segment_width,
             "max_parallel_channels": float(
                 max(self.slice_channel_counts) if self.slice_channel_counts else 0
             ),
@@ -338,7 +364,7 @@ class CaveNetworkGenerator:
         ]
         occupied_cells = set(backbone_path)
         backbone_alongs, backbone_crosses = self._build_backbone_profile(backbone_path, geometry)
-        braid_zones = self._build_braid_zones(host_field, geometry)
+        braid_zones = self._build_braid_zones(host_field, geometry, rng)
         for zone_index, zone in enumerate(braid_zones):
             zone_paths = self._build_zone_paths(
                 host_field=host_field,
@@ -813,59 +839,71 @@ class CaveNetworkGenerator:
         self,
         host_field: HostField,
         geometry: _FlowGeometry,
+        rng,
     ) -> tuple[_BraidZone, ...]:
+        grammar = self.config.braid_grammar
         spread = 0.34 * host_field.config.corridor_width
-        return (
-            _BraidZone(
-                0.16,
-                0.065,
-                branches=(
-                    _ZoneBranch("island_bypass", -0.95 * spread, -0.10, 0.18, skew=-0.45, wobble=0.28, phase=0.7),
-                    _ZoneBranch("island_bypass", 0.58 * spread, 0.08, -0.05, skew=0.20, wobble=0.16, phase=2.1),
-                ),
-                chamber_radius_scale=1.15,
-            ),
-            _BraidZone(
-                0.33,
-                0.055,
-                branches=(
-                    _ZoneBranch("chamber_braid", 0.92 * spread, -0.18, 0.12, skew=0.50, wobble=0.26, phase=1.4),
-                    _ZoneBranch("ladder", -0.42 * spread, 0.08, -0.08, skew=-0.10, wobble=0.12, phase=2.7),
-                ),
-                ladder_rungs=(0.34, 0.68),
-                chamber_radius_scale=1.35,
-            ),
-            _BraidZone(
-                0.51,
-                0.078,
-                branches=(
-                    _ZoneBranch("island_bypass", -1.05 * spread, -0.05, 0.10, skew=-0.35, wobble=0.22, phase=0.4),
-                    _ZoneBranch("underpass", 0.78 * spread, 0.22, -0.18, skew=0.65, wobble=0.30, phase=1.9, z_level=-1, merge_shared_cells=False),
-                    _ZoneBranch("inner_bypass", 0.22 * spread, -0.10, 0.02, skew=0.15, wobble=0.10, phase=2.8),
-                ),
-                chamber_radius_scale=1.1,
-            ),
-            _BraidZone(
-                0.69,
-                0.085,
-                branches=(
-                    _ZoneBranch("chamber_braid", -1.15 * spread, -0.22, 0.16, skew=-0.55, wobble=0.34, phase=1.2),
-                    _ZoneBranch("island_bypass", 0.52 * spread, 0.06, -0.18, skew=0.18, wobble=0.18, phase=2.2),
-                    _ZoneBranch("ladder", 0.98 * spread, 0.18, -0.05, skew=0.38, wobble=0.26, phase=0.9),
-                ),
-                ladder_rungs=(0.28,),
-                chamber_radius_scale=1.5,
-            ),
-            _BraidZone(
-                0.86,
-                0.055,
-                branches=(
-                    _ZoneBranch("island_bypass", -0.62 * spread, -0.08, 0.02, skew=-0.15, wobble=0.12, phase=0.3),
-                    _ZoneBranch("underpass", 0.96 * spread, 0.20, -0.12, skew=0.55, wobble=0.20, phase=2.5, z_level=1, merge_shared_cells=False),
-                ),
-                chamber_radius_scale=1.0,
-            ),
-        )
+        zone_count = self._sample_int_range(rng, grammar.zone_count)
+        center_min, center_max = grammar.center_fraction
+        raw_centers = sorted(float(rng.uniform(center_min, center_max)) for _ in range(zone_count * 4))
+        centers: list[float] = []
+        for center in raw_centers:
+            if all(abs(center - existing) >= grammar.min_center_spacing for existing in centers):
+                centers.append(center)
+            if len(centers) >= zone_count:
+                break
+        while len(centers) < zone_count:
+            centers.append(float(rng.uniform(center_min, center_max)))
+        centers.sort()
+
+        zones: list[_BraidZone] = []
+        for center in centers:
+            branch_count = self._sample_int_range(rng, grammar.branches_per_zone)
+            branch_count = max(2, branch_count)
+            branches: list[_ZoneBranch] = []
+            signs = [-1.0, 1.0]
+            for branch_index in range(branch_count):
+                sign = signs[branch_index % 2]
+                if branch_index >= 2:
+                    sign *= -1.0 if rng.random() < 0.5 else 1.0
+                kind = self._sample_branch_kind(rng)
+                z_level = 0
+                merge_shared_cells = True
+                if rng.random() < grammar.underpass_probability:
+                    kind = "underpass"
+                    z_level = -1 if rng.random() < 0.5 else 1
+                    merge_shared_cells = False
+                lateral_scale = self._sample_float_range(rng, grammar.lateral_offset_scale)
+                branches.append(
+                    _ZoneBranch(
+                        kind=kind,
+                        lateral_offset=sign * lateral_scale * spread,
+                        start_shift_fraction=self._sample_float_range(rng, grammar.start_shift_fraction),
+                        end_shift_fraction=self._sample_float_range(rng, grammar.end_shift_fraction),
+                        skew=self._sample_float_range(rng, grammar.skew),
+                        wobble=self._sample_float_range(rng, grammar.wobble),
+                        phase=float(rng.uniform(0.0, 2.0 * math.pi)),
+                        z_level=z_level,
+                        merge_shared_cells=merge_shared_cells,
+                    )
+                )
+
+            ladder_rungs: tuple[float, ...] = ()
+            if branch_count >= 2 and rng.random() < grammar.ladder_probability:
+                rung_count = self._sample_int_range(rng, grammar.ladder_rung_count)
+                ladder_rungs = tuple(sorted(float(rng.uniform(0.25, 0.75)) for _ in range(rung_count)))
+
+            zones.append(
+                _BraidZone(
+                    center_fraction=center,
+                    half_length_fraction=self._sample_float_range(rng, grammar.half_length_fraction),
+                    branches=tuple(branches),
+                    ladder_rungs=ladder_rungs,
+                    chamber_radius_scale=self._sample_float_range(rng, grammar.chamber_radius_scale),
+                )
+            )
+
+        return tuple(zones)
 
     def _build_zone_paths(
         self,
@@ -2151,6 +2189,26 @@ class CaveNetworkGenerator:
         probabilities /= probabilities.sum()
         index = int(rng.choice(len(candidates), p=probabilities))
         return candidates[index][0]
+
+    @staticmethod
+    def _sample_branch_kind(rng) -> str:
+        kinds = ("island_bypass", "chamber_braid", "inner_bypass")
+        probabilities = (0.48, 0.34, 0.18)
+        return str(rng.choice(kinds, p=probabilities))
+
+    @staticmethod
+    def _sample_float_range(rng, value_range: tuple[float, float]) -> float:
+        minimum, maximum = value_range
+        if minimum > maximum:
+            raise ValueError(f"Invalid range with min > max: {value_range!r}")
+        return float(rng.uniform(minimum, maximum))
+
+    @staticmethod
+    def _sample_int_range(rng, value_range: tuple[int, int]) -> int:
+        minimum, maximum = value_range
+        if minimum > maximum:
+            raise ValueError(f"Invalid range with min > max: {value_range!r}")
+        return int(rng.integers(minimum, maximum + 1))
 
     @staticmethod
     def _quantile_threshold(values: np.ndarray, quantile: float, minimum: float) -> float:

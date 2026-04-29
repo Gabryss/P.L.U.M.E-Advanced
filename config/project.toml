@@ -1,4 +1,4 @@
-procedural_seed = 1
+procedural_seed = 2
 
 [host_field]
 
@@ -79,6 +79,22 @@ spur_max_steps = 24
 spur_lateral_bias = 1.3
 spur_congestion_weight = 0.85
 channel_count_samples = 28
+
+[network.braid_grammar]
+zone_count = [4, 7]
+center_fraction = [0.14, 0.88]
+min_center_spacing = 0.10
+half_length_fraction = [0.045, 0.095]
+branches_per_zone = [2, 4]
+lateral_offset_scale = [0.35, 1.25]
+start_shift_fraction = [-0.26, 0.26]
+end_shift_fraction = [-0.26, 0.26]
+skew = [-0.70, 0.70]
+wobble = [0.08, 0.38]
+underpass_probability = 0.24
+ladder_probability = 0.52
+ladder_rung_count = [1, 2]
+chamber_radius_scale = [1.0, 1.60]
 
 [section_field]
 base_height_ratio = 0.64

@@ -1,6 +1,7 @@
 """Smoke tests for the stage-A host field."""
 
 from pathlib import Path
+import re
 import sys
 import tempfile
 import unittest
@@ -79,9 +80,12 @@ class HostFieldTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             config_a_path = Path(temp_dir) / "seed_1.toml"
             config_b_path = Path(temp_dir) / "seed_2.toml"
-            config_a_path.write_text(config_text, encoding="utf-8")
+            config_a_path.write_text(
+                re.sub(r"^procedural_seed = .*$", "procedural_seed = 1", config_text, count=1, flags=re.MULTILINE),
+                encoding="utf-8",
+            )
             config_b_path.write_text(
-                config_text.replace("procedural_seed = 1", "procedural_seed = 2", 1),
+                re.sub(r"^procedural_seed = .*$", "procedural_seed = 2", config_text, count=1, flags=re.MULTILINE),
                 encoding="utf-8",
             )
 

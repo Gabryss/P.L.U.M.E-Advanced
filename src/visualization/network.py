@@ -40,7 +40,7 @@ class CaveNetworkPlotter:
             2,
             2,
             figsize=self.config.figure_size,
-            constrained_layout=True,
+            constrained_layout=False,
         )
         fig.suptitle("Stage B - Cave Network", fontsize=16)
 
@@ -85,6 +85,7 @@ class CaveNetworkPlotter:
             f"Dominant route: {summary['dominant_route_length']:.1f}"
         )
         fig.text(0.5, 0.01, summary_line, ha="center", fontsize=10)
+        fig.tight_layout(rect=(0.0, 0.055, 1.0, 0.955))
 
         fig.savefig(output, dpi=self.config.dpi, bbox_inches="tight")
         plt.close(fig)
@@ -193,31 +194,135 @@ class CaveNetworkPlotter:
         colorbar.set_label(colorbar_label)
 
     def _draw_profile_panel(self, *, ax, cave_network: CaveNetwork) -> None:
-        ax.set_title("Longitudinal Network Profile")
+        ax.set_title("Longitudinal Network Diagnostics")
         ax.set_xlabel("Along-flow distance")
         ax.set_ylabel("Parallel channels")
+
+        if not cave_network.slice_along_positions:
+            ax.text(0.5, 0.5, "No longitudinal samples", ha="center", va="center")
+            ax.set_axis_off()
+            return
+
+        along_positions = np.array(cave_network.slice_along_positions, dtype=float)
+        channel_counts = np.array(cave_network.slice_channel_counts, dtype=float)
         ax.step(
-            cave_network.slice_along_positions,
-            cave_network.slice_channel_counts,
+            along_positions,
+            channel_counts,
             where="mid",
-            color="#1d4ed8",
-            linewidth=2.2,
-            label="Slice channels",
+            color="#2563eb",
+            linewidth=1.8,
+            label="parallel channels",
         )
-        ax.set_ylim(0.8, max(cave_network.slice_channel_counts) + 0.6)
+        ax.fill_between(
+            along_positions,
+            0.0,
+            channel_counts,
+            step="mid",
+            color="#93c5fd",
+            alpha=0.35,
+        )
+        ax.set_ylim(0.0, max(channel_counts.max() + 0.8, 2.0))
 
         secondary_axis = ax.twinx()
-        secondary_axis.set_ylabel("Segment width")
-        braid_widths = [
-            segment.mean_width
-            for segment in cave_network.segments
-            if segment.kind != "spur"
-        ]
-        if braid_widths:
-            percentiles = np.percentile(braid_widths, [25, 50, 75])
-            for percentile, color, label in zip(percentiles, ["#10b981", "#f59e0b", "#ef4444"], ["P25 width", "Median width", "P75 width"], strict=True):
-                secondary_axis.axhline(percentile, color=color, linewidth=1.5, linestyle="--", label=label)
-        secondary_axis.set_ylim(0.0, max((segment.mean_width for segment in cave_network.segments), default=1.0) * 1.15)
+        secondary_axis.set_ylabel("Tube width")
+        width_profile = self._build_width_profile(cave_network, along_positions)
+        if width_profile is not None:
+            mean_width, min_width, max_width = width_profile
+            secondary_axis.plot(
+                along_positions,
+                mean_width,
+                color="#059669",
+                linewidth=2.0,
+                label="mean width",
+            )
+            secondary_axis.fill_between(
+                along_positions,
+                min_width,
+                max_width,
+                color="#10b981",
+                alpha=0.18,
+                label="width range",
+            )
+            secondary_axis.set_ylim(0.0, max(float(np.nanmax(max_width)) * 1.18, 1.0))
+
+        seen_junction_labels: set[str] = set()
+        for junction in cave_network.junctions:
+            color = "#dc2626" if junction.kind == "chamber" else "#7c3aed"
+            label = "chamber junction" if junction.kind == "chamber" else "split/merge junction"
+            if label in seen_junction_labels:
+                label = "_nolegend_"
+            else:
+                seen_junction_labels.add(label)
+            ax.axvline(
+                junction.along_position,
+                color=color,
+                linewidth=0.9,
+                alpha=0.35,
+                label=label,
+            )
 
         lines = ax.get_lines() + secondary_axis.get_lines()
-        ax.legend(lines, [line.get_label() for line in lines], loc="best", fontsize=8)
+        legend_items = [
+            (line, line.get_label())
+            for line in lines
+            if not line.get_label().startswith("_")
+        ]
+        ax.legend(
+            [line for line, _label in legend_items],
+            [label for _line, label in legend_items],
+            loc="best",
+            fontsize=8,
+        )
+        ax.grid(True, axis="x", alpha=0.18)
+
+    @staticmethod
+    def _build_width_profile(
+        cave_network: CaveNetwork,
+        along_positions: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+        if along_positions.size == 0 or not cave_network.segments:
+            return None
+
+        nodes_by_id = {node.node_id: node for node in cave_network.nodes}
+        bin_width = float(np.median(np.diff(along_positions))) if along_positions.size > 1 else 1.0
+        bin_width = max(bin_width, 1.0)
+        widths_by_bin: list[list[float]] = [[] for _ in along_positions]
+
+        for segment in cave_network.segments:
+            if segment.kind == "spur" or not segment.points:
+                continue
+            start_node = nodes_by_id.get(segment.start_node_id)
+            end_node = nodes_by_id.get(segment.end_node_id)
+            if start_node is None or end_node is None:
+                continue
+
+            start_along = start_node.along_position
+            end_along = end_node.along_position
+            segment_length = max(segment.total_length, 1.0)
+            for point in segment.points:
+                t = np.clip(point.arc_length / segment_length, 0.0, 1.0)
+                point_along = (1.0 - t) * start_along + t * end_along
+                bin_index = int(np.argmin(np.abs(along_positions - point_along)))
+                if abs(float(along_positions[bin_index]) - point_along) <= 1.5 * bin_width:
+                    widths_by_bin[bin_index].append(point.width)
+
+        mean_width = np.full(along_positions.shape, np.nan, dtype=float)
+        min_width = np.full(along_positions.shape, np.nan, dtype=float)
+        max_width = np.full(along_positions.shape, np.nan, dtype=float)
+        for index, widths in enumerate(widths_by_bin):
+            if not widths:
+                continue
+            width_values = np.array(widths, dtype=float)
+            mean_width[index] = float(np.mean(width_values))
+            min_width[index] = float(np.min(width_values))
+            max_width[index] = float(np.max(width_values))
+
+        valid = np.isfinite(mean_width)
+        if not np.any(valid):
+            return None
+
+        valid_positions = along_positions[valid]
+        mean_width = np.interp(along_positions, valid_positions, mean_width[valid])
+        min_width = np.interp(along_positions, valid_positions, min_width[valid])
+        max_width = np.interp(along_positions, valid_positions, max_width[valid])
+        return mean_width, min_width, max_width
