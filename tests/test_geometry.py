@@ -1,6 +1,7 @@
 """Smoke tests for the voxel Stage-D geometry pipeline."""
 
 from pathlib import Path
+from collections import Counter
 import sys
 import unittest
 
@@ -56,6 +57,30 @@ class GeometryTests(unittest.TestCase):
             self.assertEqual(len(face), 3)
             self.assertEqual(len(set(face)), 3)
             self.assertTrue(all(0 <= index < len(vertices) for index in face))
+        edge_counts: Counter[tuple[int, int]] = Counter()
+        directed_edges: Counter[tuple[int, int]] = Counter()
+        for a, b, c in cave_geometry.assembled_faces:
+            for first, second in ((a, b), (b, c), (c, a)):
+                edge_counts[tuple(sorted((first, second)))] += 1
+                directed_edges[(first, second)] += 1
+        self.assertFalse(
+            [edge for edge, count in edge_counts.items() if count == 1][:5],
+            "assembled mesh should not contain open boundary edges",
+        )
+        self.assertFalse(
+            [edge for edge, count in edge_counts.items() if count > 2][:5],
+            "assembled mesh should not contain nonmanifold edges",
+        )
+        badly_oriented_edges = []
+        for first, second in edge_counts:
+            if directed_edges[(first, second)] != 1 or directed_edges[(second, first)] != 1:
+                badly_oriented_edges.append((first, second))
+                if len(badly_oriented_edges) >= 5:
+                    break
+        self.assertFalse(
+            badly_oriented_edges,
+            "shared edges should have opposite triangle winding",
+        )
 
         for mesh in cave_geometry.chunk_meshes:
             self.assertTrue(mesh.vertices)

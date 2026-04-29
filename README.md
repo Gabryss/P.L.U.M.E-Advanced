@@ -15,7 +15,7 @@ are still intentionally incomplete.
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
 | B. Cave Network | Implemented | Generate a host-driven braided cave-network skeleton | `outputs/stage_b_cave_network.png` |
 | C. Section Field | Implemented | Build adaptive lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png` |
-| D. Geometry | Implemented | Stamp the cave network into a voxel grid and polygonize the density field | `outputs/stage_d_geometry.png` |
+| D. Geometry | Implemented | Stamp the cave network into a voxel grid and polygonize the density field | `outputs/stage_d_geometry.png`, `outputs/stage_d_geometry_chunks.png`, `outputs/stage_d_geometry_presentation.png` |
 | E. Geological Events | Placeholder | Skylights, choke points, collapse, infill | TODO |
 | F. Surface Detail / Texturing | Placeholder | Wall detail, floor variation, material masks | TODO |
 
@@ -47,11 +47,18 @@ regions.
 
 ### Stage D: Geometry
 
-![Stage D Geometry](outputs/stage_d_geometry.png)
+![Stage D Geometry Diagnostics](outputs/stage_d_geometry.png)
+
+![Stage D Chunk Diagnostics](outputs/stage_d_geometry_chunks.png)
+
+![Stage D Geometry Presentation](outputs/stage_d_geometry_presentation.png)
 
 Stage D converts the Stage-C samples into a carved density field. It stamps
 capsule tunnels and widened junction/chamber regions into a voxel grid, then
-meshes the zero-density isosurface in chunks.
+meshes the zero-density isosurface in chunks. The diagnostic render focuses on
+footprint alignment, longitudinal continuity, chunk coverage, and section
+slices. The chunk render isolates chunk coverage, face-count distribution, and
+Y/Z chunk spans. The presentation render gives a cleaner plan/mesh preview.
 
 ## How It Works
 
@@ -155,8 +162,9 @@ Execution flow:
 7. generate the section field
 8. render the section-field plot
 9. generate the geometry stage
-10. render the geometry plot
-11. write the images in `outputs/`
+10. render the geometry diagnostic and presentation plots
+11. export the assembled geometry OBJ
+12. write the artifacts in `outputs/`
 
 `procedural_seed` is the top-level seed for the active pipeline. By default it
 feeds the host-field, cave-network, and section-field generators, so changing
@@ -231,12 +239,19 @@ Generate the current cave network with the single entrypoint:
 python scripts/generate_cave.py
 ```
 
+The generator prints progress bars for configuration loading, stages A-C,
+detailed Stage-D voxel/mesh generation, Stage-D visualization, and OBJ export.
+Geometry progress reports stamp counts, chunk meshing status, assembled face
+counts, and final component counts.
+
 That one command produces:
 
 - `outputs/stage_a_host_field.png`
 - `outputs/stage_b_cave_network.png`
 - `outputs/stage_c_section_field.png`
 - `outputs/stage_d_geometry.png`
+- `outputs/stage_d_geometry_chunks.png`
+- `outputs/stage_d_geometry_presentation.png`
 - `outputs/stage_d_geometry.obj`
 
 Optional:
@@ -248,6 +263,8 @@ python scripts/generate_cave.py \
   --host-output outputs/stage_a_host_field.png \
   --section-output outputs/stage_c_section_field.png \
   --geometry-output outputs/stage_d_geometry.png \
+  --geometry-chunk-output outputs/stage_d_geometry_chunks.png \
+  --geometry-presentation-output outputs/stage_d_geometry_presentation.png \
   --geometry-mesh-output outputs/stage_d_geometry.obj
 ```
 
@@ -271,6 +288,7 @@ What exists now:
 
 - one density grid containing the full stamped tunnel network
 - chunked isosurface generation for review/progress visualization
+- diagnostic, chunk-focused, and presentation Stage-D render artifacts
 - OBJ export of one assembled mesh for simulation engines
 
 Still deferred:

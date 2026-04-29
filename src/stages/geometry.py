@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from collections import defaultdict
 import math
 
@@ -10,6 +11,8 @@ import numpy as np
 from stages.geometry_types import CaveGeometry, GeometryChunkMesh, GeometryConfig, VoxelGrid
 from stages.network import CaveNetwork
 from stages.section_field import SectionField, SectionSample
+
+GeometryProgressCallback = Callable[[str, int, int, str], None]
 
 
 class GeometryGenerator:
@@ -49,7 +52,9 @@ class GeometryGenerator:
         self,
         cave_network: CaveNetwork,
         section_field: SectionField,
+        progress: GeometryProgressCallback | None = None,
     ) -> CaveGeometry:
+        self._emit_progress(progress, "prepare", 0, 1, "collecting section samples")
         samples_by_segment = {
             segment_field.segment_id: segment_field.samples
             for segment_field in section_field.segment_fields
@@ -60,6 +65,13 @@ class GeometryGenerator:
             for samples in samples_by_segment.values()
             for sample in samples
         ]
+        self._emit_progress(
+            progress,
+            "prepare",
+            1,
+            1,
+            f"collected {len(stamp_samples)} samples from {len(samples_by_segment)} segments",
+        )
         if not stamp_samples:
             voxel_grid = VoxelGrid(
                 origin=(0.0, 0.0, 0.0),
@@ -78,10 +90,31 @@ class GeometryGenerator:
                 stamped_segment_ids=(),
             )
 
-        voxel_grid = self._build_voxel_grid(samples_by_segment, cave_network)
-        chunk_meshes = self._march_chunks(voxel_grid)
+        voxel_grid = self._build_voxel_grid(samples_by_segment, cave_network, progress)
+        chunk_meshes = self._march_chunks(voxel_grid, progress)
+        self._emit_progress(
+            progress,
+            "assemble",
+            0,
+            2,
+            f"welding {sum(mesh.vertex_count for mesh in chunk_meshes)} chunk vertices",
+        )
         assembled_vertices, assembled_faces = self._assemble_chunks(chunk_meshes)
+        self._emit_progress(
+            progress,
+            "assemble",
+            1,
+            2,
+            f"assembled {len(assembled_vertices)} vertices and {len(assembled_faces)} faces",
+        )
         component_count = self._count_components(assembled_faces)
+        self._emit_progress(
+            progress,
+            "assemble",
+            2,
+            2,
+            f"mesh components: {component_count}",
+        )
         return CaveGeometry(
             config=self.config,
             voxel_grid=voxel_grid,
@@ -97,7 +130,9 @@ class GeometryGenerator:
         self,
         samples_by_segment: dict[int, tuple[SectionSample, ...]],
         cave_network: CaveNetwork,
+        progress: GeometryProgressCallback | None,
     ) -> VoxelGrid:
+        self._emit_progress(progress, "voxel", 0, 4, "building stamp bounds")
         stamp_points = self._stamp_bounds_points(samples_by_segment)
         junction_stamp_points = self._junction_stamp_points(samples_by_segment, cave_network)
         stamp_points.extend(junction_stamp_points)
@@ -111,15 +146,30 @@ class GeometryGenerator:
         voxel_size = self.config.voxel_size
         shape = tuple(int(math.ceil((upper[axis] - lower[axis]) / voxel_size)) + 1 for axis in range(3))
         density = np.full(shape, -1.0, dtype=np.float32)
+        self._emit_progress(
+            progress,
+            "voxel",
+            1,
+            4,
+            f"allocated density grid {shape[0]}x{shape[1]}x{shape[2]}",
+        )
 
-        for samples in samples_by_segment.values():
+        segment_items = list(samples_by_segment.items())
+        for index, (_segment_id, samples) in enumerate(segment_items, start=1):
             self._stamp_sample_chain(
                 density=density,
                 origin=lower,
                 samples=samples,
             )
+            self._emit_progress(
+                progress,
+                "voxel",
+                index,
+                len(segment_items) + len(junction_stamp_points),
+                f"stamped segment {index}/{len(segment_items)}",
+            )
 
-        for center, radius_xy, radius_z in junction_stamp_points:
+        for index, (center, radius_xy, radius_z) in enumerate(junction_stamp_points, start=1):
             self._stamp_ellipsoid(
                 density=density,
                 origin=lower,
@@ -127,6 +177,22 @@ class GeometryGenerator:
                 radius_xy=radius_xy,
                 radius_z=radius_z,
             )
+            self._emit_progress(
+                progress,
+                "voxel",
+                len(segment_items) + index,
+                len(segment_items) + len(junction_stamp_points),
+                f"stamped junction volume {index}/{len(junction_stamp_points)}",
+            )
+
+        carved_count = int(np.count_nonzero(density >= self.config.iso_level))
+        self._emit_progress(
+            progress,
+            "voxel",
+            4,
+            4,
+            f"carved {carved_count} voxels",
+        )
 
         return VoxelGrid(
             origin=tuple(float(value) for value in lower),
@@ -306,33 +372,76 @@ class GeometryGenerator:
         region = density[lower[0] : upper[0], lower[1] : upper[1], lower[2] : upper[2]]
         np.maximum(region, stamp_density.astype(np.float32), out=region)
 
-    def _march_chunks(self, voxel_grid: VoxelGrid) -> list[GeometryChunkMesh]:
+    def _march_chunks(
+        self,
+        voxel_grid: VoxelGrid,
+        progress: GeometryProgressCallback | None,
+    ) -> list[GeometryChunkMesh]:
         meshes: list[GeometryChunkMesh] = []
         chunk_size = max(int(self.config.chunk_size), 4)
         nx, ny, nz = voxel_grid.shape
-        for x_start in range(0, nx - 1, chunk_size):
-            x_end = min(x_start + chunk_size, nx - 1)
-            for y_start in range(0, ny - 1, chunk_size):
-                y_end = min(y_start + chunk_size, ny - 1)
-                for z_start in range(0, nz - 1, chunk_size):
-                    z_end = min(z_start + chunk_size, nz - 1)
-                    chunk_density = voxel_grid.density[
-                        x_start : x_end + 1,
-                        y_start : y_end + 1,
-                        z_start : z_end + 1,
-                    ]
-                    if (
-                        np.all(chunk_density < voxel_grid.iso_level)
-                        or np.all(chunk_density >= voxel_grid.iso_level)
-                    ):
-                        continue
-                    mesh = self._march_chunk(
-                        chunk_id=len(meshes),
-                        voxel_grid=voxel_grid,
-                        bounds=(x_start, x_end, y_start, y_end, z_start, z_end),
-                    )
-                    if mesh.faces:
-                        meshes.append(mesh)
+        chunk_bounds = [
+            (
+                x_start,
+                min(x_start + chunk_size, nx - 1),
+                y_start,
+                min(y_start + chunk_size, ny - 1),
+                z_start,
+                min(z_start + chunk_size, nz - 1),
+            )
+            for x_start in range(0, nx - 1, chunk_size)
+            for y_start in range(0, ny - 1, chunk_size)
+            for z_start in range(0, nz - 1, chunk_size)
+        ]
+        self._emit_progress(
+            progress,
+            "mesh",
+            0,
+            len(chunk_bounds),
+            f"scanning {len(chunk_bounds)} chunks",
+        )
+        for index, (x_start, x_end, y_start, y_end, z_start, z_end) in enumerate(
+            chunk_bounds,
+            start=1,
+        ):
+            chunk_density = voxel_grid.density[
+                x_start : x_end + 1,
+                y_start : y_end + 1,
+                z_start : z_end + 1,
+            ]
+            if (
+                np.all(chunk_density < voxel_grid.iso_level)
+                or np.all(chunk_density >= voxel_grid.iso_level)
+            ):
+                self._emit_progress(
+                    progress,
+                    "mesh",
+                    index,
+                    len(chunk_bounds),
+                    f"chunk {index}/{len(chunk_bounds)} empty",
+                )
+                continue
+            mesh = self._march_chunk(
+                chunk_id=len(meshes),
+                voxel_grid=voxel_grid,
+                bounds=(x_start, x_end, y_start, y_end, z_start, z_end),
+            )
+            if mesh.faces:
+                meshes.append(mesh)
+            self._emit_progress(
+                progress,
+                "mesh",
+                index,
+                len(chunk_bounds),
+                f"chunk {index}/{len(chunk_bounds)} -> {len(mesh.faces)} faces",
+            )
+        self._emit_progress(
+            progress,
+            "mesh",
+            len(chunk_bounds),
+            len(chunk_bounds),
+            f"meshed {len(meshes)} non-empty chunks",
+        )
         return meshes
 
     def _march_chunk(
@@ -392,31 +501,139 @@ class GeometryGenerator:
         for tetra in self._TETRAHEDRA:
             positions = corner_positions[list(tetra)]
             values = corner_values[list(tetra)]
-            intersections: list[np.ndarray] = []
-            for first, second in self._TETRA_EDGES:
-                first_inside = values[first] >= iso_level
-                second_inside = values[second] >= iso_level
-                if first_inside == second_inside:
-                    continue
-                intersections.append(
-                    self._interpolate_vertex(
-                        positions[first],
-                        positions[second],
-                        values[first],
-                        values[second],
-                        iso_level,
-                    )
-                )
+            self._polygonize_tetra(
+                positions=positions,
+                values=values,
+                iso_level=iso_level,
+                vertices=vertices,
+                faces=faces,
+            )
 
-            if len(intersections) == 3:
-                base = len(vertices)
-                vertices.extend(tuple(float(value) for value in point) for point in intersections)
-                faces.append((base, base + 1, base + 2))
-            elif len(intersections) == 4:
-                base = len(vertices)
-                vertices.extend(tuple(float(value) for value in point) for point in intersections)
-                faces.append((base, base + 1, base + 2))
-                faces.append((base, base + 2, base + 3))
+    def _polygonize_tetra(
+        self,
+        *,
+        positions: np.ndarray,
+        values: np.ndarray,
+        iso_level: float,
+        vertices: list[tuple[float, float, float]],
+        faces: list[tuple[int, int, int]],
+    ) -> None:
+        inside_indices = [index for index, value in enumerate(values) if value >= iso_level]
+        outside_indices = [index for index, value in enumerate(values) if value < iso_level]
+        if len(inside_indices) == 0 or len(inside_indices) == 4:
+            return
+
+        if len(inside_indices) == 1:
+            inside = inside_indices[0]
+            points = [
+                self._interpolate_vertex(
+                    positions[inside],
+                    positions[outside],
+                    values[inside],
+                    values[outside],
+                    iso_level,
+                )
+                for outside in outside_indices
+            ]
+            self._append_oriented_triangle(
+                vertices=vertices,
+                faces=faces,
+                points=points,
+                inside_position=positions[inside],
+                outside_position=np.mean(positions[outside_indices], axis=0),
+            )
+            return
+
+        if len(inside_indices) == 3:
+            outside = outside_indices[0]
+            points = [
+                self._interpolate_vertex(
+                    positions[inside],
+                    positions[outside],
+                    values[inside],
+                    values[outside],
+                    iso_level,
+                )
+                for inside in inside_indices
+            ]
+            self._append_oriented_triangle(
+                vertices=vertices,
+                faces=faces,
+                points=points,
+                inside_position=np.mean(positions[inside_indices], axis=0),
+                outside_position=positions[outside],
+            )
+            return
+
+        first_inside, second_inside = inside_indices
+        first_outside, second_outside = outside_indices
+        quad_points = [
+            self._interpolate_vertex(
+                positions[first_inside],
+                positions[first_outside],
+                values[first_inside],
+                values[first_outside],
+                iso_level,
+            ),
+            self._interpolate_vertex(
+                positions[first_inside],
+                positions[second_outside],
+                values[first_inside],
+                values[second_outside],
+                iso_level,
+            ),
+            self._interpolate_vertex(
+                positions[second_inside],
+                positions[second_outside],
+                values[second_inside],
+                values[second_outside],
+                iso_level,
+            ),
+            self._interpolate_vertex(
+                positions[second_inside],
+                positions[first_outside],
+                values[second_inside],
+                values[first_outside],
+                iso_level,
+            ),
+        ]
+        inside_position = np.mean(positions[inside_indices], axis=0)
+        outside_position = np.mean(positions[outside_indices], axis=0)
+        self._append_oriented_triangle(
+            vertices=vertices,
+            faces=faces,
+            points=[quad_points[0], quad_points[1], quad_points[2]],
+            inside_position=inside_position,
+            outside_position=outside_position,
+        )
+        self._append_oriented_triangle(
+            vertices=vertices,
+            faces=faces,
+            points=[quad_points[0], quad_points[2], quad_points[3]],
+            inside_position=inside_position,
+            outside_position=outside_position,
+        )
+
+    @staticmethod
+    def _append_oriented_triangle(
+        *,
+        vertices: list[tuple[float, float, float]],
+        faces: list[tuple[int, int, int]],
+        points: list[np.ndarray],
+        inside_position: np.ndarray,
+        outside_position: np.ndarray,
+    ) -> None:
+        first, second, third = points
+        normal = np.cross(second - first, third - first)
+        outward = outside_position - inside_position
+        if float(np.dot(normal, outward)) < 0.0:
+            second, third = third, second
+        base = len(vertices)
+        vertices.extend(
+            tuple(float(value) for value in point)
+            for point in (first, second, third)
+        )
+        faces.append((base, base + 1, base + 2))
 
     @staticmethod
     def _interpolate_vertex(
@@ -479,6 +696,17 @@ class GeometryGenerator:
                         visited.add(neighbor_face)
                         stack.append(neighbor_face)
         return component_count
+
+    @staticmethod
+    def _emit_progress(
+        progress: GeometryProgressCallback | None,
+        phase: str,
+        current: int,
+        total: int,
+        message: str,
+    ) -> None:
+        if progress is not None:
+            progress(phase, current, max(total, 1), message)
 
 
 __all__ = [
