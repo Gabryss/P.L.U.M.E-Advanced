@@ -146,7 +146,8 @@ Implemented in `src/stages/geometry.py`.
 
 Stage D turns the section field into a voxel-first mesh. The generator currently:
 
-- stamps capsule tunnel densities along every segment, with higher density meaning carved space
+- stamps Stage C section-profile densities along every segment, with higher density meaning carved space
+- adds controlled seeded wall roughness near the isosurface for less capsule-like walls
 - stamps widened junction/chamber regions into the same field
 - processes the field in 3D chunks
 - polygonizes chunk meshes with `scikit-image`
@@ -227,6 +228,8 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `chunk_size` | controls how much of the density grid is polygonized at once |
 | `iso_level` | defines the density threshold used for the cave wall surface |
 | `tunnel_radius_scale`, `junction_radius_scale`, `chamber_radius_scale` | control how section samples widen while stamping |
+| `use_section_profiles` | use Stage C's closed cross-section polygons instead of circular capsule stamps |
+| `wall_roughness_*` | add seeded near-wall roughness before marching cubes |
 | `minimum_radius`, `weld_tolerance` | keep thin passages meshable and weld repeated isosurface vertices |
 
 ## Project Layout

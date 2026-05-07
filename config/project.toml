@@ -1,4 +1,4 @@
-procedural_seed = 2
+procedural_seed = 3
 
 [host_field]
 
@@ -102,12 +102,12 @@ minimum_height_ratio = 0.50
 maximum_height_ratio = 0.84
 maximum_tube_width = 12.0
 chamber_max_tube_width = 24.0
-minimum_sample_spacing = 8.0
-maximum_sample_spacing = 34.0
+minimum_sample_spacing = 4.0
+maximum_sample_spacing = 16.0
 curvature_spacing_weight = 120.0
 width_gradient_spacing_weight = 34.0
 junction_spacing_weight = 1.15
-profile_resolution = 28
+profile_resolution = 40
 floor_flatness_base = 0.48
 floor_flatness_width_weight = 0.12
 roof_arch_base = 1.08
@@ -121,12 +121,16 @@ maximum_centerline_depth = 26.0
 preferred_cover_fraction = 0.34
 
 [geometry]
-voxel_size = 6.0
-density_margin = 30.0
+voxel_size = 3.0
+density_margin = 24.0
 chunk_size = 64
 iso_level = 0.0
 tunnel_radius_scale = 1.2
 chamber_radius_scale = 1.7
 junction_radius_scale = 1.7
 minimum_radius = 3.5
+use_section_profiles = true
+wall_roughness_amplitude = 0.16
+wall_roughness_frequency = 0.18
+wall_roughness_blend = 0.85
 weld_tolerance = 1e-5

@@ -1,6 +1,7 @@
 # Supervisor meeting outcomes and notes
 *.pdf
-
+outputs/*.obj
+.codex
 .vscode
 
 # Byte-compiled / optimized / DLL files
