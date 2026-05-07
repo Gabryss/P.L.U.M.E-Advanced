@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from collections import defaultdict
+from dataclasses import dataclass
 import math
 
 import numpy as np
@@ -15,6 +16,17 @@ from stages.network import CaveNetwork
 from stages.section_field import SectionField, SectionSample
 
 GeometryProgressCallback = Callable[[str, int, int, str], None]
+
+
+@dataclass(frozen=True)
+class _JunctionStamp:
+    center: np.ndarray
+    radius_long: float
+    radius_short: float
+    radius_z: float
+    angle: float
+    phase: tuple[float, float, float]
+    kind: str
 
 
 class GeometryGenerator:
@@ -112,7 +124,14 @@ class GeometryGenerator:
         self._emit_progress(progress, "voxel", 0, 4, "building stamp bounds")
         stamp_points = self._stamp_bounds_points(samples_by_segment)
         junction_stamp_points = self._junction_stamp_points(samples_by_segment, cave_network)
-        stamp_points.extend(junction_stamp_points)
+        stamp_points.extend(
+            (
+                stamp.center,
+                max(stamp.radius_long, stamp.radius_short),
+                stamp.radius_z,
+            )
+            for stamp in junction_stamp_points
+        )
         margin = max(
             self.config.density_margin,
             max(max(radius_xy, radius_z) for _, radius_xy, radius_z in stamp_points) + self.config.voxel_size,
@@ -146,13 +165,11 @@ class GeometryGenerator:
                 f"stamped segment {index}/{len(segment_items)}",
             )
 
-        for index, (center, radius_xy, radius_z) in enumerate(junction_stamp_points, start=1):
-            self._stamp_ellipsoid(
+        for index, stamp in enumerate(junction_stamp_points, start=1):
+            self._stamp_junction_volume(
                 density=density,
                 origin=lower,
-                center=center,
-                radius_xy=radius_xy,
-                radius_z=radius_z,
+                stamp=stamp,
             )
             self._emit_progress(
                 progress,
@@ -221,14 +238,14 @@ class GeometryGenerator:
         self,
         samples_by_segment: dict[int, tuple[SectionSample, ...]],
         cave_network: CaveNetwork,
-    ) -> list[tuple[np.ndarray, float, float]]:
+    ) -> list[_JunctionStamp]:
         samples_by_junction: dict[int, list[SectionSample]] = defaultdict(list)
         for samples in samples_by_segment.values():
             for sample in samples:
                 for influence in sample.junction_influences:
                     samples_by_junction[influence.junction_id].append(sample)
 
-        stamp_points: list[tuple[np.ndarray, float, float]] = []
+        stamp_points: list[_JunctionStamp] = []
         for junction in cave_network.junctions:
             influenced_samples = samples_by_junction.get(junction.junction_id, [])
             if not influenced_samples:
@@ -240,14 +257,50 @@ class GeometryGenerator:
             if junction.kind == "chamber":
                 blend_radius *= self.config.chamber_radius_scale
             position = np.array((junction.center_x, junction.center_y, mean_z), dtype=float)
+            angle = self._junction_orientation(position, influenced_samples)
+            radius_long = max(blend_radius, self.config.minimum_radius)
+            short_scale = 0.68 if junction.kind == "chamber" else 0.58
+            radius_short = max(radius_long * short_scale, sample_radius, self.config.minimum_radius)
+            phase = tuple(
+                float(value)
+                for value in self._rng.uniform(0.0, 2.0 * math.pi, size=3)
+            )
             stamp_points.append(
-                (
-                    position,
-                    max(blend_radius, self.config.minimum_radius),
-                    max(mean_height * 0.65, self.config.minimum_radius),
+                _JunctionStamp(
+                    center=position,
+                    radius_long=radius_long,
+                    radius_short=radius_short,
+                    radius_z=max(mean_height * 0.70, self.config.minimum_radius),
+                    angle=angle,
+                    phase=phase,
+                    kind=junction.kind,
                 )
             )
         return stamp_points
+
+    @staticmethod
+    def _junction_orientation(
+        center: np.ndarray,
+        samples: list[SectionSample],
+    ) -> float:
+        offsets = np.array(
+            [
+                (sample.x - center[0], sample.y - center[1])
+                for sample in samples
+            ],
+            dtype=float,
+        )
+        if offsets.shape[0] < 2 or np.allclose(offsets, 0.0):
+            mean_tangent = np.mean(
+                np.array([sample.tangent[:2] for sample in samples], dtype=float),
+                axis=0,
+            )
+            return float(math.atan2(mean_tangent[1], mean_tangent[0]))
+
+        covariance = offsets.T @ offsets
+        eigenvalues, eigenvectors = np.linalg.eigh(covariance)
+        direction = eigenvectors[:, int(np.argmax(eigenvalues))]
+        return float(math.atan2(direction[1], direction[0]))
 
     def _radius_xy(self, sample: SectionSample) -> float:
         scale = self.config.tunnel_radius_scale
@@ -410,7 +463,9 @@ class GeometryGenerator:
         sample: SectionSample,
     ) -> None:
         position = np.array((sample.x, sample.y, sample.z), dtype=float)
-        radius = max(self._profile_bounds_radius(sample), self.config.minimum_radius)
+        profile_radius = max(self._profile_bounds_radius(sample), self.config.minimum_radius)
+        cap_length = max(1.5 * self.config.voxel_size, 0.35 * profile_radius)
+        radius = max(profile_radius, cap_length)
         voxel_size = self.config.voxel_size
         lower = np.maximum(np.floor((position - radius - origin) / voxel_size).astype(int), 0)
         upper = np.minimum(
@@ -434,12 +489,19 @@ class GeometryGenerator:
         section_z = dx * binormal[0] + dy * binormal[1] + dz * binormal[2]
         along = dx * tangent[0] + dy * tangent[1] + dz * tangent[2]
         profile = np.array(sample.profile_points, dtype=float) * self._profile_scale(sample)
-        signed_distance = self._profile_signed_distance(
-            section_x.reshape(-1),
-            section_z.reshape(-1),
+        normalized_along = np.clip(np.abs(along) / max(cap_length, 1e-6), 0.0, 1.0)
+        taper = 1.0 - 0.45 * normalized_along * normalized_along
+        cap_phase = (
+            0.45 * np.sin(0.37 * section_x + self._roughness_phase[0])
+            + 0.28 * np.cos(0.31 * section_z + self._roughness_phase[1])
+        )
+        taper = np.clip(taper * (1.0 + 0.04 * cap_phase), 0.48, 1.08)
+        tapered_distance = self._profile_signed_distance(
+            (section_x / taper).reshape(-1),
+            (section_z / taper).reshape(-1),
             profile,
-        ).reshape(section_x.shape)
-        cap_distance = np.maximum(signed_distance, np.abs(along) - 0.5 * voxel_size)
+        ).reshape(section_x.shape) * taper
+        cap_distance = np.maximum(tapered_distance, np.abs(along) - cap_length)
         density_values = -cap_distance / max(voxel_size, 1e-6)
         density_values += self._wall_roughness(
             x_grid,
@@ -645,6 +707,82 @@ class GeometryGenerator:
         stamp_density = 1.0 - np.sqrt(dx * dx + dy * dy + dz * dz)
         region = density[lower[0] : upper[0], lower[1] : upper[1], lower[2] : upper[2]]
         np.maximum(region, stamp_density.astype(np.float32), out=region)
+
+    def _stamp_junction_volume(
+        self,
+        *,
+        density: np.ndarray,
+        origin: np.ndarray,
+        stamp: _JunctionStamp,
+    ) -> None:
+        radius = max(stamp.radius_long, stamp.radius_short, stamp.radius_z)
+        voxel_size = self.config.voxel_size
+        lower = np.maximum(
+            np.floor((stamp.center - radius - origin) / voxel_size).astype(int),
+            0,
+        )
+        upper = np.minimum(
+            np.ceil((stamp.center + radius - origin) / voxel_size).astype(int) + 1,
+            np.array(density.shape, dtype=int),
+        )
+        if np.any(upper <= lower):
+            return
+
+        x_values = origin[0] + np.arange(lower[0], upper[0]) * voxel_size
+        y_values = origin[1] + np.arange(lower[1], upper[1]) * voxel_size
+        z_values = origin[2] + np.arange(lower[2], upper[2]) * voxel_size
+        x_grid, y_grid, z_grid = np.meshgrid(x_values, y_values, z_values, indexing="ij")
+
+        dx = x_grid - stamp.center[0]
+        dy = y_grid - stamp.center[1]
+        dz = z_grid - stamp.center[2]
+        cos_angle = math.cos(stamp.angle)
+        sin_angle = math.sin(stamp.angle)
+        local_long = dx * cos_angle + dy * sin_angle
+        local_short = -dx * sin_angle + dy * cos_angle
+
+        amplitude = max(self.config.junction_irregularity_amplitude, 0.0)
+        frequency = max(self.config.junction_irregularity_frequency, 1e-6)
+        phase_a, phase_b, phase_c = stamp.phase
+        theta = np.arctan2(
+            local_short / max(stamp.radius_short, 1e-6),
+            local_long / max(stamp.radius_long, 1e-6),
+        )
+        radius_variation = 1.0 + amplitude * (
+            0.38 * np.sin(3.0 * theta + phase_a)
+            + 0.26 * np.sin(5.0 * theta + phase_b)
+            + 0.18 * np.cos(frequency * (local_long - 0.6 * local_short) + phase_c)
+        )
+        radius_variation = np.clip(radius_variation, 0.72, 1.22)
+
+        scaled_long = local_long / np.maximum(stamp.radius_long * radius_variation, 1e-6)
+        scaled_short = local_short / np.maximum(stamp.radius_short * radius_variation, 1e-6)
+        scaled_z = dz / max(stamp.radius_z, 1e-6)
+        normalized_distance = np.sqrt(
+            scaled_long * scaled_long
+            + scaled_short * scaled_short
+            + scaled_z * scaled_z
+        )
+        signed_distance = (normalized_distance - 1.0) * min(
+            stamp.radius_long,
+            stamp.radius_short,
+            stamp.radius_z,
+        )
+        density_values = -signed_distance / max(voxel_size, 1e-6)
+        density_values += self._wall_roughness(
+            x_grid,
+            y_grid,
+            z_grid,
+            signed_distance,
+        )
+        if stamp.kind == "chamber":
+            density_values += 0.35 * amplitude * np.sin(
+                frequency * 0.7 * (local_long + local_short + dz)
+                + phase_b
+            )
+
+        region = density[lower[0] : upper[0], lower[1] : upper[1], lower[2] : upper[2]]
+        np.maximum(region, density_values.astype(np.float32), out=region)
 
     def _march_chunks(
         self,

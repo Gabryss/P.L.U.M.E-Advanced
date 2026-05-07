@@ -31,6 +31,8 @@ class SectionFieldConfig:
     roof_arch_base: float = 1.08
     roof_arch_roof_weight: float = 0.18
     lateral_skew_amplitude: float = 0.10
+    centerline_wobble_amplitude: float = 2.4
+    centerline_wobble_wavelength: float = 95.0
     junction_pre_widen_gain: float = 0.18
     junction_constant_envelope_gain: float = 0.05
     chamber_widen_gain: float = 0.45
@@ -366,6 +368,16 @@ class SectionFieldGenerator:
                 cover_thickness=cover_thickness,
                 tube_height=tube_height,
             )
+            lateral_offset, vertical_offset = self._centerline_wobble_offsets(
+                segment=segment,
+                arc_length=arc_length,
+                phase=phase,
+                junction_blend_weight=junction_blend_weight,
+            )
+            x_coord += lateral_offset * normal[0]
+            y_coord += lateral_offset * normal[1]
+            z_coord += vertical_offset
+            centerline_depth -= vertical_offset
             profile_points = self._build_profile_points(
                 tube_width=tube_width,
                 tube_height=tube_height,
@@ -399,6 +411,40 @@ class SectionFieldGenerator:
                 )
             )
         return samples
+
+    def _centerline_wobble_offsets(
+        self,
+        *,
+        segment: CaveSegment,
+        arc_length: float,
+        phase: float,
+        junction_blend_weight: float,
+    ) -> tuple[float, float]:
+        total_length = max(segment.total_length, 1.0)
+        if total_length < 2.5 * self.config.maximum_sample_spacing:
+            return 0.0, 0.0
+
+        endpoint_envelope = math.sin(math.pi * np.clip(arc_length / total_length, 0.0, 1.0))
+        endpoint_envelope = max(endpoint_envelope, 0.0) ** 1.35
+        junction_envelope = 1.0 - 0.75 * np.clip(junction_blend_weight, 0.0, 1.0)
+        envelope = endpoint_envelope * junction_envelope
+        if envelope <= 1e-6:
+            return 0.0, 0.0
+
+        wavelength = max(self.config.centerline_wobble_wavelength, 1.0)
+        segment_phase = phase + 0.73 * segment.segment_id
+        wave = (
+            math.sin((2.0 * math.pi * arc_length / wavelength) + segment_phase)
+            + 0.42 * math.sin((2.0 * math.pi * arc_length / (0.47 * wavelength)) + 1.7 * segment_phase)
+        )
+        lateral = self.config.centerline_wobble_amplitude * envelope * wave
+        vertical = (
+            0.22
+            * self.config.centerline_wobble_amplitude
+            * envelope
+            * math.sin((2.0 * math.pi * arc_length / (1.35 * wavelength)) + 0.6 * segment_phase)
+        )
+        return float(lateral), float(vertical)
 
     def _height_ratio(self, segment: CaveSegment, arc_length: float) -> float:
         roof_competence = self._interpolate_attr(segment, arc_length, "roof_competence")

@@ -25,6 +25,8 @@ class GeometryConfig:
     wall_roughness_amplitude: float = 0.18
     wall_roughness_frequency: float = 0.16
     wall_roughness_blend: float = 0.75
+    junction_irregularity_amplitude: float = 0.18
+    junction_irregularity_frequency: float = 0.11
     weld_tolerance: float = 1e-5
 
 

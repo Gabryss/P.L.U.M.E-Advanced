@@ -202,9 +202,8 @@ or hand-authored scenarios, but the default project config is range-driven.
 | Key Group | Purpose |
 |---|---|
 | `source_*`, `sink_margin`, `trace_max_steps` | control network source/sink setup and trace extent |
-| `*_alignment_weight`, `elevation_drop_weight`, `growth_cost_weight`, `roof_weight`, `cover_weight`, `slope_penalty_weight` | bias path selection through the host field |
-| `small_*`, `medium_*`, `large_*` | control multi-scale trace counts, attraction, congestion, and flux thresholds |
-| `prune_iterations`, `occupancy_smoothing_passes` | simplify the network and clean occupancy artifacts |
+| `growth_cost_weight`, `roof_weight`, `cover_weight`, `slope_penalty_weight`, `corridor_weight` | bias path selection through the host field |
+| `occupancy_smoothing_passes` | clean occupancy artifacts |
 | `chamber_*`, `base_passage_radius` | control chamber detection and occupancy painting |
 | `spur_*`, `channel_count_samples` | control terminal spur generation and braid sampling |
 | `[network.braid_grammar]` | `[min, max]` ranges and probabilities for sampled braid zones, branch counts, offsets, ladders, and underpasses |
@@ -218,6 +217,7 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `curvature_spacing_weight`, `width_gradient_spacing_weight`, `junction_spacing_weight` | make sampling denser where the skeleton or morphology changes faster |
 | `profile_resolution` | control local section contour resolution |
 | `floor_flatness_*`, `roof_arch_*`, `lateral_skew_amplitude` | shape the lava-tube profile |
+| `centerline_wobble_*` | add bounded centerline meander to avoid unnaturally straight tube runs |
 | `junction_*_gain` | control how strongly junction regions widen or stay tight through splits/merges |
 
 ### Geometry Config
@@ -230,6 +230,7 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `tunnel_radius_scale`, `junction_radius_scale`, `chamber_radius_scale` | control how section samples widen while stamping |
 | `use_section_profiles` | use Stage C's closed cross-section polygons instead of circular capsule stamps |
 | `wall_roughness_*` | add seeded near-wall roughness before marching cubes |
+| `junction_irregularity_*` | deform junction/chamber volumes so they blend less like perfect ellipsoids |
 | `minimum_radius`, `weld_tolerance` | keep thin passages meshable and weld repeated isosurface vertices |
 
 ## Project Layout
