@@ -21,6 +21,10 @@ class GeometryConfig:
     chamber_radius_scale: float = 1.7
     junction_radius_scale: float = 1.7
     minimum_radius: float = 3.5
+    use_section_profiles: bool = True
+    wall_roughness_amplitude: float = 0.18
+    wall_roughness_frequency: float = 0.16
+    wall_roughness_blend: float = 0.75
     weld_tolerance: float = 1e-5
 
 

@@ -8,6 +8,7 @@ import math
 
 import numpy as np
 from skimage import measure
+from scipy import ndimage
 
 from stages.geometry_types import CaveGeometry, GeometryChunkMesh, GeometryConfig, VoxelGrid
 from stages.network import CaveNetwork
@@ -21,6 +22,8 @@ class GeometryGenerator:
 
     def __init__(self, config: GeometryConfig | None = None) -> None:
         self.config = config or GeometryConfig()
+        self._rng = np.random.default_rng(self.config.random_seed)
+        self._roughness_phase = tuple(float(value) for value in self._rng.uniform(0.0, 2.0 * math.pi, size=3))
 
     def generate(
         self,
@@ -159,13 +162,14 @@ class GeometryGenerator:
                 f"stamped junction volume {index}/{len(junction_stamp_points)}",
             )
 
+        removed_components, removed_voxels = self._remove_small_carved_components(density)
         carved_count = int(np.count_nonzero(density >= self.config.iso_level))
         self._emit_progress(
             progress,
             "voxel",
             4,
             4,
-            f"carved {carved_count} voxels",
+            f"carved {carved_count} voxels; removed {removed_voxels} island voxels from {removed_components} components",
         )
 
         return VoxelGrid(
@@ -174,6 +178,33 @@ class GeometryGenerator:
             density=density,
             iso_level=self.config.iso_level,
         )
+
+    def _remove_small_carved_components(self, density: np.ndarray) -> tuple[int, int]:
+        carved = density >= self.config.iso_level
+        if not bool(np.any(carved)):
+            return 0, 0
+        labels, component_count = ndimage.label(
+            carved,
+            structure=ndimage.generate_binary_structure(rank=3, connectivity=1),
+        )
+        if component_count <= 1:
+            return 0, 0
+
+        sizes = np.bincount(labels.ravel())
+        if sizes.size <= 1:
+            return 0, 0
+        largest_label = int(np.argmax(sizes[1:]) + 1)
+        largest_size = int(sizes[largest_label])
+        minimum_component_size = max(8, int(0.002 * largest_size))
+        remove_mask = (labels != 0) & (labels != largest_label) & (sizes[labels] < minimum_component_size)
+        removed_voxels = int(np.count_nonzero(remove_mask))
+        removed_labels = {
+            int(label)
+            for label in np.unique(labels[remove_mask])
+            if label != 0
+        }
+        density[remove_mask] = np.float32(self.config.iso_level - 1.0)
+        return len(removed_labels), removed_voxels
 
     def _stamp_bounds_points(
         self,
@@ -236,6 +267,32 @@ class GeometryGenerator:
         origin: np.ndarray,
         samples: tuple[SectionSample, ...],
     ) -> None:
+        if self.config.use_section_profiles:
+            for start, end in zip(samples, samples[1:]):
+                self._stamp_profile_segment(
+                    density=density,
+                    origin=origin,
+                    start=start,
+                    end=end,
+                )
+                self._stamp_capsule(
+                    density=density,
+                    origin=origin,
+                    start=np.array((start.x, start.y, start.z), dtype=float),
+                    end=np.array((end.x, end.y, end.z), dtype=float),
+                    start_radius_xy=0.45 * self._radius_xy(start),
+                    end_radius_xy=0.45 * self._radius_xy(end),
+                    start_radius_z=0.45 * self._radius_z(start),
+                    end_radius_z=0.45 * self._radius_z(end),
+                )
+            for sample in (samples[0], samples[-1]):
+                self._stamp_profile_cap(
+                    density=density,
+                    origin=origin,
+                    sample=sample,
+                )
+            return
+
         for start, end in zip(samples, samples[1:]):
             self._stamp_capsule(
                 density=density,
@@ -255,6 +312,249 @@ class GeometryGenerator:
                 radius_xy=self._radius_xy(sample),
                 radius_z=self._radius_z(sample),
             )
+
+    def _stamp_profile_segment(
+        self,
+        *,
+        density: np.ndarray,
+        origin: np.ndarray,
+        start: SectionSample,
+        end: SectionSample,
+    ) -> None:
+        start_position = np.array((start.x, start.y, start.z), dtype=float)
+        end_position = np.array((end.x, end.y, end.z), dtype=float)
+        segment = end_position - start_position
+        segment_length_squared = float(np.dot(segment, segment))
+        if segment_length_squared < 1e-9:
+            self._stamp_profile_cap(density=density, origin=origin, sample=start)
+            return
+
+        radius = max(
+            self._profile_bounds_radius(start),
+            self._profile_bounds_radius(end),
+            self.config.minimum_radius,
+        )
+        voxel_size = self.config.voxel_size
+        lower = np.maximum(
+            np.floor((np.minimum(start_position, end_position) - radius - origin) / voxel_size).astype(int),
+            0,
+        )
+        upper = np.minimum(
+            np.ceil((np.maximum(start_position, end_position) + radius - origin) / voxel_size).astype(int) + 1,
+            np.array(density.shape, dtype=int),
+        )
+        if np.any(upper <= lower):
+            return
+
+        x_values = origin[0] + np.arange(lower[0], upper[0]) * voxel_size
+        y_values = origin[1] + np.arange(lower[1], upper[1]) * voxel_size
+        z_values = origin[2] + np.arange(lower[2], upper[2]) * voxel_size
+        x_grid, y_grid, z_grid = np.meshgrid(x_values, y_values, z_values, indexing="ij")
+
+        point_x = x_grid - start_position[0]
+        point_y = y_grid - start_position[1]
+        point_z = z_grid - start_position[2]
+        projection = (
+            point_x * segment[0] + point_y * segment[1] + point_z * segment[2]
+        ) / segment_length_squared
+        projection = np.clip(projection, 0.0, 1.0)
+
+        closest_x = start_position[0] + projection * segment[0]
+        closest_y = start_position[1] + projection * segment[1]
+        closest_z = start_position[2] + projection * segment[2]
+        local_x = x_grid - closest_x
+        local_y = y_grid - closest_y
+        local_z = z_grid - closest_z
+
+        start_normal = np.array(start.normal, dtype=float)
+        start_binormal = np.array(start.binormal, dtype=float)
+        end_normal = np.array(end.normal, dtype=float)
+        end_binormal = np.array(end.binormal, dtype=float)
+        normal = self._normalize_vector(
+            (1.0 - projection)[..., None] * start_normal + projection[..., None] * end_normal,
+            fallback=start_normal,
+        )
+        binormal = self._normalize_vector(
+            (1.0 - projection)[..., None] * start_binormal + projection[..., None] * end_binormal,
+            fallback=start_binormal,
+        )
+
+        section_x = local_x * normal[..., 0] + local_y * normal[..., 1] + local_z * normal[..., 2]
+        section_z = local_x * binormal[..., 0] + local_y * binormal[..., 1] + local_z * binormal[..., 2]
+        start_profile = np.array(start.profile_points, dtype=float) * self._profile_scale(start)
+        end_profile = np.array(end.profile_points, dtype=float) * self._profile_scale(end)
+        t_values = np.clip(projection.reshape(-1), 0.0, 1.0)
+        signed_distance = self._interpolated_profile_signed_distance(
+            section_x.reshape(-1),
+            section_z.reshape(-1),
+            t_values,
+            start_profile,
+            end_profile,
+        ).reshape(section_x.shape)
+        density_values = -signed_distance / max(voxel_size, 1e-6)
+        density_values += self._wall_roughness(
+            x_grid,
+            y_grid,
+            z_grid,
+            signed_distance,
+        )
+
+        region = density[lower[0] : upper[0], lower[1] : upper[1], lower[2] : upper[2]]
+        np.maximum(region, density_values.astype(np.float32), out=region)
+
+    def _stamp_profile_cap(
+        self,
+        *,
+        density: np.ndarray,
+        origin: np.ndarray,
+        sample: SectionSample,
+    ) -> None:
+        position = np.array((sample.x, sample.y, sample.z), dtype=float)
+        radius = max(self._profile_bounds_radius(sample), self.config.minimum_radius)
+        voxel_size = self.config.voxel_size
+        lower = np.maximum(np.floor((position - radius - origin) / voxel_size).astype(int), 0)
+        upper = np.minimum(
+            np.ceil((position + radius - origin) / voxel_size).astype(int) + 1,
+            np.array(density.shape, dtype=int),
+        )
+        if np.any(upper <= lower):
+            return
+
+        x_values = origin[0] + np.arange(lower[0], upper[0]) * voxel_size
+        y_values = origin[1] + np.arange(lower[1], upper[1]) * voxel_size
+        z_values = origin[2] + np.arange(lower[2], upper[2]) * voxel_size
+        x_grid, y_grid, z_grid = np.meshgrid(x_values, y_values, z_values, indexing="ij")
+        dx = x_grid - position[0]
+        dy = y_grid - position[1]
+        dz = z_grid - position[2]
+        normal = np.array(sample.normal, dtype=float)
+        binormal = np.array(sample.binormal, dtype=float)
+        tangent = np.array(sample.tangent, dtype=float)
+        section_x = dx * normal[0] + dy * normal[1] + dz * normal[2]
+        section_z = dx * binormal[0] + dy * binormal[1] + dz * binormal[2]
+        along = dx * tangent[0] + dy * tangent[1] + dz * tangent[2]
+        profile = np.array(sample.profile_points, dtype=float) * self._profile_scale(sample)
+        signed_distance = self._profile_signed_distance(
+            section_x.reshape(-1),
+            section_z.reshape(-1),
+            profile,
+        ).reshape(section_x.shape)
+        cap_distance = np.maximum(signed_distance, np.abs(along) - 0.5 * voxel_size)
+        density_values = -cap_distance / max(voxel_size, 1e-6)
+        density_values += self._wall_roughness(
+            x_grid,
+            y_grid,
+            z_grid,
+            cap_distance,
+        )
+        region = density[lower[0] : upper[0], lower[1] : upper[1], lower[2] : upper[2]]
+        np.maximum(region, density_values.astype(np.float32), out=region)
+
+    def _profile_scale(self, sample: SectionSample) -> float:
+        scale = self.config.tunnel_radius_scale
+        if any(influence.kind == "chamber" for influence in sample.junction_influences):
+            scale = max(scale, self.config.chamber_radius_scale)
+        elif sample.junction_blend_weight > 0.0:
+            scale = max(scale, self.config.junction_radius_scale)
+        return scale
+
+    def _profile_bounds_radius(self, sample: SectionSample) -> float:
+        profile = np.array(sample.profile_points, dtype=float) * self._profile_scale(sample)
+        if profile.size == 0:
+            return max(self._radius_xy(sample), self._radius_z(sample))
+        return max(float(np.max(np.linalg.norm(profile, axis=1))), self.config.minimum_radius)
+
+    def _interpolated_profile_signed_distance(
+        self,
+        x_values: np.ndarray,
+        z_values: np.ndarray,
+        t_values: np.ndarray,
+        start_profile: np.ndarray,
+        end_profile: np.ndarray,
+    ) -> np.ndarray:
+        if start_profile.shape != end_profile.shape:
+            return np.minimum(
+                self._profile_signed_distance(x_values, z_values, start_profile),
+                self._profile_signed_distance(x_values, z_values, end_profile),
+            )
+
+        distances = np.empty_like(x_values, dtype=float)
+        rounded_t = np.round(t_values, 2)
+        for t_value in np.unique(rounded_t):
+            mask = rounded_t == t_value
+            profile = (1.0 - t_value) * start_profile + t_value * end_profile
+            distances[mask] = self._profile_signed_distance(
+                x_values[mask],
+                z_values[mask],
+                profile,
+            )
+        return distances
+
+    @staticmethod
+    def _profile_signed_distance(
+        x_values: np.ndarray,
+        z_values: np.ndarray,
+        profile: np.ndarray,
+    ) -> np.ndarray:
+        if profile.shape[0] < 3:
+            return np.full_like(x_values, math.inf, dtype=float)
+
+        vertices = profile[:-1] if np.allclose(profile[0], profile[-1]) else profile
+        next_vertices = np.roll(vertices, -1, axis=0)
+        px = x_values[:, None]
+        pz = z_values[:, None]
+        ax = vertices[None, :, 0]
+        az = vertices[None, :, 1]
+        bx = next_vertices[None, :, 0]
+        bz = next_vertices[None, :, 1]
+        edge_x = bx - ax
+        edge_z = bz - az
+        edge_length_squared = np.maximum(edge_x * edge_x + edge_z * edge_z, 1e-9)
+        t = np.clip(((px - ax) * edge_x + (pz - az) * edge_z) / edge_length_squared, 0.0, 1.0)
+        closest_x = ax + t * edge_x
+        closest_z = az + t * edge_z
+        distances = np.sqrt(np.square(px - closest_x) + np.square(pz - closest_z))
+        unsigned_distance = np.min(distances, axis=1)
+
+        crosses = ((az > pz) != (bz > pz)) & (
+            px < (edge_x * (pz - az) / np.where(np.abs(edge_z) < 1e-9, 1e-9, edge_z) + ax)
+        )
+        inside = np.count_nonzero(crosses, axis=1) % 2 == 1
+        return np.where(inside, -unsigned_distance, unsigned_distance)
+
+    def _wall_roughness(
+        self,
+        x_grid: np.ndarray,
+        y_grid: np.ndarray,
+        z_grid: np.ndarray,
+        signed_distance: np.ndarray,
+    ) -> np.ndarray:
+        amplitude = max(self.config.wall_roughness_amplitude, 0.0)
+        if math.isclose(amplitude, 0.0):
+            return np.zeros_like(signed_distance, dtype=float)
+
+        frequency = max(self.config.wall_roughness_frequency, 1e-6)
+        phase_x, phase_y, phase_z = self._roughness_phase
+        roughness = (
+            0.50 * np.sin(frequency * x_grid + phase_x)
+            + 0.35 * np.sin(frequency * y_grid + phase_y)
+            + 0.25 * np.cos(frequency * z_grid + phase_z)
+            + 0.20 * np.sin(frequency * 0.53 * (x_grid + y_grid + z_grid))
+        )
+        blend_distance = max(self.config.wall_roughness_blend * self.config.voxel_size, 1e-6)
+        wall_weight = np.exp(-np.abs(signed_distance) / blend_distance)
+        return amplitude * roughness * wall_weight
+
+    @staticmethod
+    def _normalize_vector(
+        vectors: np.ndarray,
+        *,
+        fallback: np.ndarray,
+    ) -> np.ndarray:
+        lengths = np.linalg.norm(vectors, axis=-1, keepdims=True)
+        safe = lengths > 1e-9
+        fallback_array = np.broadcast_to(fallback, vectors.shape)
+        return np.where(safe, vectors / np.maximum(lengths, 1e-9), fallback_array)
 
     def _stamp_capsule(
         self,

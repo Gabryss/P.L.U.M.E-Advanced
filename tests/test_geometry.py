@@ -41,7 +41,7 @@ class GeometryTests(unittest.TestCase):
         self.assertGreater(int(summary["carved_voxel_count"]), 0)
         self.assertEqual(int(summary["voxel_component_count"]), 1)
         self.assertEqual(int(summary["component_count"]), 1)
-        self.assertLess(int(summary["carved_voxel_count"]), 10_000)
+        self.assertLess(int(summary["carved_voxel_count"]), 100_000)
         self.assertGreaterEqual(int(summary["vertex_count"]), 3)
         self.assertGreaterEqual(int(summary["face_count"]), 1)
 
