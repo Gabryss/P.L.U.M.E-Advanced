@@ -97,6 +97,23 @@ minimum_roof_thickness = 6.5
 maximum_centerline_depth = 26.0
 preferred_cover_fraction = 0.34
 
+[events]
+rock_density_per_100m = 0.40
+boulder_density_per_100m = 0.11
+geological_event_density_per_100m = 0.09
+collapse_event_fraction = 0.35
+choke_event_fraction = 0.30
+infill_event_fraction = 0.35
+minimum_event_spacing = 22.0
+rock_radius_range = [0.8, 2.4]
+boulder_radius_range = [2.4, 6.2]
+collapse_radius_range = [4.0, 9.0]
+choke_radius_range = [3.0, 7.0]
+infill_radius_range = [5.0, 12.0]
+max_lateral_floor_fraction = 0.62
+mesh_latitude_segments = 8
+mesh_longitude_segments = 14
+
 [geometry]
 voxel_size = 3.0
 density_margin = 24.0

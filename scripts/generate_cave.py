@@ -29,12 +29,14 @@ os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE))
 sys.path.insert(0, str(ROOT / "src"))
 
 from config import load_project_config
+from stages.events import GeologicalEventGenerator
 from stages.geometry_export import export_geometry_obj
 from stages.geometry import GeometryGenerator
 from stages.host_field import HostFieldGenerator
 from stages.network import CaveNetworkGenerator
 from stages.section_field import SectionFieldGenerator
 from visualization.geometry import GeometryPlotter
+from visualization.events import GeologicalEventPlotter
 from visualization.host_field import HostFieldPlotter
 from visualization.network import CaveNetworkPlotter
 from visualization.section_field import SectionFieldPlotter
@@ -136,6 +138,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--event-output",
+        type=Path,
+        default=None,
+        help=(
+            "Path for the generated geological event visualization. "
+            "Defaults to a sibling file named stage_e_geological_events.png."
+        ),
+    )
+    parser.add_argument(
         "--geometry-presentation-output",
         type=Path,
         default=None,
@@ -174,6 +185,7 @@ def main() -> int:
     host_output = args.host_output or args.output.with_name("stage_a_host_field.png")
     section_output = args.section_output or args.output.with_name("stage_c_section_field.png")
     geometry_output = args.geometry_output or args.output.with_name("stage_d_geometry.png")
+    event_output = args.event_output or args.output.with_name("stage_e_geological_events.png")
     geometry_presentation_output = (
         args.geometry_presentation_output
         or geometry_output.with_name("stage_d_geometry_presentation.png")
@@ -222,6 +234,22 @@ def main() -> int:
     )
     progress.finish(f"wrote {section_output_path.name}")
 
+    progress.start("Stage E - Geological Events", "placing rocks and events")
+    event_field = GeologicalEventGenerator(project_config.events).generate(section_field)
+    event_summary = event_field.summary()
+    progress.update(
+        1,
+        2,
+        f"{int(event_summary['event_count'])} events; rendering",
+    )
+    event_output_path = GeologicalEventPlotter().render(
+        cave_network,
+        section_field,
+        event_field,
+        event_output,
+    )
+    progress.finish(f"wrote {event_output_path.name}")
+
     progress.start("Stage D - Geometry", "starting voxel geometry")
 
     def geometry_progress(phase: str, current: int, total: int, message: str) -> None:
@@ -230,12 +258,13 @@ def main() -> int:
     cave_geometry = GeometryGenerator(project_config.geometry).generate(
         cave_network,
         section_field,
+        event_field,
         progress=geometry_progress,
     )
     progress.finish(
         (
             f"{len(cave_geometry.chunk_meshes)} chunks, "
-            f"{len(cave_geometry.assembled_faces)} faces"
+            f"{int(cave_geometry.summary()['export_face_count'])} exported faces"
         )
     )
 
@@ -272,6 +301,7 @@ def main() -> int:
     progress.log(f"Stage A visualization: {host_output_path}")
     progress.log(f"Stage B visualization: {network_output_path}")
     progress.log(f"Stage C visualization: {section_output_path}")
+    progress.log(f"Stage E visualization: {event_output_path}")
     progress.log(f"Stage D diagnostic visualization: {geometry_output_path}")
     progress.log(f"Stage D presentation visualization: {geometry_presentation_output_path}")
     progress.log(f"Stage D chunk diagnostics: {geometry_chunk_output_path}")
@@ -305,6 +335,8 @@ def main() -> int:
         progress.log(f"network_{key}: {value:.3f}")
     for key, value in section_summary.items():
         progress.log(f"section_{key}: {value:.3f}")
+    for key, value in event_summary.items():
+        progress.log(f"event_{key}: {value:.3f}")
     for key, value in cave_geometry.summary().items():
         progress.log(f"geometry_{key}: {value:.3f}")
 

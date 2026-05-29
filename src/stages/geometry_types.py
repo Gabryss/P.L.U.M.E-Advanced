@@ -7,6 +7,8 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import ndimage
 
+from stages.events import GeologicalEventMesh
+
 
 @dataclass(frozen=True)
 class GeometryConfig:
@@ -82,6 +84,7 @@ class CaveGeometry:
     component_count: int
     stamped_sample_count: int
     stamped_segment_ids: tuple[int, ...]
+    event_meshes: tuple[GeologicalEventMesh, ...] = ()
 
     @property
     def meshes(self) -> tuple[GeometryChunkMesh, ...]:
@@ -93,6 +96,7 @@ class CaveGeometry:
         return {
             "mesh_count": float(len(self.chunk_meshes)),
             "chunk_mesh_count": float(len(self.chunk_meshes)),
+            "event_mesh_count": float(len(self.event_meshes)),
             "stamped_segment_count": float(len(self.stamped_segment_ids)),
             "stamped_sample_count": float(self.stamped_sample_count),
             "voxel_count": float(np.prod(self.voxel_grid.shape)),
@@ -101,6 +105,16 @@ class CaveGeometry:
             "component_count": float(self.component_count),
             "vertex_count": float(len(self.assembled_vertices)),
             "face_count": float(len(self.assembled_faces)),
+            "event_vertex_count": float(sum(mesh.vertex_count for mesh in self.event_meshes)),
+            "event_face_count": float(sum(mesh.face_count for mesh in self.event_meshes)),
+            "export_vertex_count": float(
+                len(self.assembled_vertices)
+                + sum(mesh.vertex_count for mesh in self.event_meshes)
+            ),
+            "export_face_count": float(
+                len(self.assembled_faces)
+                + sum(mesh.face_count for mesh in self.event_meshes)
+            ),
         }
 
 

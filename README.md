@@ -16,7 +16,7 @@ are still intentionally incomplete.
 | B. Cave Network | Implemented | Generate a host-driven braided cave-network skeleton | `outputs/stage_b_cave_network.png` |
 | C. Section Field | Implemented | Build adaptive lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png` |
 | D. Geometry | Implemented | Stamp the cave network into a voxel grid and polygonize the density field | `outputs/stage_d_geometry.png`, `outputs/stage_d_geometry_chunks.png`, `outputs/stage_d_geometry_presentation.png` |
-| E. Geological Events | Placeholder | Skylights, choke points, collapse, infill | TODO |
+| E. Geological Events | Implemented | Placed mesh-stage rocks, boulders, collapse debris, choke points, and infill | `outputs/stage_e_geological_events.png` |
 | F. Surface Detail / Texturing | Placeholder | Wall detail, floor variation, material masks | TODO |
 
 ## Current Outputs
@@ -55,10 +55,22 @@ regions.
 
 Stage D converts the Stage-C samples into a carved density field. It stamps
 capsule tunnels and widened junction/chamber regions into a voxel grid, then
-meshes the zero-density isosurface in chunks. The diagnostic render focuses on
-footprint alignment, longitudinal continuity, chunk coverage, and section
-slices. The chunk render isolates chunk coverage, face-count distribution, and
-Y/Z chunk spans. The presentation render gives a cleaner plan/mesh preview.
+meshes the zero-density isosurface in chunks. Stage-E rocks, boulders, and
+larger geological event meshes are placed as separate mesh objects. The
+diagnostic render focuses on footprint alignment, longitudinal continuity,
+chunk coverage, and section slices. The chunk render isolates chunk coverage,
+face-count distribution, and Y/Z chunk spans. The presentation render gives a
+cleaner plan/mesh preview.
+
+### Stage E: Geological Events
+
+![Stage E Geological Events](outputs/stage_e_geological_events.png)
+
+Stage E places deterministic mesh-stage events from the Stage-C section field:
+scattered rocks, larger boulders, collapse debris, choke points, and floor
+infill. These events are generated as separate placed meshes before texturing.
+Stage F can later use their `material_hint` metadata for texture and material
+masks.
 
 ## How It Works
 
@@ -90,10 +102,10 @@ it or generated from the same seed-resolved structural controls.
 
 | Layer | Built From | Used Now | Intended Later Use |
 |---|---|---|---|
-| `elevation` | directional grade + corridor + waves | terrain profile, downhill direction | surface interaction, skylights |
+| `elevation` | directional grade + corridor + waves | terrain profile, downhill direction | surface interaction |
 | `gradient_x`, `gradient_y` | `np.gradient(elevation)` | downhill steering for graph growth | path-cost and event logic |
 | `slope_degrees` | gradient magnitude | cover thickness, diagnostics, growth cost | gating unstable or unrealistic zones |
-| `cover_thickness` | base thickness + relief bonus - slope penalty | growth cost, graph diagnostics | collapse and skylight rules |
+| `cover_thickness` | base thickness + relief bonus - slope penalty | growth cost, graph diagnostics | collapse and surface-stability rules |
 | `roof_competence` | structural bands + fracture corridor + edge weathering | growth cost, graph diagnostics | ceiling roughness, collapse, material masks |
 | `growth_cost` | weighted slope, cover, and competence penalties | visualization, summaries | future explicit path scoring |
 
@@ -167,17 +179,19 @@ configs for the generators.
 Execution flow:
 
 1. load `config/project.toml`
-2. build `HostFieldConfig`, `CaveNetworkConfig`, `SectionFieldConfig`, and `GeometryConfig`
+2. build `HostFieldConfig`, `CaveNetworkConfig`, `SectionFieldConfig`, `GeologicalEventConfig`, and `GeometryConfig`
 3. generate the host field
 4. render the host-field plot
 5. generate the cave network
 6. render the network plot
 7. generate the section field
 8. render the section-field plot
-9. generate the geometry stage
-10. render the geometry diagnostic and presentation plots
-11. export the assembled geometry OBJ
-12. write the artifacts in `outputs/`
+9. generate geological mesh events
+10. render the geological-event plot
+11. generate the geometry stage with Stage-E events
+12. render the geometry diagnostic and presentation plots
+13. export the assembled geometry OBJ
+14. write the artifacts in `outputs/`
 
 `procedural_seed` is the top-level seed for the active pipeline. By default it
 samples the host-field ranges, then feeds the cave-network, section-field, and
@@ -233,6 +247,18 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `junction_irregularity_*` | deform junction/chamber volumes so they blend less like perfect ellipsoids |
 | `minimum_radius`, `weld_tolerance` | keep thin passages meshable and weld repeated isosurface vertices |
 
+### Event Config
+
+| Key Group | Purpose |
+|---|---|
+| `rock_density_per_100m`, `boulder_density_per_100m` | control loose debris density along sampled cave length |
+| `geological_event_density_per_100m` | control larger collapse/choke/infill event density |
+| `collapse_event_fraction`, `choke_event_fraction`, `infill_event_fraction` | split larger geological events by type |
+| `*_radius_range` | bound event sizes before they are clipped to local tube dimensions |
+| `minimum_event_spacing` | keep major event centers from clustering too tightly |
+| `max_lateral_floor_fraction` | keep floor debris inside the local tube profile |
+| `mesh_latitude_segments`, `mesh_longitude_segments` | control generated event mesh resolution |
+
 ## Project Layout
 
 - `config/`: project configuration
@@ -269,7 +295,8 @@ Generate the current cave network with the single entrypoint:
 ```
 
 The generator prints progress bars for configuration loading, stages A-C,
-detailed Stage-D voxel/mesh generation, Stage-D visualization, and OBJ export.
+Stage-E geological event placement, detailed Stage-D voxel/mesh generation,
+Stage-D visualization, and OBJ export.
 Geometry progress reports stamp counts, chunk meshing status, assembled face
 counts, and final component counts.
 
@@ -278,6 +305,7 @@ That one command produces:
 - `outputs/stage_a_host_field.png`
 - `outputs/stage_b_cave_network.png`
 - `outputs/stage_c_section_field.png`
+- `outputs/stage_e_geological_events.png`
 - `outputs/stage_d_geometry.png`
 - `outputs/stage_d_geometry_chunks.png`
 - `outputs/stage_d_geometry_presentation.png`
@@ -286,11 +314,12 @@ That one command produces:
 Optional:
 
 ```bash
-python scripts/generate_cave.py \
+.venv/bin/python scripts/generate_cave.py \
   --config config/project.toml \
   --output outputs/stage_b_cave_network.png \
   --host-output outputs/stage_a_host_field.png \
   --section-output outputs/stage_c_section_field.png \
+  --event-output outputs/stage_e_geological_events.png \
   --geometry-output outputs/stage_d_geometry.png \
   --geometry-chunk-output outputs/stage_d_geometry_chunks.png \
   --geometry-presentation-output outputs/stage_d_geometry_presentation.png \
@@ -300,7 +329,7 @@ python scripts/generate_cave.py \
 Optional host-field debug render:
 
 ```bash
-python scripts/render_host_field.py
+.venv/bin/python scripts/render_host_field.py
 ```
 
 Both scripts read `config/project.toml` by default.
@@ -318,22 +347,32 @@ What exists now:
 - one density grid containing the full stamped tunnel network
 - chunked isosurface generation for review/progress visualization
 - diagnostic, chunk-focused, and presentation Stage-D render artifacts
-- OBJ export of one assembled mesh for simulation engines
+- OBJ export of the cave mesh plus separate placed Stage-E mesh objects
 
 Still deferred:
 
 - watertight versus blend-ready export modes
 - higher-quality normal generation and surface cleanup
-- detail/event carving for skylights, collapse, choke points, and infill
+- higher-quality event-specific cleanup for rocks, boulders, collapse, choke points, and infill
 
 ### Stage E: Geological Events
 
-Placeholder.
+Implemented as a mesh-stage event pass.
 
-Planned role:
+What exists now:
 
-- inject choke points, collapse debris, and infill
-- tie those events to graph position and host-field conditions
+- deterministic placement from Stage-C samples
+- scattered rocks and larger boulders
+- collapse debris, choke points, and floor infill
+- separate placed meshes for every Stage-E event
+- event visualization and summary metrics
+- voxel integration before Stage-D meshing
+
+Still deferred:
+
+- richer event-specific mesh cleanup controls
+- explicit gameplay/navigation metadata
+- final material-mask export for Stage F
 
 ### Stage F: Surface Detail / Texturing
 
@@ -352,8 +391,9 @@ The current project state is intentionally narrow:
 - Stage A builds the terrain and structural substrate
 - Stage B builds the current braided cave-network skeleton
 - Stage C builds adaptive lava-tube cross-sections around that skeleton
-- Stage D stamps that network into a voxel density field and meshes the isosurface
-- stages E-F and watertight/detail work remain for the next passes
+- Stage E places geological mesh events including rocks and boulders
+- Stage D stamps the network into a voxel density field, meshes the isosurface, and exports the placed Stage-E meshes alongside it
+- Stage F and watertight/detail work remain for the next passes
 
 That keeps the pipeline inspectable while still leaving a clear path toward the
 final pyroduct mesh and texture stages.

@@ -11,6 +11,7 @@ import numpy as np
 from skimage import measure
 from scipy import ndimage
 
+from stages.events import GeologicalEventField
 from stages.geometry_types import CaveGeometry, GeometryChunkMesh, GeometryConfig, VoxelGrid
 from stages.network import CaveNetwork
 from stages.section_field import SectionField, SectionSample
@@ -41,6 +42,7 @@ class GeometryGenerator:
         self,
         cave_network: CaveNetwork,
         section_field: SectionField,
+        event_field: GeologicalEventField | None = None,
         progress: GeometryProgressCallback | None = None,
     ) -> CaveGeometry:
         self._emit_progress(progress, "prepare", 0, 1, "collecting section samples")
@@ -77,9 +79,14 @@ class GeometryGenerator:
                 component_count=0,
                 stamped_sample_count=0,
                 stamped_segment_ids=(),
+                event_meshes=event_field.meshes if event_field is not None else (),
             )
 
-        voxel_grid = self._build_voxel_grid(samples_by_segment, cave_network, progress)
+        voxel_grid = self._build_voxel_grid(
+            samples_by_segment,
+            cave_network,
+            progress,
+        )
         chunk_meshes = self._march_chunks(voxel_grid, progress)
         self._emit_progress(
             progress,
@@ -113,6 +120,7 @@ class GeometryGenerator:
             component_count=component_count,
             stamped_sample_count=len(stamp_samples),
             stamped_segment_ids=tuple(sorted(samples_by_segment)),
+            event_meshes=event_field.meshes if event_field is not None else (),
         )
 
     def _build_voxel_grid(

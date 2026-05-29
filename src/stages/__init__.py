@@ -8,6 +8,13 @@ from .host_field import (
     HostFieldSample,
     TerrainWave,
 )
+from .events import (
+    GeologicalEvent,
+    GeologicalEventConfig,
+    GeologicalEventField,
+    GeologicalEventGenerator,
+    GeologicalEventMesh,
+)
 from .geometry import (
     CaveGeometry,
     GeometryChunkMesh,
@@ -47,6 +54,11 @@ __all__ = [
     "GeometryConfig",
     "GeometryChunkMesh",
     "GeometryGenerator",
+    "GeologicalEvent",
+    "GeologicalEventConfig",
+    "GeologicalEventField",
+    "GeologicalEventGenerator",
+    "GeologicalEventMesh",
     "GridConfig",
     "HostField",
     "HostFieldConfig",

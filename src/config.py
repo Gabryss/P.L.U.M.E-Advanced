@@ -9,6 +9,7 @@ from typing import Any
 
 import numpy as np
 
+from stages.events import GeologicalEventConfig
 from stages.geometry import GeometryConfig
 from stages.host_field import GridConfig, HostFieldConfig, TerrainWave
 from stages.network import BraidGrammarConfig, CaveNetworkConfig
@@ -23,6 +24,7 @@ class ProjectConfig:
     host_field: HostFieldConfig
     network: CaveNetworkConfig
     section_field: SectionFieldConfig
+    events: GeologicalEventConfig
     geometry: GeometryConfig
 
 
@@ -47,6 +49,10 @@ def load_project_config(path: str | Path) -> ProjectConfig:
         ),
         section_field=_build_section_field_config(
             raw_config.get("section_field", {}),
+            procedural_seed=procedural_seed,
+        ),
+        events=_build_event_config(
+            raw_config.get("events", {}),
             procedural_seed=procedural_seed,
         ),
         geometry=_build_geometry_config(
@@ -212,3 +218,23 @@ def _build_geometry_config(
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
     return GeometryConfig(**config_data)
+
+
+def _build_event_config(
+    raw_config: dict[str, Any],
+    *,
+    procedural_seed: int | None,
+) -> GeologicalEventConfig:
+    config_data = dict(raw_config)
+    if "random_seed" not in config_data:
+        config_data["random_seed"] = procedural_seed
+    for key in (
+        "rock_radius_range",
+        "boulder_radius_range",
+        "collapse_radius_range",
+        "choke_radius_range",
+        "infill_radius_range",
+    ):
+        if key in config_data:
+            config_data[key] = _to_range_tuple(config_data[key])
+    return GeologicalEventConfig(**config_data)
