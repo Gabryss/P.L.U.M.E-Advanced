@@ -1,0 +1,1249 @@
+newmtl event_0001_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_rough_4k.exr
+disp ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_disp_4k.png
+
+newmtl event_0002_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0003_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0004_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0005_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0006_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0007_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0008_collapsed_ceiling_block
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_rough_4k.exr
+disp ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_disp_4k.png
+
+newmtl event_0009_collapsed_ceiling_block
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0010_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0011_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0012_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0015_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0016_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0017_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0018_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0019_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0020_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0021_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0022_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0023_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0024_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0025_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0026_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0027_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0029_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0030_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0031_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0032_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0033_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_rough_4k.exr
+disp ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_disp_4k.png
+
+newmtl event_0034_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0035_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0036_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0037_collapsed_ceiling_block
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0039_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0041_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0042_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0043_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0044_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0045_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0046_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0047_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0048_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0049_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0050_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_rough_4k.exr
+disp ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_disp_4k.png
+
+newmtl event_0051_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0053_collapsed_ceiling_block
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0054_collapsed_ceiling_block
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_rough_4k.exr
+disp ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_disp_4k.png
+
+newmtl event_0055_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0056_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0057_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0058_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0059_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0060_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0061_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0062_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0063_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0064_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0065_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0066_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0067_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0068_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0069_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0070_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0071_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0072_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0073_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0074_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0075_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0077_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0078_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0079_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0080_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0081_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0082_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0083_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0084_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0085_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0086_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0087_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0089_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0090_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0091_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0093_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0094_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0095_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0096_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0098_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0099_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0101_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0102_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0103_collapsed_ceiling_block
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0104_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0105_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0106_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0107_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0108_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0109_collapsed_ceiling_block
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0110_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0111_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_rough_4k.exr
+disp ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_disp_4k.png
+
+newmtl event_0112_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0113_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0114_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0115_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0116_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0117_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0118_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0119_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0120_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0121_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0122_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0123_collapsed_ceiling_block
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_rough_4k.exr
+disp ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_disp_4k.png
+
+newmtl event_0124_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0126_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0127_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0128_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0129_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0130_rounded_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0131_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0132_flat_slab
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_rough_4k.exr
+disp ../../Rocky/textures/marble_cliff_05_4k.blend/textures/marble_cliff_05_disp_4k.png
+
+newmtl event_0133_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_rough_4k.exr
+disp ../../Rocky/textures/rock_boulder_dry_4k.blend/textures/rock_boulder_dry_disp_4k.png
+
+newmtl event_0134_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png
+
+newmtl event_0135_vesicular_chunk
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0136_ropy_lava_fragment
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_rough_4k.jpg
+disp ../../Rocky/textures/rock_05_4k.blend/textures/rock_05_disp_4k.png
+
+newmtl event_0137_angular_boulder
+Ka 0.15 0.15 0.15
+Kd 0.82 0.82 0.82
+Ks 0.04 0.04 0.04
+Ns 18.0
+map_Kd ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_diff_4k.jpg
+map_Bump ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_nor_gl_4k.exr
+map_Pr ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_rough_4k.exr
+disp ../../Rocky/textures/rock_surface_4k.blend/textures/rock_surface_disp_4k.png

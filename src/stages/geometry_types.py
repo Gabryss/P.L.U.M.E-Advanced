@@ -30,6 +30,10 @@ class GeometryConfig:
     junction_irregularity_amplitude: float = 0.18
     junction_irregularity_frequency: float = 0.11
     weld_tolerance: float = 1e-5
+    cave_diffuse_texture: str = "texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg"
+    cave_normal_texture: str = "texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr"
+    cave_roughness_texture: str = "texture/dark_rock_8k/textures/dark_rock_rough_8k.exr"
+    cave_displacement_texture: str = "texture/dark_rock_8k/textures/dark_rock_disp_8k.png"
 
 
 @dataclass(frozen=True)

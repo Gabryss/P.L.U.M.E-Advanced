@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+from pathlib import Path
+import sys
+from typing import Any
 
 import numpy as np
 
@@ -30,6 +33,12 @@ class GeologicalEventConfig:
     max_lateral_floor_fraction: float = 0.62
     mesh_latitude_segments: int = 8
     mesh_longitude_segments: int = 14
+    use_rocky_meshes: bool = True
+    rocky_source_path: str = "../Rocky/src"
+    rocky_texture_dir: str = "../Rocky/textures"
+    rocky_output_dir: str = "outputs/rocky_stage_e"
+    rocky_resolution_scale: float = 0.70
+    rocky_max_subdivisions: int = 5
 
 
 @dataclass(frozen=True)
@@ -44,6 +53,7 @@ class GeologicalEvent:
     y: float
     z: float
     surface_z: float
+    floor_z: float
     radius_x: float
     radius_y: float
     radius_z: float
@@ -69,6 +79,10 @@ class GeologicalEventMesh:
     material_hint: str
     vertices: tuple[tuple[float, float, float], ...]
     faces: tuple[tuple[int, int, int], ...]
+    face_uvs: tuple[tuple[tuple[float, float], tuple[float, float], tuple[float, float]], ...] = ()
+    material_maps: tuple[tuple[str, str], ...] = ()
+    source_generator: str = "native"
+    source_shape_type: str = ""
 
     @property
     def vertex_count(self) -> int:
@@ -110,6 +124,7 @@ class GeologicalEventGenerator:
 
     def __init__(self, config: GeologicalEventConfig | None = None) -> None:
         self.config = config or GeologicalEventConfig()
+        self._rocky_api = _load_rocky_api(self.config.rocky_source_path) if self.config.use_rocky_meshes else None
 
     def generate(self, section_field: SectionField) -> GeologicalEventField:
         rng = np.random.default_rng(self.config.random_seed)
@@ -158,6 +173,7 @@ class GeologicalEventGenerator:
                 y=event.y,
                 z=event.z,
                 surface_z=event.surface_z,
+                floor_z=event.floor_z,
                 radius_x=event.radius_x,
                 radius_y=event.radius_y,
                 radius_z=event.radius_z,
@@ -317,6 +333,7 @@ class GeologicalEventGenerator:
             y=float(y),
             z=float(z),
             surface_z=float(sample.surface_z),
+            floor_z=float(floor[2]),
             radius_x=max(float(radius_x), 0.25),
             radius_y=max(float(radius_y), 0.25),
             radius_z=max(float(radius_z), 0.25),
@@ -326,6 +343,11 @@ class GeologicalEventGenerator:
         )
 
     def _build_event_mesh(self, event: GeologicalEvent) -> GeologicalEventMesh:
+        if self._rocky_api is not None and event.kind in {"rock", "boulder", "collapse"}:
+            rocky_mesh = self._build_rocky_event_mesh(event)
+            if rocky_mesh is not None:
+                return rocky_mesh
+
         lat_segments = max(int(self.config.mesh_latitude_segments), 4)
         lon_segments = max(int(self.config.mesh_longitude_segments), 6)
         vertices: list[tuple[float, float, float]] = []
@@ -372,6 +394,137 @@ class GeologicalEventGenerator:
             faces=tuple(faces),
         )
 
+    def _build_rocky_event_mesh(self, event: GeologicalEvent) -> GeologicalEventMesh | None:
+        if self._rocky_api is None:
+            return None
+
+        try:
+            BatchConfig = self._rocky_api["BatchConfig"]
+            RockGenerator = self._rocky_api["RockGenerator"]
+            ParameterRanges = self._rocky_api["ParameterRanges"]
+            RockParameters = self._rocky_api["RockParameters"]
+            discover_texture_sets = self._rocky_api["discover_texture_sets"]
+            choose_texture_set = self._rocky_api["choose_texture_set"]
+        except KeyError:
+            return None
+
+        radius_xy = max(event.radius_x, event.radius_y)
+        target_height = max(0.20, event.radius_z * 2.0)
+        diameter = max(0.24, radius_xy * 2.0)
+        shape_type, archetype, material_type, base_shape = self._rocky_profile(event)
+        subdivisions = self._rocky_subdivisions(max(target_height, diameter))
+        seed = self._event_seed(event)
+        params = RockParameters(
+            name=f"stage_e_event_{event.event_id:04d}",
+            seed=seed,
+            size_class=self._rocky_size_class(max(target_height, diameter)),
+            archetype=archetype,
+            shape_type=shape_type,
+            material_type=material_type,
+            placement_role="navigation_obstacle" if event.kind != "rock" else "floor_scatter",
+            max_height=max(target_height * 1.05, 0.25),
+            target_height=target_height,
+            diameter=diameter,
+            base_shape=base_shape,
+            subdivisions=subdivisions,
+            radius=max(target_height, diameter) * 0.5,
+            roughness=(0.10 + 0.24 * event.severity) * max(target_height, diameter),
+            angularity=0.35 + 0.65 * event.severity,
+            spike_limit=0.72 + 0.14 * (1.0 - event.severity),
+            elongation=max(0.65, min(1.85, event.radius_x / max(event.radius_y, 1e-6))),
+            floor_flattening=0.25 if event.kind == "boulder" else 0.45,
+            fracture_strength=0.04 + 0.08 * event.severity,
+            pitting_intensity=0.45 if material_type == "porous_lava" else 0.12,
+            ropy_strength=0.20 if shape_type == "ropy_lava_fragment" else 0.0,
+            fracture_count=max(2, int(round(3 + 7 * event.severity))),
+            crack_count=max(3, int(round(5 + 11 * event.severity))),
+        )
+        config = BatchConfig(
+            seed=seed,
+            count=1,
+            output_dir=Path(self.config.rocky_output_dir),
+            texture_dir=Path(self.config.rocky_texture_dir),
+            export_formats=(),
+            max_height=params.max_height,
+            resolution_scale=self.config.rocky_resolution_scale,
+            ranges=ParameterRanges(),
+        )
+        state = RockGenerator(config).generate_one(params)
+        if state.mesh is None:
+            return None
+
+        texture_sets = discover_texture_sets(config.texture_dir)
+        material_maps = choose_texture_set(texture_sets, np.random.default_rng(seed), material_type)
+        vertices = self._transform_rocky_vertices(event, state.mesh)
+        return GeologicalEventMesh(
+            event_id=event.event_id,
+            kind=event.kind,
+            material_hint=event.material_hint,
+            vertices=vertices,
+            faces=tuple(tuple(int(index) for index in face) for face in state.mesh.faces),
+            face_uvs=tuple(state.mesh.face_uvs),
+            material_maps=tuple((name, str(path)) for name, path in sorted(material_maps.items())),
+            source_generator="rocky",
+            source_shape_type=shape_type,
+        )
+
+    def _transform_rocky_vertices(self, event: GeologicalEvent, mesh: Any) -> tuple[tuple[float, float, float], ...]:
+        bounds_min, _bounds_max = mesh.bounds()
+        contact_z = self._event_contact_z(event)
+        cos_angle = math.cos(event.angle)
+        sin_angle = math.sin(event.angle)
+        vertices: list[tuple[float, float, float]] = []
+        for vertex in mesh.vertices:
+            local_x = float(vertex.x)
+            local_y = float(vertex.y - bounds_min.y)
+            local_z = float(vertex.z)
+            world_x = event.x + local_x * cos_angle - local_z * sin_angle
+            world_y = event.y + local_x * sin_angle + local_z * cos_angle
+            world_z = contact_z + local_y
+            vertices.append((float(world_x), float(world_y), float(world_z)))
+        return tuple(vertices)
+
+    @staticmethod
+    def _event_contact_z(event: GeologicalEvent) -> float:
+        return float(event.floor_z)
+
+    def _rocky_subdivisions(self, size: float) -> int:
+        if size < 0.75:
+            base = 2
+        elif size < 2.5:
+            base = 3
+        else:
+            base = 4
+        scaled = round(base * self.config.rocky_resolution_scale)
+        return max(1, min(int(self.config.rocky_max_subdivisions), scaled))
+
+    @staticmethod
+    def _rocky_size_class(size: float) -> str:
+        if size < 0.75:
+            return "floor_cobble"
+        if size < 2.5:
+            return "step_rock"
+        return "rover_obstacle"
+
+    def _rocky_profile(self, event: GeologicalEvent) -> tuple[str, str, str, str]:
+        profile_index = self._event_seed(event) % 5
+        if event.kind == "collapse":
+            return "collapsed_ceiling_block", "fractured_block", "fractured_cliff", "box"
+        profiles = (
+            ("rounded_boulder", "smooth_basalt", "dark_basalt", "icosphere"),
+            ("angular_boulder", "rough_basalt", "dark_basalt", "icosphere"),
+            ("vesicular_chunk", "vesicular_lava", "porous_lava", "icosphere"),
+            ("flat_slab", "flat_lava_slab", "layered_cliff", "box"),
+            ("ropy_lava_fragment", "ropy_lava_clast", "porous_lava", "icosphere"),
+        )
+        if event.kind == "boulder":
+            profile_index = (profile_index + 1) % len(profiles)
+        return profiles[profile_index]
+
+    def _event_seed(self, event: GeologicalEvent) -> int:
+        base_seed = self.config.random_seed or 0
+        return int((base_seed * 1_000_003 + event.event_id * 9_176 + event.segment_id * 131 + event.sample_index) % (2**31 - 1)) or 1
+
     def _sample_radius(self, kind: str, rng: np.random.Generator) -> float:
         ranges = {
             "rock": self.config.rock_radius_range,
@@ -391,3 +544,35 @@ __all__ = [
     "GeologicalEventMesh",
     "GeologicalEventGenerator",
 ]
+
+
+def _load_rocky_api(source_path: str) -> dict[str, Any] | None:
+    source = Path(source_path)
+    if not source.is_absolute():
+        source = Path(__file__).resolve().parents[2] / source
+    if source.exists():
+        source_text = str(source)
+        if source_text not in sys.path:
+            sys.path.insert(0, source_text)
+    try:
+        from rocky import BatchConfig, RockGenerator
+        from rocky.config import ParameterRanges
+        from rocky.layers import RockParameters
+        from rocky.pipeline import _choose_texture_set, _discover_texture_sets
+    except ImportError:
+        return None
+
+    def choose_texture_set(texture_sets: list[dict[str, Path]], rng: np.random.Generator, material_type: str) -> dict[str, Path]:
+        import random
+
+        py_rng = random.Random(int(rng.integers(1, 2**31 - 1)))
+        return _choose_texture_set(texture_sets, py_rng, material_type)
+
+    return {
+        "BatchConfig": BatchConfig,
+        "RockGenerator": RockGenerator,
+        "ParameterRanges": ParameterRanges,
+        "RockParameters": RockParameters,
+        "discover_texture_sets": _discover_texture_sets,
+        "choose_texture_set": choose_texture_set,
+    }

@@ -30,7 +30,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from config import load_project_config
 from stages.events import GeologicalEventGenerator
-from stages.geometry_export import export_geometry_obj
+from stages.geometry_export import export_geometry_glb, export_geometry_obj
 from stages.geometry import GeometryGenerator
 from stages.host_field import HostFieldGenerator
 from stages.network import CaveNetworkGenerator
@@ -173,6 +173,15 @@ def parse_args() -> argparse.Namespace:
             "Defaults to a sibling file named stage_d_geometry.obj."
         ),
     )
+    parser.add_argument(
+        "--geometry-glb-output",
+        type=Path,
+        default=None,
+        help=(
+            "Path for the generated geometry-stage GLB scene export. "
+            "Defaults to a sibling file named stage_d_geometry.glb."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -196,6 +205,9 @@ def main() -> int:
     )
     geometry_mesh_output = (
         args.geometry_mesh_output or args.output.with_name("stage_d_geometry.obj")
+    )
+    geometry_glb_output = (
+        args.geometry_glb_output or args.output.with_name("stage_d_geometry.glb")
     )
     progress.finish(f"loaded {args.config}")
 
@@ -291,9 +303,11 @@ def main() -> int:
         cave_geometry,
         geometry_chunk_output,
     )
-    progress.update(3, 4, f"wrote {geometry_chunk_output_path.name}; exporting OBJ")
+    progress.update(3, 5, f"wrote {geometry_chunk_output_path.name}; exporting OBJ")
     geometry_mesh_output_path = export_geometry_obj(cave_geometry, geometry_mesh_output)
-    progress.finish(f"wrote {geometry_mesh_output_path.name}")
+    progress.update(4, 5, f"wrote {geometry_mesh_output_path.name}; exporting GLB")
+    geometry_glb_output_path = export_geometry_glb(cave_geometry, geometry_glb_output)
+    progress.finish(f"wrote {geometry_glb_output_path.name}")
 
     progress.close()
     progress.log("Generated cave pipeline artifacts.")
@@ -306,6 +320,7 @@ def main() -> int:
     progress.log(f"Stage D presentation visualization: {geometry_presentation_output_path}")
     progress.log(f"Stage D chunk diagnostics: {geometry_chunk_output_path}")
     progress.log(f"Stage D mesh export: {geometry_mesh_output_path}")
+    progress.log(f"Stage D GLB scene export: {geometry_glb_output_path}")
     progress.log("")
     progress.log("[bold]Key cave metrics[/bold]")
     progress.log(f"total_lava_tube_length_m: {network_summary['total_length']:.3f}")
