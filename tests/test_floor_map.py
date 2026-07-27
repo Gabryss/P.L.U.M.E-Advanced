@@ -61,10 +61,15 @@ class FloorMapTests(unittest.TestCase):
                     arrays["plan_occupancy"].shape,
                     arrays["plan_level_count"].shape,
                 )
+                self.assertEqual(
+                    arrays["plan_occupancy"].shape,
+                    arrays["plan_geology_class"].shape,
+                )
                 self.assertGreater(
                     int(np.count_nonzero(arrays["plan_occupancy"])),
                     0,
                 )
+                self.assertEqual(arrays["geology_class"].shape, (len(atlas.cells),))
 
 
 if __name__ == "__main__":

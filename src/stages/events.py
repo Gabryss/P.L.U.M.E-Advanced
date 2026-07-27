@@ -49,6 +49,9 @@ class GeologicalEventConfig:
     rock_density_kg_m3: float = 2_900.0
     effective_tensile_strength_pa: float = 3_000_000.0
     ground_embed_fraction: float = 0.08
+    clustered_debris_fraction: float = 0.45
+    collapse_cluster_radius_scale: float = 4.0
+    collapse_cluster_spacing_scale: float = 0.55
 
 
 @dataclass(frozen=True)
@@ -74,6 +77,7 @@ class GeologicalEvent:
     contact_normal: tuple[float, float, float] = (0.0, 0.0, 1.0)
     grounded: bool = False
     floor_cell_id: int = -1
+    cluster_parent_event_id: int = -1
 
     @property
     def position(self) -> tuple[float, float, float]:
@@ -142,6 +146,13 @@ class GeologicalEventField:
             "grounded_prop_count": float(
                 sum(
                     event.grounded
+                    for event in self.events
+                    if event.kind in {"rock", "boulder"}
+                )
+            ),
+            "clustered_prop_count": float(
+                sum(
+                    event.cluster_parent_event_id >= 0
                     for event in self.events
                     if event.kind in {"rock", "boulder"}
                 )
@@ -239,15 +250,44 @@ class GeologicalEventGenerator:
                 if prop_candidates is None
                 else []
             )
-            for _ in range(max(count, 0)):
+            cluster_candidates = (
+                self._collapse_cluster_candidates(prop_candidates, events)
+                if prop_candidates is not None
+                else []
+            )
+            cluster_target = int(
+                round(max(count, 0) * self.config.clustered_debris_fraction)
+            )
+            for placement_index in range(max(count, 0)):
                 floor_cell = None
                 if prop_candidates is not None:
+                    use_cluster_pool = (
+                        placement_index < cluster_target
+                        and bool(cluster_candidates)
+                    )
                     selected = self._choose_floor_candidate(
                         kind,
                         rng,
-                        prop_candidates,
+                        (
+                            cluster_candidates
+                            if use_cluster_pool
+                            else prop_candidates
+                        ),
                         occupied_positions,
+                        spacing_scale=(
+                            self.config.collapse_cluster_spacing_scale
+                            if use_cluster_pool
+                            else 1.0
+                        ),
                     )
+                    if selected is None and cluster_candidates:
+                        selected = self._choose_floor_candidate(
+                            kind,
+                            rng,
+                            prop_candidates,
+                            occupied_positions,
+                            spacing_scale=1.0,
+                        )
                     if selected is None:
                         break
                     sample, floor_cell = selected
@@ -268,6 +308,11 @@ class GeologicalEventGenerator:
                     rng=rng,
                     voxel_grid=voxel_grid,
                     floor_cell=floor_cell,
+                    cluster_parent_event_id=(
+                        self._nearest_collapse_event_id(floor_cell, events)
+                        if floor_cell is not None
+                        else -1
+                    ),
                 )
                 events.append(event)
                 occupied_positions.append(
@@ -275,6 +320,9 @@ class GeologicalEventGenerator:
                 )
 
         events.sort(key=lambda event: (event.segment_id, event.sample_index, event.event_id))
+        event_id_remap = {
+            event.event_id: index for index, event in enumerate(events)
+        }
         normalized_events = tuple(
             GeologicalEvent(
                 event_id=index,
@@ -296,6 +344,10 @@ class GeologicalEventGenerator:
                 contact_normal=event.contact_normal,
                 grounded=event.grounded,
                 floor_cell_id=event.floor_cell_id,
+                cluster_parent_event_id=event_id_remap.get(
+                    event.cluster_parent_event_id,
+                    -1,
+                ),
             )
             for index, event in enumerate(events)
         )
@@ -418,6 +470,56 @@ class GeologicalEventGenerator:
         scored.sort(key=lambda item: item[0], reverse=True)
         return scored
 
+    def _collapse_cluster_candidates(
+        self,
+        candidates: list[tuple[float, SectionSample, FloorCell]],
+        events: list[GeologicalEvent],
+    ) -> list[tuple[float, SectionSample, FloorCell]]:
+        collapses = [event for event in events if event.kind == "collapse"]
+        if not collapses:
+            return []
+        clustered: list[tuple[float, SectionSample, FloorCell]] = []
+        for score, sample, cell in candidates:
+            position = np.asarray(cell.position, dtype=float)
+            affinity = 0.0
+            for collapse in collapses:
+                distance = float(
+                    np.linalg.norm(position - np.asarray(collapse.position, dtype=float))
+                )
+                radius = max(
+                    collapse.max_radius * self.config.collapse_cluster_radius_scale,
+                    1.0,
+                )
+                if distance <= radius:
+                    affinity = max(affinity, math.exp(-((distance / radius) ** 2)))
+            if affinity > 0.0:
+                clustered.append((score * (1.0 + 4.0 * affinity), sample, cell))
+        clustered.sort(key=lambda item: item[0], reverse=True)
+        return clustered
+
+    def _nearest_collapse_event_id(
+        self,
+        floor_cell: FloorCell,
+        events: list[GeologicalEvent],
+    ) -> int:
+        position = np.asarray(floor_cell.position, dtype=float)
+        nearest_id = -1
+        nearest_distance = math.inf
+        for event in events:
+            if event.kind != "collapse":
+                continue
+            distance = float(
+                np.linalg.norm(position - np.asarray(event.position, dtype=float))
+            )
+            radius = max(
+                event.max_radius * self.config.collapse_cluster_radius_scale,
+                1.0,
+            )
+            if distance <= radius and distance < nearest_distance:
+                nearest_id = event.event_id
+                nearest_distance = distance
+        return nearest_id
+
     def _roof_demand_ratio(self, sample: SectionSample) -> float:
         """Fast body/material-aware collapse surrogate for candidate ranking."""
 
@@ -448,7 +550,7 @@ class GeologicalEventGenerator:
             position = np.array((sample.x, sample.y, sample.z), dtype=float)
             if all(
                 float(np.linalg.norm(position - occupied))
-                >= max(self._event_spacing(kind), self._event_spacing(occupied_kind))
+                >= self._pair_spacing(kind, occupied_kind)
                 for occupied, occupied_kind in occupied_positions
             ):
                 return sample
@@ -460,6 +562,8 @@ class GeologicalEventGenerator:
         rng: np.random.Generator,
         candidates: list[tuple[float, SectionSample, FloorCell]],
         occupied_positions: list[tuple[np.ndarray, str]],
+        *,
+        spacing_scale: float = 1.0,
     ) -> tuple[SectionSample, FloorCell] | None:
         if not candidates:
             return None
@@ -471,11 +575,18 @@ class GeologicalEventGenerator:
             position = np.asarray(cell.position, dtype=float)
             if all(
                 float(np.linalg.norm(position - occupied))
-                >= max(self._event_spacing(kind), self._event_spacing(occupied_kind))
+                >= spacing_scale * self._pair_spacing(kind, occupied_kind)
                 for occupied, occupied_kind in occupied_positions
             ):
                 return sample, cell
         return None
+
+    def _pair_spacing(self, first_kind: str, second_kind: str) -> float:
+        pair = {first_kind, second_kind}
+        if "collapse" in pair and pair.intersection({"rock", "boulder"}):
+            prop_kind = first_kind if first_kind in {"rock", "boulder"} else second_kind
+            return 0.60 * self._event_spacing(prop_kind)
+        return max(self._event_spacing(first_kind), self._event_spacing(second_kind))
 
     def _event_spacing(self, kind: str) -> float:
         if kind == "rock":
@@ -494,6 +605,7 @@ class GeologicalEventGenerator:
         rng: np.random.Generator,
         voxel_grid: Any | None,
         floor_cell: FloorCell | None = None,
+        cluster_parent_event_id: int = -1,
     ) -> GeologicalEvent:
         radius = self._sample_radius(kind, rng)
         severity = float(np.clip(rng.normal(0.62, 0.18), 0.22, 1.0))
@@ -596,6 +708,7 @@ class GeologicalEventGenerator:
             contact_normal=tuple(float(value) for value in contact_normal),
             grounded=grounded,
             floor_cell_id=floor_cell.cell_id if floor_cell is not None else -1,
+            cluster_parent_event_id=cluster_parent_event_id,
         )
 
     @staticmethod
@@ -718,7 +831,7 @@ class GeologicalEventGenerator:
             archetype=archetype,
             shape_type=shape_type,
             material_type=material_type,
-            placement_role="navigation_obstacle" if event.kind != "rock" else "floor_scatter",
+            placement_role="large_debris" if event.kind != "rock" else "floor_scatter",
             max_height=max(target_height * 1.05, 0.25),
             target_height=target_height,
             diameter=diameter,

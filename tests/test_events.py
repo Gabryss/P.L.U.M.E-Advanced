@@ -68,6 +68,7 @@ class GeologicalEventTests(unittest.TestCase):
             int(summary["grounded_prop_count"]),
             int(summary["prop_count"]),
         )
+        self.assertGreater(int(summary["clustered_prop_count"]), 0)
         self.assertGreater(int(summary["event_mesh_vertex_count"]), 0)
         self.assertGreater(int(summary["event_mesh_face_count"]), 0)
 
@@ -99,6 +100,9 @@ class GeologicalEventTests(unittest.TestCase):
                     base_geometry.voxel_grid.iso_level,
                     delta=0.05,
                 )
+            if event.cluster_parent_event_id >= 0:
+                parent = event_field.events[event.cluster_parent_event_id]
+                self.assertEqual(parent.kind, "collapse")
         event_lookup = {event.event_id: event for event in event_field.events}
         for mesh in event_field.meshes:
             self.assertTrue(mesh.vertices)
@@ -147,6 +151,13 @@ class GeologicalEventTests(unittest.TestCase):
             base_geometry,
             event_field,
         )
+        final_floor_atlas = FloorMapGenerator(project_config.floor_map).revalidate(
+            cave_network,
+            section_field,
+            cave_geometry,
+            floor_atlas,
+            event_field,
+        )
 
         summary = cave_geometry.summary()
         self.assertGreater(int(summary["carved_voxel_count"]), 0)
@@ -165,6 +176,40 @@ class GeologicalEventTests(unittest.TestCase):
         )
         self.assertEqual(int(summary["voxel_component_count"]), 1)
         self.assertEqual(int(summary["component_count"]), 1)
+        self.assertEqual(final_floor_atlas.generation_stage, "final")
+        self.assertEqual(
+            len(final_floor_atlas.cells) + len(final_floor_atlas.invalidated_cell_ids),
+            len(floor_atlas.cells),
+        )
+        final_cell_ids = {cell.cell_id for cell in final_floor_atlas.cells}
+        prop_cell_ids = {
+            event.floor_cell_id
+            for event in event_field.events
+            if event.kind in {"rock", "boulder"}
+        }
+        self.assertTrue(prop_cell_ids.issubset(final_cell_ids))
+        self.assertGreater(
+            int(final_floor_atlas.summary()["geologically_influenced_cell_count"]),
+            0,
+        )
+        self.assertGreater(
+            int(final_floor_atlas.summary()["breakdown_cell_count"]),
+            0,
+        )
+        self.assertGreater(
+            int(final_floor_atlas.summary()["sediment_cell_count"]),
+            0,
+        )
+        self.assertLess(
+            int(final_floor_atlas.summary()["chamber_cell_count"]),
+            len(final_floor_atlas.cells),
+        )
+        for cell in final_floor_atlas.cells:
+            self.assertAlmostEqual(
+                cave_geometry.voxel_grid.sample_density(cell.position),
+                cave_geometry.voxel_grid.iso_level,
+                delta=0.05,
+            )
 
 
 if __name__ == "__main__":

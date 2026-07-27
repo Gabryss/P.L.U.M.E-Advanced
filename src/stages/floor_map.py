@@ -2,14 +2,14 @@
 
 The intrinsic atlas is the authoritative representation: every traversable
 floor cell is addressed by segment id, distance along the segment, and lateral
-offset.  World-space plan coordinates are retained for previews and robotics
+offset.  World-space plan coordinates are retained for previews and geological
 maps, but are not used as a unique key because vertically separated passages
 can overlap in a top-down projection.
 """
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import json
 import math
 from pathlib import Path
@@ -52,6 +52,14 @@ class FloorCell:
     clearance_m: float
     tube_width_m: float
     grounded: bool
+    surface_slope_degrees: float = 0.0
+    geology_class: str = "bare_basalt"
+    event_influence: float = 0.0
+    sediment_thickness_m: float = 0.0
+    debris_density: float = 0.0
+    nearest_event_kind: str = ""
+    is_chamber: bool = False
+    is_terminus: bool = False
 
     @property
     def position(self) -> tuple[float, float, float]:
@@ -69,6 +77,9 @@ class FloorAtlas:
     config: FloorMapConfig
     cells: tuple[FloorCell, ...]
     segment_band_offsets_m: tuple[tuple[int, float], ...]
+    generation_stage: str = "base"
+    source_cell_count: int = 0
+    invalidated_cell_ids: tuple[int, ...] = ()
 
     def summary(self) -> dict[str, float]:
         if not self.cells:
@@ -77,7 +88,16 @@ class FloorAtlas:
                 "grounded_cell_count": 0.0,
                 "segment_count": 0.0,
                 "mean_clearance_m": 0.0,
-                "overlap_cell_count": 0.0,
+                "vertical_overlap_pixel_count": 0.0,
+                "invalidated_cell_count": float(len(self.invalidated_cell_ids)),
+                "geologically_influenced_cell_count": 0.0,
+                "sediment_cell_count": 0.0,
+                "breakdown_cell_count": 0.0,
+                "debris_cell_count": 0.0,
+                "constriction_cell_count": 0.0,
+                "bare_basalt_cell_count": 0.0,
+                "chamber_cell_count": 0.0,
+                "terminus_cell_count": 0.0,
             }
         pixels: dict[tuple[int, int], set[int]] = {}
         resolution = max(self.config.plan_resolution_m, 1e-6)
@@ -94,6 +114,27 @@ class FloorAtlas:
             "vertical_overlap_pixel_count": float(
                 sum(len(levels) > 1 for levels in pixels.values())
             ),
+            "invalidated_cell_count": float(len(self.invalidated_cell_ids)),
+            "geologically_influenced_cell_count": float(
+                sum(cell.event_influence > 0.0 for cell in self.cells)
+            ),
+            "sediment_cell_count": float(
+                sum(cell.geology_class == "sediment" for cell in self.cells)
+            ),
+            "breakdown_cell_count": float(
+                sum(cell.geology_class == "breakdown" for cell in self.cells)
+            ),
+            "debris_cell_count": float(
+                sum(cell.geology_class == "debris" for cell in self.cells)
+            ),
+            "constriction_cell_count": float(
+                sum(cell.geology_class == "constriction" for cell in self.cells)
+            ),
+            "bare_basalt_cell_count": float(
+                sum(cell.geology_class == "bare_basalt" for cell in self.cells)
+            ),
+            "chamber_cell_count": float(sum(cell.is_chamber for cell in self.cells)),
+            "terminus_cell_count": float(sum(cell.is_terminus for cell in self.cells)),
         }
 
     def sample_lookup(self) -> dict[tuple[int, int], tuple[FloorCell, ...]]:
@@ -146,6 +187,90 @@ class FloorMapGenerator:
             config=self.config,
             cells=tuple(cells),
             segment_band_offsets_m=tuple(sorted(band_offsets.items())),
+            generation_stage="base",
+            source_cell_count=len(cells),
+        )
+
+    def revalidate(
+        self,
+        cave_network: CaveNetwork,
+        section_field: SectionField,
+        final_geometry: Any,
+        base_atlas: FloorAtlas,
+        event_field: Any | None = None,
+    ) -> FloorAtlas:
+        """Relift stable atlas addresses against the post-event cave volume."""
+
+        voxel_grid = getattr(final_geometry, "voxel_grid", None)
+        if voxel_grid is None:
+            raise ValueError("Floor-map revalidation requires final voxel geometry")
+        sample_lookup = {
+            (sample.segment_id, sample.index): sample
+            for segment_field in section_field.segment_fields
+            for sample in segment_field.samples
+        }
+        band_offsets = dict(base_atlas.segment_band_offsets_m)
+        applied_structural_ids = set(
+            getattr(final_geometry, "structural_event_ids", ())
+        )
+        node_degree: dict[int, int] = {}
+        for segment in cave_network.segments:
+            node_degree[segment.start_node_id] = node_degree.get(segment.start_node_id, 0) + 1
+            node_degree[segment.end_node_id] = node_degree.get(segment.end_node_id, 0) + 1
+        terminal_ranges: dict[int, tuple[float, ...]] = {}
+        for segment in cave_network.segments:
+            distances: list[float] = []
+            if node_degree.get(segment.start_node_id, 0) == 1:
+                distances.append(0.0)
+            if node_degree.get(segment.end_node_id, 0) == 1:
+                distances.append(segment.total_length)
+            terminal_ranges[segment.segment_id] = tuple(distances)
+
+        cells: list[FloorCell] = []
+        invalidated: list[int] = []
+        for source_cell in base_atlas.cells:
+            sample = sample_lookup.get(
+                (source_cell.segment_id, source_cell.sample_index)
+            )
+            if sample is None:
+                invalidated.append(source_cell.cell_id)
+                continue
+            lifted = self._lift_cell(
+                cell_id=source_cell.cell_id,
+                sample=sample,
+                lateral_offset=source_cell.lateral_offset_m,
+                z_level=source_cell.z_level,
+                atlas_band_offset=band_offsets.get(source_cell.segment_id, 0.0),
+                voxel_grid=voxel_grid,
+            )
+            if lifted is None:
+                invalidated.append(source_cell.cell_id)
+                continue
+            is_terminus = any(
+                abs(lifted.distance_along_m - terminal_distance)
+                <= max(self.config.lateral_spacing_m * 2.0, 5.0)
+                for terminal_distance in terminal_ranges.get(lifted.segment_id, ())
+            )
+            cells.append(
+                self._classify_cell(
+                    lifted,
+                    event_field=event_field,
+                    applied_structural_ids=applied_structural_ids,
+                    is_chamber=any(
+                        influence.kind == "chamber"
+                        and influence.weight >= 0.75
+                        for influence in sample.junction_influences
+                    ),
+                    is_terminus=is_terminus,
+                )
+            )
+        return FloorAtlas(
+            config=self.config,
+            cells=tuple(cells),
+            segment_band_offsets_m=base_atlas.segment_band_offsets_m,
+            generation_stage="final",
+            source_cell_count=len(base_atlas.cells),
+            invalidated_cell_ids=tuple(invalidated),
         )
 
     def _lateral_offsets(self, sample: SectionSample) -> tuple[float, ...]:
@@ -174,6 +299,8 @@ class FloorMapGenerator:
         normal = self._unit(sample.normal, fallback=(1.0, 0.0, 0.0))
         vertical = self._unit(sample.binormal, fallback=(0.0, 0.0, 1.0))
         origin = center + normal * lateral_offset
+        if voxel_grid.sample_density(origin) < voxel_grid.iso_level:
+            return None
         max_distance = max(
             sample.tube_height * 1.4,
             float(voxel_grid.voxel_size) * 4.0,
@@ -213,6 +340,88 @@ class FloorMapGenerator:
             clearance_m=clearance,
             tube_width_m=float(sample.tube_width),
             grounded=True,
+            surface_slope_degrees=float(
+                math.degrees(
+                    math.acos(float(np.clip(contact_normal[2], -1.0, 1.0)))
+                )
+            ),
+        )
+
+    @staticmethod
+    def _classify_cell(
+        cell: FloorCell,
+        *,
+        event_field: Any | None,
+        applied_structural_ids: set[int],
+        is_chamber: bool,
+        is_terminus: bool,
+    ) -> FloorCell:
+        events = tuple(getattr(event_field, "events", ()))
+        nearest_kind = ""
+        strongest_influence = 0.0
+        sediment = 0.0
+        debris = 0.0
+        class_scores = {
+            "sediment": 0.0,
+            "breakdown": 0.0,
+            "debris": 0.0,
+            "constriction": 0.0,
+        }
+        position = np.asarray(cell.position, dtype=float)
+        for event in events:
+            if (
+                event.kind in {"collapse", "choke", "infill"}
+                and event.event_id not in applied_structural_ids
+            ):
+                continue
+            event_position = np.asarray(event.position, dtype=float)
+            distance = float(np.linalg.norm(position - event_position))
+            influence_radius = max(2.5 * event.max_radius, 1.0)
+            influence = max(0.0, 1.0 - distance / influence_radius)
+            if influence <= 0.0:
+                continue
+            if influence > strongest_influence:
+                strongest_influence = influence
+                nearest_kind = event.kind
+            if event.kind == "infill":
+                class_scores["sediment"] = max(
+                    class_scores["sediment"], influence
+                )
+                sediment = max(sediment, influence * event.radius_z)
+            elif event.kind == "collapse":
+                class_scores["breakdown"] = max(
+                    class_scores["breakdown"], influence
+                )
+                debris = max(debris, 0.65 * influence)
+            elif event.kind in {"rock", "boulder"}:
+                class_scores["debris"] = max(class_scores["debris"], influence)
+                debris = max(
+                    debris,
+                    influence * (0.65 if event.kind == "rock" else 1.0),
+                )
+            elif event.kind == "choke":
+                class_scores["constriction"] = max(
+                    class_scores["constriction"], influence
+                )
+        structural_class = max(
+            ("sediment", "breakdown", "constriction"),
+            key=class_scores.get,
+        )
+        if class_scores[structural_class] > 0.0:
+            geology_class = structural_class
+        elif class_scores["debris"] > 0.0:
+            geology_class = "debris"
+        else:
+            geology_class = "bare_basalt"
+        return replace(
+            cell,
+            geology_class=geology_class,
+            event_influence=float(strongest_influence),
+            sediment_thickness_m=float(sediment),
+            debris_density=float(np.clip(debris, 0.0, 1.0)),
+            nearest_event_kind=nearest_kind,
+            is_chamber=is_chamber,
+            is_terminus=is_terminus,
         )
 
     def _segment_band_offsets(self, section_field: SectionField) -> dict[int, float]:
@@ -275,16 +484,33 @@ def export_floor_atlas(
         clearance_m=np.asarray([cell.clearance_m for cell in cells]),
         tube_width_m=np.asarray([cell.tube_width_m for cell in cells]),
         grounded=np.asarray([cell.grounded for cell in cells], dtype=bool),
+        surface_slope_degrees=np.asarray(
+            [cell.surface_slope_degrees for cell in cells]
+        ),
+        geology_class=np.asarray([cell.geology_class for cell in cells], dtype="U16"),
+        event_influence=np.asarray([cell.event_influence for cell in cells]),
+        sediment_thickness_m=np.asarray(
+            [cell.sediment_thickness_m for cell in cells]
+        ),
+        debris_density=np.asarray([cell.debris_density for cell in cells]),
+        nearest_event_kind=np.asarray(
+            [cell.nearest_event_kind for cell in cells], dtype="U16"
+        ),
+        is_chamber=np.asarray([cell.is_chamber for cell in cells], dtype=bool),
+        is_terminus=np.asarray([cell.is_terminus for cell in cells], dtype=bool),
         plan_occupancy=plan["occupancy"],
         plan_floor_z_min_m=plan["floor_z_min"],
         plan_floor_z_max_m=plan["floor_z_max"],
         plan_clearance_max_m=plan["clearance_max"],
         plan_level_count=plan["level_count"],
+        plan_geology_class=plan["geology_class"],
+        plan_event_influence=plan["event_influence"],
+        plan_debris_density=plan["debris_density"],
         plan_origin_xy_m=plan["origin_xy"],
         plan_resolution_m=np.asarray(floor_atlas.config.plan_resolution_m),
     )
     metadata = {
-        "schema": "plume.floor-atlas.v1",
+        "schema": "plume.floor-atlas.v2",
         "coordinate_system": {
             "world": "right-handed, metres, Z-up",
             "intrinsic": [
@@ -299,6 +525,16 @@ def export_floor_atlas(
         },
         "config": asdict(floor_atlas.config),
         "summary": floor_atlas.summary(),
+        "generation_stage": floor_atlas.generation_stage,
+        "source_cell_count": floor_atlas.source_cell_count,
+        "invalidated_cell_ids": list(floor_atlas.invalidated_cell_ids),
+        "geology_class_codes": {
+            "bare_basalt": 0,
+            "sediment": 1,
+            "breakdown": 2,
+            "debris": 3,
+            "constriction": 4,
+        },
         "segment_band_offsets_m": dict(floor_atlas.segment_band_offsets_m),
         "npz_file": npz_path.name,
     }
@@ -319,6 +555,9 @@ def _build_plan_raster(floor_atlas: FloorAtlas) -> dict[str, np.ndarray]:
             "floor_z_max": empty.copy(),
             "clearance_max": empty.copy(),
             "level_count": np.zeros((0, 0), dtype=np.int16),
+            "geology_class": np.zeros((0, 0), dtype=np.uint8),
+            "event_influence": empty.copy(),
+            "debris_density": empty.copy(),
             "origin_xy": np.zeros(2, dtype=float),
         }
 
@@ -339,6 +578,16 @@ def _build_plan_raster(floor_atlas: FloorAtlas) -> dict[str, np.ndarray]:
     floor_z_max = np.full(shape, np.nan, dtype=np.float32)
     clearance_max = np.full(shape, np.nan, dtype=np.float32)
     levels: dict[tuple[int, int], set[int]] = {}
+    geology_class = np.zeros(shape, dtype=np.uint8)
+    event_influence = np.zeros(shape, dtype=np.float32)
+    debris_density = np.zeros(shape, dtype=np.float32)
+    geology_codes = {
+        "bare_basalt": 0,
+        "sediment": 1,
+        "breakdown": 2,
+        "debris": 3,
+        "constriction": 4,
+    }
     for cell in cells:
         x_index = int(round((cell.x - minimum[0]) / resolution))
         y_index = int(round((cell.y - minimum[1]) / resolution))
@@ -360,6 +609,10 @@ def _build_plan_raster(floor_atlas: FloorAtlas) -> dict[str, np.ndarray]:
             else max(float(clearance_max[key]), cell.clearance_m)
         )
         levels.setdefault(key, set()).add(cell.z_level)
+        if cell.event_influence >= float(event_influence[key]):
+            event_influence[key] = cell.event_influence
+            geology_class[key] = geology_codes.get(cell.geology_class, 0)
+        debris_density[key] = max(float(debris_density[key]), cell.debris_density)
     level_count = np.zeros(shape, dtype=np.int16)
     for key, values in levels.items():
         level_count[key] = len(values)
@@ -369,5 +622,8 @@ def _build_plan_raster(floor_atlas: FloorAtlas) -> dict[str, np.ndarray]:
         "floor_z_max": floor_z_max,
         "clearance_max": clearance_max,
         "level_count": level_count,
+        "geology_class": geology_class,
+        "event_influence": event_influence,
+        "debris_density": debris_density,
         "origin_xy": minimum.astype(float),
     }

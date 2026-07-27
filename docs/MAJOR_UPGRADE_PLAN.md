@@ -6,6 +6,9 @@ Status: active on `feature/major-procedural-upgrade`.
 
 - Generation must run from Python and installable native/Python libraries after
   cloning the repository. Blender is not a runtime dependency.
+- The repository is an underground-environment generator. Robotics stacks,
+  sensors, autonomy, path planning, SLAM, and ROS integrations are out of
+  scope; exported maps remain engine-neutral geological artifacts.
 - The canonical generated world uses metres and a documented right-handed,
   Z-up coordinate system.
 - Celestial-body selection changes geology and generation. Export target
@@ -85,8 +88,9 @@ Exit criteria:
 
 Status: foundational two-pass implementation complete. Base-volume raycasts,
 surface-aligned rock/boulder props, class-specific spacing, and collapse/choke/
-infill density modifiers are active. Clustered debris, area-aware blue-noise
-sampling, cached instances, and collision rejection remain.
+infill density modifiers are active. Collapse-centred debris clusters and
+post-event geological floor masks are also active. Area-aware blue-noise
+sampling, cached instances, and full prop collision rejection remain.
 
 - Split events into props (`rock`, `boulder`), modifiers (`collapse`, `choke`,
   `infill`, `skylight`), and material masks.
@@ -137,20 +141,27 @@ Exit criteria:
 
 ## Cross-cutting floor-map stage
 
-Status: first topology-aware implementation complete.
+Status: topology-aware post-event implementation complete.
 
 - Raycast lateral floor lanes from Stage-C sections against the Stage-D base
-  volume.
+  volume for event placement.
 - Address cells intrinsically by segment, distance along, and lateral offset;
   retain graph `z_level` and world XYZ for lossless lifting.
 - Store measured clearance and the actual inward surface normal.
 - Use atlas cells as rock/boulder candidates instead of inventing offsets from
   section centerlines.
-- Export NPZ/JSON for downstream autonomy tools and a two-panel PNG containing
-  both conventional world plan and overlap-safe intrinsic views.
+- Relift stable cell addresses against the final post-modifier volume and
+  explicitly report invalidated cells.
+- Classify final floor cells as bare basalt, sediment, breakdown, debris, or
+  constriction and export continuous event/debris influence fields.
+- Mark generated chambers and termini without claiming that termini are
+  physically opened entrances.
+- Export NPZ/JSON for downstream environment tooling and a geological PNG with
+  world elevation, clearance, classified events, and overlap-safe intrinsic
+  views.
 
-Next refinements are connected traversability edges, slope/step/robot-radius
-cost layers, multi-level occupancy rasters, and post-modifier invalidation.
+Next refinements are explicit entrance/portal carving, material-mask
+consumption, area-aware debris sampling, and multi-level geological rasters.
 
 ## Phase 4 — physical network
 

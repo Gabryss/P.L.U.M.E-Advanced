@@ -79,7 +79,9 @@ base cave density exists. Rocks and boulders raycast to the actual floor,
 align with the inward surface normal, and embed slightly to avoid floating.
 Collapse, choke, and infill events are smooth solid SDF intersections, so they
 change the final render and collision topology instead of adding decorative
-ellipsoids.
+ellipsoids. A configurable share of loose debris is sampled from floor cells
+around collapse regions, with relaxed intra-cluster spacing and explicit
+parent-collapse metadata.
 
 ## How It Works
 
@@ -129,8 +131,11 @@ The `HostField` API currently exposes:
 
 ### Stage C2: Cave-Floor Atlas
 
-After the base cave volume is stamped, PLUME raycasts the real floor into a
-topology-aware 2D atlas. Its unique coordinates are
+After the base cave volume is stamped, PLUME raycasts a placement atlas for
+events. Once collapse, choke, and infill modifiers have changed the volume,
+the same stable cell addresses are relifted against the final cave. Blocked
+cells are invalidated rather than projected through solid rock. Atlas
+coordinates are
 `(segment_id, distance_along_m, lateral_offset_m)`; every cell also stores its
 exact world XYZ, surface normal, clearance, and vertical graph level.
 
@@ -139,9 +144,11 @@ stacked branches can occupy the same world XY without becoming the same map
 cell. Rocks and boulders are selected from atlas cells and therefore use
 prevalidated floor contacts. Each run writes:
 
-- `stage_c_floor_map.png`: world plan preview plus intrinsic segment atlas
+- `stage_c_floor_map.png`: final elevation, clearance, geology, chambers,
+  termini, events, and intrinsic segment atlas
 - `stage_c_floor_map.npz`: liftable cells plus occupancy, floor-height,
-  clearance, and vertical-level-count rasters for navigation/procedural tools
+  clearance, geology, debris, and vertical-level-count rasters for procedural
+  generation and external inspection
 - `stage_c_floor_map.json`: schema, units, configuration, and summary
 
 ### Stage B: Cave Network
@@ -212,10 +219,11 @@ Execution flow:
 3. build `HostFieldConfig`, `CaveNetworkConfig`, `SectionFieldConfig`, `GeologicalEventConfig`, and `GeometryConfig`
 4. generate host, network, and section stages
 5. stamp the base cave density
-6. raycast grounded props and structural events against that density
+6. raycast a base floor atlas and place grounded props/events
 7. apply structural modifiers and polygonize the final cave
-8. export through the selected target adapter
-9. write both source and resolved configuration metadata in `outputs/`
+8. relift and classify the final geological floor atlas
+9. export through the selected target adapter
+10. write source, resolved configuration, and floor-map metadata in `outputs/`
 
 `procedural_seed` is expanded into stable named seeds for host, network,
 sections, events, geometry, surface, and export. Consequently, disabling
@@ -298,7 +306,7 @@ or hand-authored scenarios, but the default project config is range-driven.
 | Key | Purpose |
 |---|---|
 | `lateral_spacing_m` | spacing between sampled floor lanes |
-| `maximum_lateral_fraction` | excludes wall-adjacent floor where props/navigation are unsafe |
+| `maximum_lateral_fraction` | excludes wall-adjacent floor where geological props would intersect the walls |
 | `plan_resolution_m` | grouping resolution used to report top-down overlaps |
 | `minimum_clearance_m` | rejects cells without useful measured headroom |
 
@@ -325,6 +333,8 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `*_radius_range` | bound event sizes before they are clipped to local tube dimensions |
 | `minimum_event_spacing` | keep major event centers from clustering too tightly |
 | `minimum_rock_spacing`, `minimum_boulder_spacing` | use denser small-rock scatter without crowding major obstacles |
+| `clustered_debris_fraction` | target share of props preferentially sampled around collapses |
+| `collapse_cluster_radius_scale`, `collapse_cluster_spacing_scale` | control collapse-debris reach and local packing |
 | `max_lateral_floor_fraction` | keep floor debris inside the local tube profile |
 | `mesh_latitude_segments`, `mesh_longitude_segments` | control generated event mesh resolution |
 | `enabled`, `enabled_kinds` | export an empty tube or enable selected event families |
@@ -457,18 +467,21 @@ Implemented as a two-pass surface-query and structural-modifier stage.
 What exists now:
 
 - deterministic placement from Stage-C samples and named event seed
-- final-density floor raycasts and contact normals
+- base-density floor raycasts and contact normals for prop placement
 - surface-aligned, slightly embedded rock and boulder props
 - collapse, choke, and floor-infill SDF modifiers
+- collapse-centred clustered rock/boulder sampling with parent-event metadata
 - class-specific spacing and broader candidate coverage
 - event visualization and summary metrics
 - voxel integration before Stage-D meshing
+- post-event floor relifting and geology masks for sediment, breakdown,
+  debris, and constrictions
 
 Still deferred:
 
-- clustered collapse debris and area-aware blue-noise floor sampling
-- explicit gameplay/navigation metadata
-- final material-mask export for Stage F
+- area-aware blue-noise floor sampling
+- cached rock prototype families and instance export
+- direct consumption of floor geology masks by Stage-F surface materials
 
 ### Stage F: Surface Detail / Texturing
 

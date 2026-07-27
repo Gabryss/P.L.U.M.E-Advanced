@@ -518,6 +518,12 @@ def _validate_pipeline_configs(
         )
     if not 0.0 <= events.ground_embed_fraction <= 0.5:
         raise ValueError("events.ground_embed_fraction must be in [0, 0.5]")
+    if not 0.0 <= events.clustered_debris_fraction <= 1.0:
+        raise ValueError("events.clustered_debris_fraction must be in [0, 1]")
+    if events.collapse_cluster_radius_scale <= 0.0:
+        raise ValueError("events.collapse_cluster_radius_scale must be positive")
+    if not 0.0 < events.collapse_cluster_spacing_scale <= 1.0:
+        raise ValueError("events.collapse_cluster_spacing_scale must be in (0, 1]")
     for name in (
         "rock_radius_range",
         "boulder_radius_range",

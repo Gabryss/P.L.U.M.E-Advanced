@@ -305,29 +305,23 @@ def main() -> int:
         f"built {int(base_geometry.summary()['carved_voxel_count'])} cave voxels"
     )
 
-    progress.start("Stage C2 - Floor Atlas", "raycasting traversable floor cells")
-    floor_atlas = FloorMapGenerator(project_config.floor_map).generate(
+    floor_map_generator = FloorMapGenerator(project_config.floor_map)
+    progress.start("Stage C2 - Base Floor Atlas", "raycasting event-placement cells")
+    base_floor_atlas = floor_map_generator.generate(
         cave_network,
         section_field,
         base_geometry,
     )
-    floor_npz_path, floor_json_path = export_floor_atlas(
-        floor_atlas,
-        floor_map_output.with_suffix(""),
-    )
-    floor_summary = floor_atlas.summary()
+    base_floor_summary = base_floor_atlas.summary()
     progress.finish(
-        (
-            f"{int(floor_summary['cell_count'])} cells; "
-            f"wrote {floor_npz_path.name} and {floor_json_path.name}"
-        )
+        f"{int(base_floor_summary['cell_count'])} placement cells"
     )
 
     progress.start("Stage E - Geological Events", "grounding props and modifiers")
     event_field = GeologicalEventGenerator(project_config.events).generate(
         section_field,
         base_geometry,
-        floor_atlas,
+        base_floor_atlas,
     )
     event_summary = event_field.summary()
     progress.update(
@@ -342,17 +336,9 @@ def main() -> int:
             event_field,
             event_output,
         )
-        floor_map_output_path = FloorMapPlotter().render(
-            floor_atlas,
-            floor_map_output,
-            event_field,
-        )
-        progress.finish(
-            f"wrote {event_output_path.name} and {floor_map_output_path.name}"
-        )
+        progress.finish(f"wrote {event_output_path.name}")
     else:
         event_output_path = None
-        floor_map_output_path = None
         progress.finish("diagnostic render disabled")
 
     progress.start("Stage D2 - Final Geometry", "applying structural events")
@@ -365,6 +351,38 @@ def main() -> int:
         (
             f"{len(cave_geometry.chunk_meshes)} chunks, "
             f"{int(cave_geometry.summary()['export_face_count'])} exported faces"
+        )
+    )
+
+    progress.start("Stage C3 - Final Floor Map", "relifting post-event geology")
+    floor_atlas = floor_map_generator.revalidate(
+        cave_network,
+        section_field,
+        cave_geometry,
+        base_floor_atlas,
+        event_field,
+    )
+    floor_npz_path, floor_json_path = export_floor_atlas(
+        floor_atlas,
+        floor_map_output.with_suffix(""),
+    )
+    floor_summary = floor_atlas.summary()
+    if project_config.run.render_diagnostics:
+        floor_map_output_path = FloorMapPlotter().render(
+            floor_atlas,
+            floor_map_output,
+            event_field,
+            cave_network,
+        )
+        floor_render_detail = f"; wrote {floor_map_output_path.name}"
+    else:
+        floor_map_output_path = None
+        floor_render_detail = ""
+    progress.finish(
+        (
+            f"{int(floor_summary['cell_count'])} valid, "
+            f"{int(floor_summary['invalidated_cell_count'])} invalidated"
+            f"{floor_render_detail}"
         )
     )
 
