@@ -47,9 +47,6 @@ class CaveNetworkConfig:
     trace_max_steps: int = 460
     max_uphill_step: float = 1.2
     growth_cost_weight: float = 3.2
-    roof_weight: float = 1.5
-    cover_weight: float = 0.8
-    slope_penalty_weight: float = 0.45
     corridor_weight: float = 0.35
     chamber_flux_quantile: float = 0.82
     base_passage_radius: float = 4.6
@@ -435,18 +432,13 @@ class CaveNetworkGenerator:
         )
 
     def _build_support_field(self, host_field: HostField, geometry: _FlowGeometry) -> np.ndarray:
-        cover_norm = self._normalize_cover_field(host_field)
-        slope_norm = np.clip(host_field.slope_degrees / 25.0, 0.0, 1.0)
         corridor_score = np.exp(
             -np.square(
                 geometry.cross_grid / max(host_field.config.corridor_width, 1.0)
             )
         )
         support = (
-            self.config.growth_cost_weight * (1.0 - host_field.growth_cost)
-            + self.config.roof_weight * host_field.roof_competence
-            + self.config.cover_weight * cover_norm
-            - self.config.slope_penalty_weight * slope_norm
+            self.config.growth_cost_weight * (1.0 - host_field.routing_cost)
             + self.config.corridor_weight * corridor_score
         )
         return support

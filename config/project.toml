@@ -65,9 +65,6 @@ sink_margin = 80.0
 trace_max_steps = 460
 max_uphill_step = 1.2
 growth_cost_weight = 3.2
-roof_weight = 1.5
-cover_weight = 0.8
-slope_penalty_weight = 0.45
 corridor_weight = 0.35
 chamber_flux_quantile = 0.82
 occupancy_smoothing_passes = 2
@@ -116,6 +113,13 @@ chamber_widen_gain = 0.45
 minimum_roof_thickness = 6.5
 maximum_centerline_depth = 26.0
 preferred_cover_fraction = 0.34
+
+[floor_map]
+# The topology-aware atlas is also used as the candidate surface for props.
+lateral_spacing_m = 2.5
+maximum_lateral_fraction = 0.72
+plan_resolution_m = 2.0
+minimum_clearance_m = 1.0
 
 [events]
 enabled = true

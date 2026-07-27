@@ -106,23 +106,43 @@ terrain = large-scale directional grade
         + low-frequency waves
 ```
 
-Once the terrain exists, the remaining host-field layers are either derived from
-it or generated from the same seed-resolved structural controls.
+Once the terrain exists, independent low-frequency process fields are combined
+through an explicit routing formula. The network consumes that formula once;
+it no longer adds slope, cover, and competence again on top of an opaque cost.
 
-| Layer | Built From | Used Now | Intended Later Use |
+| Layer | Built From | Used Now |
 |---|---|---|---|
-| `elevation` | directional grade + corridor + waves | terrain profile, downhill direction | surface interaction |
-| `gradient_x`, `gradient_y` | `np.gradient(elevation)` | downhill steering for graph growth | path-cost and event logic |
-| `slope_degrees` | gradient magnitude | cover thickness, diagnostics, growth cost | gating unstable or unrealistic zones |
-| `cover_thickness` | base thickness + relief bonus - slope penalty | growth cost, graph diagnostics | collapse and surface-stability rules |
-| `roof_competence` | structural bands + fracture corridor + edge weathering | growth cost, graph diagnostics | ceiling roughness, collapse, material masks |
-| `growth_cost` | weighted slope, cover, and competence penalties | visualization, summaries | future explicit path scoring |
+| `elevation`, gradients, slope | directional grade + corridor + waves | downhill steering and routing |
+| `emplacement_thickness`, `cover_thickness` | flow corridor, lobe variation, erosion, deposits | routing and roof demand |
+| `lithology_quality`, `fracture_intensity`, `cooling_index` | material profile and independent structural/thermal bands | competence, capacity, stability |
+| `deposit_thickness`, `erosion_index` | body/material weathering proxies | cover and flow capacity |
+| `flow_capacity` | corridor, emplacement, fractures, deposits | routing |
+| `roof_stability` | competence plus density, gravity, span, cover, strength | routing and diagnostics |
+| `routing_cost` (`growth_cost` compatibility alias) | named slope/cover/fracture/capacity/stability contributions | network routing |
 
 The `HostField` API currently exposes:
 
 - `sample(x, y)`: bilinear sample of all fields
 - `contains(x, y, margin=0.0)`: map bounds check
 - `downhill_direction(x, y, fallback_angle_degrees=None)`: normalized downhill vector
+- `routing_influence_summary()`: variance, contribution, and routing-cost correlation per term
+
+### Stage C2: Cave-Floor Atlas
+
+After the base cave volume is stamped, PLUME raycasts the real floor into a
+topology-aware 2D atlas. Its unique coordinates are
+`(segment_id, distance_along_m, lateral_offset_m)`; every cell also stores its
+exact world XYZ, surface normal, clearance, and vertical graph level.
+
+This is deliberately richer than a top-down occupancy image: underpasses and
+stacked branches can occupy the same world XY without becoming the same map
+cell. Rocks and boulders are selected from atlas cells and therefore use
+prevalidated floor contacts. Each run writes:
+
+- `stage_c_floor_map.png`: world plan preview plus intrinsic segment atlas
+- `stage_c_floor_map.npz`: liftable cells plus occupancy, floor-height,
+  clearance, and vertical-level-count rasters for navigation/procedural tools
+- `stage_c_floor_map.json`: schema, units, configuration, and summary
 
 ### Stage B: Cave Network
 
@@ -255,7 +275,7 @@ or hand-authored scenarios, but the default project config is range-driven.
 | Key Group | Purpose |
 |---|---|
 | `source_*`, `sink_margin`, `trace_max_steps` | control network source/sink setup and trace extent |
-| `growth_cost_weight`, `roof_weight`, `cover_weight`, `slope_penalty_weight`, `corridor_weight` | bias path selection through the host field |
+| `growth_cost_weight`, `corridor_weight` | bias path selection using the explicit host routing cost and broad corridor prior |
 | `occupancy_smoothing_passes` | clean occupancy artifacts |
 | `chamber_*`, `base_passage_radius` | control chamber detection and occupancy painting |
 | `spur_*`, `channel_count_samples` | control terminal spur generation and braid sampling |
@@ -272,6 +292,15 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `floor_flatness_*`, `roof_arch_*`, `lateral_skew_amplitude` | shape the lava-tube profile |
 | `centerline_wobble_*` | add bounded centerline meander to avoid unnaturally straight tube runs |
 | `junction_*_gain` | control how strongly junction regions widen or stay tight through splits/merges |
+
+### Floor Map Config
+
+| Key | Purpose |
+|---|---|
+| `lateral_spacing_m` | spacing between sampled floor lanes |
+| `maximum_lateral_fraction` | excludes wall-adjacent floor where props/navigation are unsafe |
+| `plan_resolution_m` | grouping resolution used to report top-down overlaps |
+| `minimum_clearance_m` | rejects cells without useful measured headroom |
 
 ### Geometry Config
 
@@ -358,6 +387,10 @@ That one command produces:
 - `outputs/stage_b_cave_network.png`
 - `outputs/stage_c_section_field.png`
 - `outputs/stage_e_geological_events.png`
+- `outputs/stage_c_floor_map.png`
+- `outputs/stage_c_floor_map.npz`
+- `outputs/stage_c_floor_map.json`
+- `outputs/stage_a_host_influence.json`
 - `outputs/stage_d_geometry.png`
 - `outputs/stage_d_geometry_chunks.png`
 - `outputs/stage_d_geometry_presentation.png`
@@ -372,6 +405,7 @@ Optional:
   --output outputs/stage_b_cave_network.png \
   --host-output outputs/stage_a_host_field.png \
   --section-output outputs/stage_c_section_field.png \
+  --floor-map-output outputs/stage_c_floor_map.png \
   --event-output outputs/stage_e_geological_events.png \
   --geometry-output outputs/stage_d_geometry.png \
   --geometry-chunk-output outputs/stage_d_geometry_chunks.png \

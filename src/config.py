@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 
 from stages.events import GeologicalEventConfig
+from stages.floor_map import FloorMapConfig
 from stages.geometry import GeometryConfig
 from stages.host_field import GridConfig, HostFieldConfig, TerrainWave
 from stages.network import BraidGrammarConfig, CaveNetworkConfig
@@ -43,6 +44,7 @@ class ProjectConfig:
     host_field: HostFieldConfig
     network: CaveNetworkConfig
     section_field: SectionFieldConfig
+    floor_map: FloorMapConfig
     events: GeologicalEventConfig
     geometry: GeometryConfig
 
@@ -71,6 +73,7 @@ def load_project_config(path: str | Path) -> ProjectConfig:
     host_field = _build_host_field_config(
         raw_config.get("host_field", {}),
         procedural_seed=stage_seeds.host,
+        world=world,
     )
     network = _build_network_config(
         raw_config.get("network", {}),
@@ -82,6 +85,7 @@ def load_project_config(path: str | Path) -> ProjectConfig:
         procedural_seed=stage_seeds.sections,
         world=world,
     )
+    floor_map = FloorMapConfig(**raw_config.get("floor_map", {}))
     events = _build_event_config(
         raw_config.get("events", {}),
         procedural_seed=stage_seeds.events,
@@ -98,6 +102,7 @@ def load_project_config(path: str | Path) -> ProjectConfig:
         host_field=host_field,
         network=network,
         section_field=section_field,
+        floor_map=floor_map,
         events=events,
         geometry=geometry,
     )
@@ -112,6 +117,7 @@ def load_project_config(path: str | Path) -> ProjectConfig:
         host_field=host_field,
         network=network,
         section_field=section_field,
+        floor_map=floor_map,
         events=events,
         geometry=geometry,
     )
@@ -152,10 +158,23 @@ def _build_host_field_config(
     raw_config: dict[str, Any],
     *,
     procedural_seed: int | None,
+    world: WorldConfig,
 ) -> HostFieldConfig:
     config_data = dict(raw_config)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
+    config_data.setdefault("gravity_m_s2", world.body.gravity_m_s2)
+    config_data.setdefault("rock_density_kg_m3", world.material.bulk_density_kg_m3)
+    config_data.setdefault(
+        "effective_tensile_strength_pa",
+        world.material.effective_tensile_strength_pa,
+    )
+    config_data.setdefault("material_quality", world.material.rock_mass_quality)
+    config_data.setdefault("material_weathering", world.material.weathering)
+    config_data.setdefault(
+        "characteristic_passage_span_m",
+        world.body.maximum_passage_width_m,
+    )
 
     grid_data = config_data.pop("grid", {})
     wave_data = config_data.pop("waves", None)
@@ -427,6 +446,7 @@ def _validate_pipeline_configs(
     host_field: HostFieldConfig,
     network: CaveNetworkConfig,
     section_field: SectionFieldConfig,
+    floor_map: FloorMapConfig,
     events: GeologicalEventConfig,
     geometry: GeometryConfig,
 ) -> None:
@@ -454,6 +474,14 @@ def _validate_pipeline_configs(
             "section_field.chamber_max_tube_width cannot be smaller than "
             "maximum_tube_width"
         )
+    if floor_map.lateral_spacing_m <= 0.0:
+        raise ValueError("floor_map.lateral_spacing_m must be positive")
+    if floor_map.plan_resolution_m <= 0.0:
+        raise ValueError("floor_map.plan_resolution_m must be positive")
+    if not 0.0 < floor_map.maximum_lateral_fraction < 1.0:
+        raise ValueError("floor_map.maximum_lateral_fraction must be in (0, 1)")
+    if floor_map.minimum_clearance_m < 0.0:
+        raise ValueError("floor_map.minimum_clearance_m cannot be negative")
 
     density_names = (
         "rock_density_per_100m",

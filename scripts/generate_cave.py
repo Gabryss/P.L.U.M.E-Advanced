@@ -31,12 +31,14 @@ sys.path.insert(0, str(ROOT / "src"))
 from config import load_project_config, write_project_config_manifest
 from exporters import export_target_asset
 from stages.events import GeologicalEventGenerator
+from stages.floor_map import FloorMapGenerator, export_floor_atlas
 from stages.geometry import GeometryGenerator
-from stages.host_field import HostFieldGenerator
+from stages.host_field import HostFieldGenerator, export_host_influence_report
 from stages.network import CaveNetworkGenerator
 from stages.section_field import SectionFieldGenerator
 from visualization.geometry import GeometryPlotter
 from visualization.events import GeologicalEventPlotter
+from visualization.floor_map import FloorMapPlotter
 from visualization.host_field import HostFieldPlotter
 from visualization.network import CaveNetworkPlotter
 from visualization.section_field import SectionFieldPlotter
@@ -147,6 +149,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--floor-map-output",
+        type=Path,
+        default=None,
+        help=(
+            "Path for the cave-floor map PNG. Matching NPZ and JSON files are "
+            "written beside it. Defaults to stage_c_floor_map.png."
+        ),
+    )
+    parser.add_argument(
         "--geometry-presentation-output",
         type=Path,
         default=None,
@@ -195,6 +206,9 @@ def main() -> int:
     section_output = args.section_output or args.output.with_name("stage_c_section_field.png")
     geometry_output = args.geometry_output or args.output.with_name("stage_d_geometry.png")
     event_output = args.event_output or args.output.with_name("stage_e_geological_events.png")
+    floor_map_output = (
+        args.floor_map_output or args.output.with_name("stage_c_floor_map.png")
+    )
     geometry_presentation_output = (
         args.geometry_presentation_output
         or geometry_output.with_name("stage_d_geometry_presentation.png")
@@ -224,6 +238,10 @@ def main() -> int:
 
     progress.start("Stage A - Host Field", "generating scalar fields")
     host_field = HostFieldGenerator(project_config.host_field).generate()
+    host_influence_path = export_host_influence_report(
+        host_field,
+        host_output.with_name("stage_a_host_influence.json"),
+    )
     if project_config.run.render_diagnostics:
         progress.update(1, 2, "rendering host-field plot")
         host_output_path = HostFieldPlotter().render(host_field, host_output)
@@ -287,10 +305,29 @@ def main() -> int:
         f"built {int(base_geometry.summary()['carved_voxel_count'])} cave voxels"
     )
 
+    progress.start("Stage C2 - Floor Atlas", "raycasting traversable floor cells")
+    floor_atlas = FloorMapGenerator(project_config.floor_map).generate(
+        cave_network,
+        section_field,
+        base_geometry,
+    )
+    floor_npz_path, floor_json_path = export_floor_atlas(
+        floor_atlas,
+        floor_map_output.with_suffix(""),
+    )
+    floor_summary = floor_atlas.summary()
+    progress.finish(
+        (
+            f"{int(floor_summary['cell_count'])} cells; "
+            f"wrote {floor_npz_path.name} and {floor_json_path.name}"
+        )
+    )
+
     progress.start("Stage E - Geological Events", "grounding props and modifiers")
     event_field = GeologicalEventGenerator(project_config.events).generate(
         section_field,
         base_geometry,
+        floor_atlas,
     )
     event_summary = event_field.summary()
     progress.update(
@@ -305,9 +342,17 @@ def main() -> int:
             event_field,
             event_output,
         )
-        progress.finish(f"wrote {event_output_path.name}")
+        floor_map_output_path = FloorMapPlotter().render(
+            floor_atlas,
+            floor_map_output,
+            event_field,
+        )
+        progress.finish(
+            f"wrote {event_output_path.name} and {floor_map_output_path.name}"
+        )
     else:
         event_output_path = None
+        floor_map_output_path = None
         progress.finish("diagnostic render disabled")
 
     progress.start("Stage D2 - Final Geometry", "applying structural events")
@@ -380,6 +425,7 @@ def main() -> int:
     progress.log("Generated cave pipeline artifacts.")
     progress.log(f"Configuration: {args.config}")
     progress.log(f"Resolved configuration: {resolved_config_path}")
+    progress.log(f"Host routing influence: {host_influence_path}")
     progress.log(
         "World: "
         f"{project_config.world.body.name} "
@@ -400,12 +446,15 @@ def main() -> int:
         progress.log(f"Stage A visualization: {host_output_path}")
         progress.log(f"Stage B visualization: {network_output_path}")
         progress.log(f"Stage C visualization: {section_output_path}")
+        progress.log(f"Stage C floor-map visualization: {floor_map_output_path}")
         progress.log(f"Stage E visualization: {event_output_path}")
         progress.log(f"Stage D diagnostic visualization: {geometry_output_path}")
         progress.log(
             f"Stage D presentation visualization: {geometry_presentation_output_path}"
         )
         progress.log(f"Stage D chunk diagnostics: {geometry_chunk_output_path}")
+    progress.log(f"Floor atlas arrays: {floor_npz_path}")
+    progress.log(f"Floor atlas metadata: {floor_json_path}")
     progress.log(f"Target export: {export_result.primary_asset}")
     for exported_file in export_result.files:
         progress.log(f"  export_file: {exported_file}")

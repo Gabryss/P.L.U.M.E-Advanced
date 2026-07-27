@@ -6,15 +6,18 @@ high-frequency noise and instead focuses on smooth, readable proxies:
 
 - terrain elevation
 - slope
-- cover thickness
-- roof competence
-- growth cost
+- emplacement and cover thickness
+- lithology, fracture, cooling, deposit, and erosion proxies
+- flow capacity and gravity-aware roof stability
+- one explicit routing cost with inspectable component penalties
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
 import math
+from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
@@ -78,6 +81,12 @@ class HostFieldConfig:
     fracture_zone_angle_degrees: float = 82.0
     fracture_zone_center_offset: float = -140.0
     fracture_zone_width: float = 240.0
+    gravity_m_s2: float = 9.80665
+    rock_density_kg_m3: float = 2_900.0
+    effective_tensile_strength_pa: float = 3_000_000.0
+    material_quality: float = 0.55
+    material_weathering: float = 0.30
+    characteristic_passage_span_m: float = 10.0
     waves: tuple[TerrainWave, ...] = field(default_factory=_default_waves)
 
 
@@ -90,8 +99,22 @@ class HostFieldSample:
     cover_thickness: float
     roof_competence: float
     growth_cost: float
+    emplacement_thickness: float
+    lithology_quality: float
+    fracture_intensity: float
+    cooling_index: float
+    flow_capacity: float
+    deposit_thickness: float
+    erosion_index: float
+    roof_stability: float
     gradient_x: float
     gradient_y: float
+
+    @property
+    def routing_cost(self) -> float:
+        """Preferred name for the legacy ``growth_cost`` compatibility field."""
+
+        return self.growth_cost
 
 
 @dataclass(frozen=True)
@@ -106,8 +129,27 @@ class HostField:
     cover_thickness: Array2D
     roof_competence: Array2D
     growth_cost: Array2D
+    emplacement_thickness: Array2D
+    lithology_quality: Array2D
+    fracture_intensity: Array2D
+    cooling_index: Array2D
+    flow_capacity: Array2D
+    deposit_thickness: Array2D
+    erosion_index: Array2D
+    roof_stability: Array2D
+    routing_slope_penalty: Array2D
+    routing_cover_penalty: Array2D
+    routing_fracture_penalty: Array2D
+    routing_capacity_penalty: Array2D
+    routing_stability_penalty: Array2D
     gradient_x: Array2D
     gradient_y: Array2D
+
+    @property
+    def routing_cost(self) -> Array2D:
+        """Preferred name for the legacy ``growth_cost`` compatibility field."""
+
+        return self.growth_cost
 
     @property
     def extent(self) -> tuple[float, float, float, float]:
@@ -128,7 +170,36 @@ class HostField:
             "cover_thickness_mean": float(self.cover_thickness.mean()),
             "roof_competence_mean": float(self.roof_competence.mean()),
             "growth_cost_mean": float(self.growth_cost.mean()),
+            "fracture_intensity_mean": float(self.fracture_intensity.mean()),
+            "flow_capacity_mean": float(self.flow_capacity.mean()),
+            "roof_stability_mean": float(self.roof_stability.mean()),
         }
+
+    def routing_influence_summary(self) -> dict[str, dict[str, float]]:
+        """Quantify whether every named routing term has a measurable effect."""
+
+        terms = {
+            "slope": self.routing_slope_penalty,
+            "cover": self.routing_cover_penalty,
+            "fracture": self.routing_fracture_penalty,
+            "capacity": self.routing_capacity_penalty,
+            "stability": self.routing_stability_penalty,
+        }
+        result: dict[str, dict[str, float]] = {}
+        cost_flat = self.growth_cost.ravel()
+        for name, term in terms.items():
+            flat = term.ravel()
+            correlation = (
+                float(np.corrcoef(flat, cost_flat)[0, 1])
+                if float(np.std(flat)) > 1e-12
+                else 0.0
+            )
+            result[name] = {
+                "standard_deviation": float(np.std(flat)),
+                "mean_absolute_contribution": float(np.mean(np.abs(flat))),
+                "correlation_with_routing_cost": correlation,
+            }
+        return result
 
     def sample(self, x_coord: float, y_coord: float) -> HostFieldSample:
         """Sample all fields at one position for future graph growth logic."""
@@ -139,6 +210,22 @@ class HostField:
             cover_thickness=self._bilinear_sample(self.cover_thickness, x_coord, y_coord),
             roof_competence=self._bilinear_sample(self.roof_competence, x_coord, y_coord),
             growth_cost=self._bilinear_sample(self.growth_cost, x_coord, y_coord),
+            emplacement_thickness=self._bilinear_sample(
+                self.emplacement_thickness, x_coord, y_coord
+            ),
+            lithology_quality=self._bilinear_sample(
+                self.lithology_quality, x_coord, y_coord
+            ),
+            fracture_intensity=self._bilinear_sample(
+                self.fracture_intensity, x_coord, y_coord
+            ),
+            cooling_index=self._bilinear_sample(self.cooling_index, x_coord, y_coord),
+            flow_capacity=self._bilinear_sample(self.flow_capacity, x_coord, y_coord),
+            deposit_thickness=self._bilinear_sample(
+                self.deposit_thickness, x_coord, y_coord
+            ),
+            erosion_index=self._bilinear_sample(self.erosion_index, x_coord, y_coord),
+            roof_stability=self._bilinear_sample(self.roof_stability, x_coord, y_coord),
             gradient_x=self._bilinear_sample(self.gradient_x, x_coord, y_coord),
             gradient_y=self._bilinear_sample(self.gradient_y, x_coord, y_coord),
         )
@@ -219,12 +306,21 @@ class HostFieldGenerator:
         elevation = self._build_terrain(x_grid, y_grid, variation)
         gradient_y, gradient_x = self._build_gradient(elevation)
         slope_degrees = self._build_slope_degrees(gradient_x, gradient_y)
-        cover_thickness = self._build_cover_thickness(elevation, slope_degrees)
-        roof_competence = self._build_roof_competence(x_grid, y_grid, variation)
-        growth_cost = self._build_growth_cost(
+        process = self._build_process_layers(
+            x_grid=x_grid,
+            y_grid=y_grid,
+            slope_degrees=slope_degrees,
+            variation=variation,
+        )
+        cover_thickness = process["cover_thickness"]
+        roof_competence = process["roof_competence"]
+        growth_cost, routing_terms = self._build_growth_cost(
             slope_degrees=slope_degrees,
             cover_thickness=cover_thickness,
             roof_competence=roof_competence,
+            fracture_intensity=process["fracture_intensity"],
+            flow_capacity=process["flow_capacity"],
+            roof_stability=process["roof_stability"],
         )
 
         return HostField(
@@ -236,6 +332,19 @@ class HostFieldGenerator:
             cover_thickness=cover_thickness,
             roof_competence=roof_competence,
             growth_cost=growth_cost,
+            emplacement_thickness=process["emplacement_thickness"],
+            lithology_quality=process["lithology_quality"],
+            fracture_intensity=process["fracture_intensity"],
+            cooling_index=process["cooling_index"],
+            flow_capacity=process["flow_capacity"],
+            deposit_thickness=process["deposit_thickness"],
+            erosion_index=process["erosion_index"],
+            roof_stability=process["roof_stability"],
+            routing_slope_penalty=routing_terms["slope"],
+            routing_cover_penalty=routing_terms["cover"],
+            routing_fracture_penalty=routing_terms["fracture"],
+            routing_capacity_penalty=routing_terms["capacity"],
+            routing_stability_penalty=routing_terms["stability"],
             gradient_x=gradient_x,
             gradient_y=gradient_y,
         )
@@ -436,6 +545,160 @@ class HostFieldGenerator:
         maximum_cover = self.config.volcanic_layer_thickness * 1.35
         return np.clip(cover, minimum_cover, maximum_cover)
 
+    def _build_process_layers(
+        self,
+        *,
+        x_grid: Array2D,
+        y_grid: Array2D,
+        slope_degrees: Array2D,
+        variation: dict[str, Array2D | tuple[float, ...] | float],
+    ) -> dict[str, Array2D]:
+        """Build distinct causal proxies before combining them for routing."""
+
+        seed_x, seed_y = self.config.seed_point
+        relative_x = x_grid - seed_x
+        relative_y = y_grid - seed_y
+        along = self._project_along_angle(
+            relative_x, relative_y, self.config.flow_angle_degrees
+        )
+        cross = self._project_along_angle(
+            relative_x, relative_y, self.config.flow_angle_degrees + 90.0
+        )
+        fracture_axis = self._project_along_angle(
+            relative_x, relative_y, self.config.fracture_zone_angle_degrees
+        )
+        along_norm = self._normalize_percentile(along, lower=0.0, upper=100.0)
+        edge_norm = np.clip(
+            np.abs(cross) / max(0.5 * self.config.grid.width, 1.0), 0.0, 1.0
+        )
+        corridor = np.exp(
+            -np.square(
+                cross
+                / np.maximum(
+                    self.config.corridor_width * variation["corridor_width_scale"],
+                    1.0,
+                )
+            )
+        )
+
+        emplacement_factor = np.clip(
+            0.72
+            + 0.25 * corridor
+            + 0.10 * np.sin(2.0 * math.pi * along / 1850.0 + 0.4)
+            + 0.06 * np.cos(2.0 * math.pi * cross / 730.0 - 0.8),
+            0.48,
+            1.22,
+        )
+        emplacement = self.config.volcanic_layer_thickness * emplacement_factor
+
+        fracture_zone = np.exp(
+            -np.square(
+                (
+                    fracture_axis
+                    - self.config.fracture_zone_center_offset
+                    - float(variation["fracture_center_offset"])
+                )
+                / max(
+                    self.config.fracture_zone_width
+                    * float(variation["fracture_width_scale"]),
+                    1.0,
+                )
+            )
+        )
+        joint_bands = 0.5 + 0.5 * np.sin(
+            2.0 * math.pi * along / 1080.0
+            - 2.0 * math.pi * cross / 1460.0
+            + float(variation["drainage_phase_offset"])
+        )
+        fracture_intensity = np.clip(
+            0.12 + 0.62 * fracture_zone + 0.16 * joint_bands + 0.08 * edge_norm,
+            0.0,
+            1.0,
+        )
+
+        cooling_index = np.clip(
+            0.18 + 0.52 * along_norm + 0.25 * edge_norm
+            + 0.08 * np.sin(2.0 * math.pi * along / 920.0),
+            0.0,
+            1.0,
+        )
+        erosion_index = np.clip(
+            0.08
+            + 0.62 * self.config.material_weathering
+            + 0.18 * self._normalize_percentile(slope_degrees)
+            + 0.15 * edge_norm,
+            0.0,
+            1.0,
+        )
+        deposit_thickness = np.clip(
+            self.config.volcanic_layer_thickness
+            * (0.015 + 0.10 * erosion_index * (0.35 + 0.65 * (1.0 - corridor))),
+            0.0,
+            0.18 * self.config.volcanic_layer_thickness,
+        )
+        cover = np.clip(
+            emplacement
+            - erosion_index * 0.16 * self.config.volcanic_layer_thickness
+            + 0.25 * deposit_thickness,
+            self.config.minimum_stable_cover,
+            1.35 * self.config.volcanic_layer_thickness,
+        )
+
+        lithology_seed = self._build_roof_competence(x_grid, y_grid, variation)
+        cooling_quality = 1.0 - 0.55 * np.abs(cooling_index - 0.52)
+        lithology_quality = np.clip(
+            0.46 * lithology_seed
+            + 0.34 * self.config.material_quality
+            + 0.20 * cooling_quality,
+            0.0,
+            1.0,
+        )
+        roof_competence = np.clip(
+            lithology_quality
+            * (1.0 - 0.68 * fracture_intensity)
+            * (1.0 - 0.28 * erosion_index),
+            0.0,
+            1.0,
+        )
+        emplacement_norm = np.clip(
+            emplacement / max(self.config.volcanic_layer_thickness, 1.0),
+            0.0,
+            1.4,
+        )
+        flow_capacity = np.clip(
+            0.46 * corridor
+            + 0.34 * emplacement_norm
+            + 0.20 * (1.0 - fracture_intensity)
+            - 0.18 * deposit_thickness
+            / max(self.config.volcanic_layer_thickness, 1.0),
+            0.0,
+            1.0,
+        )
+        demand_ratio = (
+            self.config.rock_density_kg_m3
+            * self.config.gravity_m_s2
+            * self.config.characteristic_passage_span_m**2
+            / np.maximum(cover, 0.1)
+            / max(self.config.effective_tensile_strength_pa, 1.0)
+        )
+        roof_stability = np.clip(
+            roof_competence / (1.0 + demand_ratio),
+            0.0,
+            1.0,
+        )
+        return {
+            "emplacement_thickness": emplacement,
+            "cover_thickness": cover,
+            "lithology_quality": lithology_quality,
+            "fracture_intensity": fracture_intensity,
+            "cooling_index": cooling_index,
+            "flow_capacity": flow_capacity,
+            "deposit_thickness": deposit_thickness,
+            "erosion_index": erosion_index,
+            "roof_competence": roof_competence,
+            "roof_stability": roof_stability,
+        }
+
     def _build_roof_competence(
         self,
         x_grid: Array2D,
@@ -514,7 +777,10 @@ class HostFieldGenerator:
         slope_degrees: Array2D,
         cover_thickness: Array2D,
         roof_competence: Array2D,
-    ) -> Array2D:
+        fracture_intensity: Array2D,
+        flow_capacity: Array2D,
+        roof_stability: Array2D,
+    ) -> tuple[Array2D, dict[str, Array2D]]:
         slope_penalty = self._normalize_percentile(slope_degrees)
         cover_penalty = 1.0 - np.clip(
             (cover_thickness - self.config.minimum_stable_cover)
@@ -525,10 +791,15 @@ class HostFieldGenerator:
             0.0,
             1.0,
         )
-        competence_penalty = 1.0 - roof_competence
-
-        growth_cost = 0.38 * slope_penalty + 0.22 * cover_penalty + 0.40 * competence_penalty
-        return np.clip(growth_cost, 0.0, 1.0)
+        terms = {
+            "slope": 0.12 * slope_penalty,
+            "cover": 0.10 * cover_penalty,
+            "fracture": 0.22 * fracture_intensity,
+            "capacity": 0.28 * (1.0 - flow_capacity),
+            "stability": 0.28 * (1.0 - roof_stability),
+        }
+        growth_cost = sum(terms.values())
+        return np.clip(growth_cost, 0.0, 1.0), terms
 
     @staticmethod
     def _project_along_angle(
@@ -567,3 +838,26 @@ class HostFieldGenerator:
 
         clipped = np.clip(values, lower_value, upper_value)
         return (clipped - lower_value) / (upper_value - lower_value)
+
+
+def export_host_influence_report(
+    host_field: HostField,
+    output_path: str | Path,
+) -> Path:
+    """Write the measurable contribution of every routing term."""
+
+    output = Path(output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    report = {
+        "schema": "plume.host-routing-influence.v1",
+        "routing_formula": {
+            "slope": 0.12,
+            "cover": 0.10,
+            "fracture": 0.22,
+            "capacity": 0.28,
+            "stability": 0.28,
+        },
+        "influence": host_field.routing_influence_summary(),
+    }
+    output.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
+    return output

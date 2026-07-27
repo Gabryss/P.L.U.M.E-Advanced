@@ -10,6 +10,7 @@ from typing import Any
 
 import numpy as np
 
+from stages.floor_map import FloorAtlas, FloorCell
 from stages.section_field import SectionField, SectionSample
 
 
@@ -72,6 +73,7 @@ class GeologicalEvent:
     contact_point: tuple[float, float, float] = (0.0, 0.0, 0.0)
     contact_normal: tuple[float, float, float] = (0.0, 0.0, 1.0)
     grounded: bool = False
+    floor_cell_id: int = -1
 
     @property
     def position(self) -> tuple[float, float, float]:
@@ -180,6 +182,7 @@ class GeologicalEventGenerator:
         self,
         section_field: SectionField,
         base_geometry: Any | None = None,
+        floor_atlas: FloorAtlas | None = None,
     ) -> GeologicalEventField:
         if not self.config.enabled or not self.config.enabled_kinds:
             return GeologicalEventField(config=self.config, events=(), meshes=())
@@ -218,15 +221,43 @@ class GeologicalEventGenerator:
             )
             if recipe[0] in self.config.enabled_kinds
         )
+        sample_lookup = {
+            (sample.segment_id, sample.index): sample for sample in samples
+        }
         for kind, count, material_hint in recipes:
-            candidates = self._rank_candidates(kind, samples)
-            for _ in range(max(count, 0)):
-                sample = self._choose_candidate(
+            prop_candidates = (
+                self._rank_floor_candidates(
                     kind,
-                    rng,
-                    candidates,
-                    occupied_positions,
+                    floor_atlas,
+                    sample_lookup,
                 )
+                if kind in {"rock", "boulder"} and floor_atlas is not None
+                else None
+            )
+            candidates = (
+                self._rank_candidates(kind, samples)
+                if prop_candidates is None
+                else []
+            )
+            for _ in range(max(count, 0)):
+                floor_cell = None
+                if prop_candidates is not None:
+                    selected = self._choose_floor_candidate(
+                        kind,
+                        rng,
+                        prop_candidates,
+                        occupied_positions,
+                    )
+                    if selected is None:
+                        break
+                    sample, floor_cell = selected
+                else:
+                    sample = self._choose_candidate(
+                        kind,
+                        rng,
+                        candidates,
+                        occupied_positions,
+                    )
                 if sample is None:
                     break
                 event = self._build_event(
@@ -236,6 +267,7 @@ class GeologicalEventGenerator:
                     sample=sample,
                     rng=rng,
                     voxel_grid=voxel_grid,
+                    floor_cell=floor_cell,
                 )
                 events.append(event)
                 occupied_positions.append(
@@ -263,6 +295,7 @@ class GeologicalEventGenerator:
                 contact_point=event.contact_point,
                 contact_normal=event.contact_normal,
                 grounded=event.grounded,
+                floor_cell_id=event.floor_cell_id,
             )
             for index, event in enumerate(events)
         )
@@ -347,6 +380,44 @@ class GeologicalEventGenerator:
         scored.sort(key=lambda item: item[0], reverse=True)
         return scored
 
+    def _rank_floor_candidates(
+        self,
+        kind: str,
+        floor_atlas: FloorAtlas,
+        sample_lookup: dict[tuple[int, int], SectionSample],
+    ) -> list[tuple[float, SectionSample, FloorCell]]:
+        """Rank actual floor area instead of section centerlines."""
+
+        scored: list[tuple[float, SectionSample, FloorCell]] = []
+        centerline_scores = {
+            (sample.segment_id, sample.index): score
+            for score, sample in self._rank_candidates(
+                kind,
+                list(sample_lookup.values()),
+            )
+        }
+        for cell in floor_atlas.cells:
+            if not cell.grounded:
+                continue
+            key = (cell.segment_id, cell.sample_index)
+            sample = sample_lookup.get(key)
+            if sample is None:
+                continue
+            edge_fraction = abs(cell.lateral_offset_m) / max(
+                0.5 * cell.tube_width_m,
+                1e-6,
+            )
+            edge_penalty = 1.0 - 0.55 * float(np.clip(edge_fraction, 0.0, 1.0))
+            clearance_factor = float(
+                np.clip(cell.clearance_m / max(sample.tube_height, 1.0), 0.4, 1.4)
+            )
+            score = centerline_scores.get(key, 1e-6) * edge_penalty
+            if kind == "boulder":
+                score *= clearance_factor
+            scored.append((max(score, 1e-6), sample, cell))
+        scored.sort(key=lambda item: item[0], reverse=True)
+        return scored
+
     def _roof_demand_ratio(self, sample: SectionSample) -> float:
         """Fast body/material-aware collapse surrogate for candidate ranking."""
 
@@ -383,6 +454,29 @@ class GeologicalEventGenerator:
                 return sample
         return None
 
+    def _choose_floor_candidate(
+        self,
+        kind: str,
+        rng: np.random.Generator,
+        candidates: list[tuple[float, SectionSample, FloorCell]],
+        occupied_positions: list[tuple[np.ndarray, str]],
+    ) -> tuple[SectionSample, FloorCell] | None:
+        if not candidates:
+            return None
+        weights = np.asarray([score for score, _sample, _cell in candidates], dtype=float)
+        weights /= max(float(weights.sum()), 1e-9)
+        for _attempt in range(max(100, 2 * len(candidates))):
+            index = int(rng.choice(len(candidates), p=weights))
+            _score, sample, cell = candidates[index]
+            position = np.asarray(cell.position, dtype=float)
+            if all(
+                float(np.linalg.norm(position - occupied))
+                >= max(self._event_spacing(kind), self._event_spacing(occupied_kind))
+                for occupied, occupied_kind in occupied_positions
+            ):
+                return sample, cell
+        return None
+
     def _event_spacing(self, kind: str) -> float:
         if kind == "rock":
             return max(float(self.config.minimum_rock_spacing), 0.0)
@@ -399,6 +493,7 @@ class GeologicalEventGenerator:
         sample: SectionSample,
         rng: np.random.Generator,
         voxel_grid: Any | None,
+        floor_cell: FloorCell | None = None,
     ) -> GeologicalEvent:
         radius = self._sample_radius(kind, rng)
         severity = float(np.clip(rng.normal(0.62, 0.18), 0.22, 1.0))
@@ -426,6 +521,11 @@ class GeologicalEventGenerator:
         radius_x = max(float(radius_x), 0.25)
         radius_y = max(float(radius_y), 0.25)
         radius_z = max(float(radius_z), 0.25)
+        if floor_cell is not None and kind in {"rock", "boulder"}:
+            radius_z = min(
+                radius_z,
+                max(0.25, 0.45 * floor_cell.clearance_m),
+            )
         section_center = np.array((sample.x, sample.y, sample.z), dtype=float)
         angle = float(
             math.atan2(sample.tangent[1], sample.tangent[0])
@@ -438,6 +538,12 @@ class GeologicalEventGenerator:
             contact = center
             contact_normal = normal if lateral <= 0.0 else -normal
             grounded = False
+        elif floor_cell is not None and kind in {"rock", "boulder"}:
+            contact = np.asarray(floor_cell.position, dtype=float)
+            contact_normal = np.asarray(floor_cell.normal, dtype=float)
+            embed = float(np.clip(self.config.ground_embed_fraction, 0.0, 0.5))
+            center = contact + contact_normal * radius_z * (1.0 - embed)
+            grounded = floor_cell.grounded
         else:
             lateral_limit = max(
                 0.0,
@@ -489,6 +595,7 @@ class GeologicalEventGenerator:
             contact_point=tuple(float(value) for value in contact),
             contact_normal=tuple(float(value) for value in contact_normal),
             grounded=grounded,
+            floor_cell_id=floor_cell.cell_id if floor_cell is not None else -1,
         )
 
     @staticmethod

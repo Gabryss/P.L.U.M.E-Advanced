@@ -9,6 +9,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from config import load_project_config
 from stages.events import GeologicalEventGenerator
+from stages.floor_map import FloorMapGenerator
 from stages.geometry import GeometryGenerator
 from stages.host_field import HostFieldGenerator
 from stages.network import CaveNetworkGenerator
@@ -26,14 +27,21 @@ class GeologicalEventTests(unittest.TestCase):
         base_geometry = GeometryGenerator(
             project_config.geometry
         ).build_base_volume(cave_network, section_field)
+        floor_atlas = FloorMapGenerator(project_config.floor_map).generate(
+            cave_network,
+            section_field,
+            base_geometry,
+        )
 
         event_field = GeologicalEventGenerator(project_config.events).generate(
             section_field,
             base_geometry,
+            floor_atlas,
         )
         repeated_event_field = GeologicalEventGenerator(project_config.events).generate(
             section_field,
             base_geometry,
+            floor_atlas,
         )
 
         self.assertEqual(event_field.events, repeated_event_field.events)
@@ -85,6 +93,7 @@ class GeologicalEventTests(unittest.TestCase):
             )
             if event.kind in {"rock", "boulder"}:
                 self.assertTrue(event.grounded)
+                self.assertGreaterEqual(event.floor_cell_id, 0)
                 self.assertAlmostEqual(
                     base_geometry.voxel_grid.sample_density(event.contact_point),
                     base_geometry.voxel_grid.iso_level,
@@ -124,9 +133,15 @@ class GeologicalEventTests(unittest.TestCase):
             cave_network,
             section_field,
         )
+        floor_atlas = FloorMapGenerator(project_config.floor_map).generate(
+            cave_network,
+            section_field,
+            base_geometry,
+        )
         event_field = GeologicalEventGenerator(project_config.events).generate(
             section_field,
             base_geometry,
+            floor_atlas,
         )
         cave_geometry = geometry_generator.finalize(
             base_geometry,

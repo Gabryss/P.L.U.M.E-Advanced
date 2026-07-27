@@ -110,6 +110,12 @@ Exit criteria:
 
 ## Phase 3 — host-field causal model
 
+Status: causal-field foundation complete. Independent emplacement, lithology,
+fracture, cooling, capacity, deposit, erosion, and gravity-aware stability
+layers are active. Routing uses one inspectable composite exactly once and
+reports term influence. Adaptive local sampling and propagation of every raw
+field through sections/material masks remain.
+
 - Replace elevation-derived cover with an emplacement-thickness field.
 - Add lithology, joint/fracture tensor, rock-mass quality, thermal/cooling,
   lava capacity, regolith/sediment, erosion, and impact layers.
@@ -128,6 +134,23 @@ Exit criteria:
 - No raw field is counted both directly and inside an opaque composite cost.
 - Body/material selection measurably affects network, stability, events, and
   surface masks.
+
+## Cross-cutting floor-map stage
+
+Status: first topology-aware implementation complete.
+
+- Raycast lateral floor lanes from Stage-C sections against the Stage-D base
+  volume.
+- Address cells intrinsically by segment, distance along, and lateral offset;
+  retain graph `z_level` and world XYZ for lossless lifting.
+- Store measured clearance and the actual inward surface normal.
+- Use atlas cells as rock/boulder candidates instead of inventing offsets from
+  section centerlines.
+- Export NPZ/JSON for downstream autonomy tools and a two-panel PNG containing
+  both conventional world plan and overlap-safe intrinsic views.
+
+Next refinements are connected traversability edges, slope/step/robot-radius
+cost layers, multi-level occupancy rasters, and post-modifier invalidation.
 
 ## Phase 4 — physical network
 

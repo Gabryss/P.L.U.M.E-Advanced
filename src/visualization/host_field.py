@@ -50,14 +50,32 @@ class HostFieldPlotter:
                 "colorbar_label": "Cover",
             },
             {
-                "values": host_field.roof_competence,
-                "title": "Roof Competence",
+                "values": host_field.emplacement_thickness,
+                "title": "Emplacement Thickness",
+                "cmap": "inferno",
+                "colorbar_label": "Thickness",
+            },
+            {
+                "values": host_field.fracture_intensity,
+                "title": "Fracture Intensity",
+                "cmap": "magma",
+                "colorbar_label": "Intensity",
+            },
+            {
+                "values": host_field.flow_capacity,
+                "title": "Flow Capacity",
+                "cmap": "Blues",
+                "colorbar_label": "Capacity",
+            },
+            {
+                "values": host_field.roof_stability,
+                "title": "Gravity-aware Roof Stability",
                 "cmap": "cividis",
-                "colorbar_label": "Competence",
+                "colorbar_label": "Stability",
             },
             {
                 "values": host_field.growth_cost,
-                "title": "Growth Cost",
+                "title": "Explicit Routing Cost",
                 "cmap": "magma_r",
                 "colorbar_label": "Cost",
             },
@@ -93,8 +111,8 @@ class HostFieldPlotter:
         summary_line = (
             f"Mean slope: {summary['slope_mean_deg']:.1f} deg | "
             f"Mean cover: {summary['cover_thickness_mean']:.1f} | "
-            f"Mean roof competence: {summary['roof_competence_mean']:.2f} | "
-            f"Mean growth cost: {summary['growth_cost_mean']:.2f}"
+            f"Mean roof stability: {summary['roof_stability_mean']:.2f} | "
+            f"Mean routing cost: {summary['growth_cost_mean']:.2f}"
         )
         fig.text(0.5, 0.01, summary_line, ha="center", fontsize=10)
 

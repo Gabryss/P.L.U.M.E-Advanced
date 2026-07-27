@@ -229,13 +229,41 @@ class GeometryGenerator:
             f"applying {len(modifiers)} structural modifiers",
         )
         applied_ids: list[int] = []
+        component_count = self._carved_component_count(
+            density,
+            voxel_grid.iso_level,
+        )
         for index, event in enumerate(modifiers, start=1):
-            if self._stamp_structural_event(
+            previous_density = np.array(density, copy=True)
+            applied = self._stamp_structural_event(
                 density=density,
                 voxel_grid=voxel_grid,
                 event=event,
-            ):
+            )
+            updated_component_count = self._carved_component_count(
+                density,
+                voxel_grid.iso_level,
+            )
+            if applied and updated_component_count <= component_count:
                 applied_ids.append(event.event_id)
+                component_count = updated_component_count
+            elif applied:
+                density[...] = previous_density
+                applied = self._stamp_structural_event(
+                    density=density,
+                    voxel_grid=voxel_grid,
+                    event=event,
+                    radius_scale=0.55,
+                )
+                updated_component_count = self._carved_component_count(
+                    density,
+                    voxel_grid.iso_level,
+                )
+                if applied and updated_component_count <= component_count:
+                    applied_ids.append(event.event_id)
+                    component_count = updated_component_count
+                else:
+                    density[...] = previous_density
             self._emit_progress(
                 progress,
                 "events",
@@ -254,17 +282,38 @@ class GeometryGenerator:
             tuple(applied_ids),
         )
 
+    @staticmethod
+    def _carved_component_count(density: np.ndarray, iso_level: float) -> int:
+        carved = density >= iso_level
+        if not bool(np.any(carved)):
+            return 0
+        _labels, count = ndimage.label(
+            carved,
+            structure=ndimage.generate_binary_structure(rank=3, connectivity=1),
+        )
+        return int(count)
+
     def _stamp_structural_event(
         self,
         *,
         density: np.ndarray,
         voxel_grid: VoxelGrid,
         event: GeologicalEvent,
+        radius_scale: float = 1.0,
     ) -> bool:
         center = np.asarray(event.position, dtype=float)
-        radius_x = max(float(event.radius_x), 0.25 * voxel_grid.voxel_size)
-        radius_y = max(float(event.radius_y), 0.25 * voxel_grid.voxel_size)
-        radius_z = max(float(event.radius_z), 0.25 * voxel_grid.voxel_size)
+        radius_x = max(
+            float(event.radius_x) * radius_scale,
+            0.25 * voxel_grid.voxel_size,
+        )
+        radius_y = max(
+            float(event.radius_y) * radius_scale,
+            0.25 * voxel_grid.voxel_size,
+        )
+        radius_z = max(
+            float(event.radius_z) * radius_scale,
+            0.25 * voxel_grid.voxel_size,
+        )
         horizontal_radius = max(radius_x, radius_y)
         padding = voxel_grid.voxel_size + max(
             float(self.config.structural_event_blend),

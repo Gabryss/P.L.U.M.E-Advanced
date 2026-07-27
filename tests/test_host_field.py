@@ -26,6 +26,17 @@ class HostFieldTests(unittest.TestCase):
         self.assertEqual(host_field.cover_thickness.shape, expected_shape)
         self.assertEqual(host_field.roof_competence.shape, expected_shape)
         self.assertEqual(host_field.growth_cost.shape, expected_shape)
+        for values in (
+            host_field.emplacement_thickness,
+            host_field.lithology_quality,
+            host_field.fracture_intensity,
+            host_field.cooling_index,
+            host_field.flow_capacity,
+            host_field.deposit_thickness,
+            host_field.erosion_index,
+            host_field.roof_stability,
+        ):
+            self.assertEqual(values.shape, expected_shape)
 
         self.assertTrue(np.all(host_field.cover_thickness > 0.0))
         self.assertTrue(
@@ -34,6 +45,19 @@ class HostFieldTests(unittest.TestCase):
         self.assertTrue(
             np.all((host_field.growth_cost >= 0.0) & (host_field.growth_cost <= 1.0))
         )
+        for values in (
+            host_field.lithology_quality,
+            host_field.fracture_intensity,
+            host_field.cooling_index,
+            host_field.flow_capacity,
+            host_field.erosion_index,
+            host_field.roof_stability,
+        ):
+            self.assertTrue(np.all((values >= 0.0) & (values <= 1.0)))
+            self.assertGreater(float(np.std(values)), 1e-4)
+        for influence in host_field.routing_influence_summary().values():
+            self.assertGreater(influence["standard_deviation"], 1e-5)
+            self.assertGreater(influence["mean_absolute_contribution"], 0.0)
 
     def test_host_field_supports_point_sampling(self) -> None:
         host_field = HostFieldGenerator().generate()
@@ -44,6 +68,9 @@ class HostFieldTests(unittest.TestCase):
         self.assertLessEqual(sample.roof_competence, 1.0)
         self.assertGreaterEqual(sample.growth_cost, 0.0)
         self.assertLessEqual(sample.growth_cost, 1.0)
+        self.assertGreater(sample.emplacement_thickness, 0.0)
+        self.assertGreaterEqual(sample.roof_stability, 0.0)
+        self.assertLessEqual(sample.roof_stability, 1.0)
         self.assertIsInstance(sample.gradient_x, float)
         self.assertIsInstance(sample.gradient_y, float)
 
