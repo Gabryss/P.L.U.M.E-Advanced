@@ -30,6 +30,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from config import load_project_config, write_project_config_manifest
 from exporters import export_target_asset
+from output_guard import OutputOverwriteRefused, require_output_overwrite_confirmation
 from stages.events import GeologicalEventGenerator
 from stages.floor_map import FloorMapGenerator, export_floor_atlas
 from stages.geometry import GeometryGenerator
@@ -98,13 +99,22 @@ class TerminalProgress:
         self._progress.stop()
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--config",
         type=Path,
         default=ROOT / "config" / "project.toml",
         help="Path to the project TOML configuration.",
+    )
+    parser.add_argument(
+        "--body",
+        choices=("earth", "mars", "moon"),
+        default=None,
+        help=(
+            "Override world.body for this run and use that body's default "
+            "geological material."
+        ),
     )
     parser.add_argument(
         "--output",
@@ -193,15 +203,20 @@ def parse_args() -> argparse.Namespace:
             "Defaults to a sibling file named stage_d_geometry.glb."
         ),
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--force-overwrite",
+        action="store_true",
+        help=(
+            "Bypass the confirmation for non-empty output directories. "
+            "Intended for deliberate unattended or debug generation."
+        ),
+    )
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    args = parse_args()
-    progress = TerminalProgress()
-
-    progress.start("Configuration", "loading TOML")
-    project_config = load_project_config(args.config)
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    project_config = load_project_config(args.config, world_body=args.body)
     host_output = args.host_output or args.output.with_name("stage_a_host_field.png")
     section_output = args.section_output or args.output.with_name("stage_c_section_field.png")
     geometry_output = args.geometry_output or args.output.with_name("stage_d_geometry.png")
@@ -224,6 +239,35 @@ def main() -> int:
         args.geometry_glb_output or args.output.with_name("stage_d_geometry.glb")
     )
     resolved_config_output = args.output.with_name("resolved_project_config.json")
+    output_directories = {
+        path.parent
+        for path in (
+            args.output,
+            host_output,
+            section_output,
+            geometry_output,
+            event_output,
+            floor_map_output,
+            geometry_presentation_output,
+            geometry_chunk_output,
+            geometry_mesh_output,
+            geometry_glb_output,
+            resolved_config_output,
+        )
+    }
+    try:
+        require_output_overwrite_confirmation(
+            output_directories,
+            allow_overwrite=(
+                args.force_overwrite or project_config.run.overwrite_outputs
+            ),
+        )
+    except OutputOverwriteRefused as error:
+        print(error, file=sys.stderr)
+        return 2
+
+    progress = TerminalProgress()
+    progress.start("Configuration", "loaded TOML and checked output")
     resolved_config_path = write_project_config_manifest(
         project_config,
         resolved_config_output,

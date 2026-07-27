@@ -30,14 +30,14 @@ are still intentionally incomplete.
 
 ### Stage A: Host Field
 
-![Stage A Host Field](outputs/stage_a_host_field.png)
+![Stage A Host Field](docs/figures/celestial_bodies/earth/stage_a_host_field.png)
 
 Stage A produces the terrain substrate and the main scalar layers used by later
 stages: elevation, slope, cover thickness, roof competence, and growth cost.
 
 ### Stage B: Cave Network
 
-![Stage B Cave Network](outputs/stage_b_cave_network.png)
+![Stage B Cave Network](docs/figures/celestial_bodies/earth/stage_b_cave_network.png)
 
 Stage B generates the current default output: a host-driven braided cave-network
 skeleton with split/rejoin structure, islands, chamber-like expansions, and
@@ -45,7 +45,7 @@ segment metadata for later geometry stages.
 
 ### Stage C: Section Field
 
-![Stage C Section Field](outputs/stage_c_section_field.png)
+![Stage C Section Field](docs/figures/celestial_bodies/earth/stage_c_section_field.png)
 
 Stage C generates geometry-ready cross-section samples along the network:
 adaptive sample spacing, underground centerline placement, 3D local frames,
@@ -54,11 +54,11 @@ regions.
 
 ### Stage D: Geometry
 
-![Stage D Geometry Diagnostics](outputs/stage_d_geometry.png)
+![Stage D Geometry Diagnostics](docs/figures/celestial_bodies/earth/stage_d_geometry.png)
 
-![Stage D Chunk Diagnostics](outputs/stage_d_geometry_chunks.png)
+![Stage D Chunk Diagnostics](docs/figures/celestial_bodies/earth/stage_d_geometry_chunks.png)
 
-![Stage D Geometry Presentation](outputs/stage_d_geometry_presentation.png)
+![Stage D Geometry Presentation](docs/figures/celestial_bodies/earth/stage_d_geometry_presentation.png)
 
 Stage D converts the Stage-C samples into a carved density field. It stamps
 capsule tunnels and widened junction/chamber regions into a voxel grid, then
@@ -72,7 +72,7 @@ cleaner plan/mesh preview.
 
 ### Stage E: Geological Events
 
-![Stage E Geological Events](outputs/stage_e_geological_events.png)
+![Stage E Geological Events](docs/figures/celestial_bodies/earth/stage_e_geological_events.png)
 
 Stage E places deterministic events from the Stage-C section field after the
 base cave density exists. Rocks and boulders raycast to the actual floor,
@@ -82,6 +82,18 @@ change the final render and collision topology instead of adding decorative
 ellipsoids. A configurable share of loose debris is sampled from floor cells
 around collapse regions, with relaxed intra-cluster spacing and explicit
 parent-collapse metadata.
+
+## Celestial-body comparison
+
+The same seed and base configuration produce materially different underground
+environments when the physical world preset changes:
+
+| Earth | Mars | Moon |
+|---|---|---|
+| ![Earth generated cave](docs/figures/celestial_bodies/earth/stage_d_geometry_presentation.png) | ![Mars generated cave](docs/figures/celestial_bodies/mars/stage_d_geometry_presentation.png) | ![Moon generated cave](docs/figures/celestial_bodies/moon/stage_d_geometry_presentation.png) |
+
+The complete eight-figure pipeline comparison for every body is in
+[`docs/CELESTIAL_BODY_GALLERY.md`](docs/CELESTIAL_BODY_GALLERY.md).
 
 ## How It Works
 
@@ -344,6 +356,7 @@ or hand-authored scenarios, but the default project config is range-driven.
 
 - `config/`: project configuration
 - `docs/MAJOR_UPGRADE_PLAN.md`: phased architecture and release gates
+- `docs/CELESTIAL_BODY_GALLERY.md`: generated Earth, Mars, and Moon figure gallery
 - `scripts/`: stage entrypoints
 - `src/config.py`: TOML loader
 - `src/world.py`: celestial body, material, run, export, and seed profiles
@@ -383,6 +396,32 @@ Generate the current cave network with the single entrypoint:
 
 ```bash
 .venv/bin/python scripts/generate_cave.py
+```
+
+Generation checks every destination directory before writing. If a destination
+already contains files, an interactive run asks for confirmation and a
+non-interactive run stops safely. For a deliberate unattended/debug overwrite,
+use either:
+
+```toml
+[run]
+overwrite_outputs = true
+```
+
+or:
+
+```bash
+.venv/bin/python scripts/generate_cave.py --force-overwrite
+```
+
+Use `--body earth`, `--body mars`, or `--body moon` to override the configured
+body for one run. The override also selects that body's default geological
+material.
+
+Regenerate all documentation figures in one batch:
+
+```bash
+.venv/bin/python scripts/generate_body_figures.py
 ```
 
 The generator prints progress bars for configuration loading, stages A-C,

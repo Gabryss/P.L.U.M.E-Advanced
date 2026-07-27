@@ -24,7 +24,7 @@ dev = [
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["config", "world"]
+py-modules = ["config", "output_guard", "world"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

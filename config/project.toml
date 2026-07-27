@@ -15,6 +15,9 @@ quality = "preview"
 dev_max_route_length_m = 1500.0
 dev_max_braid_zones = 2
 render_diagnostics = true
+# Safety default: prompt before writing into a non-empty generation directory.
+# Set true only for unattended/debug batches that intentionally replace files.
+overwrite_outputs = false
 
 [export]
 target = "blender"

@@ -70,6 +70,27 @@ class ProjectConfigurationTests(unittest.TestCase):
         )
         self.assertEqual(earth.stage_seeds, moon.stage_seeds)
 
+    def test_world_body_override_uses_the_selected_bodys_default_material(self) -> None:
+        moon = load_project_config(
+            ROOT / "config" / "project.toml",
+            world_body="moon",
+        )
+
+        self.assertEqual(moon.world.body.name, "moon")
+        self.assertEqual(moon.world.material.name, "mare_basalt")
+        self.assertEqual(moon.section_field.maximum_tube_width, 100.0)
+
+    def test_run_config_can_explicitly_bypass_output_confirmation(self) -> None:
+        config = self._load_minimal(
+            """
+            schema_version = 2
+            [run]
+            overwrite_outputs = true
+            """
+        )
+
+        self.assertTrue(config.run.overwrite_outputs)
+
     def test_event_disable_returns_empty_field_without_optional_provider(self) -> None:
         config = self._load_minimal(
             """

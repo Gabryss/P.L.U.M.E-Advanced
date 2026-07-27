@@ -49,12 +49,25 @@ class ProjectConfig:
     geometry: GeometryConfig
 
 
-def load_project_config(path: str | Path) -> ProjectConfig:
-    """Load the project TOML configuration file."""
+def load_project_config(
+    path: str | Path,
+    *,
+    world_body: str | None = None,
+) -> ProjectConfig:
+    """Load the project TOML configuration file.
+
+    ``world_body`` is a CLI-oriented override. When supplied, the body's
+    default material replaces any material selected for the original body.
+    """
 
     config_path = Path(path)
     with config_path.open("rb") as config_file:
         raw_config = tomllib.load(config_file)
+    if world_body is not None:
+        world_data = dict(raw_config.get("world", {}))
+        world_data["body"] = world_body
+        world_data.pop("material", None)
+        raw_config["world"] = world_data
 
     schema_version = int(raw_config.get("schema_version", 1))
     if schema_version not in {1, CURRENT_SCHEMA_VERSION}:

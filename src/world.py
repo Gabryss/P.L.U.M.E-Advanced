@@ -98,6 +98,7 @@ class RunConfig:
     dev_max_route_length_m: float = 1500.0
     dev_max_braid_zones: int = 2
     render_diagnostics: bool = True
+    overwrite_outputs: bool = False
 
 
 @dataclass(frozen=True)
