@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 
 import numpy as np
 from scipy import ndimage
@@ -29,6 +30,7 @@ class GeometryConfig:
     wall_roughness_blend: float = 0.75
     junction_irregularity_amplitude: float = 0.18
     junction_irregularity_frequency: float = 0.11
+    structural_event_blend: float = 0.35
     weld_tolerance: float = 1e-5
     cave_diffuse_texture: str = "texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg"
     cave_normal_texture: str = "texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr"
@@ -56,6 +58,141 @@ class VoxelGrid:
     @property
     def component_count(self) -> int:
         return _count_voxel_components(self)
+
+    @property
+    def bounds(self) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+        lower = np.asarray(self.origin, dtype=float)
+        upper = lower + (np.asarray(self.shape, dtype=float) - 1.0) * self.voxel_size
+        return (
+            tuple(float(value) for value in lower),
+            tuple(float(value) for value in upper),
+        )
+
+    def contains(self, point: tuple[float, float, float] | np.ndarray) -> bool:
+        lower, upper = self.bounds
+        position = np.asarray(point, dtype=float)
+        return bool(
+            np.all(position >= np.asarray(lower))
+            and np.all(position <= np.asarray(upper))
+        )
+
+    def sample_density(
+        self,
+        point: tuple[float, float, float] | np.ndarray,
+    ) -> float:
+        """Trilinearly sample the generated cave density."""
+
+        position = np.asarray(point, dtype=float)
+        fractional = (position - np.asarray(self.origin, dtype=float)) / self.voxel_size
+        maximum = np.asarray(self.shape, dtype=float) - 1.0
+        if np.any(fractional < 0.0) or np.any(fractional > maximum):
+            return float(self.iso_level - 1.0)
+
+        lower = np.floor(fractional).astype(int)
+        upper = np.minimum(lower + 1, np.asarray(self.shape, dtype=int) - 1)
+        weight = fractional - lower
+        x0, y0, z0 = lower
+        x1, y1, z1 = upper
+        wx, wy, wz = weight
+        density = self.density
+
+        c000 = float(density[x0, y0, z0])
+        c100 = float(density[x1, y0, z0])
+        c010 = float(density[x0, y1, z0])
+        c110 = float(density[x1, y1, z0])
+        c001 = float(density[x0, y0, z1])
+        c101 = float(density[x1, y0, z1])
+        c011 = float(density[x0, y1, z1])
+        c111 = float(density[x1, y1, z1])
+        c00 = c000 * (1.0 - wx) + c100 * wx
+        c10 = c010 * (1.0 - wx) + c110 * wx
+        c01 = c001 * (1.0 - wx) + c101 * wx
+        c11 = c011 * (1.0 - wx) + c111 * wx
+        c0 = c00 * (1.0 - wy) + c10 * wy
+        c1 = c01 * (1.0 - wy) + c11 * wy
+        return float(c0 * (1.0 - wz) + c1 * wz)
+
+    def surface_normal(
+        self,
+        point: tuple[float, float, float] | np.ndarray,
+    ) -> tuple[float, float, float]:
+        """Estimate the inward-facing cave normal from the density gradient."""
+
+        position = np.asarray(point, dtype=float)
+        step = max(0.5 * self.voxel_size, 1e-6)
+        gradient = np.empty(3, dtype=float)
+        for axis in range(3):
+            offset = np.zeros(3, dtype=float)
+            offset[axis] = step
+            gradient[axis] = (
+                self.sample_density(position + offset)
+                - self.sample_density(position - offset)
+            ) / (2.0 * step)
+        length = float(np.linalg.norm(gradient))
+        if length <= 1e-12:
+            return (0.0, 0.0, 1.0)
+        return tuple(float(value) for value in gradient / length)
+
+    def raycast_isosurface(
+        self,
+        origin: tuple[float, float, float] | np.ndarray,
+        direction: tuple[float, float, float] | np.ndarray,
+        max_distance: float,
+        *,
+        step: float | None = None,
+    ) -> "SurfaceHit | None":
+        """Find the first inside-to-solid isosurface crossing along a ray."""
+
+        start = np.asarray(origin, dtype=float)
+        ray = np.asarray(direction, dtype=float)
+        ray_length = float(np.linalg.norm(ray))
+        if ray_length <= 1e-12 or max_distance <= 0.0:
+            return None
+        ray /= ray_length
+        increment = step or max(0.25 * self.voxel_size, 0.05)
+        increment = min(max(float(increment), 0.01), float(max_distance))
+
+        previous_distance = 0.0
+        previous_density = self.sample_density(start)
+        entered_void = previous_density >= self.iso_level
+        distance = increment
+        while distance <= max_distance + 1e-9:
+            point = start + ray * min(distance, max_distance)
+            density = self.sample_density(point)
+            if not entered_void and density >= self.iso_level:
+                entered_void = True
+            elif entered_void and density < self.iso_level:
+                low = previous_distance
+                high = min(distance, max_distance)
+                for _ in range(12):
+                    middle = 0.5 * (low + high)
+                    middle_density = self.sample_density(start + ray * middle)
+                    if middle_density >= self.iso_level:
+                        low = middle
+                    else:
+                        high = middle
+                hit_distance = 0.5 * (low + high)
+                hit_position = start + ray * hit_distance
+                return SurfaceHit(
+                    position=tuple(float(value) for value in hit_position),
+                    normal=self.surface_normal(hit_position),
+                    distance=float(hit_distance),
+                )
+            previous_distance = min(distance, max_distance)
+            previous_density = density
+            if math.isclose(previous_distance, max_distance):
+                break
+            distance = min(distance + increment, max_distance)
+        return None
+
+
+@dataclass(frozen=True)
+class SurfaceHit:
+    """One intersection with the generated cave boundary."""
+
+    position: tuple[float, float, float]
+    normal: tuple[float, float, float]
+    distance: float
 
 
 @dataclass(frozen=True)
@@ -89,6 +226,7 @@ class CaveGeometry:
     stamped_sample_count: int
     stamped_segment_ids: tuple[int, ...]
     event_meshes: tuple[GeologicalEventMesh, ...] = ()
+    structural_event_ids: tuple[int, ...] = ()
 
     @property
     def meshes(self) -> tuple[GeometryChunkMesh, ...]:
@@ -101,6 +239,7 @@ class CaveGeometry:
             "mesh_count": float(len(self.chunk_meshes)),
             "chunk_mesh_count": float(len(self.chunk_meshes)),
             "event_mesh_count": float(len(self.event_meshes)),
+            "structural_event_count": float(len(self.structural_event_ids)),
             "stamped_segment_count": float(len(self.stamped_segment_ids)),
             "stamped_sample_count": float(self.stamped_sample_count),
             "voxel_count": float(np.prod(self.voxel_grid.shape)),
@@ -135,5 +274,6 @@ __all__ = [
     "CaveGeometry",
     "GeometryChunkMesh",
     "GeometryConfig",
+    "SurfaceHit",
     "VoxelGrid",
 ]

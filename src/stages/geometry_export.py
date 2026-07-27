@@ -170,6 +170,7 @@ def _add_cave_wall_to_strict_glb(
             "canonical_source_coordinates": "right-handed Z-up metres",
             "gltf_coordinates": "right-handed Y-up metres",
             "processing_chunk_count": len(cave_geometry.chunk_meshes),
+            "structural_event_ids": list(cave_geometry.structural_event_ids),
             "displacement_texture": cave_geometry.config.cave_displacement_texture,
         },
     )
@@ -414,6 +415,7 @@ def _write_geometry_manifest(cave_geometry: CaveGeometry, output_path: Path) -> 
             }
             for event_mesh in cave_geometry.event_meshes
         ],
+        "structural_event_ids": list(cave_geometry.structural_event_ids),
         "summary": cave_geometry.summary(),
     }
     output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")

@@ -83,6 +83,11 @@ Exit criteria:
 
 ## Phase 2 — event and structural geology
 
+Status: foundational two-pass implementation complete. Base-volume raycasts,
+surface-aligned rock/boulder props, class-specific spacing, and collapse/choke/
+infill density modifiers are active. Clustered debris, area-aware blue-noise
+sampling, cached instances, and collision rejection remain.
+
 - Split events into props (`rock`, `boulder`), modifiers (`collapse`, `choke`,
   `infill`, `skylight`), and material masks.
 - Query the final base SDF for floor/roof contact; embed grounded props by a

@@ -23,7 +23,7 @@ are still intentionally incomplete.
 | B. Cave Network | Implemented | Generate a host-driven braided cave-network skeleton | `outputs/stage_b_cave_network.png` |
 | C. Section Field | Implemented | Build adaptive lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png` |
 | D. Geometry | Implemented | Stamp the cave network into a voxel grid, polygonize it, and build a globally welded render mesh | `outputs/stage_d_geometry.png`, target export package |
-| E. Geological Events | Implemented | Placed mesh-stage rocks, boulders, collapse debris, choke points, and infill | `outputs/stage_e_geological_events.png` |
+| E. Geological Events | Implemented | Ground rocks/boulders on the base cave and apply collapse/choke/infill as structural modifiers | `outputs/stage_e_geological_events.png` |
 | F. Surface Detail / Texturing | Placeholder | Wall detail, floor variation, material masks | TODO |
 
 ## Current Outputs
@@ -62,8 +62,9 @@ regions.
 
 Stage D converts the Stage-C samples into a carved density field. It stamps
 capsule tunnels and widened junction/chamber regions into a voxel grid, then
-meshes the zero-density isosurface in chunks. Stage-E rocks, boulders, and
-larger geological event meshes are placed as separate mesh objects. The
+meshes the zero-density isosurface in chunks. Stage-E rocks and boulders remain
+separate editable props; collapse, choke, and infill events modify the cave
+density before the final isosurface is generated. The
 diagnostic render focuses on footprint alignment, longitudinal continuity,
 chunk coverage, and section slices. The chunk render isolates chunk coverage,
 face-count distribution, and Y/Z chunk spans. The presentation render gives a
@@ -73,11 +74,12 @@ cleaner plan/mesh preview.
 
 ![Stage E Geological Events](outputs/stage_e_geological_events.png)
 
-Stage E places deterministic mesh-stage events from the Stage-C section field:
-scattered rocks, larger boulders, collapse debris, choke points, and floor
-infill. These events are generated as separate placed meshes before texturing.
-Stage F can later use their `material_hint` metadata for texture and material
-masks.
+Stage E places deterministic events from the Stage-C section field after the
+base cave density exists. Rocks and boulders raycast to the actual floor,
+align with the inward surface normal, and embed slightly to avoid floating.
+Collapse, choke, and infill events are smooth solid SDF intersections, so they
+change the final render and collision topology instead of adding decorative
+ellipsoids.
 
 ## How It Works
 
@@ -188,10 +190,12 @@ Execution flow:
 1. load `config/project.toml`
 2. resolve the celestial body, rock material, named stage seeds, run mode, and export target
 3. build `HostFieldConfig`, `CaveNetworkConfig`, `SectionFieldConfig`, `GeologicalEventConfig`, and `GeometryConfig`
-4. generate and render stages A–E
-5. build the globally assembled cave geometry
-6. export through the selected target adapter
-7. write both source and resolved configuration metadata in `outputs/`
+4. generate host, network, and section stages
+5. stamp the base cave density
+6. raycast grounded props and structural events against that density
+7. apply structural modifiers and polygonize the final cave
+8. export through the selected target adapter
+9. write both source and resolved configuration metadata in `outputs/`
 
 `procedural_seed` is expanded into stable named seeds for host, network,
 sections, events, geometry, surface, and export. Consequently, disabling
@@ -291,6 +295,7 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `collapse_event_fraction`, `choke_event_fraction`, `infill_event_fraction` | split larger geological events by type |
 | `*_radius_range` | bound event sizes before they are clipped to local tube dimensions |
 | `minimum_event_spacing` | keep major event centers from clustering too tightly |
+| `minimum_rock_spacing`, `minimum_boulder_spacing` | use denser small-rock scatter without crowding major obstacles |
 | `max_lateral_floor_fraction` | keep floor debris inside the local tube profile |
 | `mesh_latitude_segments`, `mesh_longitude_segments` | control generated event mesh resolution |
 | `enabled`, `enabled_kinds` | export an empty tube or enable selected event families |
@@ -403,7 +408,7 @@ What exists now:
 - one density grid containing the full stamped tunnel network
 - chunked isosurface generation for review/progress visualization
 - diagnostic, chunk-focused, and presentation Stage-D render artifacts
-- OBJ export of the cave mesh plus separate placed Stage-E mesh objects
+- target export of the final cave plus separate grounded rock/boulder props
 
 Still deferred:
 
@@ -413,20 +418,21 @@ Still deferred:
 
 ### Stage E: Geological Events
 
-Implemented as a mesh-stage event pass.
+Implemented as a two-pass surface-query and structural-modifier stage.
 
 What exists now:
 
-- deterministic placement from Stage-C samples
-- scattered rocks and larger boulders
-- collapse debris, choke points, and floor infill
-- separate placed meshes for every Stage-E event
+- deterministic placement from Stage-C samples and named event seed
+- final-density floor raycasts and contact normals
+- surface-aligned, slightly embedded rock and boulder props
+- collapse, choke, and floor-infill SDF modifiers
+- class-specific spacing and broader candidate coverage
 - event visualization and summary metrics
 - voxel integration before Stage-D meshing
 
 Still deferred:
 
-- richer event-specific mesh cleanup controls
+- clustered collapse debris and area-aware blue-noise floor sampling
 - explicit gameplay/navigation metadata
 - final material-mask export for Stage F
 
@@ -447,8 +453,9 @@ The current project state is intentionally narrow:
 - Stage A builds the terrain and structural substrate
 - Stage B builds the current braided cave-network skeleton
 - Stage C builds adaptive lava-tube cross-sections around that skeleton
-- Stage E places geological mesh events including rocks and boulders
-- Stage D stamps the network into a voxel density field, meshes the isosurface, and exports the placed Stage-E meshes alongside it
+- Stage D1 stamps the base network into a voxel density field
+- Stage E grounds prop meshes and creates structural density modifiers
+- Stage D2 meshes the final cave and exports grounded props alongside it
 - Stage F and watertight/detail work remain for the next passes
 
 That keeps the pipeline inspectable while still leaving a clear path toward the

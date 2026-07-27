@@ -20,13 +20,15 @@ class GeologicalEventConfig:
     random_seed: int | None = None
     enabled: bool = True
     enabled_kinds: tuple[str, ...] = ("rock", "boulder", "collapse", "choke", "infill")
-    rock_density_per_100m: float = 0.40
-    boulder_density_per_100m: float = 0.11
-    geological_event_density_per_100m: float = 0.09
+    rock_density_per_100m: float = 2.00
+    boulder_density_per_100m: float = 0.18
+    geological_event_density_per_100m: float = 0.12
     collapse_event_fraction: float = 0.35
     choke_event_fraction: float = 0.30
     infill_event_fraction: float = 0.35
     minimum_event_spacing: float = 22.0
+    minimum_rock_spacing: float = 10.0
+    minimum_boulder_spacing: float = 18.0
     rock_radius_range: tuple[float, float] = (0.8, 2.4)
     boulder_radius_range: tuple[float, float] = (2.4, 6.2)
     collapse_radius_range: tuple[float, float] = (4.0, 9.0)
@@ -67,6 +69,9 @@ class GeologicalEvent:
     angle: float
     severity: float
     material_hint: str
+    contact_point: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    contact_normal: tuple[float, float, float] = (0.0, 0.0, 1.0)
+    grounded: bool = False
 
     @property
     def position(self) -> tuple[float, float, float]:
@@ -75,6 +80,10 @@ class GeologicalEvent:
     @property
     def max_radius(self) -> float:
         return max(self.radius_x, self.radius_y, self.radius_z)
+
+    @property
+    def is_structural_modifier(self) -> bool:
+        return self.kind in {"collapse", "choke", "infill"}
 
 
 @dataclass(frozen=True)
@@ -122,6 +131,19 @@ class GeologicalEventField:
             "event_mesh_count": float(len(self.meshes)),
             "event_mesh_vertex_count": float(sum(mesh.vertex_count for mesh in self.meshes)),
             "event_mesh_face_count": float(sum(mesh.face_count for mesh in self.meshes)),
+            "prop_count": float(counts.get("rock", 0) + counts.get("boulder", 0)),
+            "structural_modifier_count": float(
+                counts.get("collapse", 0)
+                + counts.get("choke", 0)
+                + counts.get("infill", 0)
+            ),
+            "grounded_prop_count": float(
+                sum(
+                    event.grounded
+                    for event in self.events
+                    if event.kind in {"rock", "boulder"}
+                )
+            ),
             "mean_severity": float(np.mean([event.severity for event in self.events])) if self.events else 0.0,
         }
 
@@ -132,7 +154,7 @@ class GeologicalEventGenerator:
     def __init__(self, config: GeologicalEventConfig | None = None) -> None:
         self.config = config or GeologicalEventConfig()
         rocky_kinds_enabled = bool(
-            {"rock", "boulder", "collapse"}.intersection(self.config.enabled_kinds)
+            {"rock", "boulder"}.intersection(self.config.enabled_kinds)
         )
         should_load_rocky = (
             self.config.enabled
@@ -154,7 +176,11 @@ class GeologicalEventGenerator:
                 f"could not be imported from {self.config.rocky_source_path!r}"
             )
 
-    def generate(self, section_field: SectionField) -> GeologicalEventField:
+    def generate(
+        self,
+        section_field: SectionField,
+        base_geometry: Any | None = None,
+    ) -> GeologicalEventField:
         if not self.config.enabled or not self.config.enabled_kinds:
             return GeologicalEventField(config=self.config, events=(), meshes=())
 
@@ -168,7 +194,12 @@ class GeologicalEventGenerator:
             return GeologicalEventField(config=self.config, events=())
 
         events: list[GeologicalEvent] = []
-        occupied_positions: list[np.ndarray] = []
+        occupied_positions: list[tuple[np.ndarray, str]] = []
+        voxel_grid = (
+            getattr(base_geometry, "voxel_grid", None)
+            if base_geometry is not None
+            else None
+        )
         (
             rock_count,
             boulder_count,
@@ -179,18 +210,23 @@ class GeologicalEventGenerator:
         recipes = tuple(
             recipe
             for recipe in (
-                ("rock", rock_count, "floor_debris"),
-                ("boulder", boulder_count, "large_breakdown"),
                 ("collapse", collapse_count, "roof_breakdown"),
                 ("choke", choke_count, "constriction"),
                 ("infill", infill_count, "floor_infill"),
+                ("boulder", boulder_count, "large_breakdown"),
+                ("rock", rock_count, "floor_debris"),
             )
             if recipe[0] in self.config.enabled_kinds
         )
         for kind, count, material_hint in recipes:
             candidates = self._rank_candidates(kind, samples)
             for _ in range(max(count, 0)):
-                sample = self._choose_candidate(rng, candidates, occupied_positions)
+                sample = self._choose_candidate(
+                    kind,
+                    rng,
+                    candidates,
+                    occupied_positions,
+                )
                 if sample is None:
                     break
                 event = self._build_event(
@@ -199,9 +235,12 @@ class GeologicalEventGenerator:
                     material_hint=material_hint,
                     sample=sample,
                     rng=rng,
+                    voxel_grid=voxel_grid,
                 )
                 events.append(event)
-                occupied_positions.append(np.array((event.x, event.y, event.z), dtype=float))
+                occupied_positions.append(
+                    (np.array((event.x, event.y, event.z), dtype=float), kind)
+                )
 
         events.sort(key=lambda event: (event.segment_id, event.sample_index, event.event_id))
         normalized_events = tuple(
@@ -221,13 +260,20 @@ class GeologicalEventGenerator:
                 angle=event.angle,
                 severity=event.severity,
                 material_hint=event.material_hint,
+                contact_point=event.contact_point,
+                contact_normal=event.contact_normal,
+                grounded=event.grounded,
             )
             for index, event in enumerate(events)
         )
         return GeologicalEventField(
             config=self.config,
             events=normalized_events,
-            meshes=tuple(self._build_event_mesh(event) for event in normalized_events),
+            meshes=tuple(
+                self._build_event_mesh(event)
+                for event in normalized_events
+                if event.kind in {"rock", "boulder"}
+            ),
         )
 
     def _counts_from_density(self, samples: list[SectionSample]) -> tuple[int, int, int, int, int]:
@@ -315,25 +361,34 @@ class GeologicalEventGenerator:
 
     def _choose_candidate(
         self,
+        kind: str,
         rng: np.random.Generator,
         candidates: list[tuple[float, SectionSample]],
-        occupied_positions: list[np.ndarray],
+        occupied_positions: list[tuple[np.ndarray, str]],
     ) -> SectionSample | None:
         if not candidates:
             return None
-        limit = min(len(candidates), 240)
+        limit = len(candidates)
         weights = np.array([score for score, _sample in candidates[:limit]], dtype=float)
         weights /= max(float(weights.sum()), 1e-9)
-        for _attempt in range(80):
+        for _attempt in range(max(80, 2 * limit)):
             index = int(rng.choice(limit, p=weights))
             sample = candidates[index][1]
             position = np.array((sample.x, sample.y, sample.z), dtype=float)
             if all(
-                float(np.linalg.norm(position - occupied)) >= self.config.minimum_event_spacing
-                for occupied in occupied_positions
+                float(np.linalg.norm(position - occupied))
+                >= max(self._event_spacing(kind), self._event_spacing(occupied_kind))
+                for occupied, occupied_kind in occupied_positions
             ):
                 return sample
-        return candidates[int(rng.integers(0, limit))][1]
+        return None
+
+    def _event_spacing(self, kind: str) -> float:
+        if kind == "rock":
+            return max(float(self.config.minimum_rock_spacing), 0.0)
+        if kind == "boulder":
+            return max(float(self.config.minimum_boulder_spacing), 0.0)
+        return max(float(self.config.minimum_event_spacing), 0.0)
 
     def _build_event(
         self,
@@ -343,66 +398,140 @@ class GeologicalEventGenerator:
         material_hint: str,
         sample: SectionSample,
         rng: np.random.Generator,
+        voxel_grid: Any | None,
     ) -> GeologicalEvent:
         radius = self._sample_radius(kind, rng)
         severity = float(np.clip(rng.normal(0.62, 0.18), 0.22, 1.0))
         normal = np.array(sample.normal, dtype=float)
         binormal = np.array(sample.binormal, dtype=float)
         tangent = np.array(sample.tangent, dtype=float)
-        floor_z = min(point[1] for point in sample.profile_points) if sample.profile_points else -0.5 * sample.tube_height
-        lateral_limit = max(0.0, 0.5 * sample.tube_width * self.config.max_lateral_floor_fraction)
-        lateral = float(rng.uniform(-lateral_limit, lateral_limit))
-        floor = np.array((sample.x, sample.y, sample.z), dtype=float) + normal * lateral + binormal * floor_z
 
         if kind == "choke":
-            center = np.array((sample.x, sample.y, sample.z), dtype=float) + normal * float(rng.uniform(-0.25, 0.25) * sample.tube_width)
             radius_x = min(radius * 1.35, sample.tube_width * 0.42)
             radius_y = min(radius * 0.85, sample.tube_width * 0.32)
             radius_z = min(radius * 0.95, sample.tube_height * 0.46)
-            z = center[2]
         elif kind == "collapse":
             radius_x = min(radius * 1.35, sample.tube_width * 0.55)
             radius_y = min(radius, sample.tube_width * 0.45)
             radius_z = min(radius * 0.70, sample.tube_height * 0.42)
-            z = floor[2] + radius_z * 0.44
-            center = floor
         elif kind == "infill":
             radius_x = min(radius * 1.8, sample.tube_width * 0.70)
             radius_y = min(radius * 1.25, sample.tube_width * 0.55)
             radius_z = min(radius * 0.38, sample.tube_height * 0.30)
-            z = floor[2] + radius_z * 0.35
-            center = floor
         else:
             radius_x = min(radius * float(rng.uniform(0.75, 1.35)), sample.tube_width * 0.36)
             radius_y = min(radius * float(rng.uniform(0.75, 1.35)), sample.tube_width * 0.36)
             radius_z = min(radius * float(rng.uniform(0.55, 1.05)), sample.tube_height * 0.36)
-            z = floor[2] + radius_z * (0.42 if kind == "boulder" else 0.36)
-            center = floor
 
-        x, y = center[0], center[1]
-        x += tangent[0] * float(rng.uniform(-0.35, 0.35) * max(radius_x, radius_y))
-        y += tangent[1] * float(rng.uniform(-0.35, 0.35) * max(radius_x, radius_y))
+        radius_x = max(float(radius_x), 0.25)
+        radius_y = max(float(radius_y), 0.25)
+        radius_z = max(float(radius_z), 0.25)
+        section_center = np.array((sample.x, sample.y, sample.z), dtype=float)
+        angle = float(
+            math.atan2(sample.tangent[1], sample.tangent[0])
+            + rng.uniform(-0.7, 0.7)
+        )
+
+        if kind == "choke":
+            lateral = float(rng.uniform(-0.25, 0.25) * sample.tube_width)
+            center = section_center + normal * lateral
+            contact = center
+            contact_normal = normal if lateral <= 0.0 else -normal
+            grounded = False
+        else:
+            lateral_limit = max(
+                0.0,
+                0.5
+                * sample.tube_width
+                * self.config.max_lateral_floor_fraction,
+            )
+            lateral = float(rng.uniform(-lateral_limit, lateral_limit))
+            tangent_offset = float(
+                rng.uniform(-0.35, 0.35) * max(radius_x, radius_y)
+            )
+            ray_origin = (
+                section_center
+                + normal * lateral
+                + tangent * tangent_offset
+            )
+            contact, contact_normal, grounded = self._find_floor_contact(
+                sample=sample,
+                ray_origin=ray_origin,
+                binormal=binormal,
+                voxel_grid=voxel_grid,
+            )
+            if kind in {"rock", "boulder"}:
+                embed = float(
+                    np.clip(self.config.ground_embed_fraction, 0.0, 0.5)
+                )
+                center = contact + contact_normal * radius_z * (1.0 - embed)
+            elif kind == "collapse":
+                center = contact + contact_normal * radius_z * 0.48
+            else:
+                center = contact + contact_normal * radius_z * 0.32
 
         return GeologicalEvent(
             event_id=event_id,
             kind=kind,
             segment_id=sample.segment_id,
             sample_index=sample.index,
-            x=float(x),
-            y=float(y),
-            z=float(z),
+            x=float(center[0]),
+            y=float(center[1]),
+            z=float(center[2]),
             surface_z=float(sample.surface_z),
-            floor_z=float(floor[2]),
-            radius_x=max(float(radius_x), 0.25),
-            radius_y=max(float(radius_y), 0.25),
-            radius_z=max(float(radius_z), 0.25),
-            angle=float(math.atan2(sample.tangent[1], sample.tangent[0]) + rng.uniform(-0.7, 0.7)),
+            floor_z=float(contact[2]),
+            radius_x=radius_x,
+            radius_y=radius_y,
+            radius_z=radius_z,
+            angle=angle,
             severity=severity,
             material_hint=material_hint,
+            contact_point=tuple(float(value) for value in contact),
+            contact_normal=tuple(float(value) for value in contact_normal),
+            grounded=grounded,
         )
 
+    @staticmethod
+    def _find_floor_contact(
+        *,
+        sample: SectionSample,
+        ray_origin: np.ndarray,
+        binormal: np.ndarray,
+        voxel_grid: Any | None,
+    ) -> tuple[np.ndarray, np.ndarray, bool]:
+        profile_floor = (
+            min(point[1] for point in sample.profile_points)
+            if sample.profile_points
+            else -0.5 * sample.tube_height
+        )
+        fallback = ray_origin + binormal * profile_floor
+        fallback_normal = np.array(binormal, dtype=float)
+        normal_length = float(np.linalg.norm(fallback_normal))
+        if normal_length > 1e-12:
+            fallback_normal /= normal_length
+        else:
+            fallback_normal = np.array((0.0, 0.0, 1.0), dtype=float)
+        if voxel_grid is None:
+            return fallback, fallback_normal, False
+
+        max_distance = max(
+            sample.tube_height * 1.25,
+            float(voxel_grid.voxel_size) * 4.0,
+        )
+        hit = voxel_grid.raycast_isosurface(
+            ray_origin,
+            -binormal,
+            max_distance,
+        )
+        if hit is None:
+            return fallback, fallback_normal, False
+        hit_normal = np.asarray(hit.normal, dtype=float)
+        if float(np.dot(hit_normal, binormal)) < 0.0:
+            hit_normal = -hit_normal
+        return np.asarray(hit.position, dtype=float), hit_normal, True
+
     def _build_event_mesh(self, event: GeologicalEvent) -> GeologicalEventMesh:
-        if self._rocky_api is not None and event.kind in {"rock", "boulder", "collapse"}:
+        if self._rocky_api is not None and event.kind in {"rock", "boulder"}:
             rocky_mesh = self._build_rocky_event_mesh(event)
             if rocky_mesh is not None:
                 return rocky_mesh
@@ -411,9 +540,8 @@ class GeologicalEventGenerator:
         lon_segments = max(int(self.config.mesh_longitude_segments), 6)
         vertices: list[tuple[float, float, float]] = []
         faces: list[tuple[int, int, int]] = []
-        cos_angle = math.cos(event.angle)
-        sin_angle = math.sin(event.angle)
         center = np.array((event.x, event.y, event.z), dtype=float)
+        heading, side, up = self._event_basis(event)
 
         for lat_index in range(lat_segments + 1):
             phi = math.pi * lat_index / lat_segments
@@ -428,10 +556,13 @@ class GeologicalEventGenerator:
                 local_x = event.radius_x * roughness * sin_phi * math.cos(theta)
                 local_y = event.radius_y * roughness * sin_phi * math.sin(theta)
                 local_z = event.radius_z * roughness * cos_phi
-                world_x = center[0] + local_x * cos_angle - local_y * sin_angle
-                world_y = center[1] + local_x * sin_angle + local_y * cos_angle
-                world_z = center[2] + local_z
-                vertices.append((float(world_x), float(world_y), float(world_z)))
+                world = (
+                    center
+                    + heading * local_x
+                    + side * local_y
+                    + up * local_z
+                )
+                vertices.append(tuple(float(value) for value in world))
 
         for lat_index in range(lat_segments):
             for lon_index in range(lon_segments):
@@ -529,26 +660,54 @@ class GeologicalEventGenerator:
 
     def _transform_rocky_vertices(self, event: GeologicalEvent, mesh: Any) -> tuple[tuple[float, float, float], ...]:
         bounds_min, _bounds_max = mesh.bounds()
-        contact_z = self._event_contact_z(event)
-        cos_angle = math.cos(event.angle)
-        sin_angle = math.sin(event.angle)
+        contact = np.asarray(event.contact_point, dtype=float)
+        heading, side, up = self._event_basis(event)
+        contact -= up * (
+            max(float(self.config.ground_embed_fraction), 0.0)
+            * max(event.radius_z * 2.0, 0.0)
+        )
         vertices: list[tuple[float, float, float]] = []
         for vertex in mesh.vertices:
             local_x = float(vertex.x)
             local_y = float(vertex.y - bounds_min.y)
             local_z = float(vertex.z)
-            world_x = event.x + local_x * cos_angle - local_z * sin_angle
-            world_y = event.y + local_x * sin_angle + local_z * cos_angle
-            world_z = contact_z + local_y
-            vertices.append((float(world_x), float(world_y), float(world_z)))
+            world = (
+                contact
+                + heading * local_x
+                + side * local_z
+                + up * local_y
+            )
+            vertices.append(tuple(float(value) for value in world))
         return tuple(vertices)
 
-    def _event_contact_z(self, event: GeologicalEvent) -> float:
-        embed_depth = (
-            max(float(self.config.ground_embed_fraction), 0.0)
-            * max(event.radius_z * 2.0, 0.0)
+    @staticmethod
+    def _event_basis(
+        event: GeologicalEvent,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        up = np.asarray(event.contact_normal, dtype=float)
+        up_length = float(np.linalg.norm(up))
+        if up_length <= 1e-12:
+            up = np.array((0.0, 0.0, 1.0), dtype=float)
+        else:
+            up /= up_length
+        heading = np.array(
+            (math.cos(event.angle), math.sin(event.angle), 0.0),
+            dtype=float,
         )
-        return float(event.floor_z - embed_depth)
+        heading -= up * float(np.dot(heading, up))
+        heading_length = float(np.linalg.norm(heading))
+        if heading_length <= 1e-12:
+            reference = (
+                np.array((1.0, 0.0, 0.0), dtype=float)
+                if abs(float(up[0])) < 0.9
+                else np.array((0.0, 1.0, 0.0), dtype=float)
+            )
+            heading = np.cross(reference, up)
+            heading_length = max(float(np.linalg.norm(heading)), 1e-12)
+        heading /= heading_length
+        side = np.cross(up, heading)
+        side /= max(float(np.linalg.norm(side)), 1e-12)
+        return heading, side, up
 
     def _rocky_subdivisions(self, size: float) -> int:
         if size < 0.75:

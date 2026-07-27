@@ -39,7 +39,7 @@ class GeologicalEventPlotter:
         output.parent.mkdir(parents=True, exist_ok=True)
 
         fig, axes = plt.subplots(2, 2, figsize=self.config.figure_size, constrained_layout=True)
-        fig.suptitle("Stage E - Geological Mesh Events", fontsize=16)
+        fig.suptitle("Stage E - Grounded Props and Structural Events", fontsize=16)
 
         self._draw_plan(axes[0, 0], cave_network, event_field)
         self._draw_profile(axes[0, 1], section_field, event_field)

@@ -23,10 +23,17 @@ class GeologicalEventTests(unittest.TestCase):
         section_field = SectionFieldGenerator(project_config.section_field).generate(
             cave_network
         )
+        base_geometry = GeometryGenerator(
+            project_config.geometry
+        ).build_base_volume(cave_network, section_field)
 
-        event_field = GeologicalEventGenerator(project_config.events).generate(section_field)
+        event_field = GeologicalEventGenerator(project_config.events).generate(
+            section_field,
+            base_geometry,
+        )
         repeated_event_field = GeologicalEventGenerator(project_config.events).generate(
-            section_field
+            section_field,
+            base_geometry,
         )
 
         self.assertEqual(event_field.events, repeated_event_field.events)
@@ -37,7 +44,22 @@ class GeologicalEventTests(unittest.TestCase):
         self.assertGreater(int(summary["collapse_count"]), 0)
         self.assertGreater(int(summary["choke_count"]), 0)
         self.assertGreater(int(summary["infill_count"]), 0)
-        self.assertEqual(int(summary["event_mesh_count"]), int(summary["event_count"]))
+        self.assertEqual(
+            int(summary["event_mesh_count"]),
+            int(summary["rock_count"] + summary["boulder_count"]),
+        )
+        self.assertEqual(
+            int(summary["structural_modifier_count"]),
+            int(
+                summary["collapse_count"]
+                + summary["choke_count"]
+                + summary["infill_count"]
+            ),
+        )
+        self.assertEqual(
+            int(summary["grounded_prop_count"]),
+            int(summary["prop_count"]),
+        )
         self.assertGreater(int(summary["event_mesh_vertex_count"]), 0)
         self.assertGreater(int(summary["event_mesh_face_count"]), 0)
 
@@ -56,10 +78,39 @@ class GeologicalEventTests(unittest.TestCase):
             self.assertGreaterEqual(event.severity, 0.0)
             self.assertLessEqual(event.severity, 1.0)
             self.assertIn(event.kind, {"rock", "boulder", "collapse", "choke", "infill"})
+            self.assertAlmostEqual(
+                sum(value * value for value in event.contact_normal),
+                1.0,
+                places=4,
+            )
+            if event.kind in {"rock", "boulder"}:
+                self.assertTrue(event.grounded)
+                self.assertAlmostEqual(
+                    base_geometry.voxel_grid.sample_density(event.contact_point),
+                    base_geometry.voxel_grid.iso_level,
+                    delta=0.05,
+                )
+        event_lookup = {event.event_id: event for event in event_field.events}
         for mesh in event_field.meshes:
             self.assertTrue(mesh.vertices)
             self.assertTrue(mesh.faces)
-            self.assertIn(mesh.kind, {"rock", "boulder", "collapse", "choke", "infill"})
+            self.assertIn(mesh.kind, {"rock", "boulder"})
+            event = event_lookup[mesh.event_id]
+            contact = event.contact_point
+            contact_normal = event.contact_normal
+            signed_contact_distances = [
+                sum(
+                    (vertex[axis] - contact[axis]) * contact_normal[axis]
+                    for axis in range(3)
+                )
+                for vertex in mesh.vertices
+            ]
+            self.assertLessEqual(
+                min(signed_contact_distances),
+                0.25 * base_geometry.voxel_grid.voxel_size,
+                "prop mesh should touch or embed into the final floor",
+            )
+            self.assertGreater(max(signed_contact_distances), 0.0)
 
     def test_geometry_consumes_event_field(self) -> None:
         project_config = load_project_config(ROOT / "config" / "project.toml")
@@ -68,10 +119,17 @@ class GeologicalEventTests(unittest.TestCase):
         section_field = SectionFieldGenerator(project_config.section_field).generate(
             cave_network
         )
-        event_field = GeologicalEventGenerator(project_config.events).generate(section_field)
-        cave_geometry = GeometryGenerator(project_config.geometry).generate(
+        geometry_generator = GeometryGenerator(project_config.geometry)
+        base_geometry = geometry_generator.build_base_volume(
             cave_network,
             section_field,
+        )
+        event_field = GeologicalEventGenerator(project_config.events).generate(
+            section_field,
+            base_geometry,
+        )
+        cave_geometry = geometry_generator.finalize(
+            base_geometry,
             event_field,
         )
 
@@ -82,6 +140,14 @@ class GeologicalEventTests(unittest.TestCase):
         self.assertEqual(int(summary["event_mesh_count"]), len(event_field.meshes))
         self.assertGreater(int(summary["event_vertex_count"]), 0)
         self.assertGreater(int(summary["event_face_count"]), 0)
+        self.assertEqual(
+            int(summary["structural_event_count"]),
+            int(event_field.summary()["structural_modifier_count"]),
+        )
+        self.assertLess(
+            summary["carved_voxel_count"],
+            base_geometry.summary()["carved_voxel_count"],
+        )
         self.assertEqual(int(summary["voxel_component_count"]), 1)
         self.assertEqual(int(summary["component_count"]), 1)
 

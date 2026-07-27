@@ -11,7 +11,7 @@ import numpy as np
 from skimage import measure
 from scipy import ndimage
 
-from stages.events import GeologicalEventField
+from stages.events import GeologicalEvent, GeologicalEventField
 from stages.geometry_types import CaveGeometry, GeometryChunkMesh, GeometryConfig, VoxelGrid
 from stages.network import CaveNetwork
 from stages.section_field import SectionField, SectionSample
@@ -45,6 +45,27 @@ class GeometryGenerator:
         event_field: GeologicalEventField | None = None,
         progress: GeometryProgressCallback | None = None,
     ) -> CaveGeometry:
+        """Compatibility one-pass API built from the two-pass workflow."""
+
+        base_geometry = self.build_base_volume(
+            cave_network,
+            section_field,
+            progress=progress,
+        )
+        return self.finalize(
+            base_geometry,
+            event_field,
+            progress=progress,
+        )
+
+    def build_base_volume(
+        self,
+        cave_network: CaveNetwork,
+        section_field: SectionField,
+        progress: GeometryProgressCallback | None = None,
+    ) -> CaveGeometry:
+        """Build the cave density field without polygonizing it."""
+
         self._emit_progress(progress, "prepare", 0, 1, "collecting section samples")
         samples_by_segment = {
             segment_field.segment_id: segment_field.samples
@@ -79,7 +100,6 @@ class GeometryGenerator:
                 component_count=0,
                 stamped_sample_count=0,
                 stamped_segment_ids=(),
-                event_meshes=event_field.meshes if event_field is not None else (),
             )
 
         voxel_grid = self._build_voxel_grid(
@@ -87,6 +107,54 @@ class GeometryGenerator:
             cave_network,
             progress,
         )
+        return CaveGeometry(
+            config=self.config,
+            voxel_grid=voxel_grid,
+            chunk_meshes=(),
+            assembled_vertices=(),
+            assembled_faces=(),
+            component_count=0,
+            stamped_sample_count=len(stamp_samples),
+            stamped_segment_ids=tuple(sorted(samples_by_segment)),
+        )
+
+    def finalize(
+        self,
+        base_geometry: CaveGeometry,
+        event_field: GeologicalEventField | None = None,
+        progress: GeometryProgressCallback | None = None,
+    ) -> CaveGeometry:
+        """Apply structural modifiers, polygonize, and attach prop meshes."""
+
+        voxel_grid = base_geometry.voxel_grid
+        structural_event_ids: tuple[int, ...] = ()
+        event_meshes = ()
+        if event_field is not None:
+            voxel_grid, structural_event_ids = self._apply_structural_events_to_grid(
+                voxel_grid,
+                event_field,
+                progress,
+            )
+            event_meshes = event_field.meshes
+
+        if (
+            not structural_event_ids
+            and base_geometry.chunk_meshes
+            and base_geometry.assembled_faces
+        ):
+            return CaveGeometry(
+                config=base_geometry.config,
+                voxel_grid=base_geometry.voxel_grid,
+                chunk_meshes=base_geometry.chunk_meshes,
+                assembled_vertices=base_geometry.assembled_vertices,
+                assembled_faces=base_geometry.assembled_faces,
+                component_count=base_geometry.component_count,
+                stamped_sample_count=base_geometry.stamped_sample_count,
+                stamped_segment_ids=base_geometry.stamped_segment_ids,
+                event_meshes=event_meshes,
+                structural_event_ids=(),
+            )
+
         chunk_meshes = self._march_chunks(voxel_grid, progress)
         self._emit_progress(
             progress,
@@ -118,10 +186,146 @@ class GeometryGenerator:
             assembled_vertices=assembled_vertices,
             assembled_faces=assembled_faces,
             component_count=component_count,
-            stamped_sample_count=len(stamp_samples),
-            stamped_segment_ids=tuple(sorted(samples_by_segment)),
-            event_meshes=event_field.meshes if event_field is not None else (),
+            stamped_sample_count=base_geometry.stamped_sample_count,
+            stamped_segment_ids=base_geometry.stamped_segment_ids,
+            event_meshes=event_meshes,
+            structural_event_ids=structural_event_ids,
         )
+
+    def apply_events(
+        self,
+        base_geometry: CaveGeometry,
+        event_field: GeologicalEventField,
+        progress: GeometryProgressCallback | None = None,
+    ) -> CaveGeometry:
+        """Apply grounded structural events and remesh the base cave volume."""
+
+        return self.finalize(
+            base_geometry,
+            event_field,
+            progress=progress,
+        )
+
+    def _apply_structural_events_to_grid(
+        self,
+        voxel_grid: VoxelGrid,
+        event_field: GeologicalEventField,
+        progress: GeometryProgressCallback | None,
+    ) -> tuple[VoxelGrid, tuple[int, ...]]:
+        modifiers = tuple(
+            event
+            for event in event_field.events
+            if event.kind in {"collapse", "choke", "infill"}
+        )
+        if not modifiers:
+            return voxel_grid, ()
+
+        density = np.array(voxel_grid.density, dtype=np.float32, copy=True)
+        self._emit_progress(
+            progress,
+            "events",
+            0,
+            len(modifiers),
+            f"applying {len(modifiers)} structural modifiers",
+        )
+        applied_ids: list[int] = []
+        for index, event in enumerate(modifiers, start=1):
+            if self._stamp_structural_event(
+                density=density,
+                voxel_grid=voxel_grid,
+                event=event,
+            ):
+                applied_ids.append(event.event_id)
+            self._emit_progress(
+                progress,
+                "events",
+                index,
+                len(modifiers),
+                f"applied {event.kind} {index}/{len(modifiers)}",
+            )
+
+        return (
+            VoxelGrid(
+                origin=voxel_grid.origin,
+                voxel_size=voxel_grid.voxel_size,
+                density=density,
+                iso_level=voxel_grid.iso_level,
+            ),
+            tuple(applied_ids),
+        )
+
+    def _stamp_structural_event(
+        self,
+        *,
+        density: np.ndarray,
+        voxel_grid: VoxelGrid,
+        event: GeologicalEvent,
+    ) -> bool:
+        center = np.asarray(event.position, dtype=float)
+        radius_x = max(float(event.radius_x), 0.25 * voxel_grid.voxel_size)
+        radius_y = max(float(event.radius_y), 0.25 * voxel_grid.voxel_size)
+        radius_z = max(float(event.radius_z), 0.25 * voxel_grid.voxel_size)
+        horizontal_radius = max(radius_x, radius_y)
+        padding = voxel_grid.voxel_size + max(
+            float(self.config.structural_event_blend),
+            0.0,
+        )
+        lower_world = center - np.array(
+            (horizontal_radius + padding, horizontal_radius + padding, radius_z + padding)
+        )
+        upper_world = center + np.array(
+            (horizontal_radius + padding, horizontal_radius + padding, radius_z + padding)
+        )
+        origin = np.asarray(voxel_grid.origin, dtype=float)
+        lower = np.floor((lower_world - origin) / voxel_grid.voxel_size).astype(int)
+        upper = np.ceil((upper_world - origin) / voxel_grid.voxel_size).astype(int)
+        lower = np.maximum(lower, 0)
+        upper = np.minimum(upper, np.asarray(density.shape) - 1)
+        if np.any(lower > upper):
+            return False
+
+        x_slice = slice(lower[0], upper[0] + 1)
+        y_slice = slice(lower[1], upper[1] + 1)
+        z_slice = slice(lower[2], upper[2] + 1)
+        x_coords = origin[0] + np.arange(lower[0], upper[0] + 1) * voxel_grid.voxel_size
+        y_coords = origin[1] + np.arange(lower[1], upper[1] + 1) * voxel_grid.voxel_size
+        z_coords = origin[2] + np.arange(lower[2], upper[2] + 1) * voxel_grid.voxel_size
+        grid_x, grid_y, grid_z = np.meshgrid(
+            x_coords,
+            y_coords,
+            z_coords,
+            indexing="ij",
+        )
+        dx = grid_x - center[0]
+        dy = grid_y - center[1]
+        dz = grid_z - center[2]
+        cos_angle = math.cos(event.angle)
+        sin_angle = math.sin(event.angle)
+        local_x = cos_angle * dx + sin_angle * dy
+        local_y = -sin_angle * dx + cos_angle * dy
+        normalized_distance = np.sqrt(
+            (local_x / radius_x) ** 2
+            + (local_y / radius_y) ** 2
+            + (dz / radius_z) ** 2
+        )
+        obstacle_exterior = (normalized_distance - 1.0) * min(
+            radius_x,
+            radius_y,
+            radius_z,
+        )
+        target = density[x_slice, y_slice, z_slice]
+        blend = max(float(self.config.structural_event_blend), 0.0)
+        if blend <= 1e-9:
+            target[...] = np.minimum(target, obstacle_exterior).astype(np.float32)
+        else:
+            difference = np.abs(target - obstacle_exterior)
+            smoothing = np.maximum(blend - difference, 0.0)
+            smooth_min = (
+                np.minimum(target, obstacle_exterior)
+                - smoothing * smoothing * 0.25 / blend
+            )
+            target[...] = smooth_min.astype(np.float32)
+        return True
 
     def _build_voxel_grid(
         self,

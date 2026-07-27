@@ -463,6 +463,31 @@ def _validate_pipeline_configs(
     for name in density_names:
         if getattr(events, name) < 0.0:
             raise ValueError(f"events.{name} cannot be negative")
+    for name in (
+        "minimum_event_spacing",
+        "minimum_rock_spacing",
+        "minimum_boulder_spacing",
+    ):
+        if getattr(events, name) < 0.0:
+            raise ValueError(f"events.{name} cannot be negative")
+    geological_fraction_names = (
+        "collapse_event_fraction",
+        "choke_event_fraction",
+        "infill_event_fraction",
+    )
+    if any(getattr(events, name) < 0.0 for name in geological_fraction_names):
+        raise ValueError("events collapse/choke/infill fractions cannot be negative")
+    geological_fraction_sum = sum(
+        getattr(events, name)
+        for name in geological_fraction_names
+    )
+    if (
+        events.geological_event_density_per_100m > 0.0
+        and geological_fraction_sum <= 0.0
+    ):
+        raise ValueError(
+            "events collapse/choke/infill fractions must sum to a positive value"
+        )
     if not 0.0 <= events.ground_embed_fraction <= 0.5:
         raise ValueError("events.ground_embed_fraction must be in [0, 0.5]")
     for name in (
@@ -488,3 +513,5 @@ def _validate_pipeline_configs(
         geometry.junction_radius_scale,
     ) <= 0.0:
         raise ValueError("geometry radius scales must be positive")
+    if geometry.structural_event_blend < 0.0:
+        raise ValueError("geometry.structural_event_blend cannot be negative")

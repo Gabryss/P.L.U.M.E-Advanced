@@ -273,8 +273,25 @@ def main() -> int:
         section_output_path = None
         progress.finish("diagnostic render disabled")
 
-    progress.start("Stage E - Geological Events", "placing rocks and events")
-    event_field = GeologicalEventGenerator(project_config.events).generate(section_field)
+    def geometry_progress(phase: str, current: int, total: int, message: str) -> None:
+        progress.update(current, total, f"{phase}: {message}")
+
+    geometry_generator = GeometryGenerator(project_config.geometry)
+    progress.start("Stage D1 - Base Volume", "stamping cave density")
+    base_geometry = geometry_generator.build_base_volume(
+        cave_network,
+        section_field,
+        progress=geometry_progress,
+    )
+    progress.finish(
+        f"built {int(base_geometry.summary()['carved_voxel_count'])} cave voxels"
+    )
+
+    progress.start("Stage E - Geological Events", "grounding props and modifiers")
+    event_field = GeologicalEventGenerator(project_config.events).generate(
+        section_field,
+        base_geometry,
+    )
     event_summary = event_field.summary()
     progress.update(
         1,
@@ -293,14 +310,9 @@ def main() -> int:
         event_output_path = None
         progress.finish("diagnostic render disabled")
 
-    progress.start("Stage D - Geometry", "starting voxel geometry")
-
-    def geometry_progress(phase: str, current: int, total: int, message: str) -> None:
-        progress.update(current, total, f"{phase}: {message}")
-
-    cave_geometry = GeometryGenerator(project_config.geometry).generate(
-        cave_network,
-        section_field,
+    progress.start("Stage D2 - Final Geometry", "applying structural events")
+    cave_geometry = geometry_generator.finalize(
+        base_geometry,
         event_field,
         progress=geometry_progress,
     )
