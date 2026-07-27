@@ -83,11 +83,22 @@ class SectionFieldTests(unittest.TestCase):
         widths = np.array([sample.tube_width for sample in all_samples], dtype=float)
         heights = np.array([sample.tube_height for sample in all_samples], dtype=float)
         self.assertGreater(float(np.mean(widths)), float(np.mean(heights)))
-        self.assertGreater(float(np.mean(widths[widths <= 12.0])), 8.0)
-        self.assertTrue(np.any(widths > 12.0))
+        passage_cap = project_config.world.body.maximum_passage_width_m
+        room_cap = project_config.world.body.maximum_room_width_m
+        non_chamber_widths = [
+            sample.tube_width
+            for sample in all_samples
+            if not any(
+                influence.kind == "chamber"
+                for influence in sample.junction_influences
+            )
+        ]
+        self.assertTrue(non_chamber_widths)
+        self.assertLessEqual(max(non_chamber_widths), passage_cap)
+        self.assertTrue(np.any(widths > passage_cap))
         self.assertLessEqual(
             float(np.max(widths)),
-            project_config.section_field.chamber_max_tube_width,
+            room_cap,
         )
         self.assertGreater(float(np.mean(surface_offsets)), 6.0)
 

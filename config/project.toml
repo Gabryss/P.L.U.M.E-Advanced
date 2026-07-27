@@ -1,4 +1,30 @@
+schema_version = 2
 procedural_seed = 3
+
+[world]
+# Supported presets: "earth", "mars", "moon".
+# Passage/room dimensions and stability inputs follow this selection unless
+# they are explicitly overridden below.
+body = "earth"
+material = "terrestrial_basalt"
+
+[run]
+# Development mode shortens the generated world without shrinking passages.
+dev_mode = true
+quality = "preview"
+dev_max_route_length_m = 1500.0
+dev_max_braid_zones = 2
+render_diagnostics = true
+
+[export]
+target = "neutral"
+format = "glb"
+quality = "preview"
+generate_visual = true
+generate_collision = true
+generate_lods = false
+generate_wall_shell = false
+wall_thickness_m = 0.5
 
 [host_field]
 
@@ -44,10 +70,6 @@ cover_weight = 0.8
 slope_penalty_weight = 0.45
 corridor_weight = 0.35
 chamber_flux_quantile = 0.82
-base_passage_radius = 4.6
-minimum_passage_radius = 3.2
-maximum_passage_radius = 6.0
-chamber_radius = 46.0
 occupancy_smoothing_passes = 2
 spur_count = 4
 spur_max_steps = 24
@@ -75,8 +97,6 @@ chamber_radius_scale = [1.0, 1.60]
 base_height_ratio = 0.64
 minimum_height_ratio = 0.50
 maximum_height_ratio = 0.84
-maximum_tube_width = 12.0
-chamber_max_tube_width = 24.0
 minimum_sample_spacing = 4.0
 maximum_sample_spacing = 16.0
 curvature_spacing_weight = 120.0
@@ -98,6 +118,11 @@ maximum_centerline_depth = 26.0
 preferred_cover_fraction = 0.34
 
 [events]
+enabled = true
+enabled_kinds = ["rock", "boulder", "collapse", "choke", "infill"]
+use_rocky_meshes = false
+strict_optional_provider = false
+ground_embed_fraction = 0.08
 rock_density_per_100m = 0.40
 boulder_density_per_100m = 0.11
 geological_event_density_per_100m = 0.09
@@ -119,10 +144,6 @@ voxel_size = 3.0
 density_margin = 24.0
 chunk_size = 64
 iso_level = 0.0
-tunnel_radius_scale = 1.2
-chamber_radius_scale = 1.7
-junction_radius_scale = 1.7
-minimum_radius = 3.5
 use_section_profiles = true
 wall_roughness_amplitude = 0.16
 wall_roughness_frequency = 0.18

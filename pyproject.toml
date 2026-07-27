@@ -16,9 +16,15 @@ dependencies = [
   "trimesh>=4.4",
 ]
 
+[dependency-groups]
+dev = [
+  "pillow>=10.0",
+  "pytest>=8.0",
+]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["config"]
+py-modules = ["config", "world"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -92,8 +92,9 @@ class HostFieldTests(unittest.TestCase):
             config_a = load_project_config(config_a_path).host_field
             config_b = load_project_config(config_b_path).host_field
 
-        self.assertEqual(config_a.random_seed, 1)
-        self.assertEqual(config_b.random_seed, 2)
+        self.assertIsInstance(config_a.random_seed, int)
+        self.assertIsInstance(config_b.random_seed, int)
+        self.assertNotEqual(config_a.random_seed, config_b.random_seed)
         self.assertNotEqual(config_a.seed_point, config_b.seed_point)
         self.assertNotEqual(config_a.flow_angle_degrees, config_b.flow_angle_degrees)
         self.assertNotEqual(config_a.corridor_width, config_b.corridor_width)

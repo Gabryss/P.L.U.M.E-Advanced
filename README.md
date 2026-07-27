@@ -2,6 +2,13 @@
 
 `PLUME-Advanced` is a staged procedural pyroduct / lava-tube prototype.
 
+The major architecture upgrade is active on
+`feature/major-procedural-upgrade`. Its implementation roadmap, acceptance
+criteria, and dependency policy are in
+[`docs/MAJOR_UPGRADE_PLAN.md`](docs/MAJOR_UPGRADE_PLAN.md). Blender is not a
+runtime dependency: generation and export use Python libraries and open
+interchange formats.
+
 The current implementation focuses on the full inspectable cave-shape pipeline:
 build a readable terrain substrate, derive a cave-network skeleton, generate a
 geometry-ready section field around that skeleton, stamp that network into a
@@ -15,7 +22,7 @@ are still intentionally incomplete.
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
 | B. Cave Network | Implemented | Generate a host-driven braided cave-network skeleton | `outputs/stage_b_cave_network.png` |
 | C. Section Field | Implemented | Build adaptive lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png` |
-| D. Geometry | Implemented | Stamp the cave network into a voxel grid and polygonize the density field | `outputs/stage_d_geometry.png`, `outputs/stage_d_geometry_chunks.png`, `outputs/stage_d_geometry_presentation.png` |
+| D. Geometry | Implemented | Stamp the cave network into a voxel grid, polygonize it, and build a globally welded render mesh | `outputs/stage_d_geometry.png`, target export package |
 | E. Geological Events | Implemented | Placed mesh-stage rocks, boulders, collapse debris, choke points, and infill | `outputs/stage_e_geological_events.png` |
 | F. Surface Detail / Texturing | Placeholder | Wall detail, floor variation, material masks | TODO |
 
@@ -179,24 +186,52 @@ configs for the generators.
 Execution flow:
 
 1. load `config/project.toml`
-2. build `HostFieldConfig`, `CaveNetworkConfig`, `SectionFieldConfig`, `GeologicalEventConfig`, and `GeometryConfig`
-3. generate the host field
-4. render the host-field plot
-5. generate the cave network
-6. render the network plot
-7. generate the section field
-8. render the section-field plot
-9. generate geological mesh events
-10. render the geological-event plot
-11. generate the geometry stage with Stage-E events
-12. render the geometry diagnostic and presentation plots
-13. export the assembled geometry OBJ
-14. write the artifacts in `outputs/`
+2. resolve the celestial body, rock material, named stage seeds, run mode, and export target
+3. build `HostFieldConfig`, `CaveNetworkConfig`, `SectionFieldConfig`, `GeologicalEventConfig`, and `GeometryConfig`
+4. generate and render stages A–E
+5. build the globally assembled cave geometry
+6. export through the selected target adapter
+7. write both source and resolved configuration metadata in `outputs/`
 
-`procedural_seed` is the top-level seed for the active pipeline. By default it
-samples the host-field ranges, then feeds the cave-network, section-field, and
-geometry generators, so changing one value produces a different geology and a
-different cave family.
+`procedural_seed` is expanded into stable named seeds for host, network,
+sections, events, geometry, surface, and export. Consequently, disabling
+events cannot perturb the network.
+
+### World, run, and export config
+
+| Section | Purpose |
+|---|---|
+| `[world]` | Select `earth`, `mars`, or `moon`, plus a rock-material preset and optional physical overrides |
+| `[run]` | Select preview/standard/production quality and development extent caps |
+| `[export]` | Select neutral, Blender, UE5, Unity, Gazebo, or Omniverse output intent |
+
+Body presets supply gravity, atmosphere/erosion context, default rock material,
+passage and room caps, route-length guidance, and production resolution
+guidance. Earth defaults to 10 m passages and 20 m rooms; Moon defaults to
+100 m passages and 200 m rooms. Explicit TOML values can override a preset.
+All internal geometry remains right-handed, Z-up, and metre-based.
+
+Development mode shortens the host extent and braid count but does not shrink
+the selected body's passages:
+
+```toml
+[world]
+body = "moon"
+material = "mare_basalt"
+
+[run]
+dev_mode = true
+dev_max_route_length_m = 1500.0
+dev_max_braid_zones = 2
+
+[events]
+enabled = false
+enabled_kinds = []
+
+[export]
+target = "omniverse"
+format = "usd"
+```
 
 ### Host Field Config
 
@@ -258,12 +293,17 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `minimum_event_spacing` | keep major event centers from clustering too tightly |
 | `max_lateral_floor_fraction` | keep floor debris inside the local tube profile |
 | `mesh_latitude_segments`, `mesh_longitude_segments` | control generated event mesh resolution |
+| `enabled`, `enabled_kinds` | export an empty tube or enable selected event families |
+| `use_rocky_meshes`, `strict_optional_provider` | control the optional Rocky provider without importing it when disabled |
 
 ## Project Layout
 
 - `config/`: project configuration
+- `docs/MAJOR_UPGRADE_PLAN.md`: phased architecture and release gates
 - `scripts/`: stage entrypoints
 - `src/config.py`: TOML loader
+- `src/world.py`: celestial body, material, run, export, and seed profiles
+- `src/exporters/`: Blender-independent target adapters
 - `src/stages/`: stage implementations
 - `src/visualization/`: stage visualizations
 - `outputs/`: generated images
@@ -274,8 +314,15 @@ or hand-authored scenarios, but the default project config is range-driven.
 Install dependencies:
 
 ```bash
+uv sync --group dev
+```
+
+Or with standard Python tooling:
+
+```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -e .
+.venv/bin/python -m pip install pytest pillow
 ```
 
 The project intentionally uses external libraries where they improve the core
@@ -296,7 +343,7 @@ Generate the current cave network with the single entrypoint:
 
 The generator prints progress bars for configuration loading, stages A-C,
 Stage-E geological event placement, detailed Stage-D voxel/mesh generation,
-Stage-D visualization, and OBJ export.
+Stage-D visualization, and the selected target export.
 Geometry progress reports stamp counts, chunk meshing status, assembled face
 counts, and final component counts.
 
@@ -309,7 +356,8 @@ That one command produces:
 - `outputs/stage_d_geometry.png`
 - `outputs/stage_d_geometry_chunks.png`
 - `outputs/stage_d_geometry_presentation.png`
-- `outputs/stage_d_geometry.obj`
+- `outputs/resolved_project_config.json`
+- `outputs/export_<target>/...`
 
 Optional:
 
@@ -323,7 +371,7 @@ Optional:
   --geometry-output outputs/stage_d_geometry.png \
   --geometry-chunk-output outputs/stage_d_geometry_chunks.png \
   --geometry-presentation-output outputs/stage_d_geometry_presentation.png \
-  --geometry-mesh-output outputs/stage_d_geometry.obj
+  --geometry-glb-output outputs/stage_d_geometry.glb
 ```
 
 Optional host-field debug render:
@@ -334,7 +382,15 @@ Optional host-field debug render:
 
 Both scripts read `config/project.toml` by default.
 
-## Planned Stages
+## Upgrade roadmap
+
+The authoritative roadmap is
+[`docs/MAJOR_UPGRADE_PLAN.md`](docs/MAJOR_UPGRADE_PLAN.md). It covers mesh and
+export correctness, SDF-grounded events, a causal host model, a flux-conserving
+multi-source network, sparse tiled geometry, procedural PBR surfaces, target
+packages, and validation/performance gates.
+
+## Existing stages and deferred work
 
 These are placeholders for the next implementation passes.
 
@@ -352,7 +408,7 @@ What exists now:
 Still deferred:
 
 - watertight versus blend-ready export modes
-- higher-quality normal generation and surface cleanup
+- seam-aware UV atlas generation and production surface cleanup
 - higher-quality event-specific cleanup for rocks, boulders, collapse, choke points, and infill
 
 ### Stage E: Geological Events

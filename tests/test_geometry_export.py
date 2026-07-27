@@ -78,10 +78,21 @@ class GeometryExportTests(unittest.TestCase):
             cave_node = next(node for node in document["nodes"] if node["name"] == "cave_wall")
             cave_mesh = document["meshes"][cave_node["mesh"]]
             self.assertEqual(len(cave_mesh["primitives"]), 1)
-            self.assertIn("TEXCOORD_0", cave_mesh["primitives"][0]["attributes"])
+            attributes = cave_mesh["primitives"][0]["attributes"]
+            self.assertIn("TEXCOORD_0", attributes)
+            self.assertIn("NORMAL", attributes)
+            self.assertIn("TANGENT", attributes)
+            position_accessor = document["accessors"][attributes["POSITION"]]
+            self.assertEqual(position_accessor["min"], [0.0, 0.0, -1.0])
+            self.assertEqual(position_accessor["max"], [1.0, 1.0, -0.0])
 
             manifest = json.loads(
                 output_path.with_suffix(".manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(manifest["schema"], "plume.geometry_manifest.v2")
+            self.assertEqual(
+                manifest["coordinates"]["asset"],
+                "glTF right-handed Y-up metres",
             )
             self.assertEqual(manifest["cave"]["node"], "cave_wall")
             self.assertEqual(manifest["events"][0]["node"], "event_0001_rock")

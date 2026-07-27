@@ -28,9 +28,9 @@ os.environ.setdefault("XDG_CACHE_HOME", str(CACHE_ROOT))
 os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE))
 sys.path.insert(0, str(ROOT / "src"))
 
-from config import load_project_config
+from config import load_project_config, write_project_config_manifest
+from exporters import export_target_asset
 from stages.events import GeologicalEventGenerator
-from stages.geometry_export import export_geometry_glb, export_geometry_obj
 from stages.geometry import GeometryGenerator
 from stages.host_field import HostFieldGenerator
 from stages.network import CaveNetworkGenerator
@@ -209,13 +209,28 @@ def main() -> int:
     geometry_glb_output = (
         args.geometry_glb_output or args.output.with_name("stage_d_geometry.glb")
     )
-    progress.finish(f"loaded {args.config}")
+    resolved_config_output = args.output.with_name("resolved_project_config.json")
+    resolved_config_path = write_project_config_manifest(
+        project_config,
+        resolved_config_output,
+    )
+    progress.finish(
+        (
+            f"{project_config.world.body.name}/"
+            f"{project_config.world.material.name}; "
+            f"wrote {resolved_config_path.name}"
+        )
+    )
 
     progress.start("Stage A - Host Field", "generating scalar fields")
     host_field = HostFieldGenerator(project_config.host_field).generate()
-    progress.update(1, 2, "rendering host-field plot")
-    host_output_path = HostFieldPlotter().render(host_field, host_output)
-    progress.finish(f"wrote {host_output_path.name}")
+    if project_config.run.render_diagnostics:
+        progress.update(1, 2, "rendering host-field plot")
+        host_output_path = HostFieldPlotter().render(host_field, host_output)
+        progress.finish(f"wrote {host_output_path.name}")
+    else:
+        host_output_path = None
+        progress.finish("diagnostic render disabled")
 
     progress.start("Stage B - Cave Network", "tracing cave skeleton")
     cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
@@ -228,8 +243,16 @@ def main() -> int:
             f"{int(network_summary['junction_count'])} junctions; rendering"
         ),
     )
-    network_output_path = CaveNetworkPlotter().render(host_field, cave_network, args.output)
-    progress.finish(f"wrote {network_output_path.name}")
+    if project_config.run.render_diagnostics:
+        network_output_path = CaveNetworkPlotter().render(
+            host_field,
+            cave_network,
+            args.output,
+        )
+        progress.finish(f"wrote {network_output_path.name}")
+    else:
+        network_output_path = None
+        progress.finish("diagnostic render disabled")
 
     progress.start("Stage C - Section Field", "sampling tunnel profiles")
     section_field = SectionFieldGenerator(project_config.section_field).generate(cave_network)
@@ -239,12 +262,16 @@ def main() -> int:
         2,
         f"{int(section_summary['sample_count'])} samples; rendering",
     )
-    section_output_path = SectionFieldPlotter().render(
-        cave_network,
-        section_field,
-        section_output,
-    )
-    progress.finish(f"wrote {section_output_path.name}")
+    if project_config.run.render_diagnostics:
+        section_output_path = SectionFieldPlotter().render(
+            cave_network,
+            section_field,
+            section_output,
+        )
+        progress.finish(f"wrote {section_output_path.name}")
+    else:
+        section_output_path = None
+        progress.finish("diagnostic render disabled")
 
     progress.start("Stage E - Geological Events", "placing rocks and events")
     event_field = GeologicalEventGenerator(project_config.events).generate(section_field)
@@ -254,13 +281,17 @@ def main() -> int:
         2,
         f"{int(event_summary['event_count'])} events; rendering",
     )
-    event_output_path = GeologicalEventPlotter().render(
-        cave_network,
-        section_field,
-        event_field,
-        event_output,
-    )
-    progress.finish(f"wrote {event_output_path.name}")
+    if project_config.run.render_diagnostics:
+        event_output_path = GeologicalEventPlotter().render(
+            cave_network,
+            section_field,
+            event_field,
+            event_output,
+        )
+        progress.finish(f"wrote {event_output_path.name}")
+    else:
+        event_output_path = None
+        progress.finish("diagnostic render disabled")
 
     progress.start("Stage D - Geometry", "starting voxel geometry")
 
@@ -280,47 +311,94 @@ def main() -> int:
         )
     )
 
-    geometry_plotter = GeometryPlotter()
-    progress.start("Stage D - Visuals", "rendering diagnostic sheet")
-    geometry_output_path = geometry_plotter.render_debug(
-        cave_network,
-        cave_geometry,
-        geometry_output,
-    )
-    progress.update(1, 4, f"wrote {geometry_output_path.name}; rendering presentation")
-    geometry_presentation_output_path = geometry_plotter.render_presentation(
-        cave_network,
-        cave_geometry,
-        geometry_presentation_output,
-    )
+    progress.start("Stage D - Export", "preparing target package")
+    geometry_output_path = None
+    geometry_presentation_output_path = None
+    geometry_chunk_output_path = None
+    if project_config.run.render_diagnostics:
+        geometry_plotter = GeometryPlotter()
+        geometry_output_path = geometry_plotter.render_debug(
+            cave_network,
+            cave_geometry,
+            geometry_output,
+        )
+        progress.update(1, 4, f"wrote {geometry_output_path.name}; rendering presentation")
+        geometry_presentation_output_path = geometry_plotter.render_presentation(
+            cave_network,
+            cave_geometry,
+            geometry_presentation_output,
+        )
+        progress.update(
+            2,
+            4,
+            f"wrote {geometry_presentation_output_path.name}; rendering chunk diagnostics",
+        )
+        geometry_chunk_output_path = geometry_plotter.render_chunks(
+            cave_network,
+            cave_geometry,
+            geometry_chunk_output,
+        )
     progress.update(
-        2,
+        3,
         4,
-        f"wrote {geometry_presentation_output_path.name}; rendering chunk diagnostics",
+        (
+            (
+                f"wrote {geometry_chunk_output_path.name}; "
+                if geometry_chunk_output_path is not None
+                else ""
+            )
+            + "exporting "
+            f"{project_config.export.target}"
+        ),
     )
-    geometry_chunk_output_path = geometry_plotter.render_chunks(
-        cave_network,
+    selected_output = (
+        geometry_mesh_output
+        if project_config.export.file_format == "obj"
+        else geometry_glb_output
+    )
+    export_result = export_target_asset(
         cave_geometry,
-        geometry_chunk_output,
+        project_config.export,
+        selected_output.parent / f"export_{project_config.export.target}",
+        asset_name=selected_output.stem,
     )
-    progress.update(3, 5, f"wrote {geometry_chunk_output_path.name}; exporting OBJ")
-    geometry_mesh_output_path = export_geometry_obj(cave_geometry, geometry_mesh_output)
-    progress.update(4, 5, f"wrote {geometry_mesh_output_path.name}; exporting GLB")
-    geometry_glb_output_path = export_geometry_glb(cave_geometry, geometry_glb_output)
-    progress.finish(f"wrote {geometry_glb_output_path.name}")
+    progress.finish(f"wrote {export_result.primary_asset.name}")
 
     progress.close()
     progress.log("Generated cave pipeline artifacts.")
     progress.log(f"Configuration: {args.config}")
-    progress.log(f"Stage A visualization: {host_output_path}")
-    progress.log(f"Stage B visualization: {network_output_path}")
-    progress.log(f"Stage C visualization: {section_output_path}")
-    progress.log(f"Stage E visualization: {event_output_path}")
-    progress.log(f"Stage D diagnostic visualization: {geometry_output_path}")
-    progress.log(f"Stage D presentation visualization: {geometry_presentation_output_path}")
-    progress.log(f"Stage D chunk diagnostics: {geometry_chunk_output_path}")
-    progress.log(f"Stage D mesh export: {geometry_mesh_output_path}")
-    progress.log(f"Stage D GLB scene export: {geometry_glb_output_path}")
+    progress.log(f"Resolved configuration: {resolved_config_path}")
+    progress.log(
+        "World: "
+        f"{project_config.world.body.name} "
+        f"({project_config.world.body.gravity_m_s2:.5g} m/s²), "
+        f"material={project_config.world.material.name}"
+    )
+    progress.log(
+        "Run mode: "
+        f"{'development' if project_config.run.dev_mode else 'production'}, "
+        f"quality={project_config.run.quality}"
+    )
+    progress.log(
+        "Export intent: "
+        f"target={project_config.export.target}, "
+        f"format={project_config.export.file_format}"
+    )
+    if project_config.run.render_diagnostics:
+        progress.log(f"Stage A visualization: {host_output_path}")
+        progress.log(f"Stage B visualization: {network_output_path}")
+        progress.log(f"Stage C visualization: {section_output_path}")
+        progress.log(f"Stage E visualization: {event_output_path}")
+        progress.log(f"Stage D diagnostic visualization: {geometry_output_path}")
+        progress.log(
+            f"Stage D presentation visualization: {geometry_presentation_output_path}"
+        )
+        progress.log(f"Stage D chunk diagnostics: {geometry_chunk_output_path}")
+    progress.log(f"Target export: {export_result.primary_asset}")
+    for exported_file in export_result.files:
+        progress.log(f"  export_file: {exported_file}")
+    for warning in export_result.warnings:
+        progress.log(f"[yellow]  warning: {warning}[/yellow]")
     progress.log("")
     progress.log("[bold]Key cave metrics[/bold]")
     progress.log(f"total_lava_tube_length_m: {network_summary['total_length']:.3f}")

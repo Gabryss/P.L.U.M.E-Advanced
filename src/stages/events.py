@@ -18,6 +18,8 @@ class GeologicalEventConfig:
     """Parameters controlling mesh-stage geological event placement."""
 
     random_seed: int | None = None
+    enabled: bool = True
+    enabled_kinds: tuple[str, ...] = ("rock", "boulder", "collapse", "choke", "infill")
     rock_density_per_100m: float = 0.40
     boulder_density_per_100m: float = 0.11
     geological_event_density_per_100m: float = 0.09
@@ -39,6 +41,11 @@ class GeologicalEventConfig:
     rocky_output_dir: str = "outputs/rocky_stage_e"
     rocky_resolution_scale: float = 0.70
     rocky_max_subdivisions: int = 5
+    strict_optional_provider: bool = False
+    gravity_m_s2: float = 9.80665
+    rock_density_kg_m3: float = 2_900.0
+    effective_tensile_strength_pa: float = 3_000_000.0
+    ground_embed_fraction: float = 0.08
 
 
 @dataclass(frozen=True)
@@ -124,9 +131,33 @@ class GeologicalEventGenerator:
 
     def __init__(self, config: GeologicalEventConfig | None = None) -> None:
         self.config = config or GeologicalEventConfig()
-        self._rocky_api = _load_rocky_api(self.config.rocky_source_path) if self.config.use_rocky_meshes else None
+        rocky_kinds_enabled = bool(
+            {"rock", "boulder", "collapse"}.intersection(self.config.enabled_kinds)
+        )
+        should_load_rocky = (
+            self.config.enabled
+            and rocky_kinds_enabled
+            and self.config.use_rocky_meshes
+        )
+        self._rocky_api = (
+            _load_rocky_api(self.config.rocky_source_path)
+            if should_load_rocky
+            else None
+        )
+        if (
+            should_load_rocky
+            and self._rocky_api is None
+            and self.config.strict_optional_provider
+        ):
+            raise RuntimeError(
+                "Rocky meshes were requested but the optional Rocky provider "
+                f"could not be imported from {self.config.rocky_source_path!r}"
+            )
 
     def generate(self, section_field: SectionField) -> GeologicalEventField:
+        if not self.config.enabled or not self.config.enabled_kinds:
+            return GeologicalEventField(config=self.config, events=(), meshes=())
+
         rng = np.random.default_rng(self.config.random_seed)
         samples = [
             sample
@@ -138,13 +169,23 @@ class GeologicalEventGenerator:
 
         events: list[GeologicalEvent] = []
         occupied_positions: list[np.ndarray] = []
-        rock_count, boulder_count, collapse_count, choke_count, infill_count = self._counts_from_density(samples)
-        recipes = (
-            ("rock", rock_count, "floor_debris"),
-            ("boulder", boulder_count, "large_breakdown"),
-            ("collapse", collapse_count, "roof_breakdown"),
-            ("choke", choke_count, "constriction"),
-            ("infill", infill_count, "floor_infill"),
+        (
+            rock_count,
+            boulder_count,
+            collapse_count,
+            choke_count,
+            infill_count,
+        ) = self._counts_from_density(samples)
+        recipes = tuple(
+            recipe
+            for recipe in (
+                ("rock", rock_count, "floor_debris"),
+                ("boulder", boulder_count, "large_breakdown"),
+                ("collapse", collapse_count, "roof_breakdown"),
+                ("choke", choke_count, "constriction"),
+                ("infill", infill_count, "floor_infill"),
+            )
+            if recipe[0] in self.config.enabled_kinds
         )
         for kind, count, material_hint in recipes:
             candidates = self._rank_candidates(kind, samples)
@@ -240,8 +281,14 @@ class GeologicalEventGenerator:
             junction_score = sample.junction_blend_weight
             width_score = sample.tube_width
             narrow_score = 1.0 / max(sample.tube_width, 1.0)
+            stability_demand = self._roof_demand_ratio(sample)
             if kind == "collapse":
-                score = 3.0 * weak_roof_score + 1.2 * junction_score + 0.05 * width_score
+                score = (
+                    2.0 * weak_roof_score
+                    + 1.2 * junction_score
+                    + 0.05 * width_score
+                    + 2.5 * min(stability_demand, 4.0)
+                )
             elif kind == "choke":
                 score = 2.0 * narrow_score + 0.8 * junction_score
             elif kind == "infill":
@@ -253,6 +300,18 @@ class GeologicalEventGenerator:
             scored.append((max(score, 1e-6), sample))
         scored.sort(key=lambda item: item[0], reverse=True)
         return scored
+
+    def _roof_demand_ratio(self, sample: SectionSample) -> float:
+        """Fast body/material-aware collapse surrogate for candidate ranking."""
+
+        demand = (
+            self.config.rock_density_kg_m3
+            * self.config.gravity_m_s2
+            * sample.tube_width
+            * sample.tube_width
+            / max(sample.roof_thickness, 0.1)
+        )
+        return float(demand / max(self.config.effective_tensile_strength_pa, 1.0))
 
     def _choose_candidate(
         self,
@@ -484,9 +543,12 @@ class GeologicalEventGenerator:
             vertices.append((float(world_x), float(world_y), float(world_z)))
         return tuple(vertices)
 
-    @staticmethod
-    def _event_contact_z(event: GeologicalEvent) -> float:
-        return float(event.floor_z)
+    def _event_contact_z(self, event: GeologicalEvent) -> float:
+        embed_depth = (
+            max(float(self.config.ground_embed_fraction), 0.0)
+            * max(event.radius_z * 2.0, 0.0)
+        )
+        return float(event.floor_z - embed_depth)
 
     def _rocky_subdivisions(self, size: float) -> int:
         if size < 0.75:

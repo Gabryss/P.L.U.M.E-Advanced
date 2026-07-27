@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import io
 import json
+import math
 from pathlib import Path
 import re
 import struct
@@ -121,6 +122,8 @@ def export_geometry_glb(cave_geometry: CaveGeometry, output_path: str | Path) ->
             faces=geometry["faces"],
             material_index=geometry["material_index"],
             texcoords=geometry["texcoords"],
+            normals=geometry["normals"],
+            tangents=geometry["tangents"],
             translation=geometry["translation"],
             extras={
                 "kind": event_mesh.kind,
@@ -141,56 +144,53 @@ def _add_cave_wall_to_strict_glb(
     cave_geometry: CaveGeometry,
     cave_material: int,
 ) -> None:
-    if cave_geometry.chunk_meshes:
-        primitives: list[dict[str, np.ndarray | int]] = []
-        for chunk_mesh in cave_geometry.chunk_meshes:
-            if not chunk_mesh.vertices or not chunk_mesh.faces:
-                continue
-            primitives.append(
-                _cave_primitive_payload(
-                    vertices=np.array(chunk_mesh.vertices, dtype=np.float32),
-                    faces=np.array(chunk_mesh.faces, dtype=np.uint32),
-                    material_index=cave_material,
-                )
-            )
-        if primitives:
-            builder.multi_primitive_mesh_node(
-                name="cave_wall",
-                primitives=primitives,
-                extras={
-                    "source": "stage_d_chunks",
-                    "chunk_count": len(primitives),
-                    "displacement_texture": cave_geometry.config.cave_displacement_texture,
-                },
-            )
-        return
-
     if not cave_geometry.assembled_vertices or not cave_geometry.assembled_faces:
-        return
-    vertices = np.array(cave_geometry.assembled_vertices, dtype=np.float32)
-    faces = tuple(cave_geometry.assembled_faces)
-    if len(vertices) <= GLB_MAX_PRIMITIVE_VERTICES:
-        builder.mesh_node(
-            name="cave_wall",
-            positions=vertices,
-            faces=np.array(faces, dtype=np.uint32),
-            material_index=cave_material,
-        )
-        return
-    builder.multi_primitive_mesh_node(
+        if not cave_geometry.chunk_meshes:
+            return
+        source_vertices, source_faces = _assemble_export_chunks(cave_geometry.chunk_meshes)
+    else:
+        source_vertices = np.array(cave_geometry.assembled_vertices, dtype=np.float32)
+        source_faces = np.array(cave_geometry.assembled_faces, dtype=np.uint32)
+
+    payload = _cave_primitive_payload(
+        vertices=source_vertices,
+        faces=source_faces,
+        material_index=cave_material,
+    )
+    builder.mesh_node(
         name="cave_wall",
-        primitives=[
-            _cave_primitive_payload(
-                vertices=part_vertices.astype(np.float32),
-                faces=part_faces.astype(np.uint32),
-                material_index=cave_material,
-            )
-            for part_vertices, part_faces in _split_mesh_faces(vertices, faces)
-        ],
+        positions=payload["positions"],
+        faces=payload["faces"],
+        material_index=cave_material,
+        texcoords=payload["texcoords"],
+        normals=payload["normals"],
+        tangents=payload["tangents"],
         extras={
-            "source": "stage_d_assembled_split",
+            "source": "stage_d_assembled",
+            "canonical_source_coordinates": "right-handed Z-up metres",
+            "gltf_coordinates": "right-handed Y-up metres",
+            "processing_chunk_count": len(cave_geometry.chunk_meshes),
             "displacement_texture": cave_geometry.config.cave_displacement_texture,
         },
+    )
+
+
+def _assemble_export_chunks(chunk_meshes) -> tuple[np.ndarray, np.ndarray]:
+    """Fallback assembly used only when a legacy geometry lacks a welded mesh."""
+
+    vertices: list[tuple[float, float, float]] = []
+    faces: list[tuple[int, int, int]] = []
+    offset = 0
+    for chunk_mesh in chunk_meshes:
+        vertices.extend(chunk_mesh.vertices)
+        faces.extend(
+            tuple(int(index) + offset for index in face)
+            for face in chunk_mesh.faces
+        )
+        offset += len(chunk_mesh.vertices)
+    return (
+        np.asarray(vertices, dtype=np.float32),
+        np.asarray(faces, dtype=np.uint32),
     )
 
 
@@ -200,42 +200,164 @@ def _cave_primitive_payload(
     faces: np.ndarray,
     material_index: int,
 ) -> dict[str, np.ndarray | int]:
-    expanded_vertices: list[tuple[float, float, float]] = []
-    expanded_uvs: list[tuple[float, float]] = []
-    expanded_faces: list[tuple[int, int, int]] = []
-    for face in faces:
-        triangle = vertices[np.asarray(face, dtype=np.int64)]
-        face_uvs = _project_cave_triangle_uvs(triangle)
-        start = len(expanded_vertices)
-        for vertex, uv in zip(triangle, face_uvs, strict=True):
-            expanded_vertices.append(tuple(float(value) for value in vertex))
-            expanded_uvs.append(uv)
-        expanded_faces.append((start, start + 1, start + 2))
+    canonical_vertices = np.asarray(vertices, dtype=np.float64)
+    face_indices = np.asarray(faces, dtype=np.uint32)
+    canonical_normals = _angle_weighted_vertex_normals(canonical_vertices, face_indices)
+    texcoords = _project_cave_vertex_uvs(canonical_vertices)
+    canonical_tangents = _mesh_tangents(
+        canonical_vertices,
+        face_indices,
+        texcoords,
+        canonical_normals,
+    )
     return {
-        "positions": np.array(expanded_vertices, dtype=np.float32),
-        "faces": np.array(expanded_faces, dtype=np.uint32),
-        "texcoords": np.array(expanded_uvs, dtype=np.float32),
+        "positions": _canonical_to_gltf_vectors(canonical_vertices),
+        "faces": face_indices,
+        "texcoords": texcoords.astype(np.float32),
+        "normals": _canonical_to_gltf_vectors(canonical_normals),
+        "tangents": _canonical_to_gltf_tangents(canonical_tangents),
         "material_index": material_index,
     }
 
 
-def _project_cave_triangle_uvs(triangle: np.ndarray) -> list[tuple[float, float]]:
-    edge_a = triangle[1] - triangle[0]
-    edge_b = triangle[2] - triangle[0]
-    normal = np.cross(edge_a, edge_b)
-    normal_abs = np.abs(normal)
-    axis = int(np.argmax(normal_abs))
+def _project_cave_vertex_uvs(vertices: np.ndarray) -> np.ndarray:
+    """Build a coherent dominant-route cylindrical projection.
+
+    This is an interim runtime-safe mapping.  A seam-aware atlas remains part
+    of the surface phase, but this avoids the previous per-triangle UV islands.
+    """
+
+    xy = vertices[:, :2]
+    centered_xy = xy - xy.mean(axis=0)
+    if len(vertices) >= 2 and np.any(np.abs(centered_xy) > 1e-9):
+        _u, _s, vh = np.linalg.svd(centered_xy, full_matrices=False)
+        longitudinal = vh[0]
+    else:
+        longitudinal = np.array((0.0, 1.0), dtype=float)
+    if longitudinal[1] < 0.0:
+        longitudinal = -longitudinal
+    lateral = np.array((-longitudinal[1], longitudinal[0]), dtype=float)
     scale = max(GLB_CAVE_TEXTURE_SCALE_METERS, 1e-6)
-    uvs: list[tuple[float, float]] = []
-    for vertex in triangle:
-        if axis == 0:
-            u, v = vertex[1] / scale, vertex[2] / scale
-        elif axis == 1:
-            u, v = vertex[0] / scale, vertex[2] / scale
-        else:
-            u, v = vertex[0] / scale, vertex[1] / scale
-        uvs.append((float(u), float(v)))
-    return uvs
+    u_coord = centered_xy @ longitudinal / scale
+    lateral_coord = centered_xy @ lateral
+    vertical_coord = vertices[:, 2] - float(np.mean(vertices[:, 2]))
+    v_coord = np.arctan2(vertical_coord, lateral_coord) / (2.0 * np.pi) + 0.5
+    return np.column_stack((u_coord, v_coord))
+
+
+def _angle_weighted_vertex_normals(
+    vertices: np.ndarray,
+    faces: np.ndarray,
+) -> np.ndarray:
+    """Compute smooth normals after global welding."""
+
+    positions = np.asarray(vertices, dtype=np.float64)
+    triangles = np.asarray(faces, dtype=np.int64)
+    normals = np.zeros_like(positions, dtype=np.float64)
+    for face in triangles:
+        triangle = positions[face]
+        edge_a = triangle[1] - triangle[0]
+        edge_b = triangle[2] - triangle[0]
+        face_normal = np.cross(edge_a, edge_b)
+        normal_length = float(np.linalg.norm(face_normal))
+        if normal_length <= 1e-12:
+            continue
+        face_normal /= normal_length
+        for corner in range(3):
+            center = triangle[corner]
+            vector_a = triangle[(corner + 1) % 3] - center
+            vector_b = triangle[(corner + 2) % 3] - center
+            length_a = float(np.linalg.norm(vector_a))
+            length_b = float(np.linalg.norm(vector_b))
+            if length_a <= 1e-12 or length_b <= 1e-12:
+                continue
+            cosine = float(np.dot(vector_a, vector_b) / (length_a * length_b))
+            angle = math.acos(float(np.clip(cosine, -1.0, 1.0)))
+            normals[face[corner]] += face_normal * angle
+
+    lengths = np.linalg.norm(normals, axis=1)
+    missing = lengths <= 1e-12
+    normals[~missing] /= lengths[~missing, None]
+    normals[missing] = np.array((0.0, 0.0, 1.0))
+    return normals
+
+
+def _mesh_tangents(
+    vertices: np.ndarray,
+    faces: np.ndarray,
+    texcoords: np.ndarray,
+    normals: np.ndarray,
+) -> np.ndarray:
+    """Generate orthonormal tangent frames compatible with glTF normal maps."""
+
+    positions = np.asarray(vertices, dtype=np.float64)
+    triangles = np.asarray(faces, dtype=np.int64)
+    uv = np.asarray(texcoords, dtype=np.float64)
+    vertex_normals = np.asarray(normals, dtype=np.float64)
+    tangent_u = np.zeros_like(positions)
+    tangent_v = np.zeros_like(positions)
+
+    for face in triangles:
+        p0, p1, p2 = positions[face]
+        uv0, uv1, uv2 = uv[face]
+        edge1 = p1 - p0
+        edge2 = p2 - p0
+        duv1 = uv1 - uv0
+        duv2 = uv2 - uv0
+        determinant = duv1[0] * duv2[1] - duv1[1] * duv2[0]
+        if abs(float(determinant)) <= 1e-12:
+            continue
+        reciprocal = 1.0 / determinant
+        s_direction = (edge1 * duv2[1] - edge2 * duv1[1]) * reciprocal
+        t_direction = (edge2 * duv1[0] - edge1 * duv2[0]) * reciprocal
+        for vertex_index in face:
+            tangent_u[vertex_index] += s_direction
+            tangent_v[vertex_index] += t_direction
+
+    tangents = np.zeros((len(positions), 4), dtype=np.float64)
+    for index, normal in enumerate(vertex_normals):
+        tangent = tangent_u[index] - normal * float(np.dot(normal, tangent_u[index]))
+        tangent_length = float(np.linalg.norm(tangent))
+        if tangent_length <= 1e-12:
+            reference = (
+                np.array((0.0, 0.0, 1.0))
+                if abs(float(normal[2])) < 0.9
+                else np.array((1.0, 0.0, 0.0))
+            )
+            tangent = np.cross(reference, normal)
+            tangent_length = max(float(np.linalg.norm(tangent)), 1e-12)
+        tangent /= tangent_length
+        handedness = (
+            -1.0
+            if float(np.dot(np.cross(normal, tangent), tangent_v[index])) < 0.0
+            else 1.0
+        )
+        tangents[index, :3] = tangent
+        tangents[index, 3] = handedness
+    return tangents
+
+
+def _canonical_to_gltf_vectors(values: np.ndarray) -> np.ndarray:
+    """Rotate right-handed Z-up coordinates into glTF right-handed Y-up."""
+
+    vectors = np.asarray(values, dtype=np.float64)
+    transformed = np.column_stack(
+        (vectors[:, 0], vectors[:, 2], -vectors[:, 1])
+    )
+    return transformed.astype(np.float32)
+
+
+def _canonical_to_gltf_tangents(tangents: np.ndarray) -> np.ndarray:
+    tangent_values = np.asarray(tangents, dtype=np.float64)
+    transformed_xyz = _canonical_to_gltf_vectors(tangent_values[:, :3])
+    return np.column_stack((transformed_xyz, tangent_values[:, 3])).astype(np.float32)
+
+
+def _canonical_to_gltf_translation(
+    translation: np.ndarray,
+) -> tuple[float, float, float]:
+    vector = np.asarray(translation, dtype=np.float64)
+    return (float(vector[0]), float(vector[2]), float(-vector[1]))
 
 
 def _cave_strict_glb_material(cave_geometry: CaveGeometry, *, builder, image_cache: dict) -> int:
@@ -259,16 +381,22 @@ def _cave_strict_glb_material(cave_geometry: CaveGeometry, *, builder, image_cac
 
 def _write_geometry_manifest(cave_geometry: CaveGeometry, output_path: Path) -> Path:
     payload = {
-        "schema": "plume.geometry_manifest.v1",
+        "schema": "plume.geometry_manifest.v2",
+        "coordinates": {
+            "source": "right-handed Z-up metres",
+            "asset": "glTF right-handed Y-up metres",
+        },
         "cave": {
             "node": "cave_wall",
-            "primitive_count": len(cave_geometry.chunk_meshes) if cave_geometry.chunk_meshes else 1,
+            "primitive_count": 1,
+            "processing_chunk_count": len(cave_geometry.chunk_meshes),
+            "attributes": ["POSITION", "NORMAL", "TANGENT", "TEXCOORD_0"],
             "material": {
                 "diffuse": cave_geometry.config.cave_diffuse_texture,
                 "normal": cave_geometry.config.cave_normal_texture,
                 "roughness": cave_geometry.config.cave_roughness_texture,
                 "displacement": cave_geometry.config.cave_displacement_texture,
-                "uv_projection": "face_dominant_axis_planar",
+                "uv_projection": "dominant_route_cylindrical",
                 "uv_scale_m": GLB_CAVE_TEXTURE_SCALE_METERS,
             },
         },
@@ -313,20 +441,39 @@ def _event_mesh_to_glb_payload(event_mesh, *, builder, material_cache: dict, ima
                 expanded_vertices.append(tuple(float(value) for value in local_vertices[vertex_index]))
                 expanded_uvs.append((float(uv[0]), float(1.0 - uv[1])))
             expanded_faces.append((start, start + 1, start + 2))
+        expanded_positions = np.array(expanded_vertices, dtype=np.float64)
+        expanded_face_indices = np.array(expanded_faces, dtype=np.uint32)
+        texcoords = np.array(expanded_uvs, dtype=np.float64)
+        normals = _angle_weighted_vertex_normals(
+            expanded_positions,
+            expanded_face_indices,
+        )
+        tangents = _mesh_tangents(
+            expanded_positions,
+            expanded_face_indices,
+            texcoords,
+            normals,
+        )
         return {
-            "positions": np.array(expanded_vertices, dtype=np.float32),
-            "texcoords": np.array(expanded_uvs, dtype=np.float32),
-            "faces": np.array(expanded_faces, dtype=np.uint32),
+            "positions": _canonical_to_gltf_vectors(expanded_positions),
+            "texcoords": texcoords.astype(np.float32),
+            "normals": _canonical_to_gltf_vectors(normals),
+            "tangents": _canonical_to_gltf_tangents(tangents),
+            "faces": expanded_face_indices,
             "material_index": material_index,
-            "translation": tuple(float(value) for value in pivot),
+            "translation": _canonical_to_gltf_translation(pivot),
         }
 
+    faces = np.array(event_mesh.faces, dtype=np.uint32)
+    normals = _angle_weighted_vertex_normals(local_vertices, faces)
     return {
-        "positions": local_vertices.astype(np.float32),
+        "positions": _canonical_to_gltf_vectors(local_vertices),
         "texcoords": None,
-        "faces": np.array(event_mesh.faces, dtype=np.uint32),
+        "normals": _canonical_to_gltf_vectors(normals),
+        "tangents": None,
+        "faces": faces,
         "material_index": material_index,
-        "translation": tuple(float(value) for value in pivot),
+        "translation": _canonical_to_gltf_translation(pivot),
     }
 
 
@@ -486,6 +633,8 @@ class _StrictGlbBuilder:
         faces: np.ndarray,
         material_index: int,
         texcoords: np.ndarray | None = None,
+        normals: np.ndarray | None = None,
+        tangents: np.ndarray | None = None,
         translation: tuple[float, float, float] | None = None,
         extras: dict[str, object] | None = None,
     ) -> int:
@@ -506,6 +655,8 @@ class _StrictGlbBuilder:
         }
         if texcoords is not None:
             texcoords = np.asarray(texcoords, dtype=np.float32)
+            if len(texcoords) != len(positions):
+                raise ValueError(f"Mesh node {name!r} has mismatched texture coordinates")
             attributes["TEXCOORD_0"] = self._accessor(
                 texcoords,
                 component_type=5126,
@@ -513,6 +664,30 @@ class _StrictGlbBuilder:
                 target=34962,
                 minimum=texcoords.min(axis=0).tolist(),
                 maximum=texcoords.max(axis=0).tolist(),
+            )
+        if normals is not None:
+            normals = np.asarray(normals, dtype=np.float32)
+            if len(normals) != len(positions):
+                raise ValueError(f"Mesh node {name!r} has mismatched normals")
+            attributes["NORMAL"] = self._accessor(
+                normals,
+                component_type=5126,
+                accessor_type="VEC3",
+                target=34962,
+                minimum=normals.min(axis=0).tolist(),
+                maximum=normals.max(axis=0).tolist(),
+            )
+        if tangents is not None:
+            tangents = np.asarray(tangents, dtype=np.float32)
+            if len(tangents) != len(positions):
+                raise ValueError(f"Mesh node {name!r} has mismatched tangents")
+            attributes["TANGENT"] = self._accessor(
+                tangents,
+                component_type=5126,
+                accessor_type="VEC4",
+                target=34962,
+                minimum=tangents.min(axis=0).tolist(),
+                maximum=tangents.max(axis=0).tolist(),
             )
 
         max_index = int(faces.max())
@@ -575,6 +750,8 @@ class _StrictGlbBuilder:
                     faces=faces,
                     material_index=int(primitive["material_index"]),
                     texcoords=primitive.get("texcoords"),
+                    normals=primitive.get("normals"),
+                    tangents=primitive.get("tangents"),
                 )
             )
         if not gltf_primitives:
@@ -599,6 +776,8 @@ class _StrictGlbBuilder:
         faces: np.ndarray,
         material_index: int,
         texcoords: np.ndarray | None = None,
+        normals: np.ndarray | None = None,
+        tangents: np.ndarray | None = None,
     ) -> dict[str, object]:
         attributes = {
             "POSITION": self._accessor(
@@ -619,6 +798,26 @@ class _StrictGlbBuilder:
                 target=34962,
                 minimum=texcoords.min(axis=0).tolist(),
                 maximum=texcoords.max(axis=0).tolist(),
+            )
+        if normals is not None:
+            normals = np.asarray(normals, dtype=np.float32)
+            attributes["NORMAL"] = self._accessor(
+                normals,
+                component_type=5126,
+                accessor_type="VEC3",
+                target=34962,
+                minimum=normals.min(axis=0).tolist(),
+                maximum=normals.max(axis=0).tolist(),
+            )
+        if tangents is not None:
+            tangents = np.asarray(tangents, dtype=np.float32)
+            attributes["TANGENT"] = self._accessor(
+                tangents,
+                component_type=5126,
+                accessor_type="VEC4",
+                target=34962,
+                minimum=tangents.min(axis=0).tolist(),
+                maximum=tangents.max(axis=0).tolist(),
             )
 
         max_index = int(faces.max())
