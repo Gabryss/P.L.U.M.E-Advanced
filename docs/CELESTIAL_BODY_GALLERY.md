@@ -1,9 +1,12 @@
 # Celestial-body generation gallery
 
-These figures are generated from the same project configuration and procedural
-seed. Only the celestial-body preset and its default geological material
-change. This makes differences in gravity, stability, passage scale, terrain,
-network growth, and geological events directly comparable.
+These figures are generated from the same flow-regime configuration and
+procedural seed. Only the celestial-body preset and its default geological
+material change. The preset changes host correlation lengths, vertical and
+fracture scales, route guidance, passage/room limits, section sampling, and
+floor-map resolution. This makes differences in gravity, stability, passage
+scale, terrain, network growth, and geological events directly comparable
+without merely inflating one shared footprint.
 
 Refresh the complete gallery with:
 

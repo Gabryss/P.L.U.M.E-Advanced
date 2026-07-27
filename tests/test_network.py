@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 import numpy as np
@@ -14,7 +15,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from config import load_project_config
 from stages.host_field import HostFieldConfig, HostFieldGenerator
-from stages.network import CaveNetworkGenerator
+from stages.network import CaveNetworkGenerator, export_network_report
 
 
 class CaveNetworkTests(unittest.TestCase):
@@ -47,6 +48,18 @@ class CaveNetworkTests(unittest.TestCase):
         )
         self.assertGreater(summary["min_segment_width"], 0.0)
         self.assertGreaterEqual(summary["max_segment_width"], summary["mean_segment_width"])
+        self.assertGreaterEqual(summary["max_visible_parallel_channels"], 2)
+        self.assertGreater(summary["primary_branch_count"], 0)
+        self.assertGreater(summary["mean_branch_persistence_widths"], 3.0)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            report_path = export_network_report(
+                cave_network,
+                Path(temp_dir) / "network.json",
+            )
+            report = report_path.read_text(encoding="utf-8")
+            self.assertIn("plume.cave-network-diagnostics.v1", report)
+            self.assertIn('"visible_channels"', report)
 
         entry_nodes = [node for node in cave_network.nodes if node.kind == "entry"]
         exit_nodes = [node for node in cave_network.nodes if node.kind == "exit"]

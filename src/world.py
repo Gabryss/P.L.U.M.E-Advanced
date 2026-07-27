@@ -40,6 +40,9 @@ class CelestialBodyProfile:
     maximum_room_width_m: float
     default_route_length_m: float
     production_voxel_size_m: float
+    host_horizontal_scale: float
+    host_vertical_scale: float
+    host_fracture_scale: float
 
 
 @dataclass(frozen=True)
@@ -102,6 +105,22 @@ class RunConfig:
 
 
 @dataclass(frozen=True)
+class FlowRegimeConfig:
+    """Procedural eruption controls independent of the celestial body.
+
+    These are dimensionless surrogates, not a thermofluid simulation. They
+    separate lava-supply history from gravity and rock stability so that two
+    environments on the same body can still have different morphologies.
+    """
+
+    supply_rate_scale: float = 1.0
+    duration_scale: float = 1.0
+    inflation: float = 0.50
+    distributary_tendency: float = 0.55
+    cooling_rate_scale: float = 1.0
+
+
+@dataclass(frozen=True)
 class ExportConfig:
     """Target selection and target-independent export requirements."""
 
@@ -140,6 +159,9 @@ BODY_PRESETS: dict[str, CelestialBodyProfile] = {
         maximum_room_width_m=20.0,
         default_route_length_m=5_000.0,
         production_voxel_size_m=0.5,
+        host_horizontal_scale=1.0,
+        host_vertical_scale=1.0,
+        host_fracture_scale=1.0,
     ),
     "mars": CelestialBodyProfile(
         name="mars",
@@ -152,6 +174,9 @@ BODY_PRESETS: dict[str, CelestialBodyProfile] = {
         maximum_room_width_m=100.0,
         default_route_length_m=15_000.0,
         production_voxel_size_m=1.0,
+        host_horizontal_scale=2.25,
+        host_vertical_scale=1.70,
+        host_fracture_scale=1.80,
     ),
     "moon": CelestialBodyProfile(
         name="moon",
@@ -164,6 +189,9 @@ BODY_PRESETS: dict[str, CelestialBodyProfile] = {
         maximum_room_width_m=200.0,
         default_route_length_m=30_000.0,
         production_voxel_size_m=2.0,
+        host_horizontal_scale=3.25,
+        host_vertical_scale=2.30,
+        host_fracture_scale=2.60,
     ),
 }
 
@@ -226,6 +254,9 @@ def resolve_world_config(raw_config: dict[str, Any] | None) -> WorldConfig:
         "maximum_room_width_m",
         "default_route_length_m",
         "production_voxel_size_m",
+        "host_horizontal_scale",
+        "host_vertical_scale",
+        "host_fracture_scale",
     }
     material_keys = {
         "bulk_density_kg_m3",
@@ -261,6 +292,29 @@ def build_run_config(raw_config: dict[str, Any] | None) -> RunConfig:
         raise ValueError("run.dev_max_route_length_m must be positive")
     if config.dev_max_braid_zones < 0:
         raise ValueError("run.dev_max_braid_zones must be non-negative")
+    return config
+
+
+def build_flow_regime_config(
+    raw_config: dict[str, Any] | None,
+) -> FlowRegimeConfig:
+    """Build and validate independent lava-supply morphology controls."""
+
+    config = FlowRegimeConfig(**dict(raw_config or {}))
+    positive = {
+        "supply_rate_scale": config.supply_rate_scale,
+        "duration_scale": config.duration_scale,
+        "cooling_rate_scale": config.cooling_rate_scale,
+    }
+    for name, value in positive.items():
+        if value <= 0.0:
+            raise ValueError(f"flow_regime.{name} must be positive")
+    for name, value in {
+        "inflation": config.inflation,
+        "distributary_tendency": config.distributary_tendency,
+    }.items():
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(f"flow_regime.{name} must be in [0, 1]")
     return config
 
 
@@ -316,6 +370,9 @@ def _validate_world(
         "maximum_room_width_m": body.maximum_room_width_m,
         "default_route_length_m": body.default_route_length_m,
         "production_voxel_size_m": body.production_voxel_size_m,
+        "host_horizontal_scale": body.host_horizontal_scale,
+        "host_vertical_scale": body.host_vertical_scale,
+        "host_fracture_scale": body.host_fracture_scale,
     }
     for name, value in positive_body_values.items():
         if float(value) <= 0.0:
@@ -343,6 +400,7 @@ __all__ = [
     "MATERIAL_PRESETS",
     "CelestialBodyProfile",
     "ExportConfig",
+    "FlowRegimeConfig",
     "GeologicalMaterialProfile",
     "RunConfig",
     "SUPPORTED_EVENT_KINDS",
@@ -351,6 +409,7 @@ __all__ = [
     "StageSeeds",
     "WorldConfig",
     "build_export_config",
+    "build_flow_regime_config",
     "build_run_config",
     "derive_stage_seeds",
     "resolve_world_config",

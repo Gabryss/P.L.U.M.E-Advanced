@@ -8,8 +8,16 @@ procedural_seed = 3
 body = "earth"
 material = "terrestrial_basalt"
 
+[flow_regime]
+# Dimensionless procedural controls kept separate from gravity/geology.
+supply_rate_scale = 1.0
+duration_scale = 1.0
+inflation = 0.50
+distributary_tendency = 0.65
+cooling_rate_scale = 1.0
+
 [run]
-# Development mode shortens the generated world without shrinking passages.
+# Development mode shortens each body proportionally without shrinking passages.
 dev_mode = true
 quality = "preview"
 dev_max_route_length_m = 1500.0
@@ -30,6 +38,8 @@ generate_wall_shell = false
 wall_thickness_m = 0.5
 
 [host_field]
+# Scale the Earth-authored base ranges using the selected body's host profile.
+apply_body_scaling = true
 
 [host_field.grid]
 width = 1800.0
@@ -71,6 +81,10 @@ growth_cost_weight = 3.2
 corridor_weight = 0.35
 chamber_flux_quantile = 0.82
 occupancy_smoothing_passes = 2
+# Keep parallel centrelines separated by at least this many full passage
+# widths; the generator also enforces a host-corridor-relative minimum.
+minimum_branch_offset_widths = 1.25
+paint_flux_chambers = false
 spur_count = 4
 spur_max_steps = 24
 spur_lateral_bias = 1.3

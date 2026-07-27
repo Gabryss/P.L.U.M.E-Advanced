@@ -165,6 +165,12 @@ consumption, area-aware debris sampling, and multi-level geological rasters.
 
 ## Phase 4 — physical network
 
+Status: body-aware topology foundation complete. Production route targets now
+drive host extent; branch length scales with the host; separation is enforced
+in passage-width and host-corridor units; decorative flux-chamber painting is
+disabled; skeleton-versus-visible channel diagnostics and a JSON network
+report are active. Full flux/temperature conservation remains.
+
 - Use all configured sources, each with its own initial flux and temperature.
 - Conserve flux at splits and merges and derive width from flux, cooling, and
   material capacity.
@@ -178,6 +184,21 @@ consumption, area-aware debris sampling, and multi-level geological rasters.
   same graph and section source of truth.
 - Validate entry-to-exit connectivity, curvature, grade, clearance, unintended
   intersections, flux conservation, and branch statistics.
+
+Implemented foundation:
+
+- Earth, Mars, and Moon have independent horizontal, vertical, and fracture
+  host scales plus 5/15/30 km production route guidance.
+- `[flow_regime]` separates supply, duration, inflation, distributary
+  tendency, and cooling from celestial-body physics.
+- Development mode shortens each body proportionally while keeping real
+  passage widths, rather than forcing all bodies into the same footprint.
+- Braid lengths grow with spatial scale and branch offsets clear both the full
+  passage diameter and a host-corridor-relative threshold.
+- Occupancy always retains the generated skeleton, and chamber expansion is
+  tied to explicit structural junctions.
+- Stage B reports skeleton channels, visibly distinct occupied channels, and
+  width-normalized primary-branch persistence.
 
 Exit criteria:
 

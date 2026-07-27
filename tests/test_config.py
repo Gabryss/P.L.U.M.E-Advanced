@@ -64,11 +64,109 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(earth.section_field.maximum_tube_width, 10.0)
         self.assertEqual(moon.section_field.maximum_tube_width, 100.0)
         self.assertEqual(moon.section_field.chamber_max_tube_width, 200.0)
+        self.assertGreater(
+            moon.host_field.grid.width,
+            earth.host_field.grid.width,
+        )
+        self.assertGreater(
+            moon.network.braid_grammar.half_length_fraction[1],
+            earth.network.braid_grammar.half_length_fraction[1],
+        )
         self.assertLess(
             moon.world.roof_demand_ratio(10.0, 8.0),
             earth.world.roof_demand_ratio(10.0, 8.0),
         )
         self.assertEqual(earth.stage_seeds, moon.stage_seeds)
+
+    def test_body_profiles_scale_host_extent_route_and_branch_persistence(self) -> None:
+        configs = {
+            body: load_project_config(
+                ROOT / "config" / "project.toml",
+                world_body=body,
+            )
+            for body in ("earth", "mars", "moon")
+        }
+
+        self.assertEqual(
+            [configs[body].host_field.target_route_length_m for body in configs],
+            [5_000.0, 15_000.0, 30_000.0],
+        )
+        self.assertLess(
+            configs["earth"].host_field.grid.width,
+            configs["mars"].host_field.grid.width,
+        )
+        self.assertLess(
+            configs["mars"].host_field.grid.width,
+            configs["moon"].host_field.grid.width,
+        )
+        self.assertLess(
+            configs["earth"].host_field.grid.height,
+            configs["mars"].host_field.grid.height,
+        )
+        self.assertLess(
+            configs["mars"].host_field.grid.height,
+            configs["moon"].host_field.grid.height,
+        )
+        self.assertLess(
+            configs["earth"].network.braid_grammar.half_length_fraction[1],
+            configs["mars"].network.braid_grammar.half_length_fraction[1],
+        )
+        self.assertLess(
+            configs["mars"].network.braid_grammar.half_length_fraction[1],
+            configs["moon"].network.braid_grammar.half_length_fraction[1],
+        )
+
+    def test_flow_regime_changes_morphology_without_changing_body_physics(self) -> None:
+        baseline = self._load_minimal(
+            """
+            schema_version = 2
+            procedural_seed = 7
+            [world]
+            body = "mars"
+            [flow_regime]
+            supply_rate_scale = 1.0
+            duration_scale = 1.0
+            inflation = 0.25
+            distributary_tendency = 0.25
+            cooling_rate_scale = 1.0
+            """
+        )
+        sustained = self._load_minimal(
+            """
+            schema_version = 2
+            procedural_seed = 7
+            [world]
+            body = "mars"
+            [flow_regime]
+            supply_rate_scale = 1.4
+            duration_scale = 1.8
+            inflation = 0.75
+            distributary_tendency = 0.75
+            cooling_rate_scale = 0.8
+            """
+        )
+
+        self.assertEqual(baseline.world, sustained.world)
+        self.assertGreater(
+            sustained.host_field.target_route_length_m,
+            baseline.host_field.target_route_length_m,
+        )
+        self.assertGreater(
+            sustained.host_field.grid.width,
+            baseline.host_field.grid.width,
+        )
+        self.assertGreater(
+            sustained.network.chamber_radius_fraction,
+            baseline.network.chamber_radius_fraction,
+        )
+        self.assertGreater(
+            sustained.network.spur_count,
+            baseline.network.spur_count,
+        )
+        self.assertGreater(
+            sustained.network.braid_grammar.zone_count[1],
+            baseline.network.braid_grammar.zone_count[1],
+        )
 
     def test_world_body_override_uses_the_selected_bodys_default_material(self) -> None:
         moon = load_project_config(
@@ -127,6 +225,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         manifest = project_config_manifest(config)
 
         self.assertEqual(manifest["world"]["body"]["name"], "mars")
+        self.assertEqual(manifest["flow_regime"]["supply_rate_scale"], 1.0)
         self.assertEqual(manifest["export"]["target"], "gazebo")
         self.assertEqual(manifest["canonical_coordinates"]["up_axis"], "Z")
 

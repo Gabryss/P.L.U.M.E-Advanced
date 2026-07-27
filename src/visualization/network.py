@@ -81,7 +81,9 @@ class CaveNetworkPlotter:
             f"Nodes: {int(summary['node_count'])} | "
             f"Segments: {int(summary['segment_count'])} | "
             f"Loops: {int(summary['loop_count'])} | "
-            f"Max channels: {int(summary['max_parallel_channels'])} | "
+            f"Skeleton/visible channels: "
+            f"{int(summary['max_parallel_channels'])}/"
+            f"{int(summary['max_visible_parallel_channels'])} | "
             f"Dominant route: {summary['dominant_route_length']:.1f}"
         )
         fig.text(0.5, 0.01, summary_line, ha="center", fontsize=10)
@@ -221,7 +223,28 @@ class CaveNetworkPlotter:
             color="#93c5fd",
             alpha=0.35,
         )
-        ax.set_ylim(0.0, max(channel_counts.max() + 0.8, 2.0))
+        visible_counts = np.array(
+            cave_network.slice_visible_channel_counts,
+            dtype=float,
+        )
+        if visible_counts.size == channel_counts.size:
+            ax.step(
+                along_positions,
+                visible_counts,
+                where="mid",
+                color="#dc2626",
+                linewidth=1.5,
+                linestyle="--",
+                label="visible occupied channels",
+            )
+        ax.set_ylim(
+            0.0,
+            max(
+                channel_counts.max() + 0.8,
+                visible_counts.max() + 0.8 if visible_counts.size else 0.0,
+                2.0,
+            ),
+        )
 
         secondary_axis = ax.twinx()
         secondary_axis.set_ylabel("Tube width")

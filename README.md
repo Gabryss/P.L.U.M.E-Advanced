@@ -20,7 +20,7 @@ are still intentionally incomplete.
 | Stage | Status | Purpose | Current Output |
 |---|---|---|---|
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
-| B. Cave Network | Implemented | Generate a host-driven braided cave-network skeleton | `outputs/stage_b_cave_network.png` |
+| B. Cave Network | Implemented | Generate a host-driven, body-scaled braided cave-network skeleton | `outputs/stage_b_cave_network.png`, `outputs/stage_b_network_report.json` |
 | C. Section Field | Implemented | Build adaptive lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png` |
 | D. Geometry | Implemented | Stamp the cave network into a voxel grid, polygonize it, and build a globally welded render mesh | `outputs/stage_d_geometry.png`, target export package |
 | E. Geological Events | Implemented | Ground rocks/boulders on the base cave and apply collapse/choke/infill as structural modifiers | `outputs/stage_e_geological_events.png` |
@@ -94,6 +94,13 @@ environments when the physical world preset changes:
 
 The complete eight-figure pipeline comparison for every body is in
 [`docs/CELESTIAL_BODY_GALLERY.md`](docs/CELESTIAL_BODY_GALLERY.md).
+
+Body selection changes more than passage radius. It scales the host
+correlation lengths, fracture structure, vertical relief, route target,
+branch persistence, section spacing, and floor-map resolution. Production
+route guidance is 5 km for Earth, 15 km for Mars, and 30 km for the Moon;
+development mode creates shorter representative versions while preserving
+each body's passage dimensions.
 
 ## How It Works
 
@@ -178,12 +185,18 @@ generator:
 - supports `backbone`, `island_bypass`, `chamber_braid`, `ladder`, `spur`, and `underpass` segment kinds
 - records graph metadata such as `z_level`, `merge_behavior`, `crossing_group_id`, `island_id`, and `chamber_id`
 - clusters morphologically meaningful split/merge/crossing regions into explicit junction objects
+- keeps parallel centrelines separated in both host-corridor units and full passage widths
+- lengthens braid persistence with body spatial scale instead of only inflating passage radius
+- reserves chambers for explicit junction/confluence semantics rather than painting high-flux blobs into occupancy
 - derives occupancy and graph summaries from the resulting network
 
 The Stage B visualization includes a longitudinal diagnostics panel. It reads
 left to right along the main flow direction: the filled step trace shows how
-many parallel channels are present at each slice, the green line/band shows
-mean and min/max tube width, and vertical markers indicate junction regions.
+many skeleton channels are present at each slice, the red dashed trace shows
+how many remain visibly separate after passage widths are applied, the green
+line/band shows mean and min/max tube width, and vertical markers indicate
+junction regions. The same data, per-kind length/persistence statistics, and
+the network summary are written to `stage_b_network_report.json`.
 
 ### Stage C: Section Field
 
@@ -227,7 +240,7 @@ configs for the generators.
 Execution flow:
 
 1. load `config/project.toml`
-2. resolve the celestial body, rock material, named stage seeds, run mode, and export target
+2. resolve the celestial body, independent flow regime, rock material, named stage seeds, run mode, and export target
 3. build `HostFieldConfig`, `CaveNetworkConfig`, `SectionFieldConfig`, `GeologicalEventConfig`, and `GeometryConfig`
 4. generate host, network, and section stages
 5. stamp the base cave density
@@ -246,6 +259,7 @@ events cannot perturb the network.
 | Section | Purpose |
 |---|---|
 | `[world]` | Select `earth`, `mars`, or `moon`, plus a rock-material preset and optional physical overrides |
+| `[flow_regime]` | Control supply, duration, inflation, distributary tendency, and cooling independently of the selected body |
 | `[run]` | Select preview/standard/production quality and development extent caps |
 | `[export]` | Select Blender (default), neutral, UE5, Unity, Gazebo, or Omniverse output intent |
 
@@ -254,6 +268,23 @@ passage and room caps, route-length guidance, and production resolution
 guidance. Earth defaults to 10 m passages and 20 m rooms; Moon defaults to
 100 m passages and 200 m rooms. Explicit TOML values can override a preset.
 All internal geometry remains right-handed, Z-up, and metre-based.
+
+The body says where the tube forms; the flow regime describes the eruption
+that formed it. This separation avoids equating low gravity with one fixed
+network shape:
+
+```toml
+[flow_regime]
+supply_rate_scale = 1.0
+duration_scale = 1.0
+inflation = 0.50
+distributary_tendency = 0.65
+cooling_rate_scale = 1.0
+```
+
+Higher sustained supply relative to cooling expands host correlation lengths.
+Longer duration increases the route target, inflation increases junction-room
+widening, and distributary tendency controls lateral-branch abundance.
 
 Development mode shortens the host extent and braid count but does not shrink
 the selected body's passages:
@@ -296,8 +327,9 @@ or hand-authored scenarios, but the default project config is range-driven.
 |---|---|
 | `source_*`, `sink_margin`, `trace_max_steps` | control network source/sink setup and trace extent |
 | `growth_cost_weight`, `corridor_weight` | bias path selection using the explicit host routing cost and broad corridor prior |
-| `occupancy_smoothing_passes` | clean occupancy artifacts |
-| `chamber_*`, `base_passage_radius` | control chamber detection and occupancy painting |
+| `occupancy_smoothing_passes` | clean occupancy artifacts while retaining the graph skeleton |
+| `minimum_branch_offset_widths` | keep parallel centrelines visibly separate after their physical widths are applied |
+| `chamber_*`, `base_passage_radius`, `paint_flux_chambers` | control explicit junction rooms and optionally enable legacy flux-blob painting |
 | `spur_*`, `channel_count_samples` | control terminal spur generation and braid sampling |
 | `[network.braid_grammar]` | `[min, max]` ranges and probabilities for sampled braid zones, branch counts, offsets, ladders, and underpasses |
 
@@ -440,6 +472,7 @@ That one command produces:
 - `outputs/stage_c_floor_map.npz`
 - `outputs/stage_c_floor_map.json`
 - `outputs/stage_a_host_influence.json`
+- `outputs/stage_b_network_report.json`
 - `outputs/stage_d_geometry.png`
 - `outputs/stage_d_geometry_chunks.png`
 - `outputs/stage_d_geometry_presentation.png`

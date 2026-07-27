@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 import heapq
+import json
 import math
+from pathlib import Path
 
 import numpy as np
 
@@ -40,6 +42,8 @@ class CaveNetworkConfig:
 
     random_seed: int | None = None
     braid_grammar: BraidGrammarConfig = BraidGrammarConfig()
+    body_spatial_scale: float = 1.0
+    target_route_length_m: float = 5_000.0
     source_count: int = 8
     source_band_length: float = 90.0
     source_band_half_width: float = 180.0
@@ -53,6 +57,9 @@ class CaveNetworkConfig:
     minimum_passage_radius: float = 3.2
     maximum_passage_radius: float = 6.0
     chamber_radius: float = 46.0
+    chamber_radius_fraction: float = 0.70
+    minimum_branch_offset_widths: float = 1.25
+    paint_flux_chambers: bool = False
     occupancy_smoothing_passes: int = 1
     spur_count: int = 5
     spur_max_steps: int = 24
@@ -142,6 +149,7 @@ class CaveNetwork:
     dominant_route_node_ids: tuple[int, ...]
     slice_along_positions: tuple[float, ...]
     slice_channel_counts: tuple[int, ...]
+    slice_visible_channel_counts: tuple[int, ...]
 
     def summary(self) -> dict[str, float]:
         """Return scalar summaries for quick inspection."""
@@ -159,6 +167,17 @@ class CaveNetwork:
         loop_count = float(self._loop_rank())
         terminal_count = float(sum(1 for degree in self._degrees().values() if degree == 1))
         spur_count = float(sum(1 for segment in self.segments if segment.kind == "spur"))
+        primary_branch_kinds = {
+            "chamber_braid",
+            "inner_bypass",
+            "island_bypass",
+            "underpass",
+        }
+        branch_persistence = [
+            segment.total_length / max(segment.mean_width, 1e-6)
+            for segment in self.segments
+            if segment.kind in primary_branch_kinds and segment.points
+        ]
 
         return {
             "node_count": float(len(self.nodes)),
@@ -175,6 +194,20 @@ class CaveNetwork:
             "max_segment_width": max_segment_width,
             "max_parallel_channels": float(
                 max(self.slice_channel_counts) if self.slice_channel_counts else 0
+            ),
+            "max_visible_parallel_channels": float(
+                max(self.slice_visible_channel_counts)
+                if self.slice_visible_channel_counts
+                else 0
+            ),
+            "primary_branch_count": float(len(branch_persistence)),
+            "mean_branch_persistence_widths": float(
+                np.mean(branch_persistence) if branch_persistence else 0.0
+            ),
+            "short_branch_fraction": float(
+                np.mean(np.asarray(branch_persistence) < 3.0)
+                if branch_persistence
+                else 0.0
             ),
         }
 
@@ -222,6 +255,62 @@ class CaveNetwork:
                     stack.append(neighbor)
 
         return max(0, len(self.segments) - len(self.nodes) + components)
+
+
+def export_network_report(
+    cave_network: CaveNetwork,
+    output_path: str | Path,
+) -> Path:
+    """Write topology and visibility diagnostics for regression review."""
+
+    output = Path(output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    segments_by_kind: dict[str, list[CaveSegment]] = defaultdict(list)
+    for segment in cave_network.segments:
+        segments_by_kind[segment.kind].append(segment)
+
+    kind_summary: dict[str, dict[str, float]] = {}
+    for kind, segments in sorted(segments_by_kind.items()):
+        persistence = [
+            segment.total_length / max(segment.mean_width, 1e-6)
+            for segment in segments
+            if segment.points
+        ]
+        kind_summary[kind] = {
+            "count": float(len(segments)),
+            "total_length_m": float(sum(segment.total_length for segment in segments)),
+            "mean_persistence_widths": float(
+                np.mean(persistence) if persistence else 0.0
+            ),
+        }
+
+    report = {
+        "schema": "plume.cave-network-diagnostics.v1",
+        "summary": cave_network.summary(),
+        "body_spatial_scale": cave_network.config.body_spatial_scale,
+        "target_route_length_m": cave_network.config.target_route_length_m,
+        "minimum_branch_offset_widths": (
+            cave_network.config.minimum_branch_offset_widths
+        ),
+        "segment_kinds": kind_summary,
+        "visibility_profile": [
+            {
+                "along_position_m": along,
+                "skeleton_channels": skeleton,
+                "visible_channels": visible,
+            }
+            for along, skeleton, visible in zip(
+                cave_network.slice_along_positions,
+                cave_network.slice_channel_counts,
+                cave_network.slice_visible_channel_counts,
+            )
+        ],
+    }
+    output.write_text(
+        json.dumps(report, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    return output
 
 
 @dataclass(frozen=True)
@@ -310,6 +399,7 @@ class CaveNetworkGenerator:
                 dominant_route_node_ids=(),
                 slice_along_positions=(),
                 slice_channel_counts=(),
+                slice_visible_channel_counts=(),
             )
 
         selected_paths: list[_SelectedPath] = [
@@ -381,13 +471,23 @@ class CaveNetworkGenerator:
         for segment in segments:
             self._rasterize_segment(host_field, occupancy, width_field, segment)
         self._paint_structural_chambers(host_field, occupancy, width_field, nodes, segments)
-        self._paint_chambers(host_field, occupancy, width_field, total_flux)
+        if self.config.paint_flux_chambers:
+            self._paint_chambers(host_field, occupancy, width_field, total_flux)
         occupancy = self._smooth_occupancy(occupancy)
+        # Never let coarse host-grid morphology filtering erase a valid
+        # centerline. Geometry is generated from metric section profiles, but
+        # Stage-B occupancy must still remain a faithful topology diagnostic.
+        occupancy |= skeleton_mask
 
         slice_along_positions, slice_channel_counts = self._measure_parallel_channels(
             host_field=host_field,
             geometry=geometry,
             mask=skeleton_mask,
+        )
+        _, slice_visible_channel_counts = self._measure_parallel_channels(
+            host_field=host_field,
+            geometry=geometry,
+            mask=occupancy,
         )
 
         return CaveNetwork(
@@ -400,6 +500,7 @@ class CaveNetworkGenerator:
             dominant_route_node_ids=dominant_route_node_ids,
             slice_along_positions=slice_along_positions,
             slice_channel_counts=slice_channel_counts,
+            slice_visible_channel_counts=slice_visible_channel_counts,
         )
 
     def _build_flow_geometry(self, host_field: HostField) -> _FlowGeometry:
@@ -713,10 +814,17 @@ class CaveNetworkGenerator:
                     z_level = -1 if rng.random() < 0.5 else 1
                     merge_shared_cells = False
                 lateral_scale = self._sample_float_range(rng, grammar.lateral_offset_scale)
+                sampled_offset = lateral_scale * spread
+                minimum_offset = max(
+                    self.config.minimum_branch_offset_widths
+                    * 2.0
+                    * self.config.base_passage_radius,
+                    0.19 * host_field.config.corridor_width,
+                )
                 branches.append(
                     _ZoneBranch(
                         kind=kind,
-                        lateral_offset=sign * lateral_scale * spread,
+                        lateral_offset=sign * max(sampled_offset, minimum_offset),
                         start_shift_fraction=self._sample_float_range(rng, grammar.start_shift_fraction),
                         end_shift_fraction=self._sample_float_range(rng, grammar.end_shift_fraction),
                         skew=self._sample_float_range(rng, grammar.skew),
@@ -1601,6 +1709,9 @@ class CaveNetworkGenerator:
         nodes: list[CaveNode],
         segments: list[CaveSegment],
     ) -> None:
+        representative_radius = (
+            self.config.chamber_radius * self.config.chamber_radius_fraction
+        )
         for node in nodes:
             if node.kind != "chamber":
                 continue
@@ -1610,13 +1721,15 @@ class CaveNetworkGenerator:
                 width_field=width_field,
                 x_coord=node.x,
                 y_coord=node.y,
-                radius=1.18 * self.config.chamber_radius,
+                radius=representative_radius,
             )
         for segment in segments:
             if segment.kind not in {"chamber_braid", "ladder"} or len(segment.points) < 3:
                 continue
             midpoint = segment.points[len(segment.points) // 2]
-            radius = self.config.chamber_radius * (1.25 if segment.kind == "chamber_braid" else 0.78)
+            radius = representative_radius * (
+                0.90 if segment.kind == "chamber_braid" else 0.62
+            )
             self._paint_disk(
                 host_field=host_field,
                 occupancy=occupancy,

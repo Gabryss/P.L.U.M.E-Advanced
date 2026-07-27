@@ -245,6 +245,11 @@ class GeologicalEventGenerator:
                 if kind in {"rock", "boulder"} and floor_atlas is not None
                 else None
             )
+            if prop_candidates is not None:
+                prop_candidates = self._filter_structural_conflicts(
+                    prop_candidates,
+                    events,
+                )
             candidates = (
                 self._rank_candidates(kind, samples)
                 if prop_candidates is None
@@ -496,6 +501,41 @@ class GeologicalEventGenerator:
                 clustered.append((score * (1.0 + 4.0 * affinity), sample, cell))
         clustered.sort(key=lambda item: item[0], reverse=True)
         return clustered
+
+    @staticmethod
+    def _filter_structural_conflicts(
+        candidates: list[tuple[float, SectionSample, FloorCell]],
+        events: list[GeologicalEvent],
+    ) -> list[tuple[float, SectionSample, FloorCell]]:
+        """Keep props out of the volume that a structural event can replace."""
+
+        structural_events = [
+            event
+            for event in events
+            if event.kind in {"collapse", "choke", "infill"}
+        ]
+        if not structural_events:
+            return candidates
+
+        filtered: list[tuple[float, SectionSample, FloorCell]] = []
+        for candidate in candidates:
+            cell = candidate[2]
+            position = np.asarray(cell.position, dtype=float)
+            conflicts = any(
+                float(
+                    np.linalg.norm(
+                        position - np.asarray(event.position, dtype=float)
+                    )
+                )
+                < (
+                    event.max_radius
+                    * (1.50 if event.kind == "collapse" else 1.25)
+                )
+                for event in structural_events
+            )
+            if not conflicts:
+                filtered.append(candidate)
+        return filtered
 
     def _nearest_collapse_event_id(
         self,

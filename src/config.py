@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, replace
 import json
+import math
 from pathlib import Path
 import tomllib
 from typing import Any
@@ -18,11 +19,13 @@ from stages.network import BraidGrammarConfig, CaveNetworkConfig
 from stages.section_field import SectionFieldConfig
 from world import (
     ExportConfig,
+    FlowRegimeConfig,
     RunConfig,
     SUPPORTED_EVENT_KINDS,
     StageSeeds,
     WorldConfig,
     build_export_config,
+    build_flow_regime_config,
     build_run_config,
     derive_stage_seeds,
     resolve_world_config,
@@ -39,6 +42,7 @@ class ProjectConfig:
     procedural_seed: int | None
     stage_seeds: StageSeeds
     world: WorldConfig
+    flow_regime: FlowRegimeConfig
     run: RunConfig
     export: ExportConfig
     host_field: HostFieldConfig
@@ -80,6 +84,7 @@ def load_project_config(
         procedural_seed = int(procedural_seed)
     stage_seeds = derive_stage_seeds(procedural_seed)
     world = resolve_world_config(raw_config.get("world"))
+    flow_regime = build_flow_regime_config(raw_config.get("flow_regime"))
     run = build_run_config(raw_config.get("run"))
     export = build_export_config(raw_config.get("export"))
 
@@ -87,18 +92,25 @@ def load_project_config(
         raw_config.get("host_field", {}),
         procedural_seed=stage_seeds.host,
         world=world,
+        flow_regime=flow_regime,
     )
     network = _build_network_config(
         raw_config.get("network", {}),
         procedural_seed=stage_seeds.network,
         world=world,
+        flow_regime=flow_regime,
     )
     section_field = _build_section_field_config(
         raw_config.get("section_field", {}),
         procedural_seed=stage_seeds.sections,
         world=world,
+        flow_regime=flow_regime,
     )
-    floor_map = FloorMapConfig(**raw_config.get("floor_map", {}))
+    floor_map = _build_floor_map_config(
+        raw_config.get("floor_map", {}),
+        world=world,
+        flow_regime=flow_regime,
+    )
     events = _build_event_config(
         raw_config.get("events", {}),
         procedural_seed=stage_seeds.events,
@@ -125,6 +137,7 @@ def load_project_config(
         procedural_seed=procedural_seed,
         stage_seeds=stage_seeds,
         world=world,
+        flow_regime=flow_regime,
         run=run,
         export=export,
         host_field=host_field,
@@ -172,8 +185,10 @@ def _build_host_field_config(
     *,
     procedural_seed: int | None,
     world: WorldConfig,
+    flow_regime: FlowRegimeConfig,
 ) -> HostFieldConfig:
     config_data = dict(raw_config)
+    apply_body_scaling = bool(config_data.pop("apply_body_scaling", True))
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
     config_data.setdefault("gravity_m_s2", world.body.gravity_m_s2)
@@ -218,6 +233,21 @@ def _build_host_field_config(
         waves = tuple(TerrainWave(**wave) for wave in wave_data)
     elif wave_range_data is not None:
         waves = _sample_terrain_waves(rng, wave_range_data)
+
+    (
+        grid,
+        seed_point,
+        waves,
+        config_data,
+    ) = _apply_body_host_scaling(
+        grid=grid,
+        seed_point=seed_point,
+        waves=waves,
+        config_data=config_data,
+        world=world,
+        flow_regime=flow_regime,
+        enabled=apply_body_scaling,
+    )
 
     if waves is None:
         return HostFieldConfig(
@@ -289,30 +319,221 @@ def _sample_integer_range(
     return int(value_or_range)
 
 
+def _resolved_horizontal_scale(
+    world: WorldConfig,
+    flow_regime: FlowRegimeConfig,
+) -> float:
+    supply_cooling_ratio = (
+        flow_regime.supply_rate_scale / flow_regime.cooling_rate_scale
+    )
+    flow_scale = math.sqrt(float(np.clip(supply_cooling_ratio, 0.25, 4.0)))
+    return world.body.host_horizontal_scale * flow_scale
+
+
+def _resolved_vertical_scale(
+    world: WorldConfig,
+    flow_regime: FlowRegimeConfig,
+) -> float:
+    inflation_scale = 0.80 + 0.40 * flow_regime.inflation
+    return world.body.host_vertical_scale * inflation_scale
+
+
+def _resolved_route_length(
+    world: WorldConfig,
+    flow_regime: FlowRegimeConfig,
+) -> float:
+    transport_scale = math.sqrt(
+        flow_regime.supply_rate_scale / flow_regime.cooling_rate_scale
+    )
+    return (
+        world.body.default_route_length_m
+        * flow_regime.duration_scale
+        * float(np.clip(transport_scale, 0.5, 2.0))
+    )
+
+
+def _apply_body_host_scaling(
+    *,
+    grid: GridConfig,
+    seed_point: tuple[float, float],
+    waves: tuple[TerrainWave, ...] | None,
+    config_data: dict[str, Any],
+    world: WorldConfig,
+    flow_regime: FlowRegimeConfig,
+    enabled: bool,
+) -> tuple[
+    GridConfig,
+    tuple[float, float],
+    tuple[TerrainWave, ...] | None,
+    dict[str, Any],
+]:
+    """Scale the host's physical correlation lengths while preserving resolution."""
+
+    if not enabled:
+        config_data.setdefault("body_spatial_scale", 1.0)
+        config_data.setdefault("body_vertical_scale", 1.0)
+        config_data.setdefault("body_fracture_scale", 1.0)
+        config_data.setdefault("target_route_length_m", grid.height)
+        return grid, seed_point, waves, config_data
+
+    horizontal_scale = _resolved_horizontal_scale(world, flow_regime)
+    vertical_scale = _resolved_vertical_scale(world, flow_regime)
+    fracture_scale = (
+        world.body.host_fracture_scale
+        * math.sqrt(flow_regime.cooling_rate_scale)
+    )
+    target_route_length = _resolved_route_length(world, flow_regime)
+
+    base_width = grid.width
+    base_height = grid.height
+    spacing_x = max(grid.spacing_x, 1e-6)
+    spacing_y = max(grid.spacing_y, 1e-6)
+    scaled_width = base_width * horizontal_scale
+    scaled_height = max(base_height, 1.10 * target_route_length)
+    grid = replace(
+        grid,
+        width=scaled_width,
+        height=scaled_height,
+        nx=max(32, int(round(scaled_width / spacing_x)) + 1),
+        ny=max(32, int(round(scaled_height / spacing_y)) + 1),
+    )
+    seed_point = (
+        float(seed_point[0]) * horizontal_scale,
+        float(seed_point[1]) * scaled_height / max(base_height, 1e-6),
+    )
+
+    for key in ("corridor_width",):
+        config_data[key] = (
+            float(config_data.get(key, getattr(HostFieldConfig, key)))
+            * horizontal_scale
+        )
+    for key in ("fracture_zone_center_offset", "fracture_zone_width"):
+        config_data[key] = (
+            float(config_data.get(key, getattr(HostFieldConfig, key)))
+            * fracture_scale
+        )
+    for key in (
+        "longitudinal_drop",
+        "corridor_depth",
+        "volcanic_layer_thickness",
+        "minimum_stable_cover",
+    ):
+        config_data[key] = (
+            float(config_data.get(key, getattr(HostFieldConfig, key)))
+            * vertical_scale
+        )
+
+    source_waves = waves if waves is not None else HostFieldConfig().waves
+    waves = tuple(
+        replace(
+            wave,
+            amplitude=wave.amplitude * vertical_scale,
+            wavelength=wave.wavelength * horizontal_scale,
+        )
+        for wave in source_waves
+    )
+    config_data.setdefault("body_spatial_scale", horizontal_scale)
+    config_data.setdefault("body_vertical_scale", vertical_scale)
+    config_data.setdefault("body_fracture_scale", fracture_scale)
+    config_data.setdefault("target_route_length_m", target_route_length)
+    return grid, seed_point, waves, config_data
+
+
 def _build_network_config(
     raw_config: dict[str, Any],
     *,
     procedural_seed: int | None,
     world: WorldConfig,
+    flow_regime: FlowRegimeConfig,
 ) -> CaveNetworkConfig:
     config_data = dict(raw_config)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
     maximum_width = world.body.maximum_passage_width_m
+    spatial_scale = _resolved_horizontal_scale(world, flow_regime)
+    target_route_length = _resolved_route_length(world, flow_regime)
+    config_data.setdefault("body_spatial_scale", spatial_scale)
+    config_data.setdefault("target_route_length_m", target_route_length)
     config_data.setdefault("base_passage_radius", 0.38 * maximum_width)
     config_data.setdefault("minimum_passage_radius", 0.22 * maximum_width)
     config_data.setdefault("maximum_passage_radius", 0.50 * maximum_width)
     config_data.setdefault("chamber_radius", 0.50 * world.body.maximum_room_width_m)
-    braid_grammar_data = config_data.pop("braid_grammar", {})
-    if braid_grammar_data:
-        config_data["braid_grammar"] = BraidGrammarConfig(
-            **{
-                key: _to_range_tuple(value)
-                if isinstance(value, list)
-                else value
-                for key, value in braid_grammar_data.items()
-            }
+    config_data.setdefault(
+        "chamber_radius_fraction",
+        0.45 + 0.45 * flow_regime.inflation,
+    )
+    config_data.setdefault("minimum_branch_offset_widths", 1.25)
+    config_data.setdefault("paint_flux_chambers", False)
+    for key in ("source_band_length", "source_band_half_width", "sink_margin"):
+        config_data[key] = (
+            float(config_data.get(key, getattr(CaveNetworkConfig, key)))
+            * spatial_scale
         )
+    config_data["max_uphill_step"] = (
+        float(
+            config_data.get(
+                "max_uphill_step",
+                CaveNetworkConfig.max_uphill_step,
+            )
+        )
+        * _resolved_vertical_scale(world, flow_regime)
+    )
+    config_data["spur_max_steps"] = max(
+        1,
+        int(
+            round(
+                float(
+                    config_data.get(
+                        "spur_max_steps",
+                        CaveNetworkConfig.spur_max_steps,
+                    )
+                )
+                * spatial_scale
+            )
+        ),
+    )
+    distributary_scale = 0.70 + flow_regime.distributary_tendency
+    config_data["spur_count"] = max(
+        0,
+        int(
+            round(
+                float(config_data.get("spur_count", CaveNetworkConfig.spur_count))
+                * distributary_scale
+            )
+        ),
+    )
+    braid_grammar_data = dict(config_data.pop("braid_grammar", {}))
+    branch_length_scale = math.sqrt(spatial_scale)
+    branch_length_range = _to_range_tuple(
+        braid_grammar_data.get(
+            "half_length_fraction",
+            list(BraidGrammarConfig.half_length_fraction),
+        )
+    )
+    braid_grammar_data["half_length_fraction"] = [
+        float(np.clip(value * branch_length_scale, 0.02, 0.24))
+        for value in branch_length_range
+    ]
+    branch_abundance_scale = 0.75 + 0.50 * flow_regime.distributary_tendency
+    for key, default_range, minimum in (
+        ("zone_count", BraidGrammarConfig.zone_count, 0),
+        ("branches_per_zone", BraidGrammarConfig.branches_per_zone, 2),
+    ):
+        value_range = _to_range_tuple(
+            braid_grammar_data.get(key, list(default_range))
+        )
+        braid_grammar_data[key] = [
+            max(minimum, int(round(value * branch_abundance_scale)))
+            for value in value_range
+        ]
+    config_data["braid_grammar"] = BraidGrammarConfig(
+        **{
+            key: _to_range_tuple(value)
+            if isinstance(value, list)
+            else value
+            for key, value in braid_grammar_data.items()
+        }
+    )
     return CaveNetworkConfig(**config_data)
 
 
@@ -327,6 +548,7 @@ def _build_section_field_config(
     *,
     procedural_seed: int | None,
     world: WorldConfig,
+    flow_regime: FlowRegimeConfig,
 ) -> SectionFieldConfig:
     config_data = dict(raw_config)
     if "random_seed" not in config_data:
@@ -339,7 +561,52 @@ def _build_section_field_config(
         "chamber_max_tube_width",
         world.body.maximum_room_width_m,
     )
+    spatial_scale = _resolved_horizontal_scale(world, flow_regime)
+    vertical_scale = _resolved_vertical_scale(world, flow_regime)
+    for key in (
+        "minimum_sample_spacing",
+        "maximum_sample_spacing",
+        "centerline_wobble_amplitude",
+        "centerline_wobble_wavelength",
+    ):
+        config_data[key] = (
+            float(config_data.get(key, getattr(SectionFieldConfig, key)))
+            * spatial_scale
+        )
+    for key in ("minimum_roof_thickness", "maximum_centerline_depth"):
+        config_data[key] = (
+            float(config_data.get(key, getattr(SectionFieldConfig, key)))
+            * vertical_scale
+        )
+    config_data["chamber_widen_gain"] = float(
+        config_data.get(
+            "chamber_widen_gain",
+            SectionFieldConfig.chamber_widen_gain,
+        )
+    ) * (0.70 + 0.60 * flow_regime.inflation)
     return SectionFieldConfig(**config_data)
+
+
+def _build_floor_map_config(
+    raw_config: dict[str, Any],
+    *,
+    world: WorldConfig,
+    flow_regime: FlowRegimeConfig,
+) -> FloorMapConfig:
+    config_data = dict(raw_config)
+    spatial_scale = _resolved_horizontal_scale(world, flow_regime)
+    for key in ("lateral_spacing_m", "plan_resolution_m"):
+        config_data[key] = (
+            float(config_data.get(key, getattr(FloorMapConfig, key)))
+            * spatial_scale
+        )
+    config_data["minimum_clearance_m"] = float(
+        config_data.get(
+            "minimum_clearance_m",
+            FloorMapConfig.minimum_clearance_m,
+        )
+    ) * _resolved_vertical_scale(world, flow_regime)
+    return FloorMapConfig(**config_data)
 
 
 def _build_geometry_config(
@@ -409,12 +676,16 @@ def _apply_dev_mode(
 ) -> tuple[HostFieldConfig, CaveNetworkConfig]:
     """Crop generation extent while retaining body-scale passage dimensions."""
 
-    target_height = min(host_field.grid.height, run.dev_max_route_length_m)
+    representative_extent_scale = math.sqrt(
+        max(host_field.target_route_length_m, 1.0) / 5_000.0
+    )
+    target_height = min(
+        host_field.grid.height,
+        run.dev_max_route_length_m * representative_extent_scale,
+    )
     if target_height >= host_field.grid.height:
         target_grid = host_field.grid
-        scale = 1.0
     else:
-        scale = target_height / host_field.grid.height
         target_ny = max(
             32,
             int(round(target_height / max(host_field.grid.spacing_y, 1e-6))) + 1,
@@ -438,7 +709,9 @@ def _apply_dev_mode(
 
     grammar = network.braid_grammar
     zone_min, zone_max = grammar.zone_count
-    zone_cap = run.dev_max_braid_zones
+    zone_cap = int(
+        round(run.dev_max_braid_zones * representative_extent_scale)
+    )
     if zone_cap == 0:
         zone_count = (0, 0)
     else:
@@ -447,9 +720,12 @@ def _apply_dev_mode(
     network = replace(
         network,
         braid_grammar=grammar,
-        trace_max_steps=max(48, int(round(network.trace_max_steps * scale))),
-        spur_count=min(network.spur_count, max(1, run.dev_max_braid_zones)),
-        channel_count_samples=max(8, int(round(network.channel_count_samples * max(scale, 0.35)))),
+        trace_max_steps=max(48, target_grid.ny),
+        spur_count=min(network.spur_count, max(1, zone_cap)),
+        channel_count_samples=max(
+            8,
+            int(round(network.channel_count_samples * representative_extent_scale)),
+        ),
     )
     return host_field, network
 
@@ -467,6 +743,13 @@ def _validate_pipeline_configs(
         raise ValueError("host_field.grid width and height must be positive")
     if host_field.grid.nx < 2 or host_field.grid.ny < 2:
         raise ValueError("host_field.grid nx and ny must be at least 2")
+    if min(
+        host_field.body_spatial_scale,
+        host_field.body_vertical_scale,
+        host_field.body_fracture_scale,
+        host_field.target_route_length_m,
+    ) <= 0.0:
+        raise ValueError("host_field body scales and target route must be positive")
 
     radii = (
         network.minimum_passage_radius,
@@ -480,6 +763,10 @@ def _validate_pipeline_configs(
             "network radii must satisfy minimum_passage_radius <= "
             "base_passage_radius <= maximum_passage_radius"
         )
+    if network.minimum_branch_offset_widths <= 0.0:
+        raise ValueError("network.minimum_branch_offset_widths must be positive")
+    if not 0.0 < network.chamber_radius_fraction <= 1.0:
+        raise ValueError("network.chamber_radius_fraction must be in (0, 1]")
     if section_field.maximum_tube_width <= 0.0:
         raise ValueError("section_field.maximum_tube_width must be positive")
     if section_field.chamber_max_tube_width < section_field.maximum_tube_width:

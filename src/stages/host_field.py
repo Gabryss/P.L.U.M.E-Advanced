@@ -68,6 +68,10 @@ class HostFieldConfig:
 
     grid: GridConfig = field(default_factory=GridConfig)
     random_seed: int | None = None
+    body_spatial_scale: float = 1.0
+    body_vertical_scale: float = 1.0
+    body_fracture_scale: float = 1.0
+    target_route_length_m: float = 5_000.0
     seed_point: tuple[float, float] = (-1200.0, 0.0)
     high_side_elevation: float = 182.0
     longitudinal_drop: float = 84.0

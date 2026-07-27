@@ -35,7 +35,7 @@ from stages.events import GeologicalEventGenerator
 from stages.floor_map import FloorMapGenerator, export_floor_atlas
 from stages.geometry import GeometryGenerator
 from stages.host_field import HostFieldGenerator, export_host_influence_report
-from stages.network import CaveNetworkGenerator
+from stages.network import CaveNetworkGenerator, export_network_report
 from stages.section_field import SectionFieldGenerator
 from visualization.geometry import GeometryPlotter
 from visualization.events import GeologicalEventPlotter
@@ -297,6 +297,10 @@ def main(argv: list[str] | None = None) -> int:
     progress.start("Stage B - Cave Network", "tracing cave skeleton")
     cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
     network_summary = cave_network.summary()
+    network_report_path = export_network_report(
+        cave_network,
+        args.output.with_name("stage_b_network_report.json"),
+    )
     progress.update(
         1,
         2,
@@ -488,6 +492,7 @@ def main(argv: list[str] | None = None) -> int:
     progress.log(f"Configuration: {args.config}")
     progress.log(f"Resolved configuration: {resolved_config_path}")
     progress.log(f"Host routing influence: {host_influence_path}")
+    progress.log(f"Network diagnostics: {network_report_path}")
     progress.log(
         "World: "
         f"{project_config.world.body.name} "
