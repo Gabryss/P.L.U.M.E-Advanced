@@ -17,7 +17,7 @@ dev_max_braid_zones = 2
 render_diagnostics = true
 
 [export]
-target = "neutral"
+target = "blender"
 format = "glb"
 quality = "preview"
 generate_visual = true

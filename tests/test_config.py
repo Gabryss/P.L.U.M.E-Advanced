@@ -23,6 +23,8 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(config.section_field.maximum_tube_width, 10.0)
         self.assertEqual(config.section_field.chamber_max_tube_width, 20.0)
         self.assertEqual(config.network.maximum_passage_radius, 5.0)
+        self.assertEqual(config.export.target, "blender")
+        self.assertEqual(config.export.file_format, "glb")
         self.assertLessEqual(
             config.host_field.grid.height,
             config.run.dev_max_route_length_m,

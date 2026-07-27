@@ -104,7 +104,7 @@ class RunConfig:
 class ExportConfig:
     """Target selection and target-independent export requirements."""
 
-    target: str = "neutral"
+    target: str = "blender"
     file_format: str = "glb"
     quality: str = "standard"
     generate_visual: bool = True

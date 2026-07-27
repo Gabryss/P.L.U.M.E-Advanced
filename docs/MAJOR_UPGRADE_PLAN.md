@@ -209,10 +209,12 @@ Exit criteria:
 
 ## Phase 6 — target packages
 
-The generator stays Blender-independent.
+The generator stays Blender-independent at runtime. Blender is the first
+supported and default interactive target.
 
-- **Blender:** USD/GLB output importable directly into Blender; an optional
-  convenience import script may be generated but is never required.
+- **Blender:** validated GLB output plus an OBJ fallback, package-local import
+  instructions, and a convenience script that tries GLB then OBJ. Blender is
+  not invoked during generation.
 - **UE5:** FBX or GLB Interchange package, centimetre conversion, Nanite-ready
   visual mesh or streaming chunks, UV1 option, collision naming, and import
   metadata/script.

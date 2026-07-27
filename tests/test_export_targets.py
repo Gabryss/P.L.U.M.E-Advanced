@@ -17,6 +17,37 @@ from world import ExportConfig
 
 
 class TargetExporterTests(unittest.TestCase):
+    def test_blender_package_has_valid_glb_fallback_and_import_guidance(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result = export_target_asset(
+                self._geometry(),
+                ExportConfig(target="blender", file_format="glb"),
+                temp_dir,
+                asset_name="tube",
+            )
+
+            output = Path(temp_dir)
+            self.assertEqual(result.primary_asset, output / "tube.glb")
+            self.assertTrue((output / "tube_fallback.obj").is_file())
+            self.assertTrue((output / "tube_import_blender.py").is_file())
+            instructions = (output / "README_IMPORT_BLENDER.txt").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("Do not use File > Open", instructions)
+            self.assertIn("File > Import > glTF 2.0", instructions)
+            validation = json.loads(
+                (output / "tube.blender_validation.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertTrue(validation["valid"])
+            self.assertGreater(validation["geometry_count"], 0)
+            descriptor = json.loads(
+                (output / "tube.blender.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(descriptor["target"], "blender")
+            self.assertIn("not File > Open", descriptor["target_conventions"]["note"])
+
     def test_ue5_package_uses_standard_glb_and_centimetre_import_contract(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             result = export_target_asset(

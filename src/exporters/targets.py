@@ -44,7 +44,21 @@ def export_target_asset(
     safe_name = _safe_asset_name(asset_name)
     target = export_config.target
 
-    if target in {"neutral", "blender", "ue5", "unity"}:
+    if target == "blender":
+        result = _export_blender(
+            cave_geometry,
+            export_config,
+            output,
+            safe_name,
+        )
+        descriptor = _write_target_descriptor(result, export_config, output, safe_name)
+        return ExportResult(
+            target=target,
+            primary_asset=result.primary_asset,
+            files=result.files + (descriptor,),
+            warnings=result.warnings,
+        )
+    if target in {"neutral", "ue5", "unity"}:
         result = _export_glb_or_obj(
             cave_geometry,
             export_config,
@@ -63,6 +77,194 @@ def export_target_asset(
     if target == "omniverse":
         return _export_omniverse(cave_geometry, export_config, output, safe_name)
     raise ValueError(f"Unsupported export target {target!r}")
+
+
+def _export_blender(
+    cave_geometry: CaveGeometry,
+    export_config: ExportConfig,
+    output: Path,
+    asset_name: str,
+) -> ExportResult:
+    """Write a Blender-oriented package without invoking Blender."""
+
+    result = _export_glb_or_obj(
+        cave_geometry,
+        export_config,
+        output,
+        asset_name,
+    )
+    files = list(result.files)
+    fallback_obj: Path | None = None
+    if export_config.file_format == "glb":
+        fallback_obj = export_geometry_obj(
+            cave_geometry,
+            output / f"{asset_name}_fallback.obj",
+        )
+        files.append(fallback_obj)
+        fallback_mtl = fallback_obj.with_suffix(".mtl")
+        if fallback_mtl.exists():
+            files.append(fallback_mtl)
+
+    import_script = _write_blender_import_script(
+        output=output,
+        asset_name=asset_name,
+        primary_asset=result.primary_asset,
+        fallback_obj=fallback_obj,
+    )
+    instructions = _write_blender_import_instructions(
+        output=output,
+        primary_asset=result.primary_asset,
+        fallback_obj=fallback_obj,
+        import_script=import_script,
+    )
+    validation = _write_blender_validation_report(
+        result.primary_asset,
+        output / f"{asset_name}.blender_validation.json",
+    )
+    files.extend((import_script, instructions, validation))
+    return ExportResult(
+        target="blender",
+        primary_asset=result.primary_asset,
+        files=tuple(files),
+        warnings=result.warnings,
+    )
+
+
+def _write_blender_import_script(
+    *,
+    output: Path,
+    asset_name: str,
+    primary_asset: Path,
+    fallback_obj: Path | None,
+) -> Path:
+    script = output / f"{asset_name}_import_blender.py"
+    fallback_name = (
+        fallback_obj.name
+        if fallback_obj is not None
+        else primary_asset.name
+        if primary_asset.suffix.lower() == ".obj"
+        else ""
+    )
+    script.write_text(
+        f'''"""Import the generated PLUME cave into Blender.
+
+Open this file in Blender's Scripting workspace and choose Run Script.
+"""
+
+from pathlib import Path
+import bpy
+
+PACKAGE_DIR = Path(__file__).resolve().parent
+PRIMARY_ASSET = PACKAGE_DIR / {primary_asset.name!r}
+FALLBACK_OBJ = PACKAGE_DIR / {fallback_name!r}
+
+
+def import_plume_cave() -> None:
+    if PRIMARY_ASSET.suffix.lower() == ".glb":
+        try:
+            bpy.ops.import_scene.gltf(filepath=str(PRIMARY_ASSET))
+            print(f"Imported PLUME cave from {{PRIMARY_ASSET}}")
+            return
+        except Exception as error:
+            print(f"glTF import failed: {{error}}")
+            if not FALLBACK_OBJ.name:
+                raise
+
+    if not FALLBACK_OBJ.is_file():
+        raise FileNotFoundError(f"No Blender fallback asset found: {{FALLBACK_OBJ}}")
+    if hasattr(bpy.ops.wm, "obj_import"):
+        bpy.ops.wm.obj_import(filepath=str(FALLBACK_OBJ))
+    else:
+        bpy.ops.import_scene.obj(filepath=str(FALLBACK_OBJ))
+    print(f"Imported PLUME OBJ fallback from {{FALLBACK_OBJ}}")
+
+
+if __name__ == "__main__":
+    import_plume_cave()
+''',
+        encoding="utf-8",
+    )
+    return script
+
+
+def _write_blender_import_instructions(
+    *,
+    output: Path,
+    primary_asset: Path,
+    fallback_obj: Path | None,
+    import_script: Path,
+) -> Path:
+    instructions = output / "README_IMPORT_BLENDER.txt"
+    fallback_line = (
+        f"Fallback: File > Import > Wavefront (.obj), then select {fallback_obj.name}."
+        if fallback_obj is not None
+        else "No OBJ fallback was requested for this package."
+    )
+    instructions.write_text(
+        "\n".join(
+            (
+                "PLUME-Advanced Blender import",
+                "==============================",
+                "",
+                "Do not use File > Open. Blender uses that command for .blend projects.",
+                "",
+                "Recommended:",
+                "1. In Blender choose File > Import > glTF 2.0 (.glb/.gltf).",
+                f"2. Select {primary_asset.name}.",
+                "",
+                fallback_line,
+                "",
+                "Automated alternative:",
+                "1. Open Blender's Scripting workspace.",
+                f"2. Open {import_script.name}.",
+                "3. Choose Run Script.",
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
+    return instructions
+
+
+def _write_blender_validation_report(asset: Path, output_path: Path) -> Path:
+    """Record independent parse results for the generated interchange asset."""
+
+    report: dict[str, object] = {
+        "schema": "plume.blender_validation.v1",
+        "asset": asset.name,
+        "valid": False,
+    }
+    try:
+        if asset.suffix.lower() == ".glb":
+            data = asset.read_bytes()
+            if len(data) < 20:
+                raise ValueError("GLB is shorter than its required header")
+            magic = data[:4]
+            version = int.from_bytes(data[4:8], "little")
+            declared_length = int.from_bytes(data[8:12], "little")
+            if magic != b"glTF" or version != 2 or declared_length != len(data):
+                raise ValueError("GLB header or declared byte length is invalid")
+        scene = trimesh.load(asset, force="scene", process=False)
+        bounds = np.asarray(scene.bounds, dtype=float)
+        if bounds.shape != (2, 3) or not np.isfinite(bounds).all():
+            raise ValueError("Imported scene has invalid bounds")
+        report.update(
+            {
+                "valid": True,
+                "parser": "trimesh",
+                "geometry_count": len(scene.geometry),
+                "scene_node_count": len(scene.graph.nodes_geometry),
+                "bounds": bounds.tolist(),
+            }
+        )
+    except Exception as error:
+        report["error"] = f"{type(error).__name__}: {error}"
+    output_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    if not report["valid"]:
+        raise ValueError(
+            f"Generated Blender asset failed validation; see {output_path}"
+        )
+    return output_path
 
 
 def _export_glb_or_obj(
@@ -112,6 +314,10 @@ def _write_target_descriptor(
             "application_length_unit": "metre",
             "application_units_per_asset_metre": 1.0,
             "recommended_import_uniform_scale": 1.0,
+            "note": (
+                "Use File > Import > glTF 2.0, not File > Open. "
+                "The package includes an OBJ fallback and Blender import script."
+            ),
         },
         "ue5": {
             "application_coordinates": "left-handed Z-up",

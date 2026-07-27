@@ -5,9 +5,9 @@
 The major architecture upgrade is active on
 `feature/major-procedural-upgrade`. Its implementation roadmap, acceptance
 criteria, and dependency policy are in
-[`docs/MAJOR_UPGRADE_PLAN.md`](docs/MAJOR_UPGRADE_PLAN.md). Blender is not a
-runtime dependency: generation and export use Python libraries and open
-interchange formats.
+[`docs/MAJOR_UPGRADE_PLAN.md`](docs/MAJOR_UPGRADE_PLAN.md). Blender is the
+default target, but is not a runtime dependency: generation and export use
+Python libraries and open interchange formats.
 
 The current implementation focuses on the full inspectable cave-shape pipeline:
 build a readable terrain substrate, derive a cave-network skeleton, generate a
@@ -235,7 +235,7 @@ events cannot perturb the network.
 |---|---|
 | `[world]` | Select `earth`, `mars`, or `moon`, plus a rock-material preset and optional physical overrides |
 | `[run]` | Select preview/standard/production quality and development extent caps |
-| `[export]` | Select neutral, Blender, UE5, Unity, Gazebo, or Omniverse output intent |
+| `[export]` | Select Blender (default), neutral, UE5, Unity, Gazebo, or Omniverse output intent |
 
 Body presets supply gravity, atmosphere/erosion context, default rock material,
 passage and room caps, route-length guidance, and production resolution
@@ -261,8 +261,8 @@ enabled = false
 enabled_kinds = []
 
 [export]
-target = "omniverse"
-format = "usd"
+target = "blender"
+format = "glb"
 ```
 
 ### Host Field Config
@@ -406,6 +406,28 @@ That one command produces:
 - `outputs/stage_d_geometry_presentation.png`
 - `outputs/resolved_project_config.json`
 - `outputs/export_<target>/...`
+
+### Import the default Blender package
+
+The default configuration writes a validated Blender package to
+`outputs/export_blender/`. Import the cave through Blender's import menu; do
+not use `File > Open`, which is for Blender project files:
+
+1. Choose `File > Import > glTF 2.0 (.glb/.gltf)`.
+2. Select `outputs/export_blender/stage_d_geometry.glb`.
+
+Every Blender GLB package also contains:
+
+- `stage_d_geometry_fallback.obj`, a geometry fallback imported through
+  `File > Import > Wavefront (.obj)`;
+- `stage_d_geometry_import_blender.py`, which tries GLB first and OBJ second
+  when run from Blender's Scripting workspace;
+- `README_IMPORT_BLENDER.txt`, containing the same package-local instructions;
+- `stage_d_geometry.blender_validation.json`, proving that the generated asset
+  passed an independent parse and finite-bounds check before export completed.
+
+The OBJ fallback prioritizes dependable geometry interchange. Use the GLB when
+you want the generated material and texture data.
 
 Optional:
 
