@@ -8,6 +8,11 @@ floor-map resolution. This makes differences in gravity, stability, passage
 scale, terrain, network growth, and geological events directly comparable
 without merely inflating one shared footprint.
 
+The gallery uses preview-quality body-aware geometry resolution: 1 m voxels
+for Earth, 2 m for Mars, and 4 m for the Moon. This keeps the narrowest
+generated sections sampled by approximately 8, 19, and 20 voxels respectively
+while avoiding one wasteful shared resolution.
+
 Refresh the complete gallery with:
 
 ```bash

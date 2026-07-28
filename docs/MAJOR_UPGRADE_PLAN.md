@@ -165,20 +165,21 @@ consumption, area-aware debris sampling, and multi-level geological rasters.
 
 ## Phase 4 — physical network
 
-Status: body-aware topology foundation complete. Production route targets now
+Status: multi-source physical topology foundation complete. Production route targets now
 drive host extent; branch length scales with the host; separation is enforced
 in passage-width and host-corridor units; decorative flux-chamber painting is
 disabled; skeleton-versus-visible channel diagnostics and a JSON network
-report are active. Full flux/temperature conservation remains.
+report are active. Configured sources now create explicit feeder entries; flux,
+temperature, and age propagate through the graph.
 
-- Use all configured sources, each with its own initial flux and temperature.
-- Conserve flux at splits and merges and derive width from flux, cooling, and
+- [x] Use all configured sources, each with its own initial flux and temperature.
+- [x] Conserve flux at splits and merges and derive width from flux, cooling, and
   material capacity.
 - Treat braid grammar as a prior; host conditions decide whether and where a
   split, merge, room, or bypass is viable.
 - Make chambers consequences of ponding, confluence, low grade, high flux, and
   stable roof conditions.
-- Implement real vertical grades and clearances for underpasses so graph edges
+- [x] Implement real vertical grades and clearances for underpasses so graph edges
   do not accidentally fuse in the SDF.
 - Make occupancy, chamber diagnostics, and exported geometry derive from the
   same graph and section source of truth.
@@ -208,10 +209,18 @@ Exit criteria:
 
 ## Phase 5 — scalable geometry and surface
 
-- Replace the dense world bounding box with tiled sparse narrow-band SDFs or an
+Status: body/quality-aware resolution and sparse tiled storage foundation
+complete. The generator automatically switches to overlapping active tiles
+when the dense-voxel budget is exceeded; tile-local events and meshing keep
+working-set memory bounded. Surface-material work and persistent tile-cache
+refinements remain.
+
+- [x] Replace the dense world bounding box with tiled sparse narrow-band SDFs or an
   adaptive octree implementation.
 - Use a resolution policy based on minimum tube diameter; production targets
-  roughly 12–20 samples across the smallest passage.
+  roughly 12–20 samples across the smallest passage. **Foundation complete:**
+  body presets and run quality now resolve the dense-grid voxel size and expose
+  sampling diagnostics.
 - Cache or analytically evaluate 2D profile SDFs instead of calculating
   point-to-polygon distance repeatedly.
 - Preserve one high-resolution master, then derive boundary-aware visual LODs,

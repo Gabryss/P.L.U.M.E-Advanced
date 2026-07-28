@@ -17,6 +17,12 @@ class GeometryConfig:
 
     random_seed: int | None = None
     voxel_size: float = 6.0
+    resolution_policy: str = "fixed"
+    resolution_quality: str = "standard"
+    characteristic_passage_width_m: float = 12.0
+    target_samples_across_passage: float = 2.0
+    storage_mode: str = "auto"
+    max_dense_voxels: int = 80_000_000
     density_margin: float = 30.0
     chunk_size: int = 64
     iso_level: float = 0.0
@@ -32,10 +38,18 @@ class GeometryConfig:
     junction_irregularity_frequency: float = 0.11
     structural_event_blend: float = 0.35
     weld_tolerance: float = 1e-5
+    strict_texture_loading: bool = True
+    embedded_texture_max_size: int = 1024
     cave_diffuse_texture: str = "texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg"
     cave_normal_texture: str = "texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr"
     cave_roughness_texture: str = "texture/dark_rock_8k/textures/dark_rock_rough_8k.exr"
     cave_displacement_texture: str = "texture/dark_rock_8k/textures/dark_rock_disp_8k.png"
+
+    @property
+    def characteristic_samples_across_passage(self) -> float:
+        """Return the resolved nominal passage sampling density."""
+
+        return self.characteristic_passage_width_m / max(self.voxel_size, 1e-9)
 
 
 @dataclass(frozen=True)
@@ -186,6 +200,125 @@ class VoxelGrid:
         return None
 
 
+@dataclass
+class TiledVoxelGrid:
+    """Sparse density field stored as overlapping active tiles."""
+
+    origin: tuple[float, float, float]
+    voxel_size: float
+    global_shape: tuple[int, int, int]
+    iso_level: float
+    tile_size: int
+    tiles: dict[tuple[int, int, int], np.ndarray]
+
+    @property
+    def shape(self) -> tuple[int, int, int]:
+        return self.global_shape
+
+    @property
+    def storage_nbytes(self) -> int:
+        return sum(tile.nbytes for tile in self.tiles.values())
+
+    @property
+    def carved_voxel_count(self) -> int:
+        count = 0
+        for key, tile in self.tiles.items():
+            start = np.asarray(key, dtype=int) * self.tile_size
+            stop = np.minimum(start + self.tile_size, np.asarray(self.shape) - 1)
+            slices = tuple(
+                slice(0, int(end - begin) + (1 if end == self.shape[axis] - 1 else 0))
+                for axis, (begin, end) in enumerate(zip(start, stop, strict=True))
+            )
+            count += int(np.count_nonzero(tile[slices] >= self.iso_level))
+        return count
+
+    @property
+    def component_count(self) -> int:
+        return _count_tiled_components(self)
+
+    @property
+    def bounds(self) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+        lower = np.asarray(self.origin, dtype=float)
+        upper = lower + (np.asarray(self.shape, dtype=float) - 1.0) * self.voxel_size
+        return tuple(lower), tuple(upper)
+
+    @property
+    def active_tile_count(self) -> int:
+        return len(self.tiles)
+
+    def contains(self, point: tuple[float, float, float] | np.ndarray) -> bool:
+        lower, upper = self.bounds
+        position = np.asarray(point, dtype=float)
+        return bool(np.all(position >= lower) and np.all(position <= upper))
+
+    def tile_bounds(
+        self,
+        key: tuple[int, int, int],
+    ) -> tuple[int, int, int, int, int, int]:
+        start = np.asarray(key, dtype=int) * self.tile_size
+        end = np.minimum(start + self.tile_size, np.asarray(self.shape) - 1)
+        return (
+            int(start[0]),
+            int(end[0]),
+            int(start[1]),
+            int(end[1]),
+            int(start[2]),
+            int(end[2]),
+        )
+
+    def _density_at(self, index: np.ndarray) -> float:
+        maximum_key = np.maximum(
+            np.ceil((np.asarray(self.shape) - 1) / self.tile_size).astype(int) - 1,
+            0,
+        )
+        primary = np.minimum(index // self.tile_size, maximum_key)
+        candidates = [tuple(int(value) for value in primary)]
+        for axis in range(3):
+            if index[axis] % self.tile_size == 0 and primary[axis] > 0:
+                alternate = primary.copy()
+                alternate[axis] -= 1
+                candidates.append(tuple(int(value) for value in alternate))
+        for key in candidates:
+            tile = self.tiles.get(key)
+            if tile is None:
+                continue
+            local = index - np.asarray(key, dtype=int) * self.tile_size
+            if np.all(local >= 0) and np.all(local < np.asarray(tile.shape)):
+                return float(tile[tuple(local)])
+        return float(self.iso_level - 1.0)
+
+    def sample_density(
+        self,
+        point: tuple[float, float, float] | np.ndarray,
+    ) -> float:
+        position = np.asarray(point, dtype=float)
+        fractional = (position - np.asarray(self.origin, dtype=float)) / self.voxel_size
+        maximum = np.asarray(self.shape, dtype=float) - 1.0
+        if np.any(fractional < 0.0) or np.any(fractional > maximum):
+            return float(self.iso_level - 1.0)
+        lower = np.floor(fractional).astype(int)
+        upper = np.minimum(lower + 1, np.asarray(self.shape) - 1)
+        weight = fractional - lower
+        values = np.empty((2, 2, 2), dtype=float)
+        for ix, x_index in enumerate((lower[0], upper[0])):
+            for iy, y_index in enumerate((lower[1], upper[1])):
+                for iz, z_index in enumerate((lower[2], upper[2])):
+                    values[ix, iy, iz] = self._density_at(
+                        np.asarray((x_index, y_index, z_index), dtype=int)
+                    )
+        wx, wy, wz = weight
+        c00 = values[0, 0, 0] * (1.0 - wx) + values[1, 0, 0] * wx
+        c10 = values[0, 1, 0] * (1.0 - wx) + values[1, 1, 0] * wx
+        c01 = values[0, 0, 1] * (1.0 - wx) + values[1, 0, 1] * wx
+        c11 = values[0, 1, 1] * (1.0 - wx) + values[1, 1, 1] * wx
+        c0 = c00 * (1.0 - wy) + c10 * wy
+        c1 = c01 * (1.0 - wy) + c11 * wy
+        return float(c0 * (1.0 - wz) + c1 * wz)
+
+    surface_normal = VoxelGrid.surface_normal
+    raycast_isosurface = VoxelGrid.raycast_isosurface
+
+
 @dataclass(frozen=True)
 class SurfaceHit:
     """One intersection with the generated cave boundary."""
@@ -218,13 +351,15 @@ class CaveGeometry:
     """Stage-D output for voxel-stamped cave geometry."""
 
     config: GeometryConfig
-    voxel_grid: VoxelGrid
+    voxel_grid: VoxelGrid | TiledVoxelGrid
     chunk_meshes: tuple[GeometryChunkMesh, ...]
     assembled_vertices: tuple[tuple[float, float, float], ...]
     assembled_faces: tuple[tuple[int, int, int], ...]
     component_count: int
     stamped_sample_count: int
     stamped_segment_ids: tuple[int, ...]
+    minimum_section_width_m: float = 0.0
+    protected_route_points: tuple[tuple[float, float, float], ...] = ()
     event_meshes: tuple[GeologicalEventMesh, ...] = ()
     structural_event_ids: tuple[int, ...] = ()
 
@@ -242,7 +377,26 @@ class CaveGeometry:
             "structural_event_count": float(len(self.structural_event_ids)),
             "stamped_segment_count": float(len(self.stamped_segment_ids)),
             "stamped_sample_count": float(self.stamped_sample_count),
+            "voxel_size_m": float(self.voxel_grid.voxel_size),
+            "characteristic_passage_samples": float(
+                self.config.characteristic_samples_across_passage
+            ),
+            "minimum_section_width_samples": float(
+                self.minimum_section_width_m
+                / max(self.voxel_grid.voxel_size, 1e-9)
+            ),
             "voxel_count": float(np.prod(self.voxel_grid.shape)),
+            "density_memory_mib": float(
+                getattr(
+                    self.voxel_grid,
+                    "storage_nbytes",
+                    getattr(getattr(self.voxel_grid, "density", None), "nbytes", 0),
+                )
+                / (1024.0 * 1024.0)
+            ),
+            "active_tile_count": float(
+                getattr(self.voxel_grid, "active_tile_count", 1)
+            ),
             "carved_voxel_count": float(self.voxel_grid.carved_voxel_count),
             "voxel_component_count": float(self.voxel_grid.component_count),
             "component_count": float(self.component_count),
@@ -270,10 +424,63 @@ def _count_voxel_components(voxel_grid: VoxelGrid) -> int:
     return int(component_count)
 
 
+def _count_tiled_components(voxel_grid: TiledVoxelGrid) -> int:
+    """Count components using local labels joined across shared tile boundaries."""
+
+    parent: dict[int, int] = {}
+    boundary_labels: dict[tuple[int, int, int], int] = {}
+    next_label = 1
+
+    def find(value: int) -> int:
+        root = value
+        while parent[root] != root:
+            root = parent[root]
+        while value != root:
+            previous = parent[value]
+            parent[value] = root
+            value = previous
+        return root
+
+    def union(first: int, second: int) -> None:
+        first_root = find(first)
+        second_root = find(second)
+        if first_root != second_root:
+            parent[second_root] = first_root
+
+    structure = ndimage.generate_binary_structure(rank=3, connectivity=1)
+    for key, tile in voxel_grid.tiles.items():
+        labels, count = ndimage.label(tile >= voxel_grid.iso_level, structure=structure)
+        if count == 0:
+            continue
+        offset = next_label - 1
+        for label in range(1, count + 1):
+            parent[offset + label] = offset + label
+        start = np.asarray(key, dtype=int) * voxel_grid.tile_size
+        boundary = np.zeros(tile.shape, dtype=bool)
+        for axis in range(3):
+            low = [slice(None)] * 3
+            high = [slice(None)] * 3
+            low[axis] = 0
+            high[axis] = -1
+            boundary[tuple(low)] = True
+            boundary[tuple(high)] = True
+        for local in np.argwhere(boundary & (labels > 0)):
+            global_index = tuple(int(value) for value in start + local)
+            label = offset + int(labels[tuple(local)])
+            previous = boundary_labels.get(global_index)
+            if previous is None:
+                boundary_labels[global_index] = label
+            else:
+                union(previous, label)
+        next_label += count
+    return len({find(label) for label in parent})
+
+
 __all__ = [
     "CaveGeometry",
     "GeometryChunkMesh",
     "GeometryConfig",
     "SurfaceHit",
+    "TiledVoxelGrid",
     "VoxelGrid",
 ]

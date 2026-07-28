@@ -357,6 +357,11 @@ class GeometryPlotter:
         lines = [
             f"Meshed chunks: {len(meshes)}",
             f"Chunk size: {cave_geometry.config.chunk_size} voxels",
+            f"Voxel size: {cave_geometry.voxel_grid.voxel_size:.3g} m",
+            (
+                "Min section sampling: "
+                f"{cave_geometry.summary()['minimum_section_width_samples']:.1f} voxels"
+            ),
             f"Faces total: {int(face_counts.sum())}",
             f"Faces mean: {face_counts.mean():.1f}",
             f"Faces median: {np.median(face_counts):.1f}",

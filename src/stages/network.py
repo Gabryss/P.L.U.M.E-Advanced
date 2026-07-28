@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import heapq
 import json
 import math
@@ -45,6 +45,10 @@ class CaveNetworkConfig:
     body_spatial_scale: float = 1.0
     target_route_length_m: float = 5_000.0
     source_count: int = 8
+    source_flux: float = 1.0
+    source_temperature_k: float = 1_450.0
+    cooling_k_per_m: float = 0.025
+    nominal_flow_speed_m_s: float = 0.35
     source_band_length: float = 90.0
     source_band_half_width: float = 180.0
     sink_margin: float = 80.0
@@ -94,6 +98,9 @@ class CavePoint:
     growth_cost: float
     arc_length: float
     width: float
+    flux: float = 0.0
+    temperature_k: float = 0.0
+    age_s: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -117,6 +124,12 @@ class CaveSegment:
         if not self.points:
             return 0.0
         return sum(point.width for point in self.points) / len(self.points)
+
+    @property
+    def mean_flux(self) -> float:
+        if not self.points:
+            return 0.0
+        return sum(point.flux for point in self.points) / len(self.points)
 
 
 @dataclass(frozen=True)
@@ -164,6 +177,17 @@ class CaveNetwork:
         mean_segment_width = float(np.mean(point_widths)) if point_widths else 0.0
         min_segment_width = float(np.min(point_widths)) if point_widths else 0.0
         max_segment_width = float(np.max(point_widths)) if point_widths else 0.0
+        point_fluxes = [
+            point.flux
+            for segment in self.segments
+            for point in segment.points
+        ]
+        point_temperatures = [
+            point.temperature_k
+            for segment in self.segments
+            for point in segment.points
+            if point.temperature_k > 0.0
+        ]
         loop_count = float(self._loop_rank())
         terminal_count = float(sum(1 for degree in self._degrees().values() if degree == 1))
         spur_count = float(sum(1 for segment in self.segments if segment.kind == "spur"))
@@ -182,6 +206,7 @@ class CaveNetwork:
         return {
             "node_count": float(len(self.nodes)),
             "segment_count": float(len(self.segments)),
+            "entry_count": float(sum(node.kind == "entry" for node in self.nodes)),
             "junction_count": float(len(self.junctions)),
             "loop_count": loop_count,
             "terminal_count": terminal_count,
@@ -192,6 +217,11 @@ class CaveNetwork:
             "mean_segment_width": mean_segment_width,
             "min_segment_width": min_segment_width,
             "max_segment_width": max_segment_width,
+            "maximum_flux": float(max(point_fluxes, default=0.0)),
+            "mean_temperature_k": float(np.mean(point_temperatures))
+            if point_temperatures
+            else 0.0,
+            "max_flow_conservation_error": self.max_flow_conservation_error(),
             "max_parallel_channels": float(
                 max(self.slice_channel_counts) if self.slice_channel_counts else 0
             ),
@@ -211,6 +241,39 @@ class CaveNetwork:
             ),
         }
 
+    def max_flow_conservation_error(self) -> float:
+        """Return the largest normalized split/merge flux imbalance."""
+
+        node_lookup = {node.node_id: node for node in self.nodes}
+        incoming: defaultdict[int, float] = defaultdict(float)
+        outgoing: defaultdict[int, float] = defaultdict(float)
+        for segment in self.segments:
+            if not segment.points:
+                continue
+            start = node_lookup[segment.start_node_id]
+            end = node_lookup[segment.end_node_id]
+            flux = max(segment.mean_flux, 0.0)
+            if (start.along_position, start.node_id) <= (
+                end.along_position,
+                end.node_id,
+            ):
+                outgoing[start.node_id] += flux
+                incoming[end.node_id] += flux
+            else:
+                outgoing[end.node_id] += flux
+                incoming[start.node_id] += flux
+        errors: list[float] = []
+        for node in self.nodes:
+            if node.kind in {"entry", "exit", "terminal", "spur_terminal"}:
+                continue
+            if incoming[node.node_id] <= 0.0 or outgoing[node.node_id] <= 0.0:
+                continue
+            denominator = max(incoming[node.node_id], outgoing[node.node_id], 1e-9)
+            errors.append(
+                abs(incoming[node.node_id] - outgoing[node.node_id]) / denominator
+            )
+        return float(max(errors, default=0.0))
+
     @property
     def dominant_route_length(self) -> float:
         if len(self.dominant_route_node_ids) < 2:
@@ -220,6 +283,7 @@ class CaveNetwork:
             segment.total_length
             for segment in self.segments
             if (segment.start_node_id, segment.end_node_id) in node_pairs
+            or (segment.end_node_id, segment.start_node_id) in node_pairs
         )
 
     def _degrees(self) -> dict[int, int]:
@@ -411,6 +475,43 @@ class CaveNetworkGenerator:
         ]
         occupied_cells = set(backbone_path)
         backbone_alongs, backbone_crosses = self._build_backbone_profile(backbone_path, geometry)
+        for source_cell in source_cells:
+            if source_cell == backbone_source:
+                continue
+            source_along = float(geometry.along_grid[source_cell])
+            join_along = min(
+                geometry.along_extent,
+                max(
+                    source_along + self.config.source_band_length,
+                    0.08 * geometry.along_extent,
+                ),
+            )
+            join_cell = self._cell_on_path_at_along(
+                backbone_path,
+                geometry,
+                join_along,
+            )
+            feeder = self._simplify_path(
+                self._build_connector_path(
+                    host_field=host_field,
+                    geometry=geometry,
+                    support_field=support_field,
+                    start_cell=source_cell,
+                    end_cell=join_cell,
+                    backbone_alongs=backbone_alongs,
+                    backbone_crosses=backbone_crosses,
+                )
+            )
+            if len(feeder) < 2:
+                continue
+            selected_paths.append(
+                _SelectedPath(
+                    kind="source_feeder",
+                    path=tuple(feeder),
+                    metadata=self._build_segment_metadata(kind="source_feeder"),
+                )
+            )
+            occupied_cells.update(feeder[:-1])
         braid_zones = self._build_braid_zones(host_field, geometry, rng)
         for zone_index, zone in enumerate(braid_zones):
             zone_paths = self._build_zone_paths(
@@ -464,6 +565,8 @@ class CaveNetworkGenerator:
             selected_paths=tuple(selected_paths),
             total_flux=selected_flux,
         )
+        segments = self._assign_conserved_flow(nodes, segments)
+        dominant_route_node_ids = self._dominant_route(nodes, segments, selected_flux)
         junctions = self._build_junctions(nodes, segments)
 
         occupancy = np.zeros_like(host_field.growth_cost, dtype=bool)
@@ -1242,16 +1345,18 @@ class CaveNetworkGenerator:
             for cell in selected_path.path:
                 path_use_counts[cell] += 1
 
-        source_cell = min(
-            all_path_cells,
-            key=lambda cell: (float(geometry.along_grid[cell]), abs(float(geometry.cross_grid[cell]))),
-        )
+        source_cells = {
+            selected_path.path[0]
+            for selected_path in selected_paths
+            if selected_path.kind in {"backbone", "source_feeder"}
+            and selected_path.path
+        }
         sink_cell = max(
             all_path_cells,
             key=lambda cell: (float(geometry.along_grid[cell]), -abs(float(geometry.cross_grid[cell]))),
         )
 
-        node_cell_set: set[tuple[int, int]] = {source_cell, sink_cell}
+        node_cell_set: set[tuple[int, int]] = set(source_cells) | {sink_cell}
         chamber_cells: set[tuple[int, int]] = set()
         for selected_path in selected_paths:
             node_cell_set.add(selected_path.path[0])
@@ -1268,7 +1373,7 @@ class CaveNetworkGenerator:
             node_id = len(nodes)
             x_coord, y_coord = self._cell_to_world(host_field, cell)
             node_kind = "junction"
-            if cell == source_cell:
+            if cell in source_cells:
                 node_kind = "entry"
             elif cell == sink_cell:
                 node_kind = "exit"
@@ -1339,6 +1444,127 @@ class CaveNetworkGenerator:
         dominant_route_node_ids = self._dominant_route(nodes, segments, total_flux)
         return nodes, segments, dominant_route_node_ids
 
+    def _assign_conserved_flow(
+        self,
+        nodes: list[CaveNode],
+        segments: list[CaveSegment],
+    ) -> list[CaveSegment]:
+        """Propagate source flux through the directed graph and annotate points."""
+
+        if not nodes or not segments:
+            return segments
+        node_lookup = {node.node_id: node for node in nodes}
+        outgoing: defaultdict[int, list[int]] = defaultdict(list)
+        downstream_node: dict[int, int] = {}
+        segment_lookup = {segment.segment_id: segment for segment in segments}
+        for segment in segments:
+            start = node_lookup[segment.start_node_id]
+            end = node_lookup[segment.end_node_id]
+            if (start.along_position, start.node_id) <= (
+                end.along_position,
+                end.node_id,
+            ):
+                upstream, downstream = start.node_id, end.node_id
+            else:
+                upstream, downstream = end.node_id, start.node_id
+            downstream_node[segment.segment_id] = downstream
+            outgoing[upstream].append(segment.segment_id)
+
+        available_flux: defaultdict[int, float] = defaultdict(float)
+        temperature_energy: defaultdict[int, float] = defaultdict(float)
+        age_flux: defaultdict[int, float] = defaultdict(float)
+        for node in nodes:
+            if node.kind == "entry":
+                available_flux[node.node_id] += self.config.source_flux
+                temperature_energy[node.node_id] += (
+                    self.config.source_flux * self.config.source_temperature_k
+                )
+
+        flux_by_segment: dict[int, float] = {}
+        temperature_by_segment: dict[int, float] = {}
+        age_by_segment: dict[int, float] = {}
+        for node in sorted(nodes, key=lambda item: (item.along_position, item.node_id)):
+            segment_ids = outgoing.get(node.node_id, [])
+            node_flux = available_flux[node.node_id]
+            if not segment_ids or node_flux <= 0.0:
+                continue
+            node_temperature = temperature_energy[node.node_id] / node_flux
+            node_age = age_flux[node.node_id] / node_flux
+            weights = np.asarray(
+                [
+                    max(segment_lookup[segment_id].mean_width, 1e-6) ** 2
+                    for segment_id in segment_ids
+                ],
+                dtype=float,
+            )
+            weights /= float(np.sum(weights))
+            for segment_id, weight in zip(segment_ids, weights, strict=True):
+                segment = segment_lookup[segment_id]
+                segment_flux = node_flux * float(weight)
+                travel_time = (
+                    segment.total_length
+                    / max(self.config.nominal_flow_speed_m_s, 1e-6)
+                )
+                cooled_temperature = max(
+                    273.15,
+                    node_temperature
+                    - self.config.cooling_k_per_m * segment.total_length,
+                )
+                downstream = downstream_node[segment_id]
+                flux_by_segment[segment_id] = segment_flux
+                temperature_by_segment[segment_id] = node_temperature
+                age_by_segment[segment_id] = node_age
+                available_flux[downstream] += segment_flux
+                temperature_energy[downstream] += (
+                    segment_flux * cooled_temperature
+                )
+                age_flux[downstream] += segment_flux * (node_age + travel_time)
+
+        resolved: list[CaveSegment] = []
+        for segment in segments:
+            flux = flux_by_segment.get(segment.segment_id, 0.0)
+            start_temperature = temperature_by_segment.get(
+                segment.segment_id,
+                self.config.source_temperature_k,
+            )
+            start_age = age_by_segment.get(segment.segment_id, 0.0)
+            flow_scale = float(
+                np.clip(
+                    (max(flux, 1e-9) / max(self.config.source_flux, 1e-9)) ** 0.20,
+                    0.68,
+                    1.45,
+                )
+            )
+            points = tuple(
+                replace(
+                    point,
+                    width=float(
+                        np.clip(
+                            point.width * flow_scale,
+                            max(
+                                2.0 * self.config.minimum_passage_radius,
+                                1.4 * self.config.maximum_passage_radius,
+                            ),
+                            2.0 * self.config.maximum_passage_radius,
+                        )
+                    ),
+                    flux=flux,
+                    temperature_k=max(
+                        273.15,
+                        start_temperature
+                        - self.config.cooling_k_per_m * point.arc_length,
+                    ),
+                    age_s=(
+                        start_age
+                        + point.arc_length
+                        / max(self.config.nominal_flow_speed_m_s, 1e-6)
+                    ),
+                )
+                for point in segment.points
+            )
+            resolved.append(replace(segment, points=points))
+        return resolved
+
     def _build_junctions(
         self,
         nodes: list[CaveNode],
@@ -1405,7 +1631,6 @@ class CaveNetworkGenerator:
                 }
             )
             cluster_segments = [segments[segment_id] for segment_id in segment_ids]
-            segment_kinds = {segment.kind for segment in cluster_segments}
             if any(segment.kind == "underpass" for segment in cluster_segments):
                 kind = "crossing"
                 split_style = "constant_envelope_then_divide"
@@ -1516,7 +1741,9 @@ class CaveNetworkGenerator:
         if not nodes or not segments:
             return ()
 
-        entry = min(nodes, key=lambda node: node.along_position)
+        entries = [node for node in nodes if node.kind == "entry"]
+        if not entries:
+            entries = [min(nodes, key=lambda node: node.along_position)]
         exit_node = max(nodes, key=lambda node: node.along_position)
         adjacency: dict[int, list[tuple[int, float]]] = defaultdict(list)
         for segment in segments:
@@ -1527,8 +1754,11 @@ class CaveNetworkGenerator:
 
         distances = {node.node_id: math.inf for node in nodes}
         predecessor: dict[int, int] = {}
-        distances[entry.node_id] = 0.0
-        heap = [(0.0, entry.node_id)]
+        entry_ids = {entry.node_id for entry in entries}
+        heap: list[tuple[float, int]] = []
+        for entry in entries:
+            distances[entry.node_id] = 0.0
+            heapq.heappush(heap, (0.0, entry.node_id))
         while heap:
             current_distance, node_id = heapq.heappop(heap)
             if current_distance > distances[node_id]:
@@ -1548,7 +1778,7 @@ class CaveNetworkGenerator:
 
         route = [exit_node.node_id]
         current = exit_node.node_id
-        while current != entry.node_id:
+        while current not in entry_ids:
             current = predecessor[current]
             route.append(current)
         route.reverse()

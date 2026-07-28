@@ -39,6 +39,8 @@ class SectionFieldConfig:
     minimum_roof_thickness: float = 6.0
     maximum_centerline_depth: float = 26.0
     preferred_cover_fraction: float = 0.34
+    vertical_level_spacing: float = 14.0
+    minimum_vertical_clearance: float = 2.0
 
 
 @dataclass(frozen=True)
@@ -378,6 +380,17 @@ class SectionFieldGenerator:
             y_coord += lateral_offset * normal[1]
             z_coord += vertical_offset
             centerline_depth -= vertical_offset
+            level_offset = self._vertical_level_offset(
+                segment=segment,
+                arc_length=arc_length,
+                surface_z=surface_z,
+                cover_thickness=cover_thickness,
+                centerline_z=z_coord,
+                tube_height=tube_height,
+            )
+            z_coord += level_offset
+            centerline_depth = surface_z - z_coord
+            roof_thickness = centerline_depth - 0.5 * tube_height
             profile_points = self._build_profile_points(
                 tube_width=tube_width,
                 tube_height=tube_height,
@@ -411,6 +424,42 @@ class SectionFieldGenerator:
                 )
             )
         return samples
+
+    def _vertical_level_offset(
+        self,
+        *,
+        segment: CaveSegment,
+        arc_length: float,
+        surface_z: float,
+        cover_thickness: float,
+        centerline_z: float,
+        tube_height: float,
+    ) -> float:
+        """Create a smooth grade-separated crossing that rejoins at endpoints."""
+
+        if segment.z_level == 0 or segment.total_length <= 1e-6:
+            return 0.0
+        progress = float(np.clip(arc_length / segment.total_length, 0.0, 1.0))
+        envelope = max(math.sin(math.pi * progress), 0.0) ** 1.5
+        requested_separation = max(
+            self.config.vertical_level_spacing,
+            tube_height + self.config.minimum_vertical_clearance,
+        )
+        requested = segment.z_level * requested_separation * envelope
+        centerline_depth = surface_z - centerline_z
+        minimum_depth = self.config.minimum_roof_thickness + 0.5 * tube_height
+        maximum_depth = max(
+            minimum_depth,
+            cover_thickness - self.config.minimum_vertical_clearance,
+        )
+        target_depth = float(
+            np.clip(
+                centerline_depth - requested,
+                minimum_depth,
+                maximum_depth,
+            )
+        )
+        return centerline_depth - target_depth
 
     def _centerline_wobble_offsets(
         self,

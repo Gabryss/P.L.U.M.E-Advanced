@@ -9,7 +9,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from stages.geometry_types import VoxelGrid
+from stages.geometry_types import TiledVoxelGrid, VoxelGrid
 
 
 class VoxelQueryTests(unittest.TestCase):
@@ -53,6 +53,26 @@ class VoxelQueryTests(unittest.TestCase):
 
         self.assertFalse(grid.contains((-1.0, 0.0, 0.0)))
         self.assertLess(grid.sample_density((-1.0, 0.0, 0.0)), grid.iso_level)
+
+    def test_sparse_tiles_share_boundaries_and_count_components(self) -> None:
+        first = np.full((3, 3, 3), -1.0, dtype=np.float32)
+        second = np.full((3, 3, 3), -1.0, dtype=np.float32)
+        first[1:, 1, 1] = 1.0
+        second[:2, 1, 1] = 1.0
+        grid = TiledVoxelGrid(
+            origin=(0.0, 0.0, 0.0),
+            voxel_size=1.0,
+            global_shape=(5, 3, 3),
+            iso_level=0.0,
+            tile_size=2,
+            tiles={(0, 0, 0): first, (1, 0, 0): second},
+        )
+
+        self.assertEqual(grid.active_tile_count, 2)
+        self.assertEqual(grid.component_count, 1)
+        self.assertEqual(grid.carved_voxel_count, 3)
+        self.assertGreater(grid.sample_density((2.0, 1.0, 1.0)), grid.iso_level)
+        self.assertLess(grid.sample_density((2.0, 0.0, 0.0)), grid.iso_level)
 
 
 if __name__ == "__main__":

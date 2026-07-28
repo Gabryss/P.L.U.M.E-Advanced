@@ -166,7 +166,13 @@ mesh_latitude_segments = 8
 mesh_longitude_segments = 14
 
 [geometry]
-voxel_size = 3.0
+# Resolve voxel size from the body and run quality. Preview currently yields
+# Earth/Mars/Moon voxel sizes of 1/2/4 m; use resolution_policy="fixed"
+# together with voxel_size for an explicit override.
+resolution_policy = "body"
+storage_mode = "auto"
+# Switch to sparse overlapping tiles before the dense field exceeds this size.
+max_dense_voxels = 80000000
 density_margin = 24.0
 chunk_size = 64
 iso_level = 0.0

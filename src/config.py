@@ -32,6 +32,22 @@ from world import (
 )
 
 CURRENT_SCHEMA_VERSION = 2
+SUPPORTED_TOP_LEVEL_KEYS = frozenset(
+    {
+        "schema_version",
+        "procedural_seed",
+        "world",
+        "flow_regime",
+        "run",
+        "export",
+        "host_field",
+        "network",
+        "section_field",
+        "floor_map",
+        "events",
+        "geometry",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -67,6 +83,12 @@ def load_project_config(
     config_path = Path(path)
     with config_path.open("rb") as config_file:
         raw_config = tomllib.load(config_file)
+    unknown_top_level = set(raw_config) - SUPPORTED_TOP_LEVEL_KEYS
+    if unknown_top_level:
+        raise ValueError(
+            "Unknown top-level configuration keys: "
+            + ", ".join(sorted(unknown_top_level))
+        )
     if world_body is not None:
         world_data = dict(raw_config.get("world", {}))
         world_data["body"] = world_body
@@ -120,6 +142,7 @@ def load_project_config(
         raw_config.get("geometry", {}),
         procedural_seed=stage_seeds.geometry,
         world=world,
+        run=run,
     )
     if run.dev_mode:
         host_field, network = _apply_dev_mode(host_field, network, run)
@@ -454,6 +477,11 @@ def _build_network_config(
     target_route_length = _resolved_route_length(world, flow_regime)
     config_data.setdefault("body_spatial_scale", spatial_scale)
     config_data.setdefault("target_route_length_m", target_route_length)
+    config_data.setdefault("source_flux", flow_regime.supply_rate_scale)
+    config_data.setdefault(
+        "cooling_k_per_m",
+        CaveNetworkConfig.cooling_k_per_m * flow_regime.cooling_rate_scale,
+    )
     config_data.setdefault("base_passage_radius", 0.38 * maximum_width)
     config_data.setdefault("minimum_passage_radius", 0.22 * maximum_width)
     config_data.setdefault("maximum_passage_radius", 0.50 * maximum_width)
@@ -573,7 +601,12 @@ def _build_section_field_config(
             float(config_data.get(key, getattr(SectionFieldConfig, key)))
             * spatial_scale
         )
-    for key in ("minimum_roof_thickness", "maximum_centerline_depth"):
+    for key in (
+        "minimum_roof_thickness",
+        "maximum_centerline_depth",
+        "vertical_level_spacing",
+        "minimum_vertical_clearance",
+    ):
         config_data[key] = (
             float(config_data.get(key, getattr(SectionFieldConfig, key)))
             * vertical_scale
@@ -614,10 +647,56 @@ def _build_geometry_config(
     *,
     procedural_seed: int | None,
     world: WorldConfig,
+    run: RunConfig,
 ) -> GeometryConfig:
     config_data = dict(raw_config)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
+    resolution_policy = str(
+        config_data.pop("resolution_policy", "fixed")
+    ).strip().lower()
+    if resolution_policy not in {"fixed", "body"}:
+        raise ValueError(
+            "geometry.resolution_policy must be one of: body, fixed"
+        )
+    if resolution_policy == "body":
+        if "voxel_size" in config_data:
+            raise ValueError(
+                "geometry.voxel_size cannot be combined with "
+                "geometry.resolution_policy = \"body\"; use the fixed policy "
+                "for an explicit voxel size"
+            )
+        target_samples = {
+            "preview": 10.0,
+            "standard": 14.0,
+            "production": 20.0,
+        }[run.quality]
+        production_scale = {
+            "preview": 2.0,
+            "standard": 1.4,
+            "production": 1.0,
+        }[run.quality]
+        sampling_voxel_size = (
+            world.body.maximum_passage_width_m / target_samples
+        )
+        quality_voxel_size = (
+            world.body.production_voxel_size_m * production_scale
+        )
+        config_data["voxel_size"] = min(
+            sampling_voxel_size,
+            quality_voxel_size,
+        )
+    else:
+        target_samples = (
+            world.body.maximum_passage_width_m
+            / float(config_data.get("voxel_size", GeometryConfig.voxel_size))
+        )
+    config_data["resolution_policy"] = resolution_policy
+    config_data["resolution_quality"] = run.quality
+    config_data["characteristic_passage_width_m"] = (
+        world.body.maximum_passage_width_m
+    )
+    config_data["target_samples_across_passage"] = target_samples
     config_data.setdefault("tunnel_radius_scale", 1.0)
     config_data.setdefault("chamber_radius_scale", 1.0)
     config_data.setdefault("junction_radius_scale", 1.0)
@@ -765,6 +844,16 @@ def _validate_pipeline_configs(
         )
     if network.minimum_branch_offset_widths <= 0.0:
         raise ValueError("network.minimum_branch_offset_widths must be positive")
+    if network.source_count <= 0:
+        raise ValueError("network.source_count must be positive")
+    if min(
+        network.source_flux,
+        network.source_temperature_k,
+        network.nominal_flow_speed_m_s,
+    ) <= 0.0:
+        raise ValueError("network source flow values must be positive")
+    if network.cooling_k_per_m < 0.0:
+        raise ValueError("network.cooling_k_per_m cannot be negative")
     if not 0.0 < network.chamber_radius_fraction <= 1.0:
         raise ValueError("network.chamber_radius_fraction must be in (0, 1]")
     if section_field.maximum_tube_width <= 0.0:
@@ -774,6 +863,11 @@ def _validate_pipeline_configs(
             "section_field.chamber_max_tube_width cannot be smaller than "
             "maximum_tube_width"
         )
+    if min(
+        section_field.vertical_level_spacing,
+        section_field.minimum_vertical_clearance,
+    ) <= 0.0:
+        raise ValueError("section_field vertical separation values must be positive")
     if floor_map.lateral_spacing_m <= 0.0:
         raise ValueError("floor_map.lateral_spacing_m must be positive")
     if floor_map.plan_resolution_m <= 0.0:
@@ -839,6 +933,24 @@ def _validate_pipeline_configs(
 
     if geometry.voxel_size <= 0.0:
         raise ValueError("geometry.voxel_size must be positive")
+    if geometry.storage_mode not in {"auto", "dense", "tiled"}:
+        raise ValueError("geometry.storage_mode must be auto, dense, or tiled")
+    if geometry.max_dense_voxels <= 0:
+        raise ValueError("geometry.max_dense_voxels must be positive")
+    if geometry.embedded_texture_max_size <= 0:
+        raise ValueError("geometry.embedded_texture_max_size must be positive")
+    if geometry.resolution_policy not in {"body", "fixed"}:
+        raise ValueError("geometry.resolution_policy must be one of: body, fixed")
+    if geometry.resolution_quality not in {"preview", "standard", "production"}:
+        raise ValueError(
+            "geometry.resolution_quality must be preview, standard, or production"
+        )
+    if min(
+        geometry.characteristic_passage_width_m,
+        geometry.target_samples_across_passage,
+        geometry.characteristic_samples_across_passage,
+    ) <= 0.0:
+        raise ValueError("geometry passage-resolution values must be positive")
     if geometry.chunk_size < 2:
         raise ValueError("geometry.chunk_size must be at least 2")
     if min(

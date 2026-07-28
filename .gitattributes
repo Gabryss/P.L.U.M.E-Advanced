@@ -1,4 +1,2 @@
-texture/dark_rock_8k filter=lfs diff=lfs merge=lfs -text
-/texture/dark_rock_8k/textures/dark_rock_disp_8k.png filter=lfs diff=lfs merge=lfs -text
-/texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr filter=lfs diff=lfs merge=lfs -text
-/outputs/*.glb filter=lfs diff=lfs merge=lfs -text
+texture/** filter=lfs diff=lfs merge=lfs -text
+outputs/*.glb filter=lfs diff=lfs merge=lfs -text

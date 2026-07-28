@@ -20,6 +20,14 @@ SUPPORTED_EXPORT_TARGETS = frozenset(
 )
 SUPPORTED_EXPORT_FORMATS = frozenset({"glb", "obj", "fbx", "usd", "usdc", "dae"})
 SUPPORTED_QUALITY_LEVELS = frozenset({"preview", "standard", "production"})
+EXPORT_FORMATS_BY_TARGET = {
+    "neutral": frozenset({"glb", "obj"}),
+    "blender": frozenset({"glb", "obj"}),
+    "ue5": frozenset({"glb", "obj"}),
+    "unity": frozenset({"glb", "obj"}),
+    "gazebo": frozenset({"obj"}),
+    "omniverse": frozenset({"usd"}),
+}
 
 
 @dataclass(frozen=True)
@@ -129,7 +137,7 @@ class ExportConfig:
     quality: str = "standard"
     generate_visual: bool = True
     generate_collision: bool = True
-    generate_lods: bool = True
+    generate_lods: bool = False
     generate_wall_shell: bool = False
     wall_thickness_m: float = 0.5
 
@@ -342,6 +350,30 @@ def build_export_config(raw_config: dict[str, Any] | None) -> ExportConfig:
         )
     if config.wall_thickness_m <= 0.0:
         raise ValueError("export.wall_thickness_m must be positive")
+    supported_formats = EXPORT_FORMATS_BY_TARGET[config.target]
+    if config.file_format not in supported_formats:
+        raise ValueError(
+            f"export target {config.target!r} supports format(s): "
+            f"{', '.join(sorted(supported_formats))}; got {config.file_format!r}"
+        )
+    unsupported_capabilities = [
+        name
+        for name, enabled in (
+            ("generate_lods", config.generate_lods),
+            ("generate_wall_shell", config.generate_wall_shell),
+        )
+        if enabled
+    ]
+    if unsupported_capabilities:
+        raise ValueError(
+            "Unsupported export capabilities requested: "
+            + ", ".join(unsupported_capabilities)
+        )
+    if not config.generate_visual:
+        raise ValueError(
+            "export.generate_visual = false is not supported because every "
+            "current target package requires a primary visual asset"
+        )
     return config
 
 
@@ -400,6 +432,7 @@ __all__ = [
     "MATERIAL_PRESETS",
     "CelestialBodyProfile",
     "ExportConfig",
+    "EXPORT_FORMATS_BY_TARGET",
     "FlowRegimeConfig",
     "GeologicalMaterialProfile",
     "RunConfig",

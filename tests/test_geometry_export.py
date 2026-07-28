@@ -39,7 +39,12 @@ class GeometryExportTests(unittest.TestCase):
                 source_shape_type="angular_boulder",
             )
             cave_geometry = CaveGeometry(
-                config=GeometryConfig(),
+                config=GeometryConfig(
+                    cave_diffuse_texture="",
+                    cave_normal_texture="",
+                    cave_roughness_texture="",
+                    cave_displacement_texture="",
+                ),
                 voxel_grid=VoxelGrid(
                     origin=(0.0, 0.0, 0.0),
                     voxel_size=1.0,

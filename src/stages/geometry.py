@@ -12,7 +12,13 @@ from skimage import measure
 from scipy import ndimage
 
 from stages.events import GeologicalEvent, GeologicalEventField
-from stages.geometry_types import CaveGeometry, GeometryChunkMesh, GeometryConfig, VoxelGrid
+from stages.geometry_types import (
+    CaveGeometry,
+    GeometryChunkMesh,
+    GeometryConfig,
+    TiledVoxelGrid,
+    VoxelGrid,
+)
 from stages.network import CaveNetwork
 from stages.section_field import SectionField, SectionSample
 
@@ -116,6 +122,19 @@ class GeometryGenerator:
             component_count=0,
             stamped_sample_count=len(stamp_samples),
             stamped_segment_ids=tuple(sorted(samples_by_segment)),
+            minimum_section_width_m=min(
+                (
+                    float(sample.tube_width)
+                    for sample in stamp_samples
+                    if sample.tube_width > 0.0
+                ),
+                default=0.0,
+            ),
+            protected_route_points=tuple(
+                (float(sample.x), float(sample.y), float(sample.z))
+                for segment_id in section_field.dominant_route_segment_ids
+                for sample in samples_by_segment.get(segment_id, ())
+            ),
         )
 
     def finalize(
@@ -134,6 +153,7 @@ class GeometryGenerator:
                 voxel_grid,
                 event_field,
                 progress,
+                protected_points=base_geometry.protected_route_points,
             )
             event_meshes = event_field.meshes
 
@@ -151,6 +171,8 @@ class GeometryGenerator:
                 component_count=base_geometry.component_count,
                 stamped_sample_count=base_geometry.stamped_sample_count,
                 stamped_segment_ids=base_geometry.stamped_segment_ids,
+                minimum_section_width_m=base_geometry.minimum_section_width_m,
+                protected_route_points=base_geometry.protected_route_points,
                 event_meshes=event_meshes,
                 structural_event_ids=(),
             )
@@ -188,6 +210,8 @@ class GeometryGenerator:
             component_count=component_count,
             stamped_sample_count=base_geometry.stamped_sample_count,
             stamped_segment_ids=base_geometry.stamped_segment_ids,
+            minimum_section_width_m=base_geometry.minimum_section_width_m,
+            protected_route_points=base_geometry.protected_route_points,
             event_meshes=event_meshes,
             structural_event_ids=structural_event_ids,
         )
@@ -208,10 +232,12 @@ class GeometryGenerator:
 
     def _apply_structural_events_to_grid(
         self,
-        voxel_grid: VoxelGrid,
+        voxel_grid: VoxelGrid | TiledVoxelGrid,
         event_field: GeologicalEventField,
         progress: GeometryProgressCallback | None,
-    ) -> tuple[VoxelGrid, tuple[int, ...]]:
+        *,
+        protected_points: tuple[tuple[float, float, float], ...] = (),
+    ) -> tuple[VoxelGrid | TiledVoxelGrid, tuple[int, ...]]:
         modifiers = tuple(
             event
             for event in event_field.events
@@ -219,6 +245,13 @@ class GeometryGenerator:
         )
         if not modifiers:
             return voxel_grid, ()
+        if isinstance(voxel_grid, TiledVoxelGrid):
+            return self._apply_structural_events_to_tiled_grid(
+                voxel_grid,
+                modifiers,
+                progress,
+                protected_points=protected_points,
+            )
 
         density = np.array(voxel_grid.density, dtype=np.float32, copy=True)
         self._emit_progress(
@@ -244,7 +277,21 @@ class GeometryGenerator:
                 density,
                 voxel_grid.iso_level,
             )
-            if applied and updated_component_count <= component_count:
+            candidate_grid = VoxelGrid(
+                origin=voxel_grid.origin,
+                voxel_size=voxel_grid.voxel_size,
+                density=density,
+                iso_level=voxel_grid.iso_level,
+            )
+            route_open = self._protected_route_is_open(
+                candidate_grid,
+                protected_points,
+            )
+            if (
+                applied
+                and route_open
+                and 0 < updated_component_count <= component_count
+            ):
                 applied_ids.append(event.event_id)
                 component_count = updated_component_count
             elif applied:
@@ -259,7 +306,15 @@ class GeometryGenerator:
                     density,
                     voxel_grid.iso_level,
                 )
-                if applied and updated_component_count <= component_count:
+                route_open = self._protected_route_is_open(
+                    candidate_grid,
+                    protected_points,
+                )
+                if (
+                    applied
+                    and route_open
+                    and 0 < updated_component_count <= component_count
+                ):
                     applied_ids.append(event.event_id)
                     component_count = updated_component_count
                 else:
@@ -281,6 +336,129 @@ class GeometryGenerator:
             ),
             tuple(applied_ids),
         )
+
+    def _apply_structural_events_to_tiled_grid(
+        self,
+        voxel_grid: TiledVoxelGrid,
+        modifiers: tuple[GeologicalEvent, ...],
+        progress: GeometryProgressCallback | None,
+        *,
+        protected_points: tuple[tuple[float, float, float], ...] = (),
+    ) -> tuple[TiledVoxelGrid, tuple[int, ...]]:
+        tiles = {key: np.array(tile, copy=True) for key, tile in voxel_grid.tiles.items()}
+        result = TiledVoxelGrid(
+            origin=voxel_grid.origin,
+            voxel_size=voxel_grid.voxel_size,
+            global_shape=voxel_grid.global_shape,
+            iso_level=voxel_grid.iso_level,
+            tile_size=voxel_grid.tile_size,
+            tiles=tiles,
+        )
+        component_count = result.component_count
+        applied_ids: list[int] = []
+        for index, event in enumerate(modifiers, start=1):
+            affected = self._event_tile_keys(result, event)
+            backups = {key: np.array(result.tiles[key], copy=True) for key in affected}
+            applied = self._stamp_event_into_tiles(result, event, affected)
+            updated_components = result.component_count
+            if (
+                applied
+                and self._protected_route_is_open(result, protected_points)
+                and 0 < updated_components <= component_count
+            ):
+                applied_ids.append(event.event_id)
+                component_count = updated_components
+            else:
+                for key, backup in backups.items():
+                    result.tiles[key][...] = backup
+                applied = self._stamp_event_into_tiles(
+                    result,
+                    event,
+                    affected,
+                    radius_scale=0.55,
+                )
+                updated_components = result.component_count
+                if (
+                    applied
+                    and self._protected_route_is_open(result, protected_points)
+                    and 0 < updated_components <= component_count
+                ):
+                    applied_ids.append(event.event_id)
+                    component_count = updated_components
+                else:
+                    for key, backup in backups.items():
+                        result.tiles[key][...] = backup
+            self._emit_progress(
+                progress,
+                "events",
+                index,
+                len(modifiers),
+                f"applied {event.kind} {index}/{len(modifiers)}",
+            )
+        return result, tuple(applied_ids)
+
+    @staticmethod
+    def _protected_route_is_open(
+        voxel_grid: VoxelGrid | TiledVoxelGrid,
+        protected_points: tuple[tuple[float, float, float], ...],
+    ) -> bool:
+        return all(
+            voxel_grid.sample_density(point) >= voxel_grid.iso_level
+            for point in protected_points
+        )
+
+    def _event_tile_keys(
+        self,
+        voxel_grid: TiledVoxelGrid,
+        event: GeologicalEvent,
+    ) -> tuple[tuple[int, int, int], ...]:
+        center = np.asarray(event.position, dtype=float)
+        radius = max(event.max_radius, voxel_grid.voxel_size)
+        origin = np.asarray(voxel_grid.origin, dtype=float)
+        low = np.floor((center - radius - origin) / voxel_grid.voxel_size).astype(int)
+        high = np.ceil((center + radius - origin) / voxel_grid.voxel_size).astype(int)
+        low_key = np.maximum(low // voxel_grid.tile_size, 0)
+        high_key = np.maximum(high // voxel_grid.tile_size, 0)
+        return tuple(
+            key
+            for key in voxel_grid.tiles
+            if all(
+                low_key[axis] <= key[axis] <= high_key[axis]
+                for axis in range(3)
+            )
+        )
+
+    def _stamp_event_into_tiles(
+        self,
+        voxel_grid: TiledVoxelGrid,
+        event: GeologicalEvent,
+        keys: tuple[tuple[int, int, int], ...],
+        *,
+        radius_scale: float = 1.0,
+    ) -> bool:
+        applied = False
+        for key in keys:
+            bounds = voxel_grid.tile_bounds(key)
+            start = np.asarray((bounds[0], bounds[2], bounds[4]), dtype=float)
+            tile_grid = VoxelGrid(
+                origin=tuple(
+                    np.asarray(voxel_grid.origin)
+                    + start * voxel_grid.voxel_size
+                ),
+                voxel_size=voxel_grid.voxel_size,
+                density=voxel_grid.tiles[key],
+                iso_level=voxel_grid.iso_level,
+            )
+            applied = (
+                self._stamp_structural_event(
+                    density=tile_grid.density,
+                    voxel_grid=tile_grid,
+                    event=event,
+                    radius_scale=radius_scale,
+                )
+                or applied
+            )
+        return applied
 
     @staticmethod
     def _carved_component_count(density: np.ndarray, iso_level: float) -> int:
@@ -402,6 +580,22 @@ class GeometryGenerator:
         upper = positions.max(axis=0) + margin
         voxel_size = self.config.voxel_size
         shape = tuple(int(math.ceil((upper[axis] - lower[axis]) / voxel_size)) + 1 for axis in range(3))
+        use_tiled_storage = (
+            self.config.storage_mode == "tiled"
+            or (
+                self.config.storage_mode == "auto"
+                and int(np.prod(shape)) > self.config.max_dense_voxels
+            )
+        )
+        if use_tiled_storage:
+            return self._build_tiled_voxel_grid(
+                lower=lower,
+                shape=shape,
+                samples_by_segment=samples_by_segment,
+                junction_stamps=junction_stamp_points,
+                stamp_points=stamp_points,
+                progress=progress,
+            )
         density = np.full(shape, -1.0, dtype=np.float32)
         self._emit_progress(
             progress,
@@ -455,6 +649,84 @@ class GeometryGenerator:
             voxel_size=voxel_size,
             density=density,
             iso_level=self.config.iso_level,
+        )
+
+    def _build_tiled_voxel_grid(
+        self,
+        *,
+        lower: np.ndarray,
+        shape: tuple[int, int, int],
+        samples_by_segment: dict[int, tuple[SectionSample, ...]],
+        junction_stamps: list[_JunctionStamp],
+        stamp_points: list[tuple[np.ndarray, float, float]],
+        progress: GeometryProgressCallback | None,
+    ) -> TiledVoxelGrid:
+        tile_size = max(int(self.config.chunk_size), 4)
+        maximum_key = np.maximum(
+            np.ceil((np.asarray(shape) - 1) / tile_size).astype(int) - 1,
+            0,
+        )
+        active_keys: set[tuple[int, int, int]] = set()
+        for position, radius_xy, radius_z in stamp_points:
+            radius = max(radius_xy, radius_z) + self.config.voxel_size
+            low_index = np.maximum(
+                np.floor((position - radius - lower) / self.config.voxel_size).astype(int),
+                0,
+            )
+            high_index = np.minimum(
+                np.ceil((position + radius - lower) / self.config.voxel_size).astype(int),
+                np.asarray(shape) - 1,
+            )
+            low_key = np.minimum(low_index // tile_size, maximum_key)
+            high_key = np.minimum(high_index // tile_size, maximum_key)
+            for x_key in range(int(low_key[0]), int(high_key[0]) + 1):
+                for y_key in range(int(low_key[1]), int(high_key[1]) + 1):
+                    for z_key in range(int(low_key[2]), int(high_key[2]) + 1):
+                        active_keys.add((x_key, y_key, z_key))
+
+        tiles: dict[tuple[int, int, int], np.ndarray] = {}
+        ordered_keys = sorted(active_keys)
+        self._emit_progress(
+            progress,
+            "voxel",
+            0,
+            len(ordered_keys),
+            f"stamping {len(ordered_keys)} sparse tiles",
+        )
+        for index, key in enumerate(ordered_keys, start=1):
+            start = np.asarray(key, dtype=int) * tile_size
+            end = np.minimum(start + tile_size, np.asarray(shape) - 1)
+            tile_shape = tuple(int(value) for value in end - start + 1)
+            tile = np.full(tile_shape, -1.0, dtype=np.float32)
+            tile_origin = lower + start * self.config.voxel_size
+            for samples in samples_by_segment.values():
+                self._stamp_sample_chain(
+                    density=tile,
+                    origin=tile_origin,
+                    samples=samples,
+                )
+            for stamp in junction_stamps:
+                self._stamp_junction_volume(
+                    density=tile,
+                    origin=tile_origin,
+                    stamp=stamp,
+                )
+            if np.any(tile >= self.config.iso_level):
+                tiles[key] = tile
+            self._emit_progress(
+                progress,
+                "voxel",
+                index,
+                len(ordered_keys),
+                f"tile {index}/{len(ordered_keys)}",
+            )
+        return TiledVoxelGrid(
+            origin=tuple(float(value) for value in lower),
+            voxel_size=self.config.voxel_size,
+            global_shape=shape,
+            iso_level=self.config.iso_level,
+            tile_size=tile_size,
+            tiles=tiles,
         )
 
     def _remove_small_carved_components(self, density: np.ndarray) -> tuple[int, int]:
@@ -1047,9 +1319,11 @@ class GeometryGenerator:
 
     def _march_chunks(
         self,
-        voxel_grid: VoxelGrid,
+        voxel_grid: VoxelGrid | TiledVoxelGrid,
         progress: GeometryProgressCallback | None,
     ) -> list[GeometryChunkMesh]:
+        if isinstance(voxel_grid, TiledVoxelGrid):
+            return self._march_tiled_chunks(voxel_grid, progress)
         meshes: list[GeometryChunkMesh] = []
         chunk_size = max(int(self.config.chunk_size), 4)
         nx, ny, nz = voxel_grid.shape
@@ -1115,6 +1389,52 @@ class GeometryGenerator:
             len(chunk_bounds),
             f"meshed {len(meshes)} non-empty chunks",
         )
+        return meshes
+
+    def _march_tiled_chunks(
+        self,
+        voxel_grid: TiledVoxelGrid,
+        progress: GeometryProgressCallback | None,
+    ) -> list[GeometryChunkMesh]:
+        meshes: list[GeometryChunkMesh] = []
+        items = sorted(voxel_grid.tiles.items())
+        for index, (key, density) in enumerate(items, start=1):
+            if (
+                np.all(density < voxel_grid.iso_level)
+                or np.all(density >= voxel_grid.iso_level)
+            ):
+                continue
+            local_vertices, faces, _normals, _values = measure.marching_cubes(
+                density,
+                level=voxel_grid.iso_level,
+                spacing=(voxel_grid.voxel_size,) * 3,
+                allow_degenerate=False,
+            )
+            bounds = voxel_grid.tile_bounds(key)
+            start = np.asarray((bounds[0], bounds[2], bounds[4]), dtype=float)
+            chunk_origin = np.asarray(voxel_grid.origin) + start * voxel_grid.voxel_size
+            world_vertices = local_vertices + chunk_origin
+            meshes.append(
+                GeometryChunkMesh(
+                    chunk_id=len(meshes),
+                    grid_bounds=bounds,
+                    vertices=tuple(
+                        tuple(float(value) for value in vertex)
+                        for vertex in world_vertices
+                    ),
+                    faces=tuple(
+                        tuple(int(value) for value in face)
+                        for face in faces
+                    ),
+                )
+            )
+            self._emit_progress(
+                progress,
+                "mesh",
+                index,
+                len(items),
+                f"tile {index}/{len(items)} -> {len(faces)} faces",
+            )
         return meshes
 
     def _march_chunk(

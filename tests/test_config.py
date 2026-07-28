@@ -23,6 +23,13 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(config.section_field.maximum_tube_width, 10.0)
         self.assertEqual(config.section_field.chamber_max_tube_width, 20.0)
         self.assertEqual(config.network.maximum_passage_radius, 5.0)
+        self.assertEqual(config.geometry.resolution_policy, "body")
+        self.assertEqual(config.geometry.resolution_quality, "preview")
+        self.assertAlmostEqual(config.geometry.voxel_size, 1.0)
+        self.assertAlmostEqual(
+            config.geometry.characteristic_samples_across_passage,
+            10.0,
+        )
         self.assertEqual(config.export.target, "blender")
         self.assertEqual(config.export.file_format, "glb")
         self.assertLessEqual(
@@ -115,6 +122,72 @@ class ProjectConfigurationTests(unittest.TestCase):
             configs["mars"].network.braid_grammar.half_length_fraction[1],
             configs["moon"].network.braid_grammar.half_length_fraction[1],
         )
+        self.assertEqual(
+            [configs[body].geometry.voxel_size for body in configs],
+            [1.0, 2.0, 4.0],
+        )
+        self.assertTrue(
+            all(
+                configs[body].geometry.characteristic_samples_across_passage
+                >= 10.0
+                for body in configs
+            )
+        )
+
+    def test_body_resolution_policy_tracks_run_quality(self) -> None:
+        standard = self._load_minimal(
+            """
+            schema_version = 2
+            [world]
+            body = "earth"
+            [run]
+            quality = "standard"
+            [geometry]
+            resolution_policy = "body"
+            """
+        )
+        production = self._load_minimal(
+            """
+            schema_version = 2
+            [world]
+            body = "earth"
+            [run]
+            quality = "production"
+            [geometry]
+            resolution_policy = "body"
+            """
+        )
+
+        self.assertAlmostEqual(standard.geometry.voxel_size, 0.7)
+        self.assertAlmostEqual(production.geometry.voxel_size, 0.5)
+        self.assertGreater(
+            production.geometry.characteristic_samples_across_passage,
+            standard.geometry.characteristic_samples_across_passage,
+        )
+
+    def test_fixed_geometry_resolution_remains_available(self) -> None:
+        fixed = self._load_minimal(
+            """
+            schema_version = 2
+            [geometry]
+            resolution_policy = "fixed"
+            voxel_size = 2.25
+            """
+        )
+
+        self.assertEqual(fixed.geometry.resolution_policy, "fixed")
+        self.assertAlmostEqual(fixed.geometry.voxel_size, 2.25)
+
+    def test_body_resolution_rejects_conflicting_fixed_voxel_size(self) -> None:
+        with self.assertRaisesRegex(ValueError, "cannot be combined"):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [geometry]
+                resolution_policy = "body"
+                voxel_size = 2.0
+                """
+            )
 
     def test_flow_regime_changes_morphology_without_changing_body_physics(self) -> None:
         baseline = self._load_minimal(
@@ -218,7 +291,7 @@ class ProjectConfigurationTests(unittest.TestCase):
             body = "mars"
             [export]
             target = "gazebo"
-            format = "dae"
+            format = "obj"
             """
         )
 
@@ -227,6 +300,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(manifest["world"]["body"]["name"], "mars")
         self.assertEqual(manifest["flow_regime"]["supply_rate_scale"], 1.0)
         self.assertEqual(manifest["export"]["target"], "gazebo")
+        self.assertEqual(manifest["geometry"]["resolution_policy"], "fixed")
         self.assertEqual(manifest["canonical_coordinates"]["up_axis"], "Z")
 
     def test_schema_v1_minimal_configuration_still_loads(self) -> None:
@@ -243,6 +317,37 @@ class ProjectConfigurationTests(unittest.TestCase):
                 schema_version = 2
                 [world]
                 body = "venus"
+                """
+            )
+
+    def test_unknown_top_level_section_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Unknown top-level"):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [geomtry]
+                voxel_size = 2.0
+                """
+            )
+
+    def test_incompatible_export_format_is_rejected_during_config_load(self) -> None:
+        with self.assertRaisesRegex(ValueError, "supports format"):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [export]
+                target = "blender"
+                format = "usd"
+                """
+            )
+
+    def test_unimplemented_export_capability_is_rejected_during_config_load(self) -> None:
+        with self.assertRaisesRegex(ValueError, "generate_lods"):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [export]
+                generate_lods = true
                 """
             )
 

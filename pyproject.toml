@@ -10,21 +10,50 @@ requires-python = ">=3.12"
 dependencies = [
   "matplotlib>=3.8",
   "numpy>=1.26",
+  "pillow>=10.0",
   "rich>=13.7",
   "scikit-image>=0.23",
   "scipy>=1.12",
   "trimesh>=4.4",
 ]
 
+[project.scripts]
+plume-generate = "plume_advanced.cli:main"
+
 [dependency-groups]
 dev = [
-  "pillow>=10.0",
+  "mypy>=1.15",
   "pytest>=8.0",
+  "pytest-cov>=6.0",
+  "ruff>=0.11",
 ]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["config", "output_guard", "world"]
+py-modules = ["config", "output_guard", "run_manifest", "world"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+markers = [
+  "integration: slower end-to-end generation and exporter tests",
+]
+filterwarnings = [
+  "ignore:Setting the shape on a NumPy array has been deprecated:DeprecationWarning:skimage.*",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+ignore = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true

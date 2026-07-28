@@ -29,6 +29,7 @@ class TargetExporterTests(unittest.TestCase):
             output = Path(temp_dir)
             self.assertEqual(result.primary_asset, output / "tube.glb")
             self.assertTrue((output / "tube_fallback.obj").is_file())
+            self.assertTrue((output / "tube_collision.obj").is_file())
             self.assertTrue((output / "tube_import_blender.py").is_file())
             instructions = (output / "README_IMPORT_BLENDER.txt").read_text(
                 encoding="utf-8"
@@ -86,8 +87,10 @@ class TargetExporterTests(unittest.TestCase):
             package = Path(temp_dir) / "tube"
             self.assertEqual(result.primary_asset, package / "model.sdf")
             self.assertTrue((package / "model.config").is_file())
+            self.assertTrue((package / "meshes" / "tube_collision.obj").is_file())
             sdf = (package / "model.sdf").read_text(encoding="utf-8")
             self.assertIn("model://tube/meshes/tube.obj", sdf)
+            self.assertIn("model://tube/meshes/tube_collision.obj", sdf)
             self.assertIn("<static>true</static>", sdf)
 
     def test_omniverse_package_declares_usd_units_and_axis(self) -> None:

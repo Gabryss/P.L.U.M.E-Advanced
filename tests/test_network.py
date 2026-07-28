@@ -63,9 +63,22 @@ class CaveNetworkTests(unittest.TestCase):
 
         entry_nodes = [node for node in cave_network.nodes if node.kind == "entry"]
         exit_nodes = [node for node in cave_network.nodes if node.kind == "exit"]
-        self.assertEqual(len(entry_nodes), 1)
+        self.assertGreaterEqual(len(entry_nodes), 2)
+        self.assertLessEqual(len(entry_nodes), project_config.network.source_count)
         self.assertEqual(len(exit_nodes), 1)
         self.assertGreaterEqual(len(cave_network.dominant_route_node_ids), 2)
+        self.assertGreater(summary["maximum_flux"], 0.0)
+        self.assertGreater(summary["mean_temperature_k"], 273.15)
+        self.assertLess(summary["max_flow_conservation_error"], 1e-8)
+        self.assertTrue(
+            all(
+                point.flux >= 0.0
+                and point.temperature_k >= 273.15
+                and point.age_s >= 0.0
+                for segment in cave_network.segments
+                for point in segment.points
+            )
+        )
 
         occupied_cells = np.argwhere(cave_network.occupancy)
         y0, x0 = occupied_cells.min(axis=0)
@@ -78,6 +91,7 @@ class CaveNetworkTests(unittest.TestCase):
         )
 
         segment_kinds = {segment.kind for segment in cave_network.segments}
+        self.assertIn("source_feeder", segment_kinds)
         self.assertIn("backbone", segment_kinds)
         self.assertIn("island_bypass", segment_kinds)
         self.assertIn("chamber_braid", segment_kinds)

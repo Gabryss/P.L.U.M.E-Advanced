@@ -39,6 +39,10 @@ class GeometryTests(unittest.TestCase):
         self.assertGreater(int(summary["stamped_sample_count"]), 0)
         self.assertGreater(int(summary["voxel_count"]), 0)
         self.assertGreater(int(summary["carved_voxel_count"]), 0)
+        self.assertAlmostEqual(summary["voxel_size_m"], 1.0)
+        self.assertGreaterEqual(summary["characteristic_passage_samples"], 10.0)
+        self.assertGreaterEqual(summary["minimum_section_width_samples"], 7.0)
+        self.assertGreater(summary["density_memory_mib"], 0.0)
         self.assertEqual(int(summary["voxel_component_count"]), 1)
         self.assertEqual(int(summary["component_count"]), 1)
         carved_ratio = summary["carved_voxel_count"] / summary["voxel_count"]

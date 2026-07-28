@@ -412,7 +412,6 @@ class GeologicalEventGenerator:
         for sample in samples:
             if sample.tube_width <= 0.0 or sample.tube_height <= 0.0:
                 continue
-            cover_score = 1.0 / max(sample.cover_thickness, 1.0)
             weak_roof_score = 1.0 / max(sample.roof_thickness, 1.0)
             junction_score = sample.junction_blend_weight
             width_score = sample.tube_width

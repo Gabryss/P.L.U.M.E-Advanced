@@ -39,9 +39,9 @@ stages: elevation, slope, cover thickness, roof competence, and growth cost.
 
 ![Stage B Cave Network](docs/figures/celestial_bodies/earth/stage_b_cave_network.png)
 
-Stage B generates the current default output: a host-driven braided cave-network
-skeleton with split/rejoin structure, islands, chamber-like expansions, and
-segment metadata for later geometry stages.
+Stage B generates a host-driven, multi-source braided cave network. Source
+feeders merge into the main route, flux is conserved through graph
+splits/merges, and every point carries flux, temperature, and lava age.
 
 ### Stage C: Section Field
 
@@ -67,8 +67,8 @@ separate editable props; collapse, choke, and infill events modify the cave
 density before the final isosurface is generated. The
 diagnostic render focuses on footprint alignment, longitudinal continuity,
 chunk coverage, and section slices. The chunk render isolates chunk coverage,
-face-count distribution, and Y/Z chunk spans. The presentation render gives a
-cleaner plan/mesh preview.
+face-count distribution, voxel size, minimum passage sampling, and Y/Z chunk
+spans. The presentation render gives a cleaner plan/mesh preview.
 
 ### Stage E: Geological Events
 
@@ -88,9 +88,13 @@ parent-collapse metadata.
 The same seed and base configuration produce materially different underground
 environments when the physical world preset changes:
 
-| Earth | Mars | Moon |
-|---|---|---|
-| ![Earth generated cave](docs/figures/celestial_bodies/earth/stage_d_geometry_presentation.png) | ![Mars generated cave](docs/figures/celestial_bodies/mars/stage_d_geometry_presentation.png) | ![Moon generated cave](docs/figures/celestial_bodies/moon/stage_d_geometry_presentation.png) |
+| View | Earth | Mars | Moon |
+|---|---|---|---|
+| Floor atlas | ![Earth floor atlas](docs/figures/celestial_bodies/earth/stage_c_floor_map.png) | ![Mars floor atlas](docs/figures/celestial_bodies/mars/stage_c_floor_map.png) | ![Moon floor atlas](docs/figures/celestial_bodies/moon/stage_c_floor_map.png) |
+| Geometry diagnostics | ![Earth geometry diagnostics](docs/figures/celestial_bodies/earth/stage_d_geometry.png) | ![Mars geometry diagnostics](docs/figures/celestial_bodies/mars/stage_d_geometry.png) | ![Moon geometry diagnostics](docs/figures/celestial_bodies/moon/stage_d_geometry.png) |
+| Chunk diagnostics | ![Earth chunk diagnostics](docs/figures/celestial_bodies/earth/stage_d_geometry_chunks.png) | ![Mars chunk diagnostics](docs/figures/celestial_bodies/mars/stage_d_geometry_chunks.png) | ![Moon chunk diagnostics](docs/figures/celestial_bodies/moon/stage_d_geometry_chunks.png) |
+| Geometry presentation | ![Earth generated cave](docs/figures/celestial_bodies/earth/stage_d_geometry_presentation.png) | ![Mars generated cave](docs/figures/celestial_bodies/mars/stage_d_geometry_presentation.png) | ![Moon generated cave](docs/figures/celestial_bodies/moon/stage_d_geometry_presentation.png) |
+| Geological events | ![Earth geological events](docs/figures/celestial_bodies/earth/stage_e_geological_events.png) | ![Mars geological events](docs/figures/celestial_bodies/mars/stage_e_geological_events.png) | ![Moon geological events](docs/figures/celestial_bodies/moon/stage_e_geological_events.png) |
 
 The complete eight-figure pipeline comparison for every body is in
 [`docs/CELESTIAL_BODY_GALLERY.md`](docs/CELESTIAL_BODY_GALLERY.md).
@@ -208,6 +212,7 @@ The generator:
 - resamples each segment adaptively based on curvature, width gradient, and junction proximity
 - moves the section centerline below the host surface using cover thickness and roof-thickness heuristics
 - builds geometry-ready local frames (`tangent`, `normal`, `binormal`)
+- turns underpass levels into smooth, clearance-constrained vertical grades
 - derives smooth section controls such as width, height, floor flattening, roof arch, and lateral skew
 - uses explicit Stage-B junction regions to blend split/merge morphology without hard jumps at nodes
 - records per-sample junction influences for later split/merge volume construction
@@ -223,6 +228,8 @@ Stage D turns the section field into a voxel-first mesh. The generator currently
 - adds controlled seeded wall roughness near the isosurface for less capsule-like walls
 - stamps widened junction/chamber regions into the same field
 - processes the field in 3D chunks
+- switches from a dense field to overlapping sparse tiles when the configured
+  dense-voxel budget would be exceeded
 - polygonizes chunk meshes with `scikit-image`
 - validates/exports the assembled OBJ-ready mesh with `trimesh`
 
@@ -358,7 +365,9 @@ or hand-authored scenarios, but the default project config is range-driven.
 
 | Key Group | Purpose |
 |---|---|
-| `voxel_size`, `density_margin` | control field resolution and padding around the stamped cave network |
+| `resolution_policy` | select body/quality-aware resolution or a legacy fixed voxel size |
+| `voxel_size`, `density_margin` | set fixed-policy resolution and padding around the stamped cave network |
+| `storage_mode`, `max_dense_voxels` | select dense/tiled storage or automatically enforce a dense-memory budget |
 | `chunk_size` | controls how much of the density grid is polygonized at once |
 | `iso_level` | defines the density threshold used for the cave wall surface |
 | `tunnel_radius_scale`, `junction_radius_scale`, `chamber_radius_scale` | control how section samples widen while stamping |
@@ -366,6 +375,21 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `wall_roughness_*` | add seeded near-wall roughness before marching cubes |
 | `junction_irregularity_*` | deform junction/chamber volumes so they blend less like perfect ellipsoids |
 | `minimum_radius`, `weld_tolerance` | keep thin passages meshable and weld repeated isosurface vertices |
+
+With `resolution_policy = "body"`, Stage D resolves the voxel size from the
+selected body and `[run].quality`:
+
+| Quality | Earth | Mars | Moon |
+|---|---:|---:|---:|
+| `preview` | 1.0 m | 2.0 m | 4.0 m |
+| `standard` | 0.7 m | 1.4 m | 2.8 m |
+| `production` | 0.5 m | 1.0 m | 2.0 m |
+
+The policy guarantees at least ten nominal samples across an Earth preview
+passage and records both nominal and actual minimum-section sampling in the
+geometry summary. To request an exact resolution, use
+`resolution_policy = "fixed"` together with `voxel_size`; mixing a fixed size
+with the body policy is rejected instead of silently choosing one.
 
 ### Event Config
 
@@ -427,8 +451,11 @@ algorithm or developer workflow:
 Generate the current cave network with the single entrypoint:
 
 ```bash
-.venv/bin/python scripts/generate_cave.py
+.venv/bin/plume-generate
 ```
+
+The repository wrapper `.venv/bin/python scripts/generate_cave.py` remains
+available.
 
 Generation checks every destination directory before writing. If a destination
 already contains files, an interactive run asks for confirmation and a
@@ -477,6 +504,8 @@ That one command produces:
 - `outputs/stage_d_geometry_chunks.png`
 - `outputs/stage_d_geometry_presentation.png`
 - `outputs/resolved_project_config.json`
+- `outputs/run_manifest.json` with dependency versions, source state, elapsed
+  time, and SHA-256 checksums
 - `outputs/export_<target>/...`
 
 ### Import the default Blender package
@@ -535,7 +564,8 @@ packages, and validation/performance gates.
 
 ## Existing stages and deferred work
 
-These are placeholders for the next implementation passes.
+The remaining placeholders focus on surface synthesis and target-native scene
+features.
 
 ### Stage D: Geometry
 

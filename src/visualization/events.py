@@ -5,8 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-import numpy as np
-
 from stages.events import GeologicalEventField
 from stages.network import CaveNetwork
 from stages.section_field import SectionField

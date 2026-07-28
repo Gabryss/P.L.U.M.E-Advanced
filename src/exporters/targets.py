@@ -289,10 +289,18 @@ def _export_glb_or_obj(
             f"Target {export_config.target!r} currently supports glb or obj; "
             f"got {file_format!r}. USD is supported by the Omniverse adapter."
         )
+    files = list(files)
+    if export_config.generate_collision:
+        files.append(
+            _write_simplified_collision_obj(
+                cave_geometry,
+                output / f"{asset_name}_collision.obj",
+            )
+        )
     return ExportResult(
         target=export_config.target,
         primary_asset=asset,
-        files=files,
+        files=tuple(files),
         warnings=_pending_feature_warnings(export_config),
     )
 
@@ -371,6 +379,14 @@ def _export_gazebo(
     meshes = package / "meshes"
     meshes.mkdir(parents=True, exist_ok=True)
     visual_mesh = export_geometry_obj(cave_geometry, meshes / f"{asset_name}.obj")
+    collision_mesh = (
+        _write_simplified_collision_obj(
+            cave_geometry,
+            meshes / f"{asset_name}_collision.obj",
+        )
+        if export_config.generate_collision
+        else visual_mesh
+    )
 
     model_config = package / "model.config"
     model_config.write_text(
@@ -390,6 +406,7 @@ def _export_gazebo(
     )
     model_sdf = package / "model.sdf"
     uri = f"model://{asset_name}/meshes/{visual_mesh.name}"
+    collision_uri = f"model://{asset_name}/meshes/{collision_mesh.name}"
     model_sdf.write_text(
         "\n".join(
             (
@@ -405,7 +422,7 @@ def _export_gazebo(
                 "      </visual>",
                 '      <collision name="collision">',
                 "        <geometry><mesh>",
-                f"          <uri>{escape(uri)}</uri>",
+                f"          <uri>{escape(collision_uri)}</uri>",
                 "        </mesh></geometry>",
                 "      </collision>",
                 "    </link>",
@@ -417,15 +434,7 @@ def _export_gazebo(
         encoding="utf-8",
     )
     descriptor = package / "plume_export.json"
-    warning = (
-        "The first Gazebo adapter reuses the visual mesh for collision. "
-        "A simplified tiled collision mesh is scheduled in Phase 5."
-    )
-    warnings = (warning,) + tuple(
-        item
-        for item in _pending_feature_warnings(export_config)
-        if "collision" not in item.lower()
-    )
+    warnings = _pending_feature_warnings(export_config)
     descriptor.write_text(
         json.dumps(
             {
@@ -439,7 +448,7 @@ def _export_gazebo(
         ),
         encoding="utf-8",
     )
-    files = [visual_mesh, model_config, model_sdf, descriptor]
+    files = [visual_mesh, collision_mesh, model_config, model_sdf, descriptor]
     material = visual_mesh.with_suffix(".mtl")
     if material.exists():
         files.append(material)
@@ -466,7 +475,12 @@ def _export_omniverse(
         )
 
     asset = output / f"{asset_name}.usd"
-    _write_usda(cave_geometry, asset, asset_name)
+    _write_usda(
+        cave_geometry,
+        asset,
+        asset_name,
+        generate_collision=export_config.generate_collision,
+    )
     descriptor = output / f"{asset_name}.omniverse.json"
     warnings = _pending_feature_warnings(export_config)
     descriptor.write_text(
@@ -496,6 +510,8 @@ def _write_usda(
     cave_geometry: CaveGeometry,
     output: Path,
     asset_name: str,
+    *,
+    generate_collision: bool = False,
 ) -> None:
     vertices, faces = _canonical_cave_mesh(cave_geometry)
     lines = [
@@ -506,12 +522,24 @@ def _write_usda(
         '    upAxis = "Z"',
         ")",
         "",
-        f'def Xform "PLUME_Cave" (',
+        'def Xform "PLUME_Cave" (',
         '    kind = "component"',
         ")",
         "{",
     ]
     lines.extend(_usda_mesh_lines("CaveWall", vertices, faces, indent="    "))
+    if generate_collision:
+        collision_vertices, collision_faces = _simplified_collision_arrays(
+            cave_geometry
+        )
+        lines.extend(
+            _usda_mesh_lines(
+                "CaveCollision",
+                collision_vertices,
+                collision_faces,
+                indent="    ",
+            )
+        )
     for event_mesh in cave_geometry.event_meshes:
         event_name = f"Event_{event_mesh.event_id:04d}_{_safe_asset_name(event_mesh.kind)}"
         lines.extend(
@@ -584,13 +612,57 @@ def _safe_asset_name(value: str) -> str:
     return safe.strip("_") or "plume_cave"
 
 
+def _write_simplified_collision_obj(
+    cave_geometry: CaveGeometry,
+    output_path: Path,
+) -> Path:
+    """Write a deterministic vertex-clustered collision approximation."""
+
+    clustered, remapped = _simplified_collision_arrays(cave_geometry)
+    collision = trimesh.Trimesh(
+        vertices=clustered,
+        faces=remapped,
+        process=False,
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    collision.export(output_path)
+    return output_path
+
+
+def _simplified_collision_arrays(
+    cave_geometry: CaveGeometry,
+) -> tuple[np.ndarray, np.ndarray]:
+    vertices, faces = _canonical_cave_mesh(cave_geometry)
+    if len(vertices) == 0 or len(faces) == 0:
+        raise ValueError("Cannot create collision geometry from an empty cave mesh")
+    bounds = np.ptp(vertices, axis=0)
+    cell_size = max(
+        cave_geometry.voxel_grid.voxel_size * 2.5,
+        float(np.max(bounds)) / 240.0,
+        1e-6,
+    )
+    keys = np.floor((vertices - vertices.min(axis=0)) / cell_size).astype(np.int64)
+    unique_keys, inverse = np.unique(keys, axis=0, return_inverse=True)
+    clustered = np.zeros((len(unique_keys), 3), dtype=np.float64)
+    counts = np.bincount(inverse)
+    for axis in range(3):
+        clustered[:, axis] = np.bincount(
+            inverse,
+            weights=vertices[:, axis],
+            minlength=len(unique_keys),
+        ) / np.maximum(counts, 1)
+    remapped = inverse[faces]
+    valid = (
+        (remapped[:, 0] != remapped[:, 1])
+        & (remapped[:, 1] != remapped[:, 2])
+        & (remapped[:, 2] != remapped[:, 0])
+    )
+    remapped = np.unique(np.sort(remapped[valid], axis=1), axis=0)
+    return clustered, remapped
+
+
 def _pending_feature_warnings(export_config: ExportConfig) -> tuple[str, ...]:
     warnings: list[str] = []
-    if export_config.generate_collision:
-        warnings.append(
-            "A separate simplified collision asset is not implemented yet for "
-            f"the {export_config.target} adapter."
-        )
     if export_config.generate_lods:
         warnings.append(
             f"Generated LOD meshes are not implemented yet for the {export_config.target} adapter."

@@ -8,6 +8,7 @@ import json
 import math
 from pathlib import Path
 import re
+import shutil
 import struct
 import subprocess
 import tempfile
@@ -98,6 +99,7 @@ def export_geometry_glb(cave_geometry: CaveGeometry, output_path: str | Path) ->
 
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
+    _validate_texture_dependencies(cave_geometry)
     builder = _StrictGlbBuilder()
     material_cache: dict[tuple[tuple[str, str], str], object] = {}
     image_cache: dict[str, object] = {}
@@ -137,6 +139,36 @@ def export_geometry_glb(cave_geometry: CaveGeometry, output_path: str | Path) ->
     output.write_bytes(builder.to_glb())
     _write_geometry_manifest(cave_geometry, output.with_suffix(".manifest.json"))
     return output
+
+
+def _validate_texture_dependencies(cave_geometry: CaveGeometry) -> None:
+    """Fail explicitly when a requested material map cannot be embedded."""
+
+    if not cave_geometry.config.strict_texture_loading:
+        return
+    configured = tuple(
+        path
+        for path in (
+            cave_geometry.config.cave_diffuse_texture,
+            cave_geometry.config.cave_normal_texture,
+            cave_geometry.config.cave_roughness_texture,
+        )
+        if path
+    )
+    missing = [path for path in configured if not Path(path).is_file()]
+    if missing:
+        raise FileNotFoundError(
+            "Configured cave textures do not exist: " + ", ".join(missing)
+        )
+    try:
+        from PIL import Image as _Image  # noqa: F401
+    except ImportError as error:
+        raise RuntimeError("Pillow is required for textured GLB export") from error
+    if any(Path(path).suffix.lower() == ".exr" for path in configured):
+        if shutil.which("convert") is None:
+            raise RuntimeError(
+                "ImageMagick 'convert' is required to embed configured EXR textures"
+            )
 
 
 def _add_cave_wall_to_strict_glb(
@@ -362,11 +394,21 @@ def _canonical_to_gltf_translation(
 
 
 def _cave_strict_glb_material(cave_geometry: CaveGeometry, *, builder, image_cache: dict) -> int:
-    diffuse_image = _load_texture_image(cave_geometry.config.cave_diffuse_texture, image_cache)
-    normal_image = _load_texture_image(cave_geometry.config.cave_normal_texture, image_cache)
+    texture_size = cave_geometry.config.embedded_texture_max_size
+    diffuse_image = _load_texture_image(
+        cave_geometry.config.cave_diffuse_texture,
+        image_cache,
+        max_size=texture_size,
+    )
+    normal_image = _load_texture_image(
+        cave_geometry.config.cave_normal_texture,
+        image_cache,
+        max_size=texture_size,
+    )
     roughness_image = _load_metallic_roughness_texture(
         cave_geometry.config.cave_roughness_texture,
         image_cache,
+        max_size=texture_size,
     )
     return builder.material(
         name="cave_wall_material",
@@ -1030,26 +1072,32 @@ def _event_glb_material(event_mesh, *, material_cache: dict, image_cache: dict):
     return material
 
 
-def _load_texture_image(path: str | None, image_cache: dict[str, object]):
+def _load_texture_image(
+    path: str | None,
+    image_cache: dict[str, object],
+    *,
+    max_size: int = GLB_EMBEDDED_TEXTURE_MAX_SIZE,
+):
     if not path:
         return None
     texture_path = Path(path)
     if texture_path.suffix.lower() not in {".jpg", ".jpeg", ".png", ".exr"}:
         return None
-    cache_key = str(texture_path.resolve())
+    max_size = max(int(max_size), 1)
+    cache_key = f"{texture_path.resolve()}@{max_size}"
     if cache_key in image_cache:
         return image_cache[cache_key]
     try:
         from PIL import Image
 
         if texture_path.suffix.lower() == ".exr":
-            image = _convert_exr_to_image(texture_path)
+            image = _convert_exr_to_image(texture_path, max_size=max_size)
         else:
             image = Image.open(texture_path).convert("RGBA")
         if image is None:
             return None
         image.thumbnail(
-            (GLB_EMBEDDED_TEXTURE_MAX_SIZE, GLB_EMBEDDED_TEXTURE_MAX_SIZE),
+            (max_size, max_size),
             Image.Resampling.LANCZOS,
         )
         image_cache[cache_key] = image.copy()
@@ -1058,8 +1106,13 @@ def _load_texture_image(path: str | None, image_cache: dict[str, object]):
         return None
 
 
-def _load_metallic_roughness_texture(path: str | None, image_cache: dict[str, object]):
-    roughness = _load_texture_image(path, image_cache)
+def _load_metallic_roughness_texture(
+    path: str | None,
+    image_cache: dict[str, object],
+    *,
+    max_size: int = GLB_EMBEDDED_TEXTURE_MAX_SIZE,
+):
+    roughness = _load_texture_image(path, image_cache, max_size=max_size)
     if roughness is None:
         return None
     try:
@@ -1073,7 +1126,11 @@ def _load_metallic_roughness_texture(path: str | None, image_cache: dict[str, ob
     return Image.merge("RGBA", (one, roughness_channel, zero, one))
 
 
-def _convert_exr_to_image(texture_path: Path):
+def _convert_exr_to_image(
+    texture_path: Path,
+    *,
+    max_size: int = GLB_EMBEDDED_TEXTURE_MAX_SIZE,
+):
     try:
         from PIL import Image
     except ImportError:
@@ -1084,7 +1141,7 @@ def _convert_exr_to_image(texture_path: Path):
             "convert",
             str(texture_path),
             "-resize",
-            f"{GLB_EMBEDDED_TEXTURE_MAX_SIZE}x{GLB_EMBEDDED_TEXTURE_MAX_SIZE}>",
+            f"{max_size}x{max_size}>",
             temp_file.name,
         ]
         try:

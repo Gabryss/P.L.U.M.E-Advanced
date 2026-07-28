@@ -1,5 +1,6 @@
 """Smoke tests for the stage-C section field."""
 
+from dataclasses import replace
 import math
 from pathlib import Path
 import sys
@@ -124,6 +125,45 @@ class SectionFieldTests(unittest.TestCase):
             continuity_angles.append(math.degrees(math.acos(dot)))
         if continuity_angles:
             self.assertLess(float(np.median(continuity_angles)), 95.0)
+
+        underpasses = [
+            segment
+            for segment in cave_network.segments
+            if segment.kind == "underpass" and segment.z_level != 0
+        ]
+        if underpasses:
+            flat_network = replace(
+                cave_network,
+                segments=tuple(
+                    replace(segment, z_level=0)
+                    if segment.kind == "underpass"
+                    else segment
+                    for segment in cave_network.segments
+                ),
+            )
+            flat_sections = SectionFieldGenerator(
+                project_config.section_field
+            ).generate(flat_network)
+            flat_lookup = {
+                field.segment_id: field
+                for field in flat_sections.segment_fields
+            }
+            physical_lookup = {
+                field.segment_id: field
+                for field in section_field.segment_fields
+            }
+            separations = []
+            for segment in underpasses:
+                physical = physical_lookup[segment.segment_id].samples
+                flat = flat_lookup[segment.segment_id].samples
+                midpoint = len(physical) // 2
+                separations.append(abs(physical[midpoint].z - flat[midpoint].z))
+                self.assertAlmostEqual(physical[0].z, flat[0].z, places=6)
+                self.assertAlmostEqual(physical[-1].z, flat[-1].z, places=6)
+            self.assertGreater(
+                max(separations),
+                project_config.section_field.minimum_vertical_clearance,
+            )
 
 
 if __name__ == "__main__":
