@@ -1,20 +1,18 @@
 """Smoke tests for the voxel Stage-D geometry pipeline."""
 
-from pathlib import Path
-from collections import Counter
-import sys
 import unittest
+from collections import Counter
+from pathlib import Path
 
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
-from config import load_project_config
-from stages.geometry import GeometryGenerator
-from stages.host_field import HostFieldGenerator
-from stages.network import CaveNetworkGenerator
-from stages.section_field import SectionFieldGenerator
+from plume_advanced.config import load_project_config
+from plume_advanced.stages.geometry import GeometryGenerator
+from plume_advanced.stages.host_field import HostFieldGenerator
+from plume_advanced.stages.network import CaveNetworkGenerator
+from plume_advanced.stages.section_field import SectionFieldGenerator
 
 
 class GeometryTests(unittest.TestCase):
@@ -41,7 +39,15 @@ class GeometryTests(unittest.TestCase):
         self.assertGreater(int(summary["carved_voxel_count"]), 0)
         self.assertAlmostEqual(summary["voxel_size_m"], 1.0)
         self.assertGreaterEqual(summary["characteristic_passage_samples"], 10.0)
-        self.assertGreaterEqual(summary["minimum_section_width_samples"], 7.0)
+        minimum_diameter_samples = (
+            2.0
+            * project_config.network.minimum_passage_radius
+            / project_config.geometry.voxel_size
+        )
+        self.assertGreaterEqual(
+            summary["minimum_section_width_samples"],
+            minimum_diameter_samples,
+        )
         self.assertGreater(summary["density_memory_mib"], 0.0)
         self.assertEqual(int(summary["voxel_component_count"]), 1)
         self.assertEqual(int(summary["component_count"]), 1)

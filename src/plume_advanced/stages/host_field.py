@@ -14,9 +14,9 @@ high-frequency noise and instead focuses on smooth, readable proxies:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import json
 import math
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np

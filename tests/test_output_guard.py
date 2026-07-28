@@ -1,15 +1,13 @@
 """Regression tests for safe generation-output handling."""
 
-from io import StringIO
-from pathlib import Path
-import sys
 import tempfile
 import unittest
+from io import StringIO
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
-from output_guard import (
+from plume_advanced.output_guard import (
     OutputOverwriteRefused,
     populated_output_directories,
     require_output_overwrite_confirmation,

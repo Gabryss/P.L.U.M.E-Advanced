@@ -4,17 +4,18 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
-from output_guard import OutputOverwriteRefused, require_output_overwrite_confirmation
-
+from plume_advanced.output_guard import (
+    OutputOverwriteRefused,
+    require_output_overwrite_confirmation,
+)
 
 BODIES = ("earth", "mars", "moon")
 FIGURE_FILENAMES = (

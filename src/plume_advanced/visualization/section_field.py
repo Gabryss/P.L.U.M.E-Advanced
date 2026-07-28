@@ -7,8 +7,8 @@ from pathlib import Path
 
 import numpy as np
 
-from stages.network import CaveNetwork
-from stages.section_field import SectionField, SectionSample
+from plume_advanced.stages.network import CaveNetwork
+from plume_advanced.stages.section_field import SectionField, SectionSample
 
 
 @dataclass(frozen=True)

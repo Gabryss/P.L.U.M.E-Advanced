@@ -1,17 +1,15 @@
 """Configuration and world-profile regression tests."""
 
-from pathlib import Path
-import sys
 import tempfile
 import textwrap
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
-from config import load_project_config, project_config_manifest
-from stages.events import GeologicalEventGenerator
-from stages.section_field import SectionField, SectionFieldConfig
+from plume_advanced.config import load_project_config, project_config_manifest
+from plume_advanced.stages.events import GeologicalEventGenerator
+from plume_advanced.stages.section_field import SectionField, SectionFieldConfig
 
 
 class ProjectConfigurationTests(unittest.TestCase):
@@ -327,6 +325,34 @@ class ProjectConfigurationTests(unittest.TestCase):
                 schema_version = 2
                 [geomtry]
                 voxel_size = 2.0
+                """
+            )
+
+    def test_unknown_nested_keys_report_the_complete_configuration_path(self) -> None:
+        with self.assertRaisesRegex(ValueError, r"geometry\.voxl_size"):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [geometry]
+                voxl_size = 2.0
+                """
+            )
+
+        with self.assertRaisesRegex(ValueError, r"network\.braid_grammar\.zon_count"):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [network.braid_grammar]
+                zon_count = [2, 3]
+                """
+            )
+
+        with self.assertRaisesRegex(ValueError, r"host_field\.grid\.widht"):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [host_field.grid]
+                widht = 1200.0
                 """
             )
 

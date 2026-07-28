@@ -1,19 +1,18 @@
 """Target-adapter package tests using a tiny canonical cave."""
 
 import json
-from pathlib import Path
-import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
+import trimesh
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
-from exporters import export_target_asset
-from stages.geometry_types import CaveGeometry, GeometryConfig, VoxelGrid
-from world import ExportConfig
+from plume_advanced.exporters import export_target_asset
+from plume_advanced.stages.geometry_types import CaveGeometry, GeometryConfig, VoxelGrid
+from plume_advanced.world import ExportConfig
 
 
 class TargetExporterTests(unittest.TestCase):
@@ -29,7 +28,11 @@ class TargetExporterTests(unittest.TestCase):
             output = Path(temp_dir)
             self.assertEqual(result.primary_asset, output / "tube.glb")
             self.assertTrue((output / "tube_fallback.obj").is_file())
-            self.assertTrue((output / "tube_collision.obj").is_file())
+            collision_path = output / "tube_collision.obj"
+            self.assertTrue(collision_path.is_file())
+            collision = trimesh.load_mesh(collision_path, process=False)
+            self.assertGreater(len(collision.faces), 0)
+            self.assertTrue(collision.is_winding_consistent)
             self.assertTrue((output / "tube_import_blender.py").is_file())
             instructions = (output / "README_IMPORT_BLENDER.txt").read_text(
                 encoding="utf-8"

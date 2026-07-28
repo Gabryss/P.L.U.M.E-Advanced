@@ -1,18 +1,16 @@
 """Smoke tests for the stage-A host field."""
 
-from pathlib import Path
 import re
-import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
-from config import load_project_config
-from stages.host_field import HostFieldConfig, HostFieldGenerator
+from plume_advanced.config import load_project_config
+from plume_advanced.stages.host_field import HostFieldConfig, HostFieldGenerator
 
 
 class HostFieldTests(unittest.TestCase):

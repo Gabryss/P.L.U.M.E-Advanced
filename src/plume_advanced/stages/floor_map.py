@@ -9,16 +9,16 @@ can overlap in a top-down projection.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, replace
 import json
 import math
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
-from stages.network import CaveNetwork
-from stages.section_field import SectionField, SectionSample
+from plume_advanced.stages.network import CaveNetwork
+from plume_advanced.stages.section_field import SectionField, SectionSample
 
 
 @dataclass(frozen=True)

@@ -7,8 +7,8 @@ from pathlib import Path
 
 import numpy as np
 
-from stages.geometry import CaveGeometry
-from stages.network import CaveNetwork
+from plume_advanced.stages.geometry import CaveGeometry
+from plume_advanced.stages.network import CaveNetwork
 
 
 @dataclass(frozen=True)

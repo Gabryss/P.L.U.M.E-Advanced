@@ -21,6 +21,15 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y imagemagick
       - run: uv sync --locked --group dev
       - run: uv run ruff check src scripts tests
-      - run: uv run mypy src/world.py src/output_guard.py
+      - run: >-
+          uv run mypy
+          src/plume_advanced/config.py
+          src/plume_advanced/world.py
+          src/plume_advanced/output_guard.py
+          src/plume_advanced/run_manifest.py
+          src/plume_advanced/cli.py
+          src/plume_advanced/stages/geometry.py
+          src/plume_advanced/stages/geometry_types.py
       - run: uv run python -m compileall -q src scripts tests
-      - run: uv run pytest -q
+      - run: uv run pytest -q --cov=plume_advanced --cov-report=term-missing --cov-fail-under=70
+      - run: uv build

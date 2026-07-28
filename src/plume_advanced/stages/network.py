@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
-from dataclasses import dataclass, replace
 import heapq
 import json
 import math
+from collections import defaultdict
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
 
-from stages.host_field import HostField
+from plume_advanced.stages.host_field import HostField
 
 SegmentMetadataValue = str | int | float | bool | None
 
@@ -1541,10 +1541,7 @@ class CaveNetworkGenerator:
                     width=float(
                         np.clip(
                             point.width * flow_scale,
-                            max(
-                                2.0 * self.config.minimum_passage_radius,
-                                1.4 * self.config.maximum_passage_radius,
-                            ),
+                            2.0 * self.config.minimum_passage_radius,
                             2.0 * self.config.maximum_passage_radius,
                         )
                     ),

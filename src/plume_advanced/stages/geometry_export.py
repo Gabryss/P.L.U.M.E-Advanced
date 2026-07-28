@@ -2,26 +2,23 @@
 
 from __future__ import annotations
 
-import os
 import io
 import json
 import math
-from pathlib import Path
+import os
 import re
 import shutil
 import struct
 import subprocess
 import tempfile
+from pathlib import Path
 
 import numpy as np
 import trimesh
-from trimesh.visual.material import PBRMaterial, SimpleMaterial
-from trimesh.visual.texture import TextureVisuals
 
-from stages.geometry_types import CaveGeometry
+from plume_advanced.stages.geometry_types import CaveGeometry
 
 GLB_EMBEDDED_TEXTURE_MAX_SIZE = 1024
-GLB_MAX_PRIMITIVE_VERTICES = 65_000
 GLB_CAVE_TEXTURE_SCALE_METERS = 8.0
 
 
@@ -116,6 +113,8 @@ def export_geometry_glb(cave_geometry: CaveGeometry, output_path: str | Path) ->
             builder=builder,
             material_cache=material_cache,
             image_cache=image_cache,
+            strict=cave_geometry.config.strict_texture_loading,
+            max_size=cave_geometry.config.embedded_texture_max_size,
         )
         node_name = f"event_{event_mesh.event_id:04d}_{event_mesh.kind}"
         builder.mesh_node(
@@ -152,13 +151,28 @@ def _validate_texture_dependencies(cave_geometry: CaveGeometry) -> None:
             cave_geometry.config.cave_diffuse_texture,
             cave_geometry.config.cave_normal_texture,
             cave_geometry.config.cave_roughness_texture,
+            cave_geometry.config.cave_displacement_texture,
+            *(
+                path
+                for event_mesh in cave_geometry.event_meshes
+                for _kind, path in event_mesh.material_maps
+            ),
         )
         if path
     )
     missing = [path for path in configured if not Path(path).is_file()]
     if missing:
         raise FileNotFoundError(
-            "Configured cave textures do not exist: " + ", ".join(missing)
+            "Configured textures do not exist: " + ", ".join(missing)
+        )
+    unsupported = [
+        path
+        for path in configured
+        if Path(path).suffix.lower() not in {".jpg", ".jpeg", ".png", ".exr"}
+    ]
+    if unsupported:
+        raise ValueError(
+            "Configured textures use unsupported formats: " + ", ".join(unsupported)
         )
     try:
         from PIL import Image as _Image  # noqa: F401
@@ -410,6 +424,13 @@ def _cave_strict_glb_material(cave_geometry: CaveGeometry, *, builder, image_cac
         image_cache,
         max_size=texture_size,
     )
+    for label, path, image in (
+        ("diffuse", cave_geometry.config.cave_diffuse_texture, diffuse_image),
+        ("normal", cave_geometry.config.cave_normal_texture, normal_image),
+        ("roughness", cave_geometry.config.cave_roughness_texture, roughness_image),
+    ):
+        if cave_geometry.config.strict_texture_loading and path and image is None:
+            raise RuntimeError(f"Failed to decode configured cave {label} texture: {path}")
     return builder.material(
         name="cave_wall_material",
         base_color_factor=(0.36, 0.35, 0.31, 1.0),
@@ -464,7 +485,15 @@ def _write_geometry_manifest(cave_geometry: CaveGeometry, output_path: Path) -> 
     return output_path
 
 
-def _event_mesh_to_glb_payload(event_mesh, *, builder, material_cache: dict, image_cache: dict) -> dict[str, object]:
+def _event_mesh_to_glb_payload(
+    event_mesh,
+    *,
+    builder,
+    material_cache: dict,
+    image_cache: dict,
+    strict: bool,
+    max_size: int,
+) -> dict[str, object]:
     vertices = np.array(event_mesh.vertices, dtype=np.float32)
     pivot = _event_pivot(vertices)
     local_vertices = vertices - pivot
@@ -473,6 +502,8 @@ def _event_mesh_to_glb_payload(event_mesh, *, builder, material_cache: dict, ima
         builder=builder,
         material_cache=material_cache,
         image_cache=image_cache,
+        strict=strict,
+        max_size=max_size,
     )
 
     if event_mesh.face_uvs and len(event_mesh.face_uvs) == len(event_mesh.faces):
@@ -521,18 +552,45 @@ def _event_mesh_to_glb_payload(event_mesh, *, builder, material_cache: dict, ima
     }
 
 
-def _event_strict_glb_material(event_mesh, *, builder, material_cache: dict, image_cache: dict) -> int:
+def _event_strict_glb_material(
+    event_mesh,
+    *,
+    builder,
+    material_cache: dict,
+    image_cache: dict,
+    strict: bool,
+    max_size: int,
+) -> int:
     cache_key = (tuple(event_mesh.material_maps), event_mesh.source_shape_type)
     if cache_key in material_cache:
         return material_cache[cache_key]
 
     material_maps = dict(event_mesh.material_maps)
-    diffuse_image = _load_texture_image(material_maps.get("diffuse"), image_cache)
-    normal_image = _load_texture_image(material_maps.get("normal"), image_cache)
+    diffuse_image = _load_texture_image(
+        material_maps.get("diffuse"),
+        image_cache,
+        max_size=max_size,
+    )
+    normal_image = _load_texture_image(
+        material_maps.get("normal"),
+        image_cache,
+        max_size=max_size,
+    )
     roughness_image = _load_metallic_roughness_texture(
         material_maps.get("roughness"),
         image_cache,
+        max_size=max_size,
     )
+    for label, image in (
+        ("diffuse", diffuse_image),
+        ("normal", normal_image),
+        ("roughness", roughness_image),
+    ):
+        path = material_maps.get(label)
+        if strict and path and image is None:
+            raise RuntimeError(
+                f"Failed to decode event {event_mesh.event_id} {label} texture: {path}"
+            )
     material_index = builder.material(
         name=_event_shared_material_name(event_mesh),
         base_color_texture=diffuse_image,
@@ -544,83 +602,6 @@ def _event_strict_glb_material(event_mesh, *, builder, material_cache: dict, ima
     )
     material_cache[cache_key] = material_index
     return material_index
-
-
-def _add_cave_wall_to_glb_scene(scene: trimesh.Scene, cave_geometry: CaveGeometry) -> None:
-    cave_material = TextureVisuals(
-        material=SimpleMaterial(
-            diffuse=(92, 88, 80, 255),
-            glossiness=0.08,
-        )
-    )
-    if cave_geometry.chunk_meshes:
-        for chunk_mesh in cave_geometry.chunk_meshes:
-            if not chunk_mesh.vertices or not chunk_mesh.faces:
-                continue
-            mesh = trimesh.Trimesh(
-                vertices=np.array(chunk_mesh.vertices, dtype=np.float64),
-                faces=np.array(chunk_mesh.faces, dtype=np.int64),
-                process=False,
-                visual=cave_material,
-            )
-            name = f"cave_wall_chunk_{chunk_mesh.chunk_id:03d}"
-            scene.add_geometry(mesh, node_name=name, geom_name=name)
-        return
-
-    if not cave_geometry.assembled_vertices or not cave_geometry.assembled_faces:
-        return
-    vertices = np.array(cave_geometry.assembled_vertices, dtype=np.float64)
-    faces = tuple(cave_geometry.assembled_faces)
-    if len(vertices) <= GLB_MAX_PRIMITIVE_VERTICES:
-        mesh = trimesh.Trimesh(
-            vertices=vertices,
-            faces=np.array(faces, dtype=np.int64),
-            process=False,
-            visual=cave_material,
-        )
-        scene.add_geometry(mesh, node_name="cave_wall", geom_name="cave_wall")
-        return
-
-    for index, (part_vertices, part_faces) in enumerate(_split_mesh_faces(vertices, faces)):
-        mesh = trimesh.Trimesh(
-            vertices=part_vertices,
-            faces=part_faces,
-            process=False,
-            visual=cave_material,
-        )
-        name = f"cave_wall_part_{index:03d}"
-        scene.add_geometry(mesh, node_name=name, geom_name=name)
-
-
-def _split_mesh_faces(vertices: np.ndarray, faces: tuple[tuple[int, int, int], ...]):
-    current_faces: list[tuple[int, int, int]] = []
-    current_indices: dict[int, int] = {}
-    for face in faces:
-        missing = [vertex_index for vertex_index in face if vertex_index not in current_indices]
-        if current_faces and len(current_indices) + len(missing) > GLB_MAX_PRIMITIVE_VERTICES:
-            yield _remapped_mesh(vertices, current_faces, current_indices)
-            current_faces = []
-            current_indices = {}
-        remapped_face: list[int] = []
-        for vertex_index in face:
-            if vertex_index not in current_indices:
-                current_indices[vertex_index] = len(current_indices)
-            remapped_face.append(current_indices[vertex_index])
-        current_faces.append(tuple(remapped_face))
-    if current_faces:
-        yield _remapped_mesh(vertices, current_faces, current_indices)
-
-
-def _remapped_mesh(
-    vertices: np.ndarray,
-    faces: list[tuple[int, int, int]],
-    index_map: dict[int, int],
-) -> tuple[np.ndarray, np.ndarray]:
-    ordered_source_indices = sorted(index_map, key=index_map.__getitem__)
-    return (
-        vertices[np.array(ordered_source_indices, dtype=np.int64)],
-        np.array(faces, dtype=np.int64),
-    )
 
 
 class _StrictGlbBuilder:
@@ -985,49 +966,6 @@ def _alignment_padding(length: int, alignment: int) -> int:
     return (alignment - (length % alignment)) % alignment
 
 
-def _event_mesh_to_glb_geometry(event_mesh, *, material_cache: dict, image_cache: dict):
-    vertices = np.array(event_mesh.vertices, dtype=np.float64)
-    faces = np.array(event_mesh.faces, dtype=np.int64)
-    pivot = _event_pivot(vertices)
-    local_vertices = vertices - pivot
-    transform = np.eye(4, dtype=np.float64)
-    transform[:3, 3] = pivot
-    material = _event_glb_material(
-        event_mesh,
-        material_cache=material_cache,
-        image_cache=image_cache,
-    )
-
-    if event_mesh.face_uvs and len(event_mesh.face_uvs) == len(event_mesh.faces):
-        expanded_vertices: list[tuple[float, float, float]] = []
-        expanded_uvs: list[tuple[float, float]] = []
-        expanded_faces: list[tuple[int, int, int]] = []
-        for face, face_uvs in zip(event_mesh.faces, event_mesh.face_uvs, strict=True):
-            start = len(expanded_vertices)
-            for vertex_index, uv in zip(face, face_uvs, strict=True):
-                expanded_vertices.append(tuple(float(value) for value in local_vertices[vertex_index]))
-                expanded_uvs.append((float(uv[0]), float(1.0 - uv[1])))
-            expanded_faces.append((start, start + 1, start + 2))
-        visual = TextureVisuals(
-            uv=np.array(expanded_uvs, dtype=np.float64),
-            material=material,
-        )
-        mesh = trimesh.Trimesh(
-            vertices=np.array(expanded_vertices, dtype=np.float64),
-            faces=np.array(expanded_faces, dtype=np.int64),
-            process=False,
-            visual=visual,
-        )
-    else:
-        mesh = trimesh.Trimesh(
-            vertices=local_vertices,
-            faces=faces,
-            process=False,
-            visual=TextureVisuals(material=material),
-        )
-    return mesh, transform
-
-
 def _event_pivot(vertices: np.ndarray) -> np.ndarray:
     lower = vertices.min(axis=0)
     upper = vertices.max(axis=0)
@@ -1039,37 +977,6 @@ def _event_pivot(vertices: np.ndarray) -> np.ndarray:
         ),
         dtype=np.float64,
     )
-
-
-def _event_glb_material(event_mesh, *, material_cache: dict, image_cache: dict):
-    cache_key = (tuple(event_mesh.material_maps), event_mesh.source_shape_type)
-    if cache_key in material_cache:
-        return material_cache[cache_key]
-
-    material_maps = dict(event_mesh.material_maps)
-    diffuse_image = _load_texture_image(material_maps.get("diffuse"), image_cache)
-    normal_image = _load_texture_image(material_maps.get("normal"), image_cache)
-    roughness_image = _load_metallic_roughness_texture(
-        material_maps.get("roughness"),
-        image_cache,
-    )
-    if diffuse_image is not None:
-        material = PBRMaterial(
-            name=_event_shared_material_name(event_mesh),
-            baseColorTexture=diffuse_image,
-            normalTexture=normal_image,
-            metallicRoughnessTexture=roughness_image,
-            metallicFactor=0.0,
-            roughnessFactor=0.86,
-            doubleSided=True,
-        )
-    else:
-        material = SimpleMaterial(
-            diffuse=(105, 100, 91, 255),
-            glossiness=0.08,
-        )
-    material_cache[cache_key] = material
-    return material
 
 
 def _load_texture_image(

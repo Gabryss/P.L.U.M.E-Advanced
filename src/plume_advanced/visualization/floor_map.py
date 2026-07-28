@@ -11,8 +11,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from stages.floor_map import FloorAtlas
-
+from plume_advanced.stages.floor_map import FloorAtlas
 
 _GEOLOGY_COLORS = {
     "bare_basalt": "#4b5563",

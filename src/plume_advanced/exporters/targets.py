@@ -6,8 +6,8 @@ do not invoke Blender or require a GUI application.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
 import json
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
 from xml.sax.saxutils import escape
@@ -15,9 +15,9 @@ from xml.sax.saxutils import escape
 import numpy as np
 import trimesh
 
-from stages.geometry_export import export_geometry_glb, export_geometry_obj
-from stages.geometry_types import CaveGeometry
-from world import ExportConfig
+from plume_advanced.stages.geometry_export import export_geometry_glb, export_geometry_obj
+from plume_advanced.stages.geometry_types import CaveGeometry
+from plume_advanced.world import ExportConfig
 
 
 @dataclass(frozen=True)
@@ -622,8 +622,26 @@ def _write_simplified_collision_obj(
     collision = trimesh.Trimesh(
         vertices=clustered,
         faces=remapped,
-        process=False,
+        process=True,
     )
+    collision.remove_unreferenced_vertices()
+    if not collision.is_winding_consistent:
+        collision.fix_normals(multibody=True)
+    if (
+        len(collision.faces) == 0
+        or not np.isfinite(collision.vertices).all()
+        or not collision.is_winding_consistent
+    ):
+        vertices, faces = _canonical_cave_mesh(cave_geometry)
+        collision = trimesh.Trimesh(
+            vertices=vertices,
+            faces=faces,
+            process=True,
+        )
+        collision.remove_unreferenced_vertices()
+        collision.fix_normals(multibody=True)
+    if len(collision.faces) == 0 or not np.isfinite(collision.vertices).all():
+        raise ValueError("Collision simplification produced invalid geometry")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     collision.export(output_path)
     return output_path
@@ -657,8 +675,18 @@ def _simplified_collision_arrays(
         & (remapped[:, 1] != remapped[:, 2])
         & (remapped[:, 2] != remapped[:, 0])
     )
-    remapped = np.unique(np.sort(remapped[valid], axis=1), axis=0)
-    return clustered, remapped
+    simplified_faces: list[tuple[int, int, int]] = []
+    seen_faces: set[tuple[int, int, int]] = set()
+    for face in remapped[valid]:
+        oriented = tuple(int(value) for value in face)
+        signature = tuple(sorted(oriented))
+        if signature in seen_faces:
+            continue
+        seen_faces.add(signature)
+        simplified_faces.append(oriented)
+    if not simplified_faces:
+        return vertices, faces
+    return clustered, np.asarray(simplified_faces, dtype=np.int64)
 
 
 def _pending_feature_warnings(export_config: ExportConfig) -> tuple[str, ...]:

@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-from importlib import metadata
 import hashlib
 import json
-from pathlib import Path
+import os
 import platform
 import subprocess
 import sys
 import tempfile
+from importlib import metadata
+from pathlib import Path
 from typing import Iterable
 
-from config import ProjectConfig, project_config_manifest
+from plume_advanced.config import ProjectConfig, project_config_manifest
 
 
 def write_run_manifest(
@@ -22,15 +23,22 @@ def write_run_manifest(
     outputs: Iterable[str | Path],
     elapsed_seconds: float,
     source_root: str | Path,
+    status: str = "complete",
+    current_stage: str | None = None,
+    failed_stage: str | None = None,
+    error: str | None = None,
+    inputs: Iterable[str | Path] = (),
 ) -> Path:
-    """Atomically write a completed-run manifest with hashes and versions."""
+    """Atomically write a run manifest with hashes, versions, and status."""
 
     root = Path(source_root)
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
+    if status not in {"running", "complete", "failed"}:
+        raise ValueError("status must be running, complete, or failed")
     payload = {
         "schema": "plume.run-manifest.v1",
-        "status": "complete",
+        "status": status,
         "elapsed_seconds": float(elapsed_seconds),
         "python": {
             "version": platform.python_version(),
@@ -55,18 +63,28 @@ def write_run_manifest(
             "sha256": _source_hash(root),
         },
         "resolved_config": project_config_manifest(project_config),
+        "inputs": [
+            _file_record(path, relative_to=output.parent)
+            for path in sorted(
+                {Path(value).resolve() for value in inputs if Path(value).is_file()},
+                key=str,
+            )
+        ],
         "outputs": [
-            {
-                "path": str(path),
-                "bytes": path.stat().st_size,
-                "sha256": _file_hash(path),
-            }
+            _file_record(path, relative_to=output.parent)
             for path in sorted(
                 {Path(value).resolve() for value in outputs if Path(value).is_file()},
                 key=str,
             )
         ],
     }
+    if current_stage:
+        payload["current_stage"] = current_stage
+    if status == "failed":
+        payload["failure"] = {
+            "stage": failed_stage or "unknown",
+            "error": error or "unknown error",
+        }
     with tempfile.NamedTemporaryFile(
         mode="w",
         encoding="utf-8",
@@ -105,14 +123,27 @@ def _git_value(root: Path, *arguments: str) -> str:
 
 def _source_hash(root: Path) -> str:
     digest = hashlib.sha256()
-    candidates = [root / "pyproject.toml", root / "config" / "project.toml"]
+    candidates = [
+        root / "pyproject.toml",
+        root / "uv.lock",
+        root / "config" / "project.toml",
+    ]
     candidates.extend(sorted((root / "src").rglob("*.py")))
+    candidates.extend(sorted((root / "scripts").rglob("*.py")))
     for path in candidates:
         if not path.is_file():
             continue
         digest.update(str(path.relative_to(root)).encode("utf-8"))
         digest.update(path.read_bytes())
     return digest.hexdigest()
+
+
+def _file_record(path: Path, *, relative_to: Path) -> dict[str, str | int]:
+    return {
+        "path": os.path.relpath(path, relative_to),
+        "bytes": path.stat().st_size,
+        "sha256": _file_hash(path),
+    }
 
 
 def _file_hash(path: Path) -> str:

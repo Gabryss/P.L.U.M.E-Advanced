@@ -19,6 +19,20 @@ Status: active on `feature/major-procedural-upgrade`.
 - Production quality may take longer, but processing should be tiled and
   restartable so long tubes do not require one dense world-sized voxel array.
 
+## Engineering hardening status
+
+- Runtime code now lives under the installable `plume_advanced` namespace;
+  scripts and tests no longer mutate `sys.path`.
+- Wheels include a compact, texture-free default project so the
+  `plume-generate` entry point works outside a source checkout.
+- Nested TOML validation reports complete setting paths, and configured
+  texture paths resolve relative to the configuration file.
+- The run manifest is written atomically at every major stage. It records
+  running, complete, or failed state, the current/failed stage, and SHA-256
+  metadata for available inputs and completed outputs.
+- CI checks Python 3.12 and 3.13, import ordering, an expanded typed core,
+  compilation, a 70% repository coverage floor, and wheel construction.
+
 ## Target pipeline
 
 1. **Host** — terrain, emplacement thickness, lithology, rock-mass quality,
@@ -212,8 +226,9 @@ Exit criteria:
 Status: body/quality-aware resolution and sparse tiled storage foundation
 complete. The generator automatically switches to overlapping active tiles
 when the dense-voxel budget is exceeded; tile-local events and meshing keep
-working-set memory bounded. Surface-material work and persistent tile-cache
-refinements remain.
+working-set memory bounded. Segment and junction bounds now index only the
+tiles they can affect, including edge and corner neighbors during sampling.
+Surface-material work and persistent tile-cache refinements remain.
 
 - [x] Replace the dense world bounding box with tiled sparse narrow-band SDFs or an
   adaptive octree implementation.

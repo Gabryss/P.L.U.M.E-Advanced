@@ -1,13 +1,5 @@
 """Active simulation stages for the cave-network pipeline."""
 
-from .host_field import (
-    GridConfig,
-    HostField,
-    HostFieldConfig,
-    HostFieldGenerator,
-    HostFieldSample,
-    TerrainWave,
-)
 from .events import (
     GeologicalEvent,
     GeologicalEventConfig,
@@ -21,6 +13,14 @@ from .geometry import (
     GeometryConfig,
     GeometryGenerator,
     VoxelGrid,
+)
+from .host_field import (
+    GridConfig,
+    HostField,
+    HostFieldConfig,
+    HostFieldGenerator,
+    HostFieldSample,
+    TerrainWave,
 )
 from .network import (
     BraidGrammarConfig,

@@ -1,0 +1,54 @@
+schema_version = 2
+procedural_seed = 3
+
+[run]
+dev_mode = true
+quality = "preview"
+dev_max_route_length_m = 600.0
+dev_max_braid_zones = 1
+render_diagnostics = false
+overwrite_outputs = false
+
+[export]
+target = "neutral"
+format = "glb"
+quality = "preview"
+generate_visual = true
+generate_collision = false
+generate_lods = false
+generate_wall_shell = false
+
+[host_field]
+apply_body_scaling = false
+
+[host_field.grid]
+width = 600.0
+height = 1800.0
+nx = 80
+ny = 180
+
+[network]
+source_count = 3
+source_band_length = 60.0
+source_band_half_width = 120.0
+trace_max_steps = 180
+spur_count = 1
+
+[network.braid_grammar]
+zone_count = [1, 1]
+branches_per_zone = [2, 2]
+
+[events]
+enabled = false
+
+[geometry]
+resolution_policy = "fixed"
+voxel_size = 2.0
+storage_mode = "auto"
+max_dense_voxels = 12000000
+chunk_size = 48
+strict_texture_loading = true
+cave_diffuse_texture = ""
+cave_normal_texture = ""
+cave_roughness_texture = ""
+cave_displacement_texture = ""

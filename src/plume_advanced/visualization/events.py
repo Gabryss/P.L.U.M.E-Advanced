@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from stages.events import GeologicalEventField
-from stages.network import CaveNetwork
-from stages.section_field import SectionField
+from plume_advanced.stages.events import GeologicalEventField
+from plume_advanced.stages.network import CaveNetwork
+from plume_advanced.stages.section_field import SectionField
 
 
 @dataclass(frozen=True)

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 from pathlib import Path
 
-from stages.host_field import HostField
+from plume_advanced.stages.host_field import HostField
 
 
 @dataclass(frozen=True)

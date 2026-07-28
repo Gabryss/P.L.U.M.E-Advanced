@@ -3,22 +3,67 @@
 from __future__ import annotations
 
 import math
-from pathlib import Path
-import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
-from config import load_project_config
-from stages.host_field import HostFieldConfig, HostFieldGenerator
-from stages.network import CaveNetworkGenerator, export_network_report
+from plume_advanced.config import load_project_config
+from plume_advanced.stages.host_field import HostFieldConfig, HostFieldGenerator
+from plume_advanced.stages.network import (
+    CaveNetworkConfig,
+    CaveNetworkGenerator,
+    CaveNode,
+    CavePoint,
+    CaveSegment,
+    export_network_report,
+)
 
 
 class CaveNetworkTests(unittest.TestCase):
+    def test_flow_scaling_preserves_configured_small_passages(self) -> None:
+        config = CaveNetworkConfig(
+            source_flux=1.0,
+            minimum_passage_radius=1.0,
+            base_passage_radius=4.0,
+            maximum_passage_radius=10.0,
+        )
+        nodes = [
+            CaveNode(0, 0.0, 0.0, 0.0, 0.0, "entry"),
+            CaveNode(1, 10.0, 0.0, 10.0, 0.0, "exit"),
+        ]
+        points = tuple(
+            CavePoint(
+                index=index,
+                x=float(index * 10),
+                y=0.0,
+                elevation=0.0,
+                slope_degrees=0.0,
+                cover_thickness=10.0,
+                roof_competence=1.0,
+                growth_cost=0.0,
+                arc_length=float(index * 10),
+                width=4.0,
+            )
+            for index in range(2)
+        )
+        segment = CaveSegment(
+            segment_id=0,
+            start_node_id=0,
+            end_node_id=1,
+            kind="backbone",
+            z_level=0,
+            points=points,
+            metadata={},
+        )
+
+        resolved = CaveNetworkGenerator(config)._assign_conserved_flow(nodes, [segment])
+
+        self.assertAlmostEqual(resolved[0].mean_width, 4.0)
+
     def test_default_config_generates_host_driven_braided_network(self) -> None:
         project_config = load_project_config(ROOT / "config" / "project.toml")
         self.assertIsInstance(project_config.procedural_seed, int)

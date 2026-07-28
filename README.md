@@ -110,7 +110,7 @@ each body's passage dimensions.
 
 ### Stage A: Host Field
 
-Implemented in `src/stages/host_field.py`.
+Implemented in `src/plume_advanced/stages/host_field.py`.
 
 The terrain is not a full volcanic edifice. It is a seed-driven,
 pyroduct-oriented host slab. The project config defines ranges for the broad
@@ -176,7 +176,7 @@ prevalidated floor contacts. Each run writes:
 
 ### Stage B: Cave Network
 
-Implemented in `src/stages/network.py`.
+Implemented in `src/plume_advanced/stages/network.py`.
 
 Stage B now builds the cave skeleton directly instead of starting from a single
 trunk. Its branch/split/merge grammar is seed-sampled from
@@ -204,7 +204,7 @@ the network summary are written to `stage_b_network_report.json`.
 
 ### Stage C: Section Field
 
-Implemented in `src/stages/section_field.py`.
+Implemented in `src/plume_advanced/stages/section_field.py`.
 
 Stage C wraps a lava-tube-shaped section field around the Stage-B skeleton.
 The generator:
@@ -220,7 +220,7 @@ The generator:
 
 ### Stage D: Geometry
 
-Implemented in `src/stages/geometry.py`.
+Implemented in `src/plume_advanced/stages/geometry.py`.
 
 Stage D turns the section field into a voxel-first mesh. The generator currently:
 
@@ -241,7 +241,7 @@ The single source of truth is:
 config/project.toml
 ```
 
-It is loaded by `src/config.py`, which converts TOML sections into dataclass
+It is loaded by `src/plume_advanced/config.py`, which converts TOML sections into dataclass
 configs for the generators.
 
 Execution flow:
@@ -323,7 +323,7 @@ format = "glb"
 | `[host_field.ranges]` | `[min, max]` ranges for sampled source, terrain, corridor, cover, roof, and fracture controls |
 | `[host_field.wave_ranges]` | sampled wave count and `[min, max]` ranges for low-frequency terrain deformation layers |
 
-The runtime `HostFieldConfig` remains concrete: `src/config.py` samples the
+The runtime `HostFieldConfig` remains concrete: `src/plume_advanced/config.py` samples the
 range blocks with `procedural_seed` before stage generation starts. Fixed
 legacy values and `[[host_field.waves]]` are still accepted for targeted tests
 or hand-authored scenarios, but the default project config is range-driven.
@@ -414,13 +414,13 @@ with the body policy is rejected instead of silently choosing one.
 - `docs/MAJOR_UPGRADE_PLAN.md`: phased architecture and release gates
 - `docs/CELESTIAL_BODY_GALLERY.md`: generated Earth, Mars, and Moon figure gallery
 - `scripts/`: stage entrypoints
-- `src/config.py`: TOML loader
-- `src/world.py`: celestial body, material, run, export, and seed profiles
-- `src/exporters/`: Blender-independent target adapters
-- `src/stages/`: stage implementations
-- `src/visualization/`: stage visualizations
+- `src/plume_advanced/config.py`: TOML loader and path-aware schema validation
+- `src/plume_advanced/world.py`: celestial body, material, run, export, and seed profiles
+- `src/plume_advanced/exporters/`: Blender-independent target adapters
+- `src/plume_advanced/stages/`: stage implementations
+- `src/plume_advanced/visualization/`: stage visualizations
 - `outputs/`: generated images
-- `tests/`: smoke tests
+- `tests/`: unit, regression, exporter, and compact end-to-end tests
 
 ## Run
 
@@ -455,7 +455,9 @@ Generate the current cave network with the single entrypoint:
 ```
 
 The repository wrapper `.venv/bin/python scripts/generate_cave.py` remains
-available.
+available. An installed wheel includes a compact default configuration, so
+`plume-generate` also works outside the source checkout. A local
+`config/project.toml` takes precedence when present.
 
 Generation checks every destination directory before writing. If a destination
 already contains files, an interactive run asks for confirmation and a
@@ -504,8 +506,9 @@ That one command produces:
 - `outputs/stage_d_geometry_chunks.png`
 - `outputs/stage_d_geometry_presentation.png`
 - `outputs/resolved_project_config.json`
-- `outputs/run_manifest.json` with dependency versions, source state, elapsed
-  time, and SHA-256 checksums
+- `outputs/run_manifest.json` with running/complete/failed status, current or
+  failed stage, dependency versions, hashed inputs and outputs, source state,
+  and elapsed time
 - `outputs/export_<target>/...`
 
 ### Import the default Blender package

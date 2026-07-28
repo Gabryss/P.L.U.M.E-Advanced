@@ -1,20 +1,18 @@
 """Smoke tests for the stage-C section field."""
 
-from dataclasses import replace
 import math
-from pathlib import Path
-import sys
 import unittest
+from dataclasses import replace
+from pathlib import Path
 
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
-from config import load_project_config
-from stages.host_field import HostFieldGenerator
-from stages.network import CaveNetworkGenerator
-from stages.section_field import SectionFieldGenerator
+from plume_advanced.config import load_project_config
+from plume_advanced.stages.host_field import HostFieldGenerator
+from plume_advanced.stages.network import CaveNetworkGenerator
+from plume_advanced.stages.section_field import SectionFieldGenerator
 
 
 class SectionFieldTests(unittest.TestCase):

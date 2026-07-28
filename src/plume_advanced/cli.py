@@ -4,27 +4,38 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
-from pathlib import Path
 import sys
 import tempfile
 import time
+from pathlib import Path
+from typing import ClassVar
 
 from rich.console import Console
 from rich.progress import (
     BarColumn,
     Progress,
+    TaskID,
     TaskProgressColumn,
     TextColumn,
     TimeElapsedColumn,
 )
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[2]
-ROOT = (
-    Path.cwd()
-    if (Path.cwd() / "config" / "project.toml").is_file()
-    else PACKAGE_ROOT
-)
+SOURCE_ROOT = Path(__file__).resolve().parents[2]
+WORKING_ROOT = Path.cwd()
+SOURCE_CONFIG = SOURCE_ROOT / "config" / "project.toml"
+WORKING_CONFIG = WORKING_ROOT / "config" / "project.toml"
+PACKAGED_CONFIG = Path(__file__).with_name("default_project.toml")
+if WORKING_CONFIG.is_file():
+    ROOT = WORKING_ROOT
+    DEFAULT_CONFIG = WORKING_CONFIG
+elif SOURCE_CONFIG.is_file():
+    ROOT = SOURCE_ROOT
+    DEFAULT_CONFIG = SOURCE_CONFIG
+else:
+    ROOT = WORKING_ROOT
+    DEFAULT_CONFIG = PACKAGED_CONFIG
 CACHE_ROOT = Path(tempfile.gettempdir()) / "plume-advanced-cache"
 MPL_CACHE = CACHE_ROOT / "matplotlib"
 CACHE_ROOT.mkdir(parents=True, exist_ok=True)
@@ -32,28 +43,36 @@ MPL_CACHE.mkdir(parents=True, exist_ok=True)
 
 os.environ.setdefault("XDG_CACHE_HOME", str(CACHE_ROOT))
 os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE))
-sys.path.insert(0, str(ROOT / "src"))
 
-from config import load_project_config, write_project_config_manifest
-from exporters import export_target_asset
-from output_guard import OutputOverwriteRefused, require_output_overwrite_confirmation
-from run_manifest import write_run_manifest
-from stages.events import GeologicalEventGenerator
-from stages.floor_map import FloorMapGenerator, export_floor_atlas
-from stages.geometry import GeometryGenerator
-from stages.host_field import HostFieldGenerator, export_host_influence_report
-from stages.network import CaveNetworkGenerator, export_network_report
-from stages.section_field import SectionFieldGenerator
-from visualization.geometry import GeometryPlotter
-from visualization.events import GeologicalEventPlotter
-from visualization.floor_map import FloorMapPlotter
-from visualization.host_field import HostFieldPlotter
-from visualization.network import CaveNetworkPlotter
-from visualization.section_field import SectionFieldPlotter
+from plume_advanced.config import (
+    ProjectConfig,
+    load_project_config,
+    write_project_config_manifest,
+)
+from plume_advanced.exporters import export_target_asset
+from plume_advanced.output_guard import (
+    OutputOverwriteRefused,
+    require_output_overwrite_confirmation,
+)
+from plume_advanced.run_manifest import write_run_manifest
+from plume_advanced.stages.events import GeologicalEventGenerator
+from plume_advanced.stages.floor_map import FloorMapGenerator, export_floor_atlas
+from plume_advanced.stages.geometry import GeometryGenerator
+from plume_advanced.stages.host_field import HostFieldGenerator, export_host_influence_report
+from plume_advanced.stages.network import CaveNetworkGenerator, export_network_report
+from plume_advanced.stages.section_field import SectionFieldGenerator
+from plume_advanced.visualization.events import GeologicalEventPlotter
+from plume_advanced.visualization.floor_map import FloorMapPlotter
+from plume_advanced.visualization.geometry import GeometryPlotter
+from plume_advanced.visualization.host_field import HostFieldPlotter
+from plume_advanced.visualization.network import CaveNetworkPlotter
+from plume_advanced.visualization.section_field import SectionFieldPlotter
 
 
 class TerminalProgress:
     """Rich-backed progress reporter for long pipeline runs."""
+
+    _current: ClassVar["TerminalProgress | None"] = None
 
     def __init__(self, *, width: int = 32) -> None:
         self.console = Console()
@@ -67,8 +86,9 @@ class TerminalProgress:
             console=self.console,
         )
         self._progress.start()
-        self._active_task_id: int | None = None
+        self._active_task_id: TaskID | None = None
         self._last_total = 1
+        type(self)._current = self
 
     def log(self, message: str) -> None:
         self.console.print(message)
@@ -104,6 +124,13 @@ class TerminalProgress:
 
     def close(self) -> None:
         self._progress.stop()
+        if type(self)._current is self:
+            type(self)._current = None
+
+    @classmethod
+    def close_active(cls) -> None:
+        if cls._current is not None:
+            cls._current.close()
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -111,7 +138,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--config",
         type=Path,
-        default=ROOT / "config" / "project.toml",
+        default=DEFAULT_CONFIG,
         help="Path to the project TOML configuration.",
     )
     parser.add_argument(
@@ -221,7 +248,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def main(argv: list[str] | None = None) -> int:
+def _run_pipeline(argv: list[str] | None = None) -> int:
     run_started = time.perf_counter()
     args = parse_args(argv)
     project_config = load_project_config(args.config, world_body=args.body)
@@ -289,7 +316,22 @@ def main(argv: list[str] | None = None) -> int:
             f"wrote {resolved_config_path.name}"
         )
     )
+    manifest_inputs = _run_inputs(args.config, project_config)
+    completed_outputs: list[Path] = [resolved_config_path]
 
+    def checkpoint(stage: str) -> None:
+        write_run_manifest(
+            project_config,
+            run_manifest_output,
+            outputs=completed_outputs,
+            elapsed_seconds=time.perf_counter() - run_started,
+            source_root=ROOT,
+            status="running",
+            current_stage=stage,
+            inputs=manifest_inputs,
+        )
+
+    checkpoint("host_field")
     progress.start("Stage A - Host Field", "generating scalar fields")
     host_field = HostFieldGenerator(project_config.host_field).generate()
     host_influence_path = export_host_influence_report(
@@ -303,7 +345,13 @@ def main(argv: list[str] | None = None) -> int:
     else:
         host_output_path = None
         progress.finish("diagnostic render disabled")
+    completed_outputs.extend(
+        path
+        for path in (host_influence_path, host_output_path)
+        if path is not None
+    )
 
+    checkpoint("network")
     progress.start("Stage B - Cave Network", "tracing cave skeleton")
     cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
     network_summary = cave_network.summary()
@@ -329,7 +377,13 @@ def main(argv: list[str] | None = None) -> int:
     else:
         network_output_path = None
         progress.finish("diagnostic render disabled")
+    completed_outputs.extend(
+        path
+        for path in (network_report_path, network_output_path)
+        if path is not None
+    )
 
+    checkpoint("section_field")
     progress.start("Stage C - Section Field", "sampling tunnel profiles")
     section_field = SectionFieldGenerator(project_config.section_field).generate(cave_network)
     section_summary = section_field.summary()
@@ -348,11 +402,14 @@ def main(argv: list[str] | None = None) -> int:
     else:
         section_output_path = None
         progress.finish("diagnostic render disabled")
+    if section_output_path is not None:
+        completed_outputs.append(section_output_path)
 
     def geometry_progress(phase: str, current: int, total: int, message: str) -> None:
         progress.update(current, total, f"{phase}: {message}")
 
     geometry_generator = GeometryGenerator(project_config.geometry)
+    checkpoint("base_geometry")
     progress.start(
         "Stage D1 - Base Volume",
         (
@@ -370,6 +427,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     floor_map_generator = FloorMapGenerator(project_config.floor_map)
+    checkpoint("base_floor_atlas")
     progress.start("Stage C2 - Base Floor Atlas", "raycasting event-placement cells")
     base_floor_atlas = floor_map_generator.generate(
         cave_network,
@@ -381,6 +439,7 @@ def main(argv: list[str] | None = None) -> int:
         f"{int(base_floor_summary['cell_count'])} placement cells"
     )
 
+    checkpoint("geological_events")
     progress.start("Stage E - Geological Events", "grounding props and modifiers")
     event_field = GeologicalEventGenerator(project_config.events).generate(
         section_field,
@@ -404,7 +463,10 @@ def main(argv: list[str] | None = None) -> int:
     else:
         event_output_path = None
         progress.finish("diagnostic render disabled")
+    if event_output_path is not None:
+        completed_outputs.append(event_output_path)
 
+    checkpoint("final_geometry")
     progress.start("Stage D2 - Final Geometry", "applying structural events")
     cave_geometry = geometry_generator.finalize(
         base_geometry,
@@ -418,6 +480,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
 
+    checkpoint("final_floor_atlas")
     progress.start("Stage C3 - Final Floor Map", "relifting post-event geology")
     floor_atlas = floor_map_generator.revalidate(
         cave_network,
@@ -449,7 +512,11 @@ def main(argv: list[str] | None = None) -> int:
             f"{floor_render_detail}"
         )
     )
+    completed_outputs.extend((floor_npz_path, floor_json_path))
+    if floor_map_output_path is not None:
+        completed_outputs.append(floor_map_output_path)
 
+    checkpoint("export")
     progress.start("Stage D - Export", "preparing target package")
     geometry_output_path = None
     geometry_presentation_output_path = None
@@ -620,10 +687,68 @@ def main(argv: list[str] | None = None) -> int:
         outputs=manifest_outputs,
         elapsed_seconds=time.perf_counter() - run_started,
         source_root=ROOT,
+        status="complete",
+        current_stage="complete",
+        inputs=manifest_inputs,
     )
     progress.log(f"Run manifest: {run_manifest_path}")
 
     return 0
+
+
+def _run_inputs(config_path: Path, project_config: ProjectConfig) -> tuple[Path, ...]:
+    candidates = [
+        config_path.resolve(),
+        SOURCE_ROOT / "pyproject.toml",
+        SOURCE_ROOT / "uv.lock",
+    ]
+    candidates.extend(
+        Path(path)
+        for path in (
+            project_config.geometry.cave_diffuse_texture,
+            project_config.geometry.cave_normal_texture,
+            project_config.geometry.cave_roughness_texture,
+            project_config.geometry.cave_displacement_texture,
+        )
+        if path
+    )
+    return tuple(path for path in candidates if path.is_file())
+
+
+def main(argv: list[str] | None = None) -> int:
+    run_started = time.perf_counter()
+    try:
+        return _run_pipeline(argv)
+    except (Exception, KeyboardInterrupt) as error:
+        TerminalProgress.close_active()
+        try:
+            args = parse_args(argv)
+            project_config = load_project_config(args.config, world_body=args.body)
+            manifest_path = args.output.with_name("run_manifest.json")
+            current_stage = "configuration"
+            completed_outputs: list[Path] = []
+            if manifest_path.is_file():
+                previous = json.loads(manifest_path.read_text(encoding="utf-8"))
+                current_stage = str(previous.get("current_stage", current_stage))
+                completed_outputs.extend(
+                    (manifest_path.parent / record["path"]).resolve()
+                    for record in previous.get("outputs", ())
+                )
+            write_run_manifest(
+                project_config,
+                manifest_path,
+                outputs=completed_outputs,
+                elapsed_seconds=time.perf_counter() - run_started,
+                source_root=ROOT,
+                status="failed",
+                current_stage=current_stage,
+                failed_stage=current_stage,
+                error=f"{type(error).__name__}: {error}",
+                inputs=_run_inputs(args.config, project_config),
+            )
+        except Exception:
+            pass
+        raise
 
 
 if __name__ == "__main__":

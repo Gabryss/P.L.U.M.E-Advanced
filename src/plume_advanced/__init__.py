@@ -1,10 +1,10 @@
 """Public package namespace for PLUME-Advanced."""
 
-from config import ProjectConfig, load_project_config
-from stages.geometry import GeometryGenerator
-from stages.host_field import HostFieldGenerator
-from stages.network import CaveNetworkGenerator
-from stages.section_field import SectionFieldGenerator
+from plume_advanced.config import ProjectConfig, load_project_config
+from plume_advanced.stages.geometry import GeometryGenerator
+from plume_advanced.stages.host_field import HostFieldGenerator
+from plume_advanced.stages.network import CaveNetworkGenerator
+from plume_advanced.stages.section_field import SectionFieldGenerator
 
 __all__ = [
     "CaveNetworkGenerator",

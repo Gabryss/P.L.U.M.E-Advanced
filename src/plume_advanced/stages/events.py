@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
-from pathlib import Path
 import sys
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 
-from stages.floor_map import FloorAtlas, FloorCell
-from stages.section_field import SectionField, SectionSample
+from plume_advanced.stages.floor_map import FloorAtlas, FloorCell
+from plume_advanced.stages.section_field import SectionField, SectionSample
 
 
 @dataclass(frozen=True)

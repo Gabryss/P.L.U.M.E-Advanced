@@ -2,26 +2,26 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, replace
 import json
 import math
-from pathlib import Path
 import tomllib
+from dataclasses import asdict, dataclass, fields, replace
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 
-from stages.events import GeologicalEventConfig
-from stages.floor_map import FloorMapConfig
-from stages.geometry import GeometryConfig
-from stages.host_field import GridConfig, HostFieldConfig, TerrainWave
-from stages.network import BraidGrammarConfig, CaveNetworkConfig
-from stages.section_field import SectionFieldConfig
-from world import (
+from plume_advanced.stages.events import GeologicalEventConfig
+from plume_advanced.stages.floor_map import FloorMapConfig
+from plume_advanced.stages.geometry import GeometryConfig
+from plume_advanced.stages.host_field import GridConfig, HostFieldConfig, TerrainWave
+from plume_advanced.stages.network import BraidGrammarConfig, CaveNetworkConfig
+from plume_advanced.stages.section_field import SectionFieldConfig
+from plume_advanced.world import (
+    SUPPORTED_EVENT_KINDS,
     ExportConfig,
     FlowRegimeConfig,
     RunConfig,
-    SUPPORTED_EVENT_KINDS,
     StageSeeds,
     WorldConfig,
     build_export_config,
@@ -48,6 +48,22 @@ SUPPORTED_TOP_LEVEL_KEYS = frozenset(
         "geometry",
     }
 )
+
+
+def _reject_unknown_keys(
+    path: str,
+    data: dict[str, Any],
+    config_type: type[Any],
+    *,
+    extras: frozenset[str] = frozenset(),
+) -> None:
+    """Reject misspelled nested settings with their complete TOML path."""
+
+    supported = {field.name for field in fields(config_type)} | extras
+    unknown = set(data) - supported
+    if unknown:
+        qualified = ", ".join(f"{path}.{key}" for key in sorted(unknown))
+        raise ValueError(f"Unknown configuration keys: {qualified}")
 
 
 @dataclass(frozen=True)
@@ -144,6 +160,7 @@ def load_project_config(
         world=world,
         run=run,
     )
+    geometry = _resolve_geometry_asset_paths(geometry, config_path.parent)
     if run.dev_mode:
         host_field, network = _apply_dev_mode(host_field, network, run)
     _validate_pipeline_configs(
@@ -210,6 +227,14 @@ def _build_host_field_config(
     world: WorldConfig,
     flow_regime: FlowRegimeConfig,
 ) -> HostFieldConfig:
+    _reject_unknown_keys(
+        "host_field",
+        raw_config,
+        HostFieldConfig,
+        extras=frozenset(
+            {"apply_body_scaling", "ranges", "wave_ranges"}
+        ),
+    )
     config_data = dict(raw_config)
     apply_body_scaling = bool(config_data.pop("apply_body_scaling", True))
     if "random_seed" not in config_data:
@@ -231,6 +256,28 @@ def _build_host_field_config(
     wave_data = config_data.pop("waves", None)
     range_data = config_data.pop("ranges", {})
     wave_range_data = config_data.pop("wave_ranges", None)
+
+    _reject_unknown_keys("host_field.grid", grid_data, GridConfig)
+    if wave_data is not None:
+        for index, wave in enumerate(wave_data):
+            _reject_unknown_keys(f"host_field.waves[{index}]", wave, TerrainWave)
+    if wave_range_data is not None:
+        _reject_unknown_keys(
+            "host_field.wave_ranges",
+            wave_range_data,
+            TerrainWave,
+            extras=frozenset({"count"}),
+        )
+    supported_ranges = {field.name for field in fields(HostFieldConfig)} | {
+        "seed_point_x",
+        "seed_point_y",
+    }
+    unknown_ranges = set(range_data) - supported_ranges
+    if unknown_ranges:
+        qualified = ", ".join(
+            f"host_field.ranges.{key}" for key in sorted(unknown_ranges)
+        )
+        raise ValueError(f"Unknown configuration keys: {qualified}")
 
     grid = GridConfig(**grid_data)
     rng = np.random.default_rng(procedural_seed)
@@ -469,6 +516,7 @@ def _build_network_config(
     world: WorldConfig,
     flow_regime: FlowRegimeConfig,
 ) -> CaveNetworkConfig:
+    _reject_unknown_keys("network", raw_config, CaveNetworkConfig)
     config_data = dict(raw_config)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
@@ -531,6 +579,11 @@ def _build_network_config(
         ),
     )
     braid_grammar_data = dict(config_data.pop("braid_grammar", {}))
+    _reject_unknown_keys(
+        "network.braid_grammar",
+        braid_grammar_data,
+        BraidGrammarConfig,
+    )
     branch_length_scale = math.sqrt(spatial_scale)
     branch_length_range = _to_range_tuple(
         braid_grammar_data.get(
@@ -554,14 +607,11 @@ def _build_network_config(
             max(minimum, int(round(value * branch_abundance_scale)))
             for value in value_range
         ]
-    config_data["braid_grammar"] = BraidGrammarConfig(
-        **{
-            key: _to_range_tuple(value)
-            if isinstance(value, list)
-            else value
-            for key, value in braid_grammar_data.items()
-        }
-    )
+    braid_grammar_values: Any = {
+        key: _to_range_tuple(value) if isinstance(value, list) else value
+        for key, value in braid_grammar_data.items()
+    }
+    config_data["braid_grammar"] = BraidGrammarConfig(**braid_grammar_values)
     return CaveNetworkConfig(**config_data)
 
 
@@ -578,6 +628,7 @@ def _build_section_field_config(
     world: WorldConfig,
     flow_regime: FlowRegimeConfig,
 ) -> SectionFieldConfig:
+    _reject_unknown_keys("section_field", raw_config, SectionFieldConfig)
     config_data = dict(raw_config)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
@@ -626,6 +677,7 @@ def _build_floor_map_config(
     world: WorldConfig,
     flow_regime: FlowRegimeConfig,
 ) -> FloorMapConfig:
+    _reject_unknown_keys("floor_map", raw_config, FloorMapConfig)
     config_data = dict(raw_config)
     spatial_scale = _resolved_horizontal_scale(world, flow_regime)
     for key in ("lateral_spacing_m", "plan_resolution_m"):
@@ -649,6 +701,7 @@ def _build_geometry_config(
     world: WorldConfig,
     run: RunConfig,
 ) -> GeometryConfig:
+    _reject_unknown_keys("geometry", raw_config, GeometryConfig)
     config_data = dict(raw_config)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
@@ -707,12 +760,34 @@ def _build_geometry_config(
     return GeometryConfig(**config_data)
 
 
+def _resolve_geometry_asset_paths(
+    geometry: GeometryConfig,
+    config_directory: Path,
+) -> GeometryConfig:
+    def resolve(value: str) -> str:
+        if not value:
+            return value
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = (config_directory / path).resolve()
+        return str(path)
+
+    return replace(
+        geometry,
+        cave_diffuse_texture=resolve(geometry.cave_diffuse_texture),
+        cave_normal_texture=resolve(geometry.cave_normal_texture),
+        cave_roughness_texture=resolve(geometry.cave_roughness_texture),
+        cave_displacement_texture=resolve(geometry.cave_displacement_texture),
+    )
+
+
 def _build_event_config(
     raw_config: dict[str, Any],
     *,
     procedural_seed: int | None,
     world: WorldConfig,
 ) -> GeologicalEventConfig:
+    _reject_unknown_keys("events", raw_config, GeologicalEventConfig)
     config_data = dict(raw_config)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed

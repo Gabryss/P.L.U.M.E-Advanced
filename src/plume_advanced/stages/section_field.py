@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 
 import numpy as np
 
-from stages.network import CaveJunction, CaveNetwork, CaveSegment
+from plume_advanced.stages.network import CaveJunction, CaveNetwork, CaveSegment
 
 
 @dataclass(frozen=True)

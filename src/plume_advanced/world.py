@@ -7,12 +7,11 @@ responsible for converting units and axes for target applications.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
 import zlib
+from dataclasses import dataclass, fields, replace
 from typing import Any
 
 import numpy as np
-
 
 SUPPORTED_EVENT_KINDS = frozenset({"rock", "boulder", "collapse", "choke", "infill"})
 SUPPORTED_EXPORT_TARGETS = frozenset(
@@ -289,6 +288,7 @@ def resolve_world_config(raw_config: dict[str, Any] | None) -> WorldConfig:
 
 def build_run_config(raw_config: dict[str, Any] | None) -> RunConfig:
     data = dict(raw_config or {})
+    _reject_unknown_keys("run", data, RunConfig)
     if "quality" in data:
         data["quality"] = str(data["quality"]).strip().lower()
     config = RunConfig(**data)
@@ -308,7 +308,9 @@ def build_flow_regime_config(
 ) -> FlowRegimeConfig:
     """Build and validate independent lava-supply morphology controls."""
 
-    config = FlowRegimeConfig(**dict(raw_config or {}))
+    data = dict(raw_config or {})
+    _reject_unknown_keys("flow_regime", data, FlowRegimeConfig)
+    config = FlowRegimeConfig(**data)
     positive = {
         "supply_rate_scale": config.supply_rate_scale,
         "duration_scale": config.duration_scale,
@@ -328,6 +330,12 @@ def build_flow_regime_config(
 
 def build_export_config(raw_config: dict[str, Any] | None) -> ExportConfig:
     data = dict(raw_config or {})
+    _reject_unknown_keys(
+        "export",
+        data,
+        ExportConfig,
+        aliases=frozenset({"format"}),
+    )
     if "format" in data:
         if "file_format" in data:
             raise ValueError("Use only one of export.format or export.file_format")
@@ -375,6 +383,20 @@ def build_export_config(raw_config: dict[str, Any] | None) -> ExportConfig:
             "current target package requires a primary visual asset"
         )
     return config
+
+
+def _reject_unknown_keys(
+    path: str,
+    data: dict[str, Any],
+    config_type: type[Any],
+    *,
+    aliases: frozenset[str] = frozenset(),
+) -> None:
+    supported = {field.name for field in fields(config_type)} | aliases
+    unknown = set(data) - supported
+    if unknown:
+        qualified = ", ".join(f"{path}.{key}" for key in sorted(unknown))
+        raise ValueError(f"Unknown configuration keys: {qualified}")
 
 
 def derive_stage_seeds(procedural_seed: int | None) -> StageSeeds:

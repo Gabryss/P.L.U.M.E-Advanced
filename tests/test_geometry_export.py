@@ -1,24 +1,28 @@
 """Tests for Stage-D scene export helpers."""
 
 import json
-from pathlib import Path
 import struct
-import sys
 import tempfile
 import unittest
+from dataclasses import replace
+from pathlib import Path
 
 import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
 Image = pytest.importorskip("PIL.Image")
 trimesh = pytest.importorskip("trimesh")
 
-from stages.events import GeologicalEventMesh
-from stages.geometry_export import export_geometry_glb
-from stages.geometry_types import CaveGeometry, GeometryChunkMesh, GeometryConfig, VoxelGrid
+from plume_advanced.stages.events import GeologicalEventMesh
+from plume_advanced.stages.geometry_export import export_geometry_glb
+from plume_advanced.stages.geometry_types import (
+    CaveGeometry,
+    GeometryChunkMesh,
+    GeometryConfig,
+    VoxelGrid,
+)
 
 
 class GeometryExportTests(unittest.TestCase):
@@ -101,6 +105,16 @@ class GeometryExportTests(unittest.TestCase):
             )
             self.assertEqual(manifest["cave"]["node"], "cave_wall")
             self.assertEqual(manifest["events"][0]["node"], "event_0001_rock")
+
+            broken_event = replace(
+                event_mesh,
+                material_maps=(("diffuse", str(temp_path / "missing.png")),),
+            )
+            with self.assertRaisesRegex(FileNotFoundError, "missing.png"):
+                export_geometry_glb(
+                    replace(cave_geometry, event_meshes=(broken_event,)),
+                    temp_path / "broken.glb",
+                )
 
     @staticmethod
     def _read_glb_json(path: Path) -> dict:

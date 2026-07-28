@@ -5,9 +5,8 @@ from __future__ import annotations
 
 import argparse
 import os
-from pathlib import Path
-import sys
 import tempfile
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE_ROOT = Path(tempfile.gettempdir()) / "plume-advanced-cache"
@@ -17,11 +16,10 @@ MPL_CACHE.mkdir(parents=True, exist_ok=True)
 
 os.environ.setdefault("XDG_CACHE_HOME", str(CACHE_ROOT))
 os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE))
-sys.path.insert(0, str(ROOT / "src"))
 
-from config import load_project_config
-from stages.host_field import HostFieldGenerator
-from visualization.host_field import HostFieldPlotter
+from plume_advanced.config import load_project_config
+from plume_advanced.stages.host_field import HostFieldGenerator
+from plume_advanced.visualization.host_field import HostFieldPlotter
 
 
 def parse_args() -> argparse.Namespace:

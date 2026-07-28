@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
+from itertools import product
 
 import numpy as np
 from scipy import ndimage
 
-from stages.events import GeologicalEventMesh
+from plume_advanced.stages.events import GeologicalEventMesh
 
 
 @dataclass(frozen=True)
@@ -63,7 +64,11 @@ class VoxelGrid:
 
     @property
     def shape(self) -> tuple[int, int, int]:
-        return tuple(int(value) for value in self.density.shape)
+        return (
+            int(self.density.shape[0]),
+            int(self.density.shape[1]),
+            int(self.density.shape[2]),
+        )
 
     @property
     def carved_voxel_count(self) -> int:
@@ -78,8 +83,8 @@ class VoxelGrid:
         lower = np.asarray(self.origin, dtype=float)
         upper = lower + (np.asarray(self.shape, dtype=float) - 1.0) * self.voxel_size
         return (
-            tuple(float(value) for value in lower),
-            tuple(float(value) for value in upper),
+            (float(lower[0]), float(lower[1]), float(lower[2])),
+            (float(upper[0]), float(upper[1]), float(upper[2])),
         )
 
     def contains(self, point: tuple[float, float, float] | np.ndarray) -> bool:
@@ -145,7 +150,8 @@ class VoxelGrid:
         length = float(np.linalg.norm(gradient))
         if length <= 1e-12:
             return (0.0, 0.0, 1.0)
-        return tuple(float(value) for value in gradient / length)
+        normal = gradient / length
+        return (float(normal[0]), float(normal[1]), float(normal[2]))
 
     def raycast_isosurface(
         self,
@@ -188,7 +194,11 @@ class VoxelGrid:
                 hit_distance = 0.5 * (low + high)
                 hit_position = start + ray * hit_distance
                 return SurfaceHit(
-                    position=tuple(float(value) for value in hit_position),
+                    position=(
+                        float(hit_position[0]),
+                        float(hit_position[1]),
+                        float(hit_position[2]),
+                    ),
                     normal=self.surface_normal(hit_position),
                     distance=float(hit_distance),
                 )
@@ -240,7 +250,10 @@ class TiledVoxelGrid:
     def bounds(self) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
         lower = np.asarray(self.origin, dtype=float)
         upper = lower + (np.asarray(self.shape, dtype=float) - 1.0) * self.voxel_size
-        return tuple(lower), tuple(upper)
+        return (
+            (float(lower[0]), float(lower[1]), float(lower[2])),
+            (float(upper[0]), float(upper[1]), float(upper[2])),
+        )
 
     @property
     def active_tile_count(self) -> int:
@@ -272,13 +285,14 @@ class TiledVoxelGrid:
             0,
         )
         primary = np.minimum(index // self.tile_size, maximum_key)
-        candidates = [tuple(int(value) for value in primary)]
+        axis_candidates: list[tuple[int, ...]] = []
         for axis in range(3):
+            values = [int(primary[axis])]
             if index[axis] % self.tile_size == 0 and primary[axis] > 0:
-                alternate = primary.copy()
-                alternate[axis] -= 1
-                candidates.append(tuple(int(value) for value in alternate))
-        for key in candidates:
+                values.append(int(primary[axis] - 1))
+            axis_candidates.append(tuple(values))
+        for candidate in product(*axis_candidates):
+            key = (int(candidate[0]), int(candidate[1]), int(candidate[2]))
             tile = self.tiles.get(key)
             if tile is None:
                 continue
@@ -458,14 +472,19 @@ def _count_tiled_components(voxel_grid: TiledVoxelGrid) -> int:
         start = np.asarray(key, dtype=int) * voxel_grid.tile_size
         boundary = np.zeros(tile.shape, dtype=bool)
         for axis in range(3):
-            low = [slice(None)] * 3
-            high = [slice(None)] * 3
+            low: list[slice | int] = [slice(None)] * 3
+            high: list[slice | int] = [slice(None)] * 3
             low[axis] = 0
             high[axis] = -1
             boundary[tuple(low)] = True
             boundary[tuple(high)] = True
         for local in np.argwhere(boundary & (labels > 0)):
-            global_index = tuple(int(value) for value in start + local)
+            position = start + local
+            global_index = (
+                int(position[0]),
+                int(position[1]),
+                int(position[2]),
+            )
             label = offset + int(labels[tuple(local)])
             previous = boundary_labels.get(global_index)
             if previous is None:
