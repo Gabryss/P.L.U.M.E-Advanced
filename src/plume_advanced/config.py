@@ -102,8 +102,7 @@ def load_project_config(
     unknown_top_level = set(raw_config) - SUPPORTED_TOP_LEVEL_KEYS
     if unknown_top_level:
         raise ValueError(
-            "Unknown top-level configuration keys: "
-            + ", ".join(sorted(unknown_top_level))
+            "Unknown top-level configuration keys: " + ", ".join(sorted(unknown_top_level))
         )
     if world_body is not None:
         world_data = dict(raw_config.get("world", {}))
@@ -154,6 +153,7 @@ def load_project_config(
         procedural_seed=stage_seeds.events,
         world=world,
     )
+    events = _resolve_event_asset_paths(events, config_path.parent)
     geometry = _build_geometry_config(
         raw_config.get("geometry", {}),
         procedural_seed=stage_seeds.geometry,
@@ -231,9 +231,7 @@ def _build_host_field_config(
         "host_field",
         raw_config,
         HostFieldConfig,
-        extras=frozenset(
-            {"apply_body_scaling", "ranges", "wave_ranges"}
-        ),
+        extras=frozenset({"apply_body_scaling", "ranges", "wave_ranges"}),
     )
     config_data = dict(raw_config)
     apply_body_scaling = bool(config_data.pop("apply_body_scaling", True))
@@ -274,9 +272,7 @@ def _build_host_field_config(
     }
     unknown_ranges = set(range_data) - supported_ranges
     if unknown_ranges:
-        qualified = ", ".join(
-            f"host_field.ranges.{key}" for key in sorted(unknown_ranges)
-        )
+        qualified = ", ".join(f"host_field.ranges.{key}" for key in sorted(unknown_ranges))
         raise ValueError(f"Unknown configuration keys: {qualified}")
 
     grid = GridConfig(**grid_data)
@@ -393,9 +389,7 @@ def _resolved_horizontal_scale(
     world: WorldConfig,
     flow_regime: FlowRegimeConfig,
 ) -> float:
-    supply_cooling_ratio = (
-        flow_regime.supply_rate_scale / flow_regime.cooling_rate_scale
-    )
+    supply_cooling_ratio = flow_regime.supply_rate_scale / flow_regime.cooling_rate_scale
     flow_scale = math.sqrt(float(np.clip(supply_cooling_ratio, 0.25, 4.0)))
     return world.body.host_horizontal_scale * flow_scale
 
@@ -412,9 +406,7 @@ def _resolved_route_length(
     world: WorldConfig,
     flow_regime: FlowRegimeConfig,
 ) -> float:
-    transport_scale = math.sqrt(
-        flow_regime.supply_rate_scale / flow_regime.cooling_rate_scale
-    )
+    transport_scale = math.sqrt(flow_regime.supply_rate_scale / flow_regime.cooling_rate_scale)
     return (
         world.body.default_route_length_m
         * flow_regime.duration_scale
@@ -448,10 +440,7 @@ def _apply_body_host_scaling(
 
     horizontal_scale = _resolved_horizontal_scale(world, flow_regime)
     vertical_scale = _resolved_vertical_scale(world, flow_regime)
-    fracture_scale = (
-        world.body.host_fracture_scale
-        * math.sqrt(flow_regime.cooling_rate_scale)
-    )
+    fracture_scale = world.body.host_fracture_scale * math.sqrt(flow_regime.cooling_rate_scale)
     target_route_length = _resolved_route_length(world, flow_regime)
 
     base_width = grid.width
@@ -474,13 +463,11 @@ def _apply_body_host_scaling(
 
     for key in ("corridor_width",):
         config_data[key] = (
-            float(config_data.get(key, getattr(HostFieldConfig, key)))
-            * horizontal_scale
+            float(config_data.get(key, getattr(HostFieldConfig, key))) * horizontal_scale
         )
     for key in ("fracture_zone_center_offset", "fracture_zone_width"):
         config_data[key] = (
-            float(config_data.get(key, getattr(HostFieldConfig, key)))
-            * fracture_scale
+            float(config_data.get(key, getattr(HostFieldConfig, key))) * fracture_scale
         )
     for key in (
         "longitudinal_drop",
@@ -489,8 +476,7 @@ def _apply_body_host_scaling(
         "minimum_stable_cover",
     ):
         config_data[key] = (
-            float(config_data.get(key, getattr(HostFieldConfig, key)))
-            * vertical_scale
+            float(config_data.get(key, getattr(HostFieldConfig, key))) * vertical_scale
         )
 
     source_waves = waves if waves is not None else HostFieldConfig().waves
@@ -542,18 +528,14 @@ def _build_network_config(
     config_data.setdefault("paint_flux_chambers", False)
     for key in ("source_band_length", "source_band_half_width", "sink_margin"):
         config_data[key] = (
-            float(config_data.get(key, getattr(CaveNetworkConfig, key)))
-            * spatial_scale
+            float(config_data.get(key, getattr(CaveNetworkConfig, key))) * spatial_scale
         )
-    config_data["max_uphill_step"] = (
-        float(
-            config_data.get(
-                "max_uphill_step",
-                CaveNetworkConfig.max_uphill_step,
-            )
+    config_data["max_uphill_step"] = float(
+        config_data.get(
+            "max_uphill_step",
+            CaveNetworkConfig.max_uphill_step,
         )
-        * _resolved_vertical_scale(world, flow_regime)
-    )
+    ) * _resolved_vertical_scale(world, flow_regime)
     config_data["spur_max_steps"] = max(
         1,
         int(
@@ -592,20 +574,16 @@ def _build_network_config(
         )
     )
     braid_grammar_data["half_length_fraction"] = [
-        float(np.clip(value * branch_length_scale, 0.02, 0.24))
-        for value in branch_length_range
+        float(np.clip(value * branch_length_scale, 0.02, 0.24)) for value in branch_length_range
     ]
     branch_abundance_scale = 0.75 + 0.50 * flow_regime.distributary_tendency
     for key, default_range, minimum in (
         ("zone_count", BraidGrammarConfig.zone_count, 0),
         ("branches_per_zone", BraidGrammarConfig.branches_per_zone, 2),
     ):
-        value_range = _to_range_tuple(
-            braid_grammar_data.get(key, list(default_range))
-        )
+        value_range = _to_range_tuple(braid_grammar_data.get(key, list(default_range)))
         braid_grammar_data[key] = [
-            max(minimum, int(round(value * branch_abundance_scale)))
-            for value in value_range
+            max(minimum, int(round(value * branch_abundance_scale))) for value in value_range
         ]
     braid_grammar_values: Any = {
         key: _to_range_tuple(value) if isinstance(value, list) else value
@@ -649,8 +627,7 @@ def _build_section_field_config(
         "centerline_wobble_wavelength",
     ):
         config_data[key] = (
-            float(config_data.get(key, getattr(SectionFieldConfig, key)))
-            * spatial_scale
+            float(config_data.get(key, getattr(SectionFieldConfig, key))) * spatial_scale
         )
     for key in (
         "minimum_roof_thickness",
@@ -659,8 +636,7 @@ def _build_section_field_config(
         "minimum_vertical_clearance",
     ):
         config_data[key] = (
-            float(config_data.get(key, getattr(SectionFieldConfig, key)))
-            * vertical_scale
+            float(config_data.get(key, getattr(SectionFieldConfig, key))) * vertical_scale
         )
     config_data["chamber_widen_gain"] = float(
         config_data.get(
@@ -681,10 +657,7 @@ def _build_floor_map_config(
     config_data = dict(raw_config)
     spatial_scale = _resolved_horizontal_scale(world, flow_regime)
     for key in ("lateral_spacing_m", "plan_resolution_m"):
-        config_data[key] = (
-            float(config_data.get(key, getattr(FloorMapConfig, key)))
-            * spatial_scale
-        )
+        config_data[key] = float(config_data.get(key, getattr(FloorMapConfig, key))) * spatial_scale
     config_data["minimum_clearance_m"] = float(
         config_data.get(
             "minimum_clearance_m",
@@ -705,50 +678,39 @@ def _build_geometry_config(
     config_data = dict(raw_config)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
-    resolution_policy = str(
-        config_data.pop("resolution_policy", "fixed")
-    ).strip().lower()
+    resolution_policy = str(config_data.pop("resolution_policy", "fixed")).strip().lower()
     if resolution_policy not in {"fixed", "body"}:
-        raise ValueError(
-            "geometry.resolution_policy must be one of: body, fixed"
-        )
+        raise ValueError("geometry.resolution_policy must be one of: body, fixed")
     if resolution_policy == "body":
         if "voxel_size" in config_data:
             raise ValueError(
                 "geometry.voxel_size cannot be combined with "
-                "geometry.resolution_policy = \"body\"; use the fixed policy "
+                'geometry.resolution_policy = "body"; use the fixed policy '
                 "for an explicit voxel size"
             )
         target_samples = {
             "preview": 10.0,
-            "standard": 14.0,
+            "standard": 16.0,
             "production": 20.0,
         }[run.quality]
         production_scale = {
             "preview": 2.0,
-            "standard": 1.4,
+            "standard": 1.2,
             "production": 1.0,
         }[run.quality]
-        sampling_voxel_size = (
-            world.body.maximum_passage_width_m / target_samples
-        )
-        quality_voxel_size = (
-            world.body.production_voxel_size_m * production_scale
-        )
+        sampling_voxel_size = world.body.maximum_passage_width_m / target_samples
+        quality_voxel_size = world.body.production_voxel_size_m * production_scale
         config_data["voxel_size"] = min(
             sampling_voxel_size,
             quality_voxel_size,
         )
     else:
-        target_samples = (
-            world.body.maximum_passage_width_m
-            / float(config_data.get("voxel_size", GeometryConfig.voxel_size))
+        target_samples = world.body.maximum_passage_width_m / float(
+            config_data.get("voxel_size", GeometryConfig.voxel_size)
         )
     config_data["resolution_policy"] = resolution_policy
     config_data["resolution_quality"] = run.quality
-    config_data["characteristic_passage_width_m"] = (
-        world.body.maximum_passage_width_m
-    )
+    config_data["characteristic_passage_width_m"] = world.body.maximum_passage_width_m
     config_data["target_samples_across_passage"] = target_samples
     config_data.setdefault("tunnel_radius_scale", 1.0)
     config_data.setdefault("chamber_radius_scale", 1.0)
@@ -793,17 +755,13 @@ def _build_event_config(
         config_data["random_seed"] = procedural_seed
     if "enabled_kinds" in config_data:
         config_data["enabled_kinds"] = tuple(
-            str(kind).strip().lower()
-            for kind in config_data["enabled_kinds"]
+            str(kind).strip().lower() for kind in config_data["enabled_kinds"]
         )
-    enabled_kinds = set(
-        config_data.get("enabled_kinds", GeologicalEventConfig.enabled_kinds)
-    )
+    enabled_kinds = set(config_data.get("enabled_kinds", GeologicalEventConfig.enabled_kinds))
     unknown_kinds = enabled_kinds - SUPPORTED_EVENT_KINDS
     if unknown_kinds:
         raise ValueError(
-            "events.enabled_kinds contains unsupported values: "
-            + ", ".join(sorted(unknown_kinds))
+            "events.enabled_kinds contains unsupported values: " + ", ".join(sorted(unknown_kinds))
         )
     config_data.setdefault("gravity_m_s2", world.body.gravity_m_s2)
     config_data.setdefault("rock_density_kg_m3", world.material.bulk_density_kg_m3)
@@ -817,10 +775,38 @@ def _build_event_config(
         "collapse_radius_range",
         "choke_radius_range",
         "infill_radius_range",
+        "boulder_satellite_count_range",
+        "boulder_halo_radius_range_m",
+        "collapse_fragment_count_range",
+        "collapse_talus_radius_range_m",
+        "minor_cluster_count_range",
+        "minor_cluster_radius_range_m",
     ):
         if key in config_data:
             config_data[key] = _to_range_tuple(config_data[key])
     return GeologicalEventConfig(**config_data)
+
+
+def _resolve_event_asset_paths(
+    events: GeologicalEventConfig,
+    config_directory: Path,
+) -> GeologicalEventConfig:
+    """Resolve Rocky development, texture, and scratch paths like cave assets."""
+
+    def resolve(value: str) -> str:
+        if not value:
+            return value
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = (config_directory / path).resolve()
+        return str(path)
+
+    return replace(
+        events,
+        rocky_source_path=resolve(events.rocky_source_path),
+        rocky_texture_dir=resolve(events.rocky_texture_dir),
+        rocky_output_dir=resolve(events.rocky_output_dir),
+    )
 
 
 def _apply_dev_mode(
@@ -830,9 +816,7 @@ def _apply_dev_mode(
 ) -> tuple[HostFieldConfig, CaveNetworkConfig]:
     """Crop generation extent while retaining body-scale passage dimensions."""
 
-    representative_extent_scale = math.sqrt(
-        max(host_field.target_route_length_m, 1.0) / 5_000.0
-    )
+    representative_extent_scale = math.sqrt(max(host_field.target_route_length_m, 1.0) / 5_000.0)
     target_height = min(
         host_field.grid.height,
         run.dev_max_route_length_m * representative_extent_scale,
@@ -853,7 +837,9 @@ def _apply_dev_mode(
     half_width = 0.5 * target_grid.width
     half_height = 0.5 * target_grid.height
     seed_x = float(np.clip(host_field.seed_point[0], -0.45 * half_width, 0.45 * half_width))
-    seed_y = float(np.clip(host_field.seed_point[1], -0.44 * target_grid.height, -0.28 * target_grid.height))
+    seed_y = float(
+        np.clip(host_field.seed_point[1], -0.44 * target_grid.height, -0.28 * target_grid.height)
+    )
     seed_y = float(np.clip(seed_y, -0.90 * half_height, 0.90 * half_height))
     host_field = replace(
         host_field,
@@ -863,9 +849,7 @@ def _apply_dev_mode(
 
     grammar = network.braid_grammar
     zone_min, zone_max = grammar.zone_count
-    zone_cap = int(
-        round(run.dev_max_braid_zones * representative_extent_scale)
-    )
+    zone_cap = int(round(run.dev_max_braid_zones * representative_extent_scale))
     if zone_cap == 0:
         zone_count = (0, 0)
     else:
@@ -897,12 +881,15 @@ def _validate_pipeline_configs(
         raise ValueError("host_field.grid width and height must be positive")
     if host_field.grid.nx < 2 or host_field.grid.ny < 2:
         raise ValueError("host_field.grid nx and ny must be at least 2")
-    if min(
-        host_field.body_spatial_scale,
-        host_field.body_vertical_scale,
-        host_field.body_fracture_scale,
-        host_field.target_route_length_m,
-    ) <= 0.0:
+    if (
+        min(
+            host_field.body_spatial_scale,
+            host_field.body_vertical_scale,
+            host_field.body_fracture_scale,
+            host_field.target_route_length_m,
+        )
+        <= 0.0
+    ):
         raise ValueError("host_field body scales and target route must be positive")
 
     radii = (
@@ -921,11 +908,14 @@ def _validate_pipeline_configs(
         raise ValueError("network.minimum_branch_offset_widths must be positive")
     if network.source_count <= 0:
         raise ValueError("network.source_count must be positive")
-    if min(
-        network.source_flux,
-        network.source_temperature_k,
-        network.nominal_flow_speed_m_s,
-    ) <= 0.0:
+    if (
+        min(
+            network.source_flux,
+            network.source_temperature_k,
+            network.nominal_flow_speed_m_s,
+        )
+        <= 0.0
+    ):
         raise ValueError("network source flow values must be positive")
     if network.cooling_k_per_m < 0.0:
         raise ValueError("network.cooling_k_per_m cannot be negative")
@@ -935,13 +925,15 @@ def _validate_pipeline_configs(
         raise ValueError("section_field.maximum_tube_width must be positive")
     if section_field.chamber_max_tube_width < section_field.maximum_tube_width:
         raise ValueError(
-            "section_field.chamber_max_tube_width cannot be smaller than "
-            "maximum_tube_width"
+            "section_field.chamber_max_tube_width cannot be smaller than maximum_tube_width"
         )
-    if min(
-        section_field.vertical_level_spacing,
-        section_field.minimum_vertical_clearance,
-    ) <= 0.0:
+    if (
+        min(
+            section_field.vertical_level_spacing,
+            section_field.minimum_vertical_clearance,
+        )
+        <= 0.0
+    ):
         raise ValueError("section_field vertical separation values must be positive")
     if floor_map.lateral_spacing_m <= 0.0:
         raise ValueError("floor_map.lateral_spacing_m must be positive")
@@ -955,11 +947,18 @@ def _validate_pipeline_configs(
     density_names = (
         "rock_density_per_100m",
         "boulder_density_per_100m",
+        "rock_density_per_100m2",
+        "boulder_density_per_100m2",
         "geological_event_density_per_100m",
+        "minor_cluster_density_per_1000m2",
     )
     for name in density_names:
         if getattr(events, name) < 0.0:
             raise ValueError(f"events.{name} cannot be negative")
+    if events.debris_density_basis not in {"floor_area", "length"}:
+        raise ValueError("events.debris_density_basis must be floor_area or length")
+    if events.rock_population_multiplier <= 0.0:
+        raise ValueError("events.rock_population_multiplier must be positive")
     for name in (
         "minimum_event_spacing",
         "minimum_rock_spacing",
@@ -974,17 +973,9 @@ def _validate_pipeline_configs(
     )
     if any(getattr(events, name) < 0.0 for name in geological_fraction_names):
         raise ValueError("events collapse/choke/infill fractions cannot be negative")
-    geological_fraction_sum = sum(
-        getattr(events, name)
-        for name in geological_fraction_names
-    )
-    if (
-        events.geological_event_density_per_100m > 0.0
-        and geological_fraction_sum <= 0.0
-    ):
-        raise ValueError(
-            "events collapse/choke/infill fractions must sum to a positive value"
-        )
+    geological_fraction_sum = sum(getattr(events, name) for name in geological_fraction_names)
+    if events.geological_event_density_per_100m > 0.0 and geological_fraction_sum <= 0.0:
+        raise ValueError("events collapse/choke/infill fractions must sum to a positive value")
     if not 0.0 <= events.ground_embed_fraction <= 0.5:
         raise ValueError("events.ground_embed_fraction must be in [0, 0.5]")
     if not 0.0 <= events.clustered_debris_fraction <= 1.0:
@@ -994,6 +985,53 @@ def _validate_pipeline_configs(
     if not 0.0 < events.collapse_cluster_spacing_scale <= 1.0:
         raise ValueError("events.collapse_cluster_spacing_scale must be in (0, 1]")
     for name in (
+        "gallery_width_size_fraction",
+        "gallery_clearance_size_fraction",
+        "roof_block_size_fraction",
+        "background_contact_spacing",
+        "rover_width_m",
+        "rover_max_lateral_slope",
+    ):
+        if getattr(events, name) <= 0.0:
+            raise ValueError(f"events.{name} must be positive")
+    if not 0.0 < events.boulder_max_height_fraction <= 1.0:
+        raise ValueError("events.boulder_max_height_fraction must be in (0, 1]")
+    if events.edge_accumulation_strength < 0.0:
+        raise ValueError("events.edge_accumulation_strength cannot be negative")
+    if events.placement_jitter_m < 0.0:
+        raise ValueError("events.placement_jitter_m cannot be negative")
+    if events.rover_side_margin_m < 0.0:
+        raise ValueError("events.rover_side_margin_m cannot be negative")
+    if not 0.0 <= events.clean_floor_fraction < 1.0:
+        raise ValueError("events.clean_floor_fraction must be in [0, 1)")
+    if events.debris_patch_length_m <= 0.0:
+        raise ValueError("events.debris_patch_length_m must be positive")
+    if (
+        events.wall_scree_fraction < 0.0
+        or events.transported_lag_fraction < 0.0
+        or (events.wall_scree_fraction + events.transported_lag_fraction > 1.0)
+    ):
+        raise ValueError(
+            "events wall_scree_fraction and transported_lag_fraction must "
+            "be non-negative and sum to at most 1"
+        )
+    for name in (
+        "boulder_satellite_count_range",
+        "collapse_fragment_count_range",
+        "minor_cluster_count_range",
+    ):
+        minimum, maximum = getattr(events, name)
+        if minimum < 0 or maximum < minimum:
+            raise ValueError(f"events.{name} must contain non-negative ordered values")
+    for name in (
+        "boulder_halo_radius_range_m",
+        "collapse_talus_radius_range_m",
+        "minor_cluster_radius_range_m",
+    ):
+        minimum, maximum = getattr(events, name)
+        if minimum <= 0.0 or maximum < minimum:
+            raise ValueError(f"events.{name} must contain positive ordered values")
+    for name in (
         "rock_radius_range",
         "boulder_radius_range",
         "collapse_radius_range",
@@ -1002,9 +1040,14 @@ def _validate_pipeline_configs(
     ):
         minimum, maximum = getattr(events, name)
         if minimum <= 0.0 or maximum < minimum:
-            raise ValueError(
-                f"events.{name} must contain positive ordered [min, max] values"
-            )
+            raise ValueError(f"events.{name} must contain positive ordered [min, max] values")
+    for name in ("rock_size_bias", "boulder_size_bias"):
+        if getattr(events, name) <= 0.0:
+            raise ValueError(f"events.{name} must be positive")
+    if events.rocky_resolution_scale <= 0.0:
+        raise ValueError("events.rocky_resolution_scale must be positive")
+    if not 1 <= events.rocky_max_subdivisions <= 6:
+        raise ValueError("events.rocky_max_subdivisions must be in [1, 6]")
 
     if geometry.voxel_size <= 0.0:
         raise ValueError("geometry.voxel_size must be positive")
@@ -1014,25 +1057,37 @@ def _validate_pipeline_configs(
         raise ValueError("geometry.max_dense_voxels must be positive")
     if geometry.embedded_texture_max_size <= 0:
         raise ValueError("geometry.embedded_texture_max_size must be positive")
+    if not 0.0 <= geometry.cave_normal_scale <= 10.0:
+        raise ValueError("geometry.cave_normal_scale must be in [0, 10]")
+    if not 0 <= geometry.cave_smoothing_iterations <= 50:
+        raise ValueError("geometry.cave_smoothing_iterations must be in [0, 50]")
+    if geometry.cave_displacement_scale_m < 0.0:
+        raise ValueError("geometry.cave_displacement_scale_m must be non-negative")
+    if not 0.0 < geometry.cave_displacement_midlevel < 1.0:
+        raise ValueError("geometry.cave_displacement_midlevel must be in (0, 1)")
     if geometry.resolution_policy not in {"body", "fixed"}:
         raise ValueError("geometry.resolution_policy must be one of: body, fixed")
     if geometry.resolution_quality not in {"preview", "standard", "production"}:
-        raise ValueError(
-            "geometry.resolution_quality must be preview, standard, or production"
+        raise ValueError("geometry.resolution_quality must be preview, standard, or production")
+    if (
+        min(
+            geometry.characteristic_passage_width_m,
+            geometry.target_samples_across_passage,
+            geometry.characteristic_samples_across_passage,
         )
-    if min(
-        geometry.characteristic_passage_width_m,
-        geometry.target_samples_across_passage,
-        geometry.characteristic_samples_across_passage,
-    ) <= 0.0:
+        <= 0.0
+    ):
         raise ValueError("geometry passage-resolution values must be positive")
     if geometry.chunk_size < 2:
         raise ValueError("geometry.chunk_size must be at least 2")
-    if min(
-        geometry.tunnel_radius_scale,
-        geometry.chamber_radius_scale,
-        geometry.junction_radius_scale,
-    ) <= 0.0:
+    if (
+        min(
+            geometry.tunnel_radius_scale,
+            geometry.chamber_radius_scale,
+            geometry.junction_radius_scale,
+        )
+        <= 0.0
+    ):
         raise ValueError("geometry radius scales must be positive")
     if geometry.structural_event_blend < 0.0:
         raise ValueError("geometry.structural_event_blend cannot be negative")

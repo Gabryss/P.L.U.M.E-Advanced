@@ -15,7 +15,12 @@ from xml.sax.saxutils import escape
 import numpy as np
 import trimesh
 
-from plume_advanced.stages.geometry_export import export_geometry_glb, export_geometry_obj
+from plume_advanced.stages.geometry_export import (
+    build_cave_visual_surface,
+    export_cave_texture_files,
+    export_geometry_glb,
+    export_geometry_obj,
+)
 from plume_advanced.stages.geometry_types import CaveGeometry
 from plume_advanced.world import ExportConfig
 
@@ -65,6 +70,22 @@ def export_target_asset(
             output,
             safe_name,
         )
+        files = list(result.files)
+        if target == "neutral" and export_config.file_format == "glb":
+            fallback_obj = export_geometry_obj(
+                cave_geometry,
+                output / f"{safe_name}_fallback.obj",
+            )
+            files.append(fallback_obj)
+            fallback_mtl = fallback_obj.with_suffix(".mtl")
+            if fallback_mtl.exists():
+                files.append(fallback_mtl)
+            result = ExportResult(
+                target=result.target,
+                primary_asset=result.primary_asset,
+                files=tuple(files),
+                warnings=result.warnings,
+            )
         descriptor = _write_target_descriptor(result, export_config, output, safe_name)
         return ExportResult(
             target=target,
@@ -313,9 +334,15 @@ def _write_target_descriptor(
 ) -> Path:
     conventions = {
         "neutral": {
-            "application_coordinates": "format-defined",
-            "application_length_unit": "format-defined",
+            "application_coordinates": "glTF right-handed Y-up",
+            "application_length_unit": "metre",
+            "application_units_per_asset_metre": 1.0,
             "recommended_import_uniform_scale": 1.0,
+            "note": (
+                "Self-contained GLB with embedded PBR textures and visual "
+                "displacement baked into vertex positions. Use the collision "
+                "OBJ sidecar when the simulator requires a separate physics mesh."
+            ),
         },
         "blender": {
             "application_coordinates": "right-handed Z-up",
@@ -475,7 +502,7 @@ def _export_omniverse(
         )
 
     asset = output / f"{asset_name}.usd"
-    _write_usda(
+    texture_files = _write_usda(
         cave_geometry,
         asset,
         asset_name,
@@ -501,7 +528,7 @@ def _export_omniverse(
     return ExportResult(
         target="omniverse",
         primary_asset=asset,
-        files=(asset, descriptor),
+        files=(asset, descriptor, *texture_files),
         warnings=warnings,
     )
 
@@ -512,8 +539,20 @@ def _write_usda(
     asset_name: str,
     *,
     generate_collision: bool = False,
-) -> None:
-    vertices, faces = _canonical_cave_mesh(cave_geometry)
+) -> tuple[Path, ...]:
+    visual = build_cave_visual_surface(
+        cave_geometry,
+        convert_to_gltf=False,
+    )
+    vertices = np.asarray(visual["positions"], dtype=np.float64)
+    faces = np.asarray(visual["faces"], dtype=np.int64)
+    normals = np.asarray(visual["normals"], dtype=np.float64)
+    texcoords = np.asarray(visual["texcoords"], dtype=np.float64)
+    texture_directory = output.parent / f"{asset_name}_textures"
+    texture_files = export_cave_texture_files(
+        cave_geometry,
+        texture_directory,
+    )
     lines = [
         "#usda 1.0",
         "(",
@@ -527,7 +566,18 @@ def _write_usda(
         ")",
         "{",
     ]
-    lines.extend(_usda_mesh_lines("CaveWall", vertices, faces, indent="    "))
+    lines.extend(
+        _usda_mesh_lines(
+            "CaveWall",
+            vertices,
+            faces,
+            indent="    ",
+            normals=normals,
+            texcoords=texcoords,
+            material_path="/PLUME_Cave/Looks/CaveMaterial",
+            double_sided=False,
+        )
+    )
     if generate_collision:
         collision_vertices, collision_faces = _simplified_collision_arrays(
             cave_geometry
@@ -538,20 +588,55 @@ def _write_usda(
                 collision_vertices,
                 collision_faces,
                 indent="    ",
+                api_schemas=("PhysicsCollisionAPI",),
+                purpose="guide",
+                visibility="invisible",
+                collision_enabled=True,
             )
         )
     for event_mesh in cave_geometry.event_meshes:
         event_name = f"Event_{event_mesh.event_id:04d}_{_safe_asset_name(event_mesh.kind)}"
+        event_texcoords = (
+            np.asarray(event_mesh.face_uvs, dtype=np.float64).reshape((-1, 2))
+            if len(event_mesh.face_uvs) == len(event_mesh.faces)
+            else None
+        )
         lines.extend(
             _usda_mesh_lines(
                 event_name,
                 np.asarray(event_mesh.vertices, dtype=np.float64),
                 np.asarray(event_mesh.faces, dtype=np.int64),
                 indent="    ",
+                texcoords=event_texcoords,
+                texcoord_interpolation="faceVarying",
+                material_path=(
+                    "/PLUME_Cave/Looks/CaveMaterial"
+                    if _event_uses_cave_material(event_mesh, cave_geometry)
+                    else None
+                ),
+                custom_strings={
+                    "plume:kind": event_mesh.kind,
+                    "plume:sourceGenerator": event_mesh.source_generator,
+                    "plume:sourceShapeType": event_mesh.source_shape_type,
+                    "plume:debrisFamilyId": str(event_mesh.debris_family_id),
+                    "plume:familyAnchorEventId": str(
+                        event_mesh.family_anchor_event_id
+                    ),
+                    "plume:debrisRole": event_mesh.debris_role,
+                },
             )
         )
+    lines.extend(
+        _usda_cave_material_lines(
+            texture_files,
+            output=output,
+            normal_scale=cave_geometry.config.cave_normal_scale,
+            indent="    ",
+        )
+    )
     lines.extend(("}", ""))
     output.write_text("\n".join(lines), encoding="utf-8")
+    return tuple(texture_files.values())
 
 
 def _canonical_cave_mesh(cave_geometry: CaveGeometry) -> tuple[np.ndarray, np.ndarray]:
@@ -580,27 +665,212 @@ def _usda_mesh_lines(
     faces: np.ndarray,
     *,
     indent: str,
+    normals: np.ndarray | None = None,
+    texcoords: np.ndarray | None = None,
+    texcoord_interpolation: str = "vertex",
+    material_path: str | None = None,
+    double_sided: bool = True,
+    api_schemas: tuple[str, ...] = (),
+    purpose: str | None = None,
+    visibility: str | None = None,
+    collision_enabled: bool = False,
+    custom_strings: dict[str, str] | None = None,
 ) -> list[str]:
-    mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
-    normals = np.asarray(mesh.vertex_normals, dtype=np.float64)
+    if normals is None:
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+        normal_values = np.asarray(mesh.vertex_normals, dtype=np.float64)
+    else:
+        normal_values = np.asarray(normals, dtype=np.float64)
     point_text = ", ".join(_tuple_text(point) for point in vertices)
-    normal_text = ", ".join(_tuple_text(normal) for normal in normals)
+    normal_text = ", ".join(_tuple_text(normal) for normal in normal_values)
     count_text = ", ".join("3" for _ in faces)
     index_text = ", ".join(str(int(index)) for index in np.asarray(faces).reshape(-1))
-    return [
-        f'{indent}def Mesh "{name}"',
+    applied_schemas = list(api_schemas)
+    if material_path:
+        applied_schemas.insert(0, "MaterialBindingAPI")
+    if applied_schemas:
+        schema_text = ", ".join(f'"{schema}"' for schema in applied_schemas)
+        lines = [
+            f'{indent}def Mesh "{name}" (',
+            f"{indent}    prepend apiSchemas = [{schema_text}]",
+            f"{indent})",
+            f"{indent}{{",
+        ]
+    else:
+        lines = [
+            f'{indent}def Mesh "{name}"',
+            f"{indent}{{",
+        ]
+    lines.extend(
+        [
+            f"{indent}    uniform bool doubleSided = {str(double_sided).lower()}",
+            f"{indent}    int[] faceVertexCounts = [{count_text}]",
+            f"{indent}    int[] faceVertexIndices = [{index_text}]",
+            f'{indent}    uniform token orientation = "rightHanded"',
+            f"{indent}    point3f[] points = [{point_text}]",
+            f"{indent}    normal3f[] normals = [{normal_text}] (",
+            f'{indent}        interpolation = "vertex"',
+            f"{indent}    )",
+        ]
+    )
+    if purpose is not None:
+        lines.append(f'{indent}    uniform token purpose = "{purpose}"')
+    if visibility is not None:
+        lines.append(f'{indent}    token visibility = "{visibility}"')
+    if collision_enabled:
+        lines.append(f"{indent}    bool physics:collisionEnabled = true")
+    for key, value in sorted((custom_strings or {}).items()):
+        escaped_value = value.replace("\\", "\\\\").replace('"', '\\"')
+        lines.append(f'{indent}    custom string {key} = "{escaped_value}"')
+    if texcoords is not None:
+        uv_text = ", ".join(_tuple_text(uv) for uv in texcoords)
+        lines.extend(
+            (
+                f"{indent}    texCoord2f[] primvars:st = [{uv_text}] (",
+                f'{indent}        interpolation = "{texcoord_interpolation}"',
+                f"{indent}    )",
+            )
+        )
+    if material_path:
+        lines.extend(
+            (
+                f"{indent}    rel material:binding = <{material_path}>",
+            )
+        )
+    lines.extend(
+        (
+            f'{indent}    uniform token subdivisionScheme = "none"',
+            f"{indent}}}",
+        )
+    )
+    return lines
+
+
+def _event_uses_cave_material(event_mesh, cave_geometry: CaveGeometry) -> bool:
+    """Bind shared cave maps only when Rocky references the same source set."""
+
+    event_maps = dict(event_mesh.material_maps)
+    if not event_maps:
+        return False
+    cave_maps = {
+        "diffuse": cave_geometry.config.cave_diffuse_texture,
+        "normal": cave_geometry.config.cave_normal_texture,
+        "roughness": cave_geometry.config.cave_roughness_texture,
+    }
+    compared = False
+    for role, cave_path in cave_maps.items():
+        event_path = event_maps.get(role)
+        if not event_path:
+            continue
+        compared = True
+        if not cave_path or Path(event_path).resolve() != Path(cave_path).resolve():
+            return False
+    return compared
+
+
+def _usda_cave_material_lines(
+    texture_files: dict[str, Path],
+    *,
+    output: Path,
+    normal_scale: float,
+    indent: str,
+) -> list[str]:
+    """Build a portable UsdPreviewSurface material driven by primvars:st."""
+
+    material_path = "/PLUME_Cave/Looks/CaveMaterial"
+    shader_path = f"{material_path}/PreviewSurface"
+    reader_path = f"{material_path}/PrimvarReader"
+    lines = [
+        f'{indent}def Scope "Looks"',
         f"{indent}{{",
-        f"{indent}    uniform bool doubleSided = 1",
-        f"{indent}    int[] faceVertexCounts = [{count_text}]",
-        f"{indent}    int[] faceVertexIndices = [{index_text}]",
-        f'{indent}    uniform token orientation = "rightHanded"',
-        f"{indent}    point3f[] points = [{point_text}]",
-        f"{indent}    normal3f[] normals = [{normal_text}] (",
-        f'{indent}        interpolation = "vertex"',
-        f"{indent}    )",
-        f"{indent}    uniform token subdivisionScheme = \"none\"",
-        f"{indent}}}",
+        f'{indent}    def Material "CaveMaterial"',
+        f"{indent}    {{",
+        f"{indent}        token outputs:surface.connect = <{shader_path}.outputs:surface>",
+        f'{indent}        def Shader "PreviewSurface"',
+        f"{indent}        {{",
+        f'{indent}            uniform token info:id = "UsdPreviewSurface"',
+        f"{indent}            color3f inputs:diffuseColor = (0.36, 0.35, 0.31)",
+        f"{indent}            float inputs:metallic = 0",
+        f"{indent}            float inputs:roughness = 0.92",
     ]
+    if "diffuse" in texture_files:
+        lines.append(
+            f"{indent}            color3f inputs:diffuseColor.connect = "
+            f"<{material_path}/BaseColor.outputs:rgb>"
+        )
+    if "metallic_roughness" in texture_files:
+        lines.append(
+            f"{indent}            float inputs:roughness.connect = "
+            f"<{material_path}/MetallicRoughness.outputs:g>"
+        )
+    if "normal" in texture_files:
+        lines.append(
+            f"{indent}            normal3f inputs:normal.connect = "
+            f"<{material_path}/Normal.outputs:rgb>"
+        )
+    lines.extend(
+        (
+            f"{indent}            token outputs:surface",
+            f"{indent}        }}",
+            f'{indent}        def Shader "PrimvarReader"',
+            f"{indent}        {{",
+            f'{indent}            uniform token info:id = "UsdPrimvarReader_float2"',
+            f'{indent}            token inputs:varname = "st"',
+            f"{indent}            float2 outputs:result",
+            f"{indent}        }}",
+        )
+    )
+    texture_specs = (
+        ("diffuse", "BaseColor", "sRGB", None),
+        ("metallic_roughness", "MetallicRoughness", "raw", None),
+        (
+            "normal",
+            "Normal",
+            "raw",
+            (
+                (2.0 * normal_scale, 2.0 * normal_scale, 2.0, 1.0),
+                (-normal_scale, -normal_scale, -1.0, 0.0),
+            ),
+        ),
+    )
+    for role, shader_name, color_space, normal_transform in texture_specs:
+        texture_path = texture_files.get(role)
+        if texture_path is None:
+            continue
+        relative_path = texture_path.relative_to(output.parent).as_posix()
+        lines.extend(
+            (
+                f'{indent}        def Shader "{shader_name}"',
+                f"{indent}        {{",
+                f'{indent}            uniform token info:id = "UsdUVTexture"',
+                f"{indent}            asset inputs:file = @{relative_path}@",
+                f'{indent}            token inputs:sourceColorSpace = "{color_space}"',
+                f"{indent}            float2 inputs:st.connect = <{reader_path}.outputs:result>",
+            )
+        )
+        if normal_transform is not None:
+            scale, bias = normal_transform
+            lines.extend(
+                (
+                    f"{indent}            float4 inputs:scale = {_tuple_text(scale)}",
+                    f"{indent}            float4 inputs:bias = {_tuple_text(bias)}",
+                )
+            )
+        lines.extend(
+            (
+                f"{indent}            float outputs:r",
+                f"{indent}            float outputs:g",
+                f"{indent}            float3 outputs:rgb",
+                f"{indent}        }}",
+            )
+        )
+    lines.extend(
+        (
+            f"{indent}    }}",
+            f"{indent}}}",
+        )
+    )
+    return lines
 
 
 def _tuple_text(values: Iterable[float]) -> str:

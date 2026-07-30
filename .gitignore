@@ -1,6 +1,7 @@
 # Supervisor meeting outcomes and notes
 *.pdf
-outputs/*.obj
+# Generated cave artifacts are local inspection/build products.
+outputs/
 .codex
 .vscode
 

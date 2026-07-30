@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import heapq
 import math
 from collections import defaultdict
 from collections.abc import Callable
@@ -20,6 +21,7 @@ from plume_advanced.stages.geometry_types import (
     CaveGeometry,
     GeometryChunkMesh,
     GeometryConfig,
+    SurfaceTextureFrame,
     TiledVoxelGrid,
     VoxelGrid,
 )
@@ -139,6 +141,10 @@ class GeometryGenerator:
                 for segment_id in section_field.dominant_route_segment_ids
                 for sample in samples_by_segment.get(segment_id, ())
             ),
+            surface_texture_frames=self._surface_texture_frames(
+                cave_network,
+                section_field,
+            ),
         )
 
     def finalize(
@@ -177,6 +183,7 @@ class GeometryGenerator:
                 stamped_segment_ids=base_geometry.stamped_segment_ids,
                 minimum_section_width_m=base_geometry.minimum_section_width_m,
                 protected_route_points=base_geometry.protected_route_points,
+                surface_texture_frames=base_geometry.surface_texture_frames,
                 event_meshes=event_meshes,
                 structural_event_ids=(),
             )
@@ -216,9 +223,165 @@ class GeometryGenerator:
             stamped_segment_ids=base_geometry.stamped_segment_ids,
             minimum_section_width_m=base_geometry.minimum_section_width_m,
             protected_route_points=base_geometry.protected_route_points,
+            surface_texture_frames=base_geometry.surface_texture_frames,
             event_meshes=event_meshes,
             structural_event_ids=structural_event_ids,
         )
+
+    def _surface_texture_frames(
+        self,
+        cave_network: CaveNetwork,
+        section_field: SectionField,
+    ) -> tuple[SurfaceTextureFrame, ...]:
+        """Retain transported section frames for route-aware surface mapping."""
+
+        segment_lookup = {
+            segment.segment_id: segment
+            for segment in cave_network.segments
+        }
+        node_lookup = {node.node_id: node for node in cave_network.nodes}
+        node_longitudinal = self._texture_node_longitudinals(cave_network)
+        frames: list[SurfaceTextureFrame] = []
+        for segment_field in section_field.segment_fields:
+            segment = segment_lookup.get(segment_field.segment_id)
+            if segment is None or not segment_field.samples:
+                continue
+            start_node = node_lookup.get(segment.start_node_id)
+            end_node = node_lookup.get(segment.end_node_id)
+            total_length = max(float(segment.total_length), 1e-9)
+            start_longitudinal = node_longitudinal.get(
+                segment.start_node_id,
+                0.0,
+            )
+            end_longitudinal = node_longitudinal.get(
+                segment.end_node_id,
+                start_longitudinal + total_length,
+            )
+            forward = (
+                start_longitudinal < end_longitudinal
+                or (
+                    math.isclose(start_longitudinal, end_longitudinal)
+                    and (
+                        start_node is None
+                        or end_node is None
+                        or start_node.along_position <= end_node.along_position
+                    )
+                )
+            )
+            texture_direction = 1.0 if forward else -1.0
+            for sample in segment_field.samples:
+                vertical_direction = (
+                    -1.0
+                    if float(sample.binormal[2]) < 0.0
+                    else 1.0
+                )
+                normal_direction = texture_direction * vertical_direction
+                profile = (
+                    np.asarray(sample.profile_points, dtype=float)
+                    * self._profile_scale(sample)
+                )
+                if len(profile):
+                    profile[:, 0] *= normal_direction
+                    profile[:, 1] *= vertical_direction
+                if len(profile) >= 2:
+                    profile_perimeter = float(
+                        np.linalg.norm(np.diff(profile, axis=0), axis=1).sum()
+                    )
+                    profile_points = tuple(
+                        (float(point[0]), float(point[1]))
+                        for point in profile
+                    )
+                else:
+                    profile_perimeter = 0.0
+                    profile_points = ()
+                sample_arc_length = float(
+                    np.clip(sample.segment_arc_length, 0.0, total_length)
+                )
+                longitudinal_m = (
+                    start_longitudinal + sample_arc_length
+                    if forward
+                    else end_longitudinal + total_length - sample_arc_length
+                )
+                frames.append(
+                    SurfaceTextureFrame(
+                        segment_id=sample.segment_id,
+                        center=(float(sample.x), float(sample.y), float(sample.z)),
+                        tangent=(
+                            texture_direction * float(sample.tangent[0]),
+                            texture_direction * float(sample.tangent[1]),
+                            texture_direction * float(sample.tangent[2]),
+                        ),
+                        normal=(
+                            normal_direction * float(sample.normal[0]),
+                            normal_direction * float(sample.normal[1]),
+                            normal_direction * float(sample.normal[2]),
+                        ),
+                        binormal=(
+                            vertical_direction * float(sample.binormal[0]),
+                            vertical_direction * float(sample.binormal[1]),
+                            vertical_direction * float(sample.binormal[2]),
+                        ),
+                        longitudinal_m=longitudinal_m,
+                        longitudinal_rate=1.0,
+                        profile_points=profile_points,
+                        profile_perimeter_m=profile_perimeter,
+                    )
+                )
+        return tuple(frames)
+
+    @staticmethod
+    def _texture_node_longitudinals(
+        cave_network: CaveNetwork,
+    ) -> dict[int, float]:
+        """Assign graph-geodesic texture distances from the first entry node."""
+
+        if not cave_network.nodes:
+            return {}
+        node_lookup = {node.node_id: node for node in cave_network.nodes}
+        adjacency: dict[int, list[tuple[int, float]]] = defaultdict(list)
+        for segment in cave_network.segments:
+            length = max(float(segment.total_length), 1e-9)
+            adjacency[segment.start_node_id].append(
+                (segment.end_node_id, length)
+            )
+            adjacency[segment.end_node_id].append(
+                (segment.start_node_id, length)
+            )
+
+        distances = {
+            node_id: math.inf
+            for node_id in node_lookup
+        }
+        remaining = set(node_lookup)
+        component_offset = 0.0
+        while remaining:
+            root = min(
+                remaining,
+                key=lambda node_id: (
+                    node_lookup[node_id].along_position,
+                    node_id,
+                ),
+            )
+            distances[root] = component_offset
+            queue = [(component_offset, root)]
+            while queue:
+                distance, node_id = heapq.heappop(queue)
+                if distance > distances[node_id]:
+                    continue
+                remaining.discard(node_id)
+                for neighbor_id, length in adjacency.get(node_id, ()):
+                    candidate = distance + length
+                    if candidate >= distances.get(neighbor_id, math.inf):
+                        continue
+                    distances[neighbor_id] = candidate
+                    heapq.heappush(queue, (candidate, neighbor_id))
+            finite = [
+                value
+                for value in distances.values()
+                if math.isfinite(value)
+            ]
+            component_offset = max(finite, default=component_offset) + 1.0
+        return distances
 
     def apply_events(
         self,
@@ -1121,6 +1284,7 @@ class GeometryGenerator:
             y_grid,
             z_grid,
             signed_distance,
+            local_vertical=section_z,
         )
 
         region = density[lower[0] : upper[0], lower[1] : upper[1], lower[2] : upper[2]]
@@ -1179,6 +1343,7 @@ class GeometryGenerator:
             y_grid,
             z_grid,
             cap_distance,
+            local_vertical=section_z,
         )
         region = density[lower[0] : upper[0], lower[1] : upper[1], lower[2] : upper[2]]
         np.maximum(region, density_values.astype(np.float32), out=region)
@@ -1261,22 +1426,76 @@ class GeometryGenerator:
         y_grid: np.ndarray,
         z_grid: np.ndarray,
         signed_distance: np.ndarray,
+        *,
+        local_vertical: np.ndarray | None = None,
     ) -> np.ndarray:
+        """Return seeded, zoned multi-scale relief close to the cave boundary.
+
+        The slow field creates coherent smooth and rough lava-flow regions.
+        Higher-frequency harmonics add resolvable rock relief without using
+        marching-cubes facets as surface detail.  Floors receive a modest
+        extra contribution so the traversable terrain is not perfectly flat.
+        """
+
         amplitude = max(self.config.wall_roughness_amplitude, 0.0)
         if math.isclose(amplitude, 0.0):
             return np.zeros_like(signed_distance, dtype=float)
 
         frequency = max(self.config.wall_roughness_frequency, 1e-6)
         phase_x, phase_y, phase_z = self._roughness_phase
-        roughness = (
-            0.50 * np.sin(frequency * x_grid + phase_x)
-            + 0.35 * np.sin(frequency * y_grid + phase_y)
-            + 0.25 * np.cos(frequency * z_grid + phase_z)
-            + 0.20 * np.sin(frequency * 0.53 * (x_grid + y_grid + z_grid))
+        broad = (
+            0.52 * np.sin(frequency * x_grid + phase_x)
+            + 0.38 * np.sin(frequency * y_grid + phase_y)
+            + 0.30 * np.cos(frequency * z_grid + phase_z)
         )
+        medium = (
+            0.32
+            * np.sin(
+                frequency * 2.7 * (0.73 * x_grid - 0.41 * y_grid + 0.29 * z_grid)
+                + phase_y
+            )
+            + 0.24
+            * np.cos(
+                frequency * 3.9 * (0.31 * x_grid + 0.67 * y_grid - 0.22 * z_grid)
+                + phase_z
+            )
+        )
+        fine = 0.14 * np.sin(
+            frequency * 6.1 * (x_grid + 0.61 * y_grid + 0.37 * z_grid)
+            + phase_x
+        )
+        roughness = broad + medium + fine
+
+        zone_field = (
+            0.58 * np.sin(frequency * 0.11 * x_grid + phase_z)
+            + 0.42 * np.cos(frequency * 0.09 * y_grid + phase_x)
+            + 0.30
+            * np.sin(
+                frequency * 0.07 * (x_grid + y_grid + 0.5 * z_grid)
+                + phase_y
+            )
+        )
+        zone = np.clip(0.5 + 0.42 * zone_field, 0.0, 1.0)
+        zone = zone * zone * (3.0 - 2.0 * zone)
+        zone_strength = 0.16 + 0.84 * zone
+
+        terrain_gain: float | np.ndarray = 1.0
+        if local_vertical is not None:
+            vertical_scale = max(
+                0.35 * self.config.characteristic_passage_width_m,
+                self.config.voxel_size,
+            )
+            floor_weight = np.clip(
+                0.5 - np.asarray(local_vertical, dtype=float) / vertical_scale,
+                0.0,
+                1.0,
+            )
+            floor_weight = floor_weight * floor_weight * (3.0 - 2.0 * floor_weight)
+            terrain_gain = 1.0 + 0.55 * floor_weight
+
         blend_distance = max(self.config.wall_roughness_blend * self.config.voxel_size, 1e-6)
         wall_weight = np.exp(-np.abs(signed_distance) / blend_distance)
-        return amplitude * roughness * wall_weight
+        return amplitude * roughness * zone_strength * terrain_gain * wall_weight
 
     @staticmethod
     def _normalize_vector(
@@ -1445,6 +1664,7 @@ class GeometryGenerator:
             y_grid,
             z_grid,
             signed_distance,
+            local_vertical=dz,
         )
         if stamp.kind == "chamber":
             density_values += 0.35 * amplitude * np.sin(

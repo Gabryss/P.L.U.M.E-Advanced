@@ -20,6 +20,7 @@ from rich.progress import (
     TaskProgressColumn,
     TextColumn,
     TimeElapsedColumn,
+    TimeRemainingColumn,
 )
 
 SOURCE_ROOT = Path(__file__).resolve().parents[2]
@@ -82,6 +83,8 @@ class TerminalProgress:
             TaskProgressColumn(),
             TextColumn("({task.completed:.0f}/{task.total:.0f})"),
             TimeElapsedColumn(),
+            TextColumn("ETA"),
+            TimeRemainingColumn(),
             TextColumn("[dim]{task.fields[detail]}"),
             console=self.console,
         )
@@ -145,10 +148,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--body",
         choices=("earth", "mars", "moon"),
         default=None,
-        help=(
-            "Override world.body for this run and use that body's default "
-            "geological material."
-        ),
+        help=("Override world.body for this run and use that body's default geological material."),
     )
     parser.add_argument(
         "--output",
@@ -224,8 +224,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=None,
         help=(
-            "Path for the generated geometry-stage OBJ export. "
-            "Defaults to a sibling file named stage_d_geometry.obj."
+            "Path for the complete portable OBJ scene export. "
+            "Defaults to a sibling file named plume_cave_scene.obj."
         ),
     )
     parser.add_argument(
@@ -233,8 +233,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=None,
         help=(
-            "Path for the generated geometry-stage GLB scene export. "
-            "Defaults to a sibling file named stage_d_geometry.glb."
+            "Path for the complete portable GLB scene export. "
+            "Defaults to a sibling file named plume_cave_scene.glb."
         ),
     )
     parser.add_argument(
@@ -256,23 +256,17 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     section_output = args.section_output or args.output.with_name("stage_c_section_field.png")
     geometry_output = args.geometry_output or args.output.with_name("stage_d_geometry.png")
     event_output = args.event_output or args.output.with_name("stage_e_geological_events.png")
-    floor_map_output = (
-        args.floor_map_output or args.output.with_name("stage_c_floor_map.png")
+    floor_map_output = args.floor_map_output or args.output.with_name("stage_c_floor_map.png")
+    geometry_presentation_output = args.geometry_presentation_output or geometry_output.with_name(
+        "stage_d_geometry_presentation.png"
     )
-    geometry_presentation_output = (
-        args.geometry_presentation_output
-        or geometry_output.with_name("stage_d_geometry_presentation.png")
+    geometry_chunk_output = args.geometry_chunk_output or geometry_output.with_name(
+        "stage_d_geometry_chunks.png"
     )
-    geometry_chunk_output = (
-        args.geometry_chunk_output
-        or geometry_output.with_name("stage_d_geometry_chunks.png")
+    geometry_mesh_output = args.geometry_mesh_output or args.output.with_name(
+        "plume_cave_scene.obj"
     )
-    geometry_mesh_output = (
-        args.geometry_mesh_output or args.output.with_name("stage_d_geometry.obj")
-    )
-    geometry_glb_output = (
-        args.geometry_glb_output or args.output.with_name("stage_d_geometry.glb")
-    )
+    geometry_glb_output = args.geometry_glb_output or args.output.with_name("plume_cave_scene.glb")
     resolved_config_output = args.output.with_name("resolved_project_config.json")
     run_manifest_output = args.output.with_name("run_manifest.json")
     output_directories = {
@@ -295,9 +289,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     try:
         require_output_overwrite_confirmation(
             output_directories,
-            allow_overwrite=(
-                args.force_overwrite or project_config.run.overwrite_outputs
-            ),
+            allow_overwrite=(args.force_overwrite or project_config.run.overwrite_outputs),
         )
     except OutputOverwriteRefused as error:
         print(error, file=sys.stderr)
@@ -346,9 +338,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         host_output_path = None
         progress.finish("diagnostic render disabled")
     completed_outputs.extend(
-        path
-        for path in (host_influence_path, host_output_path)
-        if path is not None
+        path for path in (host_influence_path, host_output_path) if path is not None
     )
 
     checkpoint("network")
@@ -378,9 +368,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         network_output_path = None
         progress.finish("diagnostic render disabled")
     completed_outputs.extend(
-        path
-        for path in (network_report_path, network_output_path)
-        if path is not None
+        path for path in (network_report_path, network_output_path) if path is not None
     )
 
     checkpoint("section_field")
@@ -422,9 +410,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         section_field,
         progress=geometry_progress,
     )
-    progress.finish(
-        f"built {int(base_geometry.summary()['carved_voxel_count'])} cave voxels"
-    )
+    progress.finish(f"built {int(base_geometry.summary()['carved_voxel_count'])} cave voxels")
 
     floor_map_generator = FloorMapGenerator(project_config.floor_map)
     checkpoint("base_floor_atlas")
@@ -435,16 +421,19 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         base_geometry,
     )
     base_floor_summary = base_floor_atlas.summary()
-    progress.finish(
-        f"{int(base_floor_summary['cell_count'])} placement cells"
-    )
+    progress.finish(f"{int(base_floor_summary['cell_count'])} placement cells")
 
     checkpoint("geological_events")
     progress.start("Stage E - Geological Events", "grounding props and modifiers")
+
+    def event_progress(phase: str, current: int, total: int, message: str) -> None:
+        progress.update(current, total, f"{phase}: {message}")
+
     event_field = GeologicalEventGenerator(project_config.events).generate(
         section_field,
         base_geometry,
         base_floor_atlas,
+        progress=event_progress,
     )
     event_summary = event_field.summary()
     progress.update(
@@ -521,10 +510,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     geometry_output_path = None
     geometry_presentation_output_path = None
     geometry_chunk_output_path = None
-    if (
-        project_config.run.render_diagnostics
-        and hasattr(cave_geometry.voxel_grid, "density")
-    ):
+    if project_config.run.render_diagnostics and hasattr(cave_geometry.voxel_grid, "density"):
         geometry_plotter = GeometryPlotter()
         geometry_output_path = geometry_plotter.render_debug(
             cave_network,
@@ -565,9 +551,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         ),
     )
     selected_output = (
-        geometry_mesh_output
-        if project_config.export.file_format == "obj"
-        else geometry_glb_output
+        geometry_mesh_output if project_config.export.file_format == "obj" else geometry_glb_output
     )
     export_result = export_target_asset(
         cave_geometry,
@@ -606,9 +590,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         progress.log(f"Stage C floor-map visualization: {floor_map_output_path}")
         progress.log(f"Stage E visualization: {event_output_path}")
         progress.log(f"Stage D diagnostic visualization: {geometry_output_path}")
-        progress.log(
-            f"Stage D presentation visualization: {geometry_presentation_output_path}"
-        )
+        progress.log(f"Stage D presentation visualization: {geometry_presentation_output_path}")
         progress.log(f"Stage D chunk diagnostics: {geometry_chunk_output_path}")
     progress.log(f"Floor atlas arrays: {floor_npz_path}")
     progress.log(f"Floor atlas metadata: {floor_json_path}")

@@ -22,13 +22,23 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(config.section_field.chamber_max_tube_width, 20.0)
         self.assertEqual(config.network.maximum_passage_radius, 5.0)
         self.assertEqual(config.geometry.resolution_policy, "body")
-        self.assertEqual(config.geometry.resolution_quality, "preview")
-        self.assertAlmostEqual(config.geometry.voxel_size, 1.0)
+        self.assertEqual(config.geometry.resolution_quality, "standard")
+        self.assertAlmostEqual(config.geometry.voxel_size, 0.6)
+        self.assertAlmostEqual(config.geometry.cave_normal_scale, 2.0)
+        self.assertEqual(config.geometry.cave_smoothing_iterations, 4)
+        self.assertAlmostEqual(config.geometry.cave_displacement_scale_m, 0.12)
+        self.assertAlmostEqual(config.geometry.cave_displacement_midlevel, 0.5)
+        self.assertTrue(config.events.include_rock_props)
+        self.assertAlmostEqual(config.events.rock_population_multiplier, 10.0)
+        self.assertAlmostEqual(
+            config.events.boulder_max_height_fraction,
+            2.0 / 3.0,
+        )
         self.assertAlmostEqual(
             config.geometry.characteristic_samples_across_passage,
-            10.0,
+            10.0 / 0.6,
         )
-        self.assertEqual(config.export.target, "blender")
+        self.assertEqual(config.export.target, "neutral")
         self.assertEqual(config.export.file_format, "glb")
         self.assertLessEqual(
             config.host_field.grid.height,
@@ -122,12 +132,11 @@ class ProjectConfigurationTests(unittest.TestCase):
         )
         self.assertEqual(
             [configs[body].geometry.voxel_size for body in configs],
-            [1.0, 2.0, 4.0],
+            [0.6, 1.2, 2.4],
         )
         self.assertTrue(
             all(
-                configs[body].geometry.characteristic_samples_across_passage
-                >= 10.0
+                configs[body].geometry.characteristic_samples_across_passage >= 10.0
                 for body in configs
             )
         )
@@ -156,7 +165,7 @@ class ProjectConfigurationTests(unittest.TestCase):
             """
         )
 
-        self.assertAlmostEqual(standard.geometry.voxel_size, 0.7)
+        self.assertAlmostEqual(standard.geometry.voxel_size, 0.6)
         self.assertAlmostEqual(production.geometry.voxel_size, 0.5)
         self.assertGreater(
             production.geometry.characteristic_samples_across_passage,
@@ -281,6 +290,39 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(result.events, ())
         self.assertEqual(result.meshes, ())
 
+    def test_rocky_asset_paths_are_resolved_relative_to_project_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / "scenario" / "project.toml"
+            config_path.parent.mkdir()
+            config_path.write_text(
+                textwrap.dedent(
+                    """
+                    schema_version = 2
+                    [events]
+                    enabled = false
+                    rocky_source_path = "../vendor/Rocky/src"
+                    rocky_texture_dir = "../textures"
+                    rocky_output_dir = "../outputs/rocky"
+                    """
+                ),
+                encoding="utf-8",
+            )
+
+            config = load_project_config(config_path)
+
+            self.assertEqual(
+                Path(config.events.rocky_source_path),
+                Path(temp_dir) / "vendor" / "Rocky" / "src",
+            )
+            self.assertEqual(
+                Path(config.events.rocky_texture_dir),
+                Path(temp_dir) / "textures",
+            )
+            self.assertEqual(
+                Path(config.events.rocky_output_dir),
+                Path(temp_dir) / "outputs" / "rocky",
+            )
+
     def test_manifest_records_canonical_coordinates_and_resolved_world(self) -> None:
         config = self._load_minimal(
             """
@@ -364,6 +406,24 @@ class ProjectConfigurationTests(unittest.TestCase):
                 [export]
                 target = "blender"
                 format = "usd"
+                """
+            )
+
+    def test_invalid_rock_population_controls_are_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "rock_population_multiplier"):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [events]
+                rock_population_multiplier = 0.0
+                """
+            )
+        with self.assertRaisesRegex(ValueError, "boulder_max_height_fraction"):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [events]
+                boulder_max_height_fraction = 1.1
                 """
             )
 

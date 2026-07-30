@@ -12,51 +12,90 @@ import struct
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import NotRequired, TypedDict
 
 import numpy as np
 import trimesh
+import xatlas
+from scipy.spatial import cKDTree
 
-from plume_advanced.stages.geometry_types import CaveGeometry
+from plume_advanced.stages.geometry_types import CaveGeometry, SurfaceTextureFrame
 
 GLB_EMBEDDED_TEXTURE_MAX_SIZE = 1024
 GLB_CAVE_TEXTURE_SCALE_METERS = 8.0
+XATLAS_MAX_FACES_PER_BATCH = 25_000
+
+
+class DisplacementMetadata(TypedDict):
+    baked: bool
+    scale_m: float
+    midlevel: float
+    minimum_offset_m: float
+    maximum_offset_m: float
+    mean_offset_m: float
+    sample_standard_deviation_m: NotRequired[float]
+
+
+class CavePrimitivePayload(TypedDict):
+    positions: np.ndarray
+    faces: np.ndarray
+    texcoords: np.ndarray
+    normals: np.ndarray
+    tangents: np.ndarray
+    material_index: int
+    displacement: DisplacementMetadata
 
 
 def export_geometry_obj(cave_geometry: CaveGeometry, output_path: str | Path) -> Path:
-    """Write the assembled Stage-D mesh as a Wavefront OBJ file."""
+    """Write the same processed visual cave used by GLB as Wavefront OBJ."""
 
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
-    textured_event_meshes = [
-        event_mesh
-        for event_mesh in cave_geometry.event_meshes
-        if event_mesh.material_maps and event_mesh.face_uvs
-    ]
+    cave_payload = build_cave_visual_surface(
+        cave_geometry,
+        convert_to_gltf=False,
+    )
+    cave_vertices = cave_payload["positions"]
+    cave_faces = cave_payload["faces"]
+    cave_uvs = cave_payload["texcoords"]
+    cave_normals = cave_payload["normals"]
+
     mtl_path = output.with_suffix(".mtl")
-    if textured_event_meshes:
-        _write_event_mtl(mtl_path, textured_event_meshes, output.parent)
+    _write_obj_mtl(
+        mtl_path,
+        cave_geometry,
+        list(cave_geometry.event_meshes),
+        output.parent,
+    )
 
     with output.open("w", encoding="utf-8") as handle:
-        handle.write("# PLUME-Advanced Stage D geometry export\n")
-        if textured_event_meshes:
-            handle.write(f"mtllib {mtl_path.name}\n")
+        handle.write("# PLUME-Advanced portable visual geometry export\n")
+        handle.write("# Coordinates: right-handed Z-up metres\n")
+        handle.write("# Cave displacement is already baked into vertex positions\n")
+        handle.write(f"mtllib {mtl_path.name}\n")
         for key, value in cave_geometry.summary().items():
             handle.write(f"# {key}={value:.3f}\n")
         mesh = trimesh.Trimesh(
-            vertices=cave_geometry.assembled_vertices,
-            faces=cave_geometry.assembled_faces,
+            vertices=cave_vertices,
+            faces=cave_faces,
             process=False,
         )
         handle.write(f"# trimesh_is_watertight={float(mesh.is_watertight):.3f}\n")
         handle.write(f"# trimesh_euler_number={float(mesh.euler_number):.3f}\n")
         handle.write("o cave_wall\n")
-        for vertex in cave_geometry.assembled_vertices:
+        handle.write("usemtl cave_wall_material\n")
+        handle.write("s 1\n")
+        for vertex in cave_vertices:
             handle.write(f"v {vertex[0]:.9f} {vertex[1]:.9f} {vertex[2]:.9f}\n")
-        for face in cave_geometry.assembled_faces:
+        for u_coord, v_coord in cave_uvs:
+            handle.write(f"vt {u_coord:.9f} {1.0 - v_coord:.9f}\n")
+        for normal in cave_normals:
+            handle.write(f"vn {normal[0]:.9f} {normal[1]:.9f} {normal[2]:.9f}\n")
+        for face in cave_faces:
             a, b, c = (index + 1 for index in face)
-            handle.write(f"f {a} {b} {c}\n")
-        vertex_offset = len(cave_geometry.assembled_vertices)
-        uv_vertex_offset = 0
+            handle.write(f"f {a}/{a}/{a} {b}/{b}/{b} {c}/{c}/{c}\n")
+        vertex_offset = len(cave_vertices)
+        uv_vertex_offset = len(cave_uvs)
         for event_mesh in cave_geometry.event_meshes:
             handle.write(f"\no event_{event_mesh.event_id:04d}_{event_mesh.kind}\n")
             handle.write(f"# material_hint={event_mesh.material_hint}\n")
@@ -64,8 +103,7 @@ def export_geometry_obj(cave_geometry: CaveGeometry, output_path: str | Path) ->
             if event_mesh.source_shape_type:
                 handle.write(f"# source_shape_type={event_mesh.source_shape_type}\n")
             material_name = _event_material_name(event_mesh)
-            if event_mesh.material_maps:
-                handle.write(f"usemtl {material_name}\n")
+            handle.write(f"usemtl {material_name}\n")
             for vertex in event_mesh.vertices:
                 handle.write(f"v {vertex[0]:.9f} {vertex[1]:.9f} {vertex[2]:.9f}\n")
             has_face_uvs = len(event_mesh.face_uvs) == len(event_mesh.faces)
@@ -91,6 +129,102 @@ def export_geometry_obj(cave_geometry: CaveGeometry, output_path: str | Path) ->
     return output
 
 
+def build_cave_visual_surface(
+    cave_geometry: CaveGeometry,
+    *,
+    convert_to_gltf: bool = False,
+    displacement_image=None,
+    image_cache: dict[str, object] | None = None,
+) -> CavePrimitivePayload:
+    """Finalize smoothing, metric UVs, displacement, normals and tangents.
+
+    This is the format-neutral Stage-F boundary. Geometry generation and
+    structural events are already complete when it runs; GLB, OBJ and USD
+    consume the same returned visual surface.
+    """
+
+    _validate_texture_dependencies(cave_geometry)
+    cache = image_cache if image_cache is not None else {}
+    if displacement_image is None:
+        displacement_image = _load_displacement_image(
+            cave_geometry.config.cave_displacement_texture,
+            cache,
+            max_size=cave_geometry.config.embedded_texture_max_size,
+        )
+    if (
+        cave_geometry.config.strict_texture_loading
+        and cave_geometry.config.cave_displacement_texture
+        and displacement_image is None
+    ):
+        raise RuntimeError("Failed to decode configured cave displacement texture")
+    if not cave_geometry.assembled_vertices or not cave_geometry.assembled_faces:
+        source_vertices, source_faces = _assemble_export_chunks(
+            cave_geometry.chunk_meshes
+        )
+    else:
+        source_vertices = np.asarray(
+            cave_geometry.assembled_vertices,
+            dtype=np.float64,
+        )
+        source_faces = np.asarray(cave_geometry.assembled_faces, dtype=np.uint32)
+    return _cave_primitive_payload(
+        vertices=source_vertices,
+        faces=source_faces,
+        material_index=-1,
+        texture_frames=cave_geometry.surface_texture_frames,
+        smoothing_iterations=cave_geometry.config.cave_smoothing_iterations,
+        variation_seed=cave_geometry.config.random_seed,
+        roughness_frequency=cave_geometry.config.wall_roughness_frequency,
+        displacement_image=displacement_image,
+        displacement_scale_m=cave_geometry.config.cave_displacement_scale_m,
+        displacement_midlevel=cave_geometry.config.cave_displacement_midlevel,
+        convert_to_gltf=convert_to_gltf,
+    )
+
+
+def export_cave_texture_files(
+    cave_geometry: CaveGeometry,
+    output_directory: str | Path,
+) -> dict[str, Path]:
+    """Write the same portable PBR images used by GLB for external USD assets."""
+
+    _validate_texture_dependencies(cave_geometry)
+    output = Path(output_directory)
+    output.mkdir(parents=True, exist_ok=True)
+    image_cache: dict[str, object] = {}
+    max_size = cave_geometry.config.embedded_texture_max_size
+    images = {
+        "diffuse": _load_texture_image(
+            cave_geometry.config.cave_diffuse_texture,
+            image_cache,
+            max_size=max_size,
+        ),
+        "normal": _load_texture_image(
+            cave_geometry.config.cave_normal_texture,
+            image_cache,
+            max_size=max_size,
+        ),
+        "metallic_roughness": _load_metallic_roughness_texture(
+            cave_geometry.config.cave_roughness_texture,
+            image_cache,
+            max_size=max_size,
+        ),
+    }
+    filenames = {
+        "diffuse": "cave_base_color.png",
+        "normal": "cave_normal.png",
+        "metallic_roughness": "cave_metallic_roughness.png",
+    }
+    exported: dict[str, Path] = {}
+    for role, image in images.items():
+        if image is None:
+            continue
+        path = output / filenames[role]
+        image.save(path, format="PNG")
+        exported[role] = path
+    return exported
+
+
 def export_geometry_glb(cave_geometry: CaveGeometry, output_path: str | Path) -> Path:
     """Write a drag-and-drop GLB scene with separately editable event nodes."""
 
@@ -105,7 +239,23 @@ def export_geometry_glb(cave_geometry: CaveGeometry, output_path: str | Path) ->
         builder=builder,
         image_cache=image_cache,
     )
-    _add_cave_wall_to_strict_glb(builder, cave_geometry, cave_material)
+    displacement_image = _load_displacement_image(
+        cave_geometry.config.cave_displacement_texture,
+        image_cache,
+        max_size=cave_geometry.config.embedded_texture_max_size,
+    )
+    if (
+        cave_geometry.config.strict_texture_loading
+        and cave_geometry.config.cave_displacement_texture
+        and displacement_image is None
+    ):
+        raise RuntimeError("Failed to decode configured cave displacement texture")
+    displacement = _add_cave_wall_to_strict_glb(
+        builder,
+        cave_geometry,
+        cave_material,
+        displacement_image=displacement_image,
+    )
 
     for event_mesh in cave_geometry.event_meshes:
         geometry = _event_mesh_to_glb_payload(
@@ -131,12 +281,19 @@ def export_geometry_glb(cave_geometry: CaveGeometry, output_path: str | Path) ->
                 "material_hint": event_mesh.material_hint,
                 "source_generator": event_mesh.source_generator,
                 "source_shape_type": event_mesh.source_shape_type,
+                "debris_family_id": event_mesh.debris_family_id,
+                "family_anchor_event_id": event_mesh.family_anchor_event_id,
+                "debris_role": event_mesh.debris_role,
                 "displacement_texture": dict(event_mesh.material_maps).get("displacement", ""),
             },
         )
 
     output.write_bytes(builder.to_glb())
-    _write_geometry_manifest(cave_geometry, output.with_suffix(".manifest.json"))
+    _write_geometry_manifest(
+        cave_geometry,
+        output.with_suffix(".manifest.json"),
+        displacement=displacement,
+    )
     return output
 
 
@@ -189,19 +346,28 @@ def _add_cave_wall_to_strict_glb(
     builder,
     cave_geometry: CaveGeometry,
     cave_material: int,
-) -> None:
-    if not cave_geometry.assembled_vertices or not cave_geometry.assembled_faces:
-        if not cave_geometry.chunk_meshes:
-            return
-        source_vertices, source_faces = _assemble_export_chunks(cave_geometry.chunk_meshes)
-    else:
-        source_vertices = np.array(cave_geometry.assembled_vertices, dtype=np.float32)
-        source_faces = np.array(cave_geometry.assembled_faces, dtype=np.uint32)
-
-    payload = _cave_primitive_payload(
-        vertices=source_vertices,
-        faces=source_faces,
-        material_index=cave_material,
+    *,
+    displacement_image=None,
+) -> DisplacementMetadata:
+    if (
+        (
+            not cave_geometry.assembled_vertices
+            or not cave_geometry.assembled_faces
+        )
+        and not cave_geometry.chunk_meshes
+    ):
+        return {
+            "baked": False,
+            "scale_m": 0.0,
+            "midlevel": cave_geometry.config.cave_displacement_midlevel,
+            "minimum_offset_m": 0.0,
+            "maximum_offset_m": 0.0,
+            "mean_offset_m": 0.0,
+        }
+    payload = build_cave_visual_surface(
+        cave_geometry,
+        convert_to_gltf=True,
+        displacement_image=displacement_image,
     )
     builder.mesh_node(
         name="cave_wall",
@@ -217,9 +383,10 @@ def _add_cave_wall_to_strict_glb(
             "gltf_coordinates": "right-handed Y-up metres",
             "processing_chunk_count": len(cave_geometry.chunk_meshes),
             "structural_event_ids": list(cave_geometry.structural_event_ids),
-            "displacement_texture": cave_geometry.config.cave_displacement_texture,
+            "displacement": payload["displacement"],
         },
     )
+    return payload["displacement"]
 
 
 def _assemble_export_chunks(chunk_meshes) -> tuple[np.ndarray, np.ndarray]:
@@ -246,25 +413,821 @@ def _cave_primitive_payload(
     vertices: np.ndarray,
     faces: np.ndarray,
     material_index: int,
-) -> dict[str, np.ndarray | int]:
+    texture_frames: tuple[SurfaceTextureFrame, ...] = (),
+    smoothing_iterations: int = 0,
+    variation_seed: int | None = None,
+    roughness_frequency: float = 0.16,
+    displacement_image=None,
+    displacement_scale_m: float = 0.0,
+    displacement_midlevel: float = 0.5,
+    convert_to_gltf: bool = True,
+) -> CavePrimitivePayload:
     canonical_vertices = np.asarray(vertices, dtype=np.float64)
     face_indices = np.asarray(faces, dtype=np.uint32)
+    canonical_vertices = _smooth_visual_surface(
+        canonical_vertices,
+        face_indices,
+        iterations=smoothing_iterations,
+        variation_seed=variation_seed,
+        roughness_frequency=roughness_frequency,
+    )
+    face_indices = _orient_faces_toward_cave_interior(
+        canonical_vertices,
+        face_indices,
+        texture_frames,
+    )
     canonical_normals = _angle_weighted_vertex_normals(canonical_vertices, face_indices)
-    texcoords = _project_cave_vertex_uvs(canonical_vertices)
-    canonical_tangents = _mesh_tangents(
+    vertex_mapping, atlas_faces, texcoords = _xatlas_metric_uvs(
+        canonical_vertices,
+        face_indices,
+        canonical_normals,
+        scale_m=GLB_CAVE_TEXTURE_SCALE_METERS,
+    )
+    canonical_vertices, displacement = _bake_seam_consistent_displacement(
+        canonical_vertices,
+        canonical_normals,
+        vertex_mapping,
+        texcoords,
+        displacement_image,
+        scale_m=displacement_scale_m,
+        midlevel=displacement_midlevel,
+        strength_weights=(
+            0.28
+            + 0.72
+            * _surface_roughness_weights(
+                canonical_vertices,
+                variation_seed=variation_seed,
+                roughness_frequency=roughness_frequency,
+            )
+        ),
+    )
+    canonical_normals = _angle_weighted_vertex_normals(
+        canonical_vertices,
+        face_indices,
+    )
+    canonical_vertices = canonical_vertices[vertex_mapping]
+    canonical_normals = canonical_normals[vertex_mapping]
+    face_indices = atlas_faces
+    mesh_tangents = _mesh_tangents(
         canonical_vertices,
         face_indices,
         texcoords,
         canonical_normals,
     )
+    canonical_tangents = mesh_tangents
+    if convert_to_gltf:
+        output_positions = _canonical_to_gltf_vectors(canonical_vertices)
+        output_normals = _canonical_to_gltf_vectors(canonical_normals)
+        output_tangents = _canonical_to_gltf_tangents(canonical_tangents)
+    else:
+        output_positions = canonical_vertices.astype(np.float32)
+        output_normals = canonical_normals.astype(np.float32)
+        output_tangents = canonical_tangents.astype(np.float32)
     return {
-        "positions": _canonical_to_gltf_vectors(canonical_vertices),
+        "positions": output_positions,
         "faces": face_indices,
         "texcoords": texcoords.astype(np.float32),
-        "normals": _canonical_to_gltf_vectors(canonical_normals),
-        "tangents": _canonical_to_gltf_tangents(canonical_tangents),
+        "normals": output_normals,
+        "tangents": output_tangents,
         "material_index": material_index,
+        "displacement": displacement,
     }
+
+
+def _xatlas_metric_uvs(
+    vertices: np.ndarray,
+    faces: np.ndarray,
+    normals: np.ndarray,
+    *,
+    scale_m: float,
+    max_faces_per_batch: int = XATLAS_MAX_FACES_PER_BATCH,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Generate seam-aware conformal charts with a repeatable metric density.
+
+    Large voxel surfaces are divided into bounded, face-order-preserving
+    batches. The source assembler emits spatially local face runs, and the
+    material is repeat-wrapped, so independent atlas packing is both faster
+    and harmless: only each chart's local shape and metric scale matter.
+    """
+
+    positions = np.ascontiguousarray(vertices, dtype=np.float32)
+    triangles = np.ascontiguousarray(faces, dtype=np.uint32)
+    vertex_normals = np.ascontiguousarray(normals, dtype=np.float32)
+    if len(positions) == 0 or len(triangles) == 0:
+        return (
+            np.arange(len(positions), dtype=np.uint32),
+            triangles.copy(),
+            np.zeros((len(positions), 2), dtype=np.float64),
+        )
+
+    batch_size = max(1, int(max_faces_per_batch))
+    mappings: list[np.ndarray] = []
+    face_batches: list[np.ndarray] = []
+    uv_batches: list[np.ndarray] = []
+    vertex_offset = 0
+    for face_start in range(0, len(triangles), batch_size):
+        source_faces = triangles[face_start : face_start + batch_size]
+        source_vertex_indices = np.unique(source_faces)
+        local_faces = np.searchsorted(
+            source_vertex_indices,
+            source_faces,
+        ).astype(np.uint32)
+        atlas = xatlas.Atlas()
+        atlas.add_mesh(
+            positions[source_vertex_indices],
+            local_faces,
+            vertex_normals[source_vertex_indices],
+        )
+        atlas.generate()
+        local_mapping, local_atlas_faces, local_atlas_uvs = atlas[0]
+        local_mapping = np.asarray(local_mapping, dtype=np.uint32)
+        local_atlas_faces = np.asarray(local_atlas_faces, dtype=np.uint32)
+        local_atlas_uvs = np.asarray(local_atlas_uvs, dtype=np.float64)
+        atlas_dimensions = np.asarray(
+            (atlas.width, atlas.height),
+            dtype=np.float64,
+        )
+        if np.any(atlas_dimensions <= 0.0):
+            raise RuntimeError("xatlas returned an invalid atlas resolution")
+        local_atlas_uvs *= atlas_dimensions
+        source_mapping = source_vertex_indices[local_mapping].astype(np.uint32)
+        local_atlas_uvs = _scale_atlas_uvs_to_metric(
+            np.asarray(vertices, dtype=np.float64)[source_mapping],
+            local_atlas_faces,
+            local_atlas_uvs,
+            scale_m=scale_m,
+        )
+        mappings.append(source_mapping)
+        face_batches.append(local_atlas_faces + vertex_offset)
+        uv_batches.append(local_atlas_uvs)
+        vertex_offset += len(source_mapping)
+
+    vertex_mapping = np.concatenate(mappings)
+    atlas_faces = np.concatenate(face_batches)
+    atlas_uvs = np.concatenate(uv_batches)
+    if (
+        len(vertex_mapping) != len(atlas_uvs)
+        or atlas_faces.shape != triangles.shape
+        or int(vertex_mapping.max(initial=0)) >= len(positions)
+        or int(atlas_faces.max(initial=0)) >= len(vertex_mapping)
+        or not np.isfinite(atlas_uvs).all()
+    ):
+        raise RuntimeError("xatlas returned an invalid cave-wall parameterization")
+    return vertex_mapping, atlas_faces, atlas_uvs
+
+
+def _scale_atlas_uvs_to_metric(
+    expanded_positions: np.ndarray,
+    atlas_faces: np.ndarray,
+    atlas_uvs: np.ndarray,
+    *,
+    scale_m: float,
+) -> np.ndarray:
+    """Rescale a normalized xatlas result to metres per repeated texture tile."""
+
+    triangle_positions = expanded_positions[atlas_faces]
+    triangle_uvs = atlas_uvs[atlas_faces]
+    world_double_areas = np.linalg.norm(
+        np.cross(
+            triangle_positions[:, 1] - triangle_positions[:, 0],
+            triangle_positions[:, 2] - triangle_positions[:, 0],
+        ),
+        axis=1,
+    )
+    uv_edge_a = triangle_uvs[:, 1] - triangle_uvs[:, 0]
+    uv_edge_b = triangle_uvs[:, 2] - triangle_uvs[:, 0]
+    uv_double_areas = np.abs(
+        uv_edge_a[:, 0] * uv_edge_b[:, 1]
+        - uv_edge_a[:, 1] * uv_edge_b[:, 0]
+    )
+    valid = (world_double_areas > 1e-12) & (uv_double_areas > 1e-12)
+    if not np.any(valid):
+        raise RuntimeError("xatlas produced no measurable cave-wall UV triangles")
+
+    metres_per_uv = np.sqrt(
+        world_double_areas[valid] / uv_double_areas[valid]
+    )
+    return (
+        np.asarray(atlas_uvs, dtype=np.float64)
+        * float(np.median(metres_per_uv))
+        / max(float(scale_m), 1e-6)
+    )
+
+
+def _bake_seam_consistent_displacement(
+    vertices: np.ndarray,
+    normals: np.ndarray,
+    vertex_mapping: np.ndarray,
+    texcoords: np.ndarray,
+    image,
+    *,
+    scale_m: float,
+    midlevel: float,
+    strength_weights: np.ndarray | None = None,
+) -> tuple[np.ndarray, DisplacementMetadata]:
+    """Bake atlas-driven displacement without separating duplicated UV seams."""
+
+    positions = np.asarray(vertices, dtype=np.float64)
+    vertex_normals = np.asarray(normals, dtype=np.float64)
+    mapping = np.asarray(vertex_mapping, dtype=np.int64)
+    expanded_positions = positions[mapping]
+    expanded_normals = vertex_normals[mapping]
+    expanded_weights = (
+        None
+        if strength_weights is None
+        else np.asarray(strength_weights, dtype=np.float64)[mapping]
+    )
+    expanded_displaced, metadata = _bake_vertex_displacement(
+        expanded_positions,
+        expanded_normals,
+        texcoords,
+        image,
+        scale_m=scale_m,
+        midlevel=midlevel,
+        strength_weights=expanded_weights,
+    )
+    if not metadata["baked"]:
+        return positions.copy(), metadata
+
+    expanded_offsets = np.einsum(
+        "ij,ij->i",
+        expanded_displaced - expanded_positions,
+        expanded_normals,
+    )
+    offset_sums = np.bincount(
+        mapping,
+        weights=expanded_offsets,
+        minlength=len(positions),
+    )
+    offset_counts = np.bincount(mapping, minlength=len(positions))
+    offsets = offset_sums / np.maximum(offset_counts, 1)
+    displaced = positions + vertex_normals * offsets[:, None]
+    metadata.update(
+        {
+            "minimum_offset_m": float(offsets.min()),
+            "maximum_offset_m": float(offsets.max()),
+            "mean_offset_m": float(offsets.mean()),
+            "sample_standard_deviation_m": float(offsets.std()),
+        }
+    )
+    return displaced, metadata
+
+
+def _bake_vertex_displacement(
+    vertices: np.ndarray,
+    normals: np.ndarray,
+    texcoords: np.ndarray,
+    image,
+    *,
+    scale_m: float,
+    midlevel: float,
+    strength_weights: np.ndarray | None = None,
+) -> tuple[np.ndarray, DisplacementMetadata]:
+    """Bake a repeat-wrapped height map into portable vertex positions."""
+
+    positions = np.asarray(vertices, dtype=np.float64)
+    metadata: DisplacementMetadata = {
+        "baked": False,
+        "scale_m": float(scale_m),
+        "midlevel": float(midlevel),
+        "minimum_offset_m": 0.0,
+        "maximum_offset_m": 0.0,
+        "mean_offset_m": 0.0,
+    }
+    if image is None or scale_m <= 0.0 or len(positions) == 0:
+        return positions.copy(), metadata
+    if not 0.0 < midlevel < 1.0:
+        raise ValueError("Displacement midlevel must be in (0, 1)")
+
+    samples = _sample_periodic_grayscale(image, texcoords)
+    denominators = np.where(
+        samples >= midlevel,
+        max(1.0 - midlevel, 1e-9),
+        max(midlevel, 1e-9),
+    )
+    normalized = (samples - midlevel) / denominators
+    offsets = np.clip(normalized, -1.0, 1.0) * float(scale_m)
+    if strength_weights is not None:
+        weights = np.asarray(strength_weights, dtype=np.float64)
+        if weights.shape != offsets.shape:
+            raise ValueError("Displacement strength weights must match vertex count")
+        offsets *= np.clip(weights, 0.0, 1.0)
+    displaced = positions + np.asarray(normals, dtype=np.float64) * offsets[:, None]
+    metadata.update(
+        {
+            "baked": True,
+            "minimum_offset_m": float(offsets.min()),
+            "maximum_offset_m": float(offsets.max()),
+            "mean_offset_m": float(offsets.mean()),
+            "sample_standard_deviation_m": float(offsets.std()),
+        }
+    )
+    return displaced, metadata
+
+
+def _sample_periodic_grayscale(image, texcoords: np.ndarray) -> np.ndarray:
+    """Bilinearly sample an image using glTF repeat-wrapped UV coordinates."""
+
+    pixels = np.asarray(image, dtype=np.float64)
+    if pixels.ndim == 3:
+        pixels = pixels[:, :, 0]
+    if pixels.size and float(np.max(pixels)) > 1.0:
+        maximum = 65_535.0 if float(np.max(pixels)) > 255.0 else 255.0
+        pixels /= maximum
+    if pixels.ndim != 2 or pixels.size == 0:
+        raise ValueError("Displacement image must contain grayscale pixels")
+    height, width = pixels.shape
+    uv = np.mod(np.asarray(texcoords, dtype=np.float64), 1.0)
+    x_coord = uv[:, 0] * max(width - 1, 0)
+    y_coord = uv[:, 1] * max(height - 1, 0)
+    x0 = np.floor(x_coord).astype(np.int64)
+    y0 = np.floor(y_coord).astype(np.int64)
+    x1 = np.minimum(x0 + 1, width - 1)
+    y1 = np.minimum(y0 + 1, height - 1)
+    x_weight = x_coord - x0
+    y_weight = y_coord - y0
+    top = pixels[y0, x0] * (1.0 - x_weight) + pixels[y0, x1] * x_weight
+    bottom = pixels[y1, x0] * (1.0 - x_weight) + pixels[y1, x1] * x_weight
+    return top * (1.0 - y_weight) + bottom * y_weight
+
+
+def _smooth_visual_surface(
+    vertices: np.ndarray,
+    faces: np.ndarray,
+    *,
+    iterations: int,
+    variation_seed: int | None = None,
+    roughness_frequency: float = 0.16,
+) -> np.ndarray:
+    """Remove voxel terraces while retaining coherent rough lava-flow zones."""
+
+    positions = np.asarray(vertices, dtype=np.float64)
+    if iterations <= 0 or len(positions) == 0:
+        return positions.copy()
+
+    def filtered(source: np.ndarray, count: int) -> np.ndarray:
+        mesh = trimesh.Trimesh(
+            vertices=source.copy(),
+            faces=np.asarray(faces, dtype=np.int64),
+            process=False,
+        )
+        trimesh.smoothing.filter_taubin(
+            mesh,
+            lamb=0.50,
+            nu=0.53,
+            iterations=int(count),
+        )
+        return np.asarray(mesh.vertices, dtype=np.float64)
+
+    smoothed = filtered(positions, int(iterations))
+    if iterations > 2:
+        lightly_smoothed = filtered(positions, 2)
+        roughness = _surface_roughness_weights(
+            positions,
+            variation_seed=variation_seed,
+            roughness_frequency=roughness_frequency,
+        )
+        extra_smoothing = 1.0 - 0.78 * roughness
+        smoothed = lightly_smoothed + extra_smoothing[:, None] * (
+            smoothed - lightly_smoothed
+        )
+    if smoothed.shape != positions.shape or not np.isfinite(smoothed).all():
+        raise ValueError("Visual cave smoothing produced invalid vertices")
+    return smoothed
+
+
+def _surface_roughness_weights(
+    vertices: np.ndarray,
+    *,
+    variation_seed: int | None,
+    roughness_frequency: float,
+) -> np.ndarray:
+    """Build deterministic broad zones that alternate smooth and rough relief."""
+
+    positions = np.asarray(vertices, dtype=np.float64)
+    if len(positions) == 0:
+        return np.empty(0, dtype=np.float64)
+    rng = np.random.default_rng(0 if variation_seed is None else variation_seed)
+    phase_a, phase_b, phase_c = rng.uniform(0.0, 2.0 * np.pi, size=3)
+    frequency = max(float(roughness_frequency) * 0.28, 0.025)
+    x_coord, y_coord, z_coord = positions.T
+    field = (
+        0.56 * np.sin(frequency * x_coord + phase_a)
+        + 0.40 * np.cos(frequency * 0.83 * y_coord + phase_b)
+        + 0.28
+        * np.sin(
+            frequency * 0.61 * (x_coord + y_coord + 0.45 * z_coord)
+            + phase_c
+        )
+    )
+    weights = np.clip(0.5 + 0.43 * field, 0.0, 1.0)
+    return weights * weights * (3.0 - 2.0 * weights)
+
+
+def _orient_faces_toward_cave_interior(
+    vertices: np.ndarray,
+    faces: np.ndarray,
+    texture_frames: tuple[SurfaceTextureFrame, ...],
+) -> np.ndarray:
+    """Orient the cave boundary toward its route centres for backface culling."""
+
+    triangles = np.asarray(faces, dtype=np.uint32).copy()
+    if not texture_frames or len(triangles) == 0:
+        return triangles
+    positions = np.asarray(vertices, dtype=np.float64)
+    triangle_positions = positions[triangles]
+    face_centers = triangle_positions.mean(axis=1)
+    route_centers = np.asarray(
+        [frame.center for frame in texture_frames],
+        dtype=np.float64,
+    )
+    _distances, frame_indices = cKDTree(route_centers).query(face_centers, k=1)
+    toward_interior = route_centers[frame_indices] - face_centers
+    face_normals = np.cross(
+        triangle_positions[:, 1] - triangle_positions[:, 0],
+        triangle_positions[:, 2] - triangle_positions[:, 0],
+    )
+    valid = (
+        np.linalg.norm(face_normals, axis=1) > 1e-12
+    ) & (
+        np.linalg.norm(toward_interior, axis=1) > 1e-12
+    )
+    if np.any(valid):
+        orientation = np.einsum(
+            "ij,ij->i",
+            face_normals[valid],
+            toward_interior[valid],
+        )
+        if float(np.median(orientation)) < 0.0:
+            triangles[:, [1, 2]] = triangles[:, [2, 1]]
+    return triangles
+
+
+def _project_route_local_vertex_uvs(
+    vertices: np.ndarray,
+    texture_frames: tuple[SurfaceTextureFrame, ...],
+    *,
+    scale_m: float,
+) -> np.ndarray:
+    """Map route length and profile perimeter with comparable metric density.
+
+    The previous angular V coordinate allocated one texture repeat to an
+    entire cross-section, stretching the same image over 20--30 metres of
+    roof.  Profile-aware frames instead measure distance along the actual
+    Stage-C contour and use an integer repeat count per segment.  Integer
+    counts keep the profile seam repeat-wrapped while maintaining roughly
+    square texels in world space.
+    """
+
+    positions = np.asarray(vertices, dtype=np.float64)
+    if not texture_frames:
+        return _project_cave_vertex_uvs(positions)
+
+    scale = max(float(scale_m), 1e-6)
+    segment_perimeters: dict[int, list[float]] = {}
+    for frame in texture_frames:
+        if frame.profile_perimeter_m > 1e-6:
+            segment_perimeters.setdefault(frame.segment_id, []).append(
+                frame.profile_perimeter_m
+            )
+    valid_perimeters = [
+        perimeter
+        for perimeters in segment_perimeters.values()
+        for perimeter in perimeters
+    ]
+    connected_surface_repeats = max(
+        1,
+        int(round(float(np.median(valid_perimeters)) / scale)),
+    ) if valid_perimeters else 1
+    segment_repeats = {
+        segment_id: connected_surface_repeats
+        for segment_id in segment_perimeters
+    }
+
+    centers = np.asarray([frame.center for frame in texture_frames], dtype=np.float64)
+    _nearest_distances, nearest_indices = cKDTree(centers).query(positions, k=1)
+    frame_segment_ids = np.asarray(
+        [frame.segment_id for frame in texture_frames],
+        dtype=np.int64,
+    )
+    nearest_segment_ids = frame_segment_ids[nearest_indices]
+    texcoords = np.empty((len(positions), 2), dtype=np.float64)
+    blend_width = max(0.75 * scale, 1e-6)
+
+    # Blend only within the selected segment. Adjacent branches can occupy the
+    # same junction volume while using incompatible profile directions; mixing
+    # those frames creates the visible chevrons this interpolation removes.
+    for segment_id in np.unique(nearest_segment_ids):
+        vertex_selection = nearest_segment_ids == segment_id
+        segment_positions = positions[vertex_selection]
+        segment_frame_indices = np.flatnonzero(frame_segment_ids == segment_id)
+        blend_count = min(4, len(segment_frame_indices))
+        distances, local_indices = cKDTree(
+            centers[segment_frame_indices]
+        ).query(segment_positions, k=blend_count)
+        if blend_count == 1:
+            distances = distances[:, None]
+            local_indices = local_indices[:, None]
+        candidate_frame_indices = segment_frame_indices[local_indices]
+        candidate_uvs = np.empty(
+            (len(segment_positions), blend_count, 2),
+            dtype=np.float64,
+        )
+        for candidate_index in range(blend_count):
+            candidate_uvs[:, candidate_index] = _project_uvs_with_selected_frames(
+                segment_positions,
+                texture_frames,
+                centers,
+                candidate_frame_indices[:, candidate_index],
+                segment_repeats,
+                scale=scale,
+            )
+
+        # UV textures repeat on whole tiles. Align each candidate to the nearest
+        # frame's tile before blending so a 0.99/0.01 wrap averages at the seam,
+        # rather than halfway across the texture.
+        reference_uvs = candidate_uvs[:, :1, :]
+        candidate_uvs -= np.round(candidate_uvs - reference_uvs)
+        relative_distances = distances - distances[:, :1]
+        weights = np.exp(-np.square(relative_distances / blend_width))
+        weights /= np.maximum(weights.sum(axis=1, keepdims=True), 1e-12)
+        texcoords[vertex_selection] = np.einsum(
+            "vk,vki->vi",
+            weights,
+            candidate_uvs,
+        )
+    return texcoords
+
+
+def _project_uvs_with_selected_frames(
+    positions: np.ndarray,
+    texture_frames: tuple[SurfaceTextureFrame, ...],
+    centers: np.ndarray,
+    frame_indices: np.ndarray,
+    segment_repeats: dict[int, int],
+    *,
+    scale: float,
+) -> np.ndarray:
+    """Project vertices through one selected frame per vertex."""
+
+    selected_centers = centers[frame_indices]
+    tangents = np.asarray(
+        [texture_frames[int(index)].tangent for index in frame_indices],
+        dtype=np.float64,
+    )
+    normals = np.asarray(
+        [texture_frames[int(index)].normal for index in frame_indices],
+        dtype=np.float64,
+    )
+    binormals = np.asarray(
+        [texture_frames[int(index)].binormal for index in frame_indices],
+        dtype=np.float64,
+    )
+    longitudinal = np.asarray(
+        [texture_frames[int(index)].longitudinal_m for index in frame_indices],
+        dtype=np.float64,
+    )
+    longitudinal_rates = np.asarray(
+        [texture_frames[int(index)].longitudinal_rate for index in frame_indices],
+        dtype=np.float64,
+    )
+    offsets = positions - selected_centers
+    local_along = np.einsum("vi,vi->v", offsets, tangents)
+    local_lateral = np.einsum("vi,vi->v", offsets, normals)
+    local_vertical = np.einsum("vi,vi->v", offsets, binormals)
+    u_coord = (
+        longitudinal + longitudinal_rates * local_along
+    ) / scale
+    v_coord = np.empty(len(positions), dtype=np.float64)
+    for frame_index in np.unique(frame_indices):
+        selection = frame_indices == frame_index
+        frame = texture_frames[int(frame_index)]
+        if len(frame.profile_points) >= 3 and frame.profile_perimeter_m > 1e-6:
+            profile = np.asarray(frame.profile_points, dtype=np.float64)
+            fractions = _profile_arc_fractions(
+                local_lateral[selection],
+                local_vertical[selection],
+                profile,
+            )
+            roof_height = float(np.max(profile[:, 1]))
+            roof_points = profile[
+                np.isclose(profile[:, 1], roof_height, rtol=0.0, atol=1e-9)
+            ]
+            roof_fraction = _profile_arc_fractions(
+                np.asarray([float(np.mean(roof_points[:, 0]))]),
+                np.asarray([roof_height]),
+                profile,
+            )[0]
+            repeats = segment_repeats.get(frame.segment_id, 1)
+            v_coord[selection] = (
+                fractions - float(roof_fraction)
+            ) * float(repeats)
+        else:
+            v_coord[selection] = (
+                np.arctan2(
+                    local_vertical[selection],
+                    local_lateral[selection],
+                )
+                / (2.0 * np.pi)
+                + 0.5
+            )
+    return np.column_stack((u_coord, v_coord))
+
+
+def _profile_arc_fractions(
+    lateral: np.ndarray,
+    vertical: np.ndarray,
+    profile_points: np.ndarray,
+) -> np.ndarray:
+    """Project local wall points onto a closed profile's cumulative arc length."""
+
+    profile = np.asarray(profile_points, dtype=np.float64)
+    if len(profile) < 3:
+        return np.mod(
+            np.arctan2(vertical, lateral) / (2.0 * np.pi) + 0.5,
+            1.0,
+        )
+    if not np.allclose(profile[0], profile[-1]):
+        profile = np.vstack((profile, profile[0]))
+    starts = profile[:-1]
+    edges = profile[1:] - starts
+    edge_lengths = np.linalg.norm(edges, axis=1)
+    valid = edge_lengths > 1e-9
+    if not np.any(valid):
+        return np.zeros(len(lateral), dtype=np.float64)
+    starts = starts[valid]
+    edges = edges[valid]
+    edge_lengths = edge_lengths[valid]
+    cumulative = np.concatenate(([0.0], np.cumsum(edge_lengths)))
+    points = np.column_stack((lateral, vertical))
+    relative = points[:, None, :] - starts[None, :, :]
+    parameters = np.clip(
+        np.einsum("vsi,si->vs", relative, edges)
+        / np.maximum(np.square(edge_lengths)[None, :], 1e-12),
+        0.0,
+        1.0,
+    )
+    closest = starts[None, :, :] + parameters[:, :, None] * edges[None, :, :]
+    distances_squared = np.sum(np.square(points[:, None, :] - closest), axis=2)
+    nearest = np.argmin(distances_squared, axis=1)
+    arc_lengths = (
+        cumulative[nearest]
+        + parameters[np.arange(len(points)), nearest] * edge_lengths[nearest]
+    )
+    return np.mod(arc_lengths / max(float(cumulative[-1]), 1e-9), 1.0)
+
+
+def _unwrap_periodic_triangle(face_uv: np.ndarray) -> np.ndarray:
+    """Choose integer tile offsets that minimize interpolation across a face."""
+
+    raw = np.asarray(face_uv, dtype=np.float64)
+    adjusted = raw.copy()
+    for axis in range(2):
+        values = raw[:, axis]
+        base_offsets = -np.round(values - values[0]).astype(np.int64)
+        best_values = values + base_offsets
+        best_score = (
+            float(np.ptp(best_values)),
+            int(np.sum(np.abs(base_offsets))),
+        )
+        for delta_1 in (-1, 0, 1):
+            for delta_2 in (-1, 0, 1):
+                offsets = base_offsets.copy()
+                offsets[1] += delta_1
+                offsets[2] += delta_2
+                candidate = values + offsets
+                score = (
+                    float(np.ptp(candidate)),
+                    int(np.sum(np.abs(offsets))),
+                )
+                if score < best_score:
+                    best_values = candidate
+                    best_score = score
+        adjusted[:, axis] = best_values
+    return adjusted
+
+
+def _relax_pathological_uvs(
+    faces: np.ndarray,
+    texcoords: np.ndarray,
+    *,
+    iterations: int = 10,
+    relaxation: float = 0.55,
+) -> np.ndarray:
+    """Locally repair phase outliers without smoothing the full UV field."""
+
+    triangles = np.asarray(faces, dtype=np.int64)
+    output = np.asarray(texcoords, dtype=np.float64).copy()
+    if len(triangles) == 0 or len(output) == 0 or iterations <= 0:
+        return output
+
+    sources = np.concatenate(
+        (
+            triangles[:, 0],
+            triangles[:, 1],
+            triangles[:, 1],
+            triangles[:, 2],
+            triangles[:, 2],
+            triangles[:, 0],
+        )
+    )
+    targets = np.concatenate(
+        (
+            triangles[:, 1],
+            triangles[:, 0],
+            triangles[:, 2],
+            triangles[:, 1],
+            triangles[:, 0],
+            triangles[:, 2],
+        )
+    )
+    neighbor_counts = np.bincount(sources, minlength=len(output))
+
+    for axis in range(2):
+        for _iteration in range(iterations):
+            values = output[:, axis]
+            phase_values = np.sort(np.mod(values[triangles], 1.0), axis=1)
+            gaps = np.concatenate(
+                (
+                    np.diff(phase_values, axis=1),
+                    1.0 + phase_values[:, :1] - phase_values[:, -1:],
+                ),
+                axis=1,
+            )
+            minimum_spans = 1.0 - np.max(gaps, axis=1)
+            pathological = minimum_spans > 0.500001
+            if not np.any(pathological):
+                break
+            affected = np.unique(triangles[pathological])
+            phases = np.exp(2j * np.pi * np.mod(values, 1.0))
+            neighbor_phase_sums = np.zeros(len(output), dtype=np.complex128)
+            np.add.at(
+                neighbor_phase_sums,
+                sources,
+                phases[targets],
+            )
+            target_values = (
+                np.angle(
+                    neighbor_phase_sums[affected]
+                    / np.maximum(neighbor_counts[affected], 1)
+                )
+                / (2.0 * np.pi)
+            )
+            current_values = values[affected]
+            target_values += np.round(current_values - target_values)
+            output[affected, axis] = current_values + float(relaxation) * (
+                target_values - current_values
+            )
+    return output
+
+
+def _split_periodic_uv_seams(
+    vertices: np.ndarray,
+    faces: np.ndarray,
+    texcoords: np.ndarray,
+    normals: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Duplicate only vertices that cross an unavoidable periodic tile seam."""
+
+    positions = np.asarray(vertices, dtype=np.float64)
+    triangles = np.asarray(faces, dtype=np.uint32)
+    uv = np.asarray(texcoords, dtype=np.float64)
+    vertex_normals = np.asarray(normals, dtype=np.float64)
+    expanded_positions: list[np.ndarray] = []
+    expanded_uvs: list[np.ndarray] = []
+    expanded_normals: list[np.ndarray] = []
+    expanded_faces: list[tuple[int, int, int]] = []
+    vertex_lookup: dict[tuple[int, int, int], int] = {}
+
+    for face_index, face in enumerate(triangles):
+        face_uv = uv[face_index] if uv.ndim == 3 else uv[face]
+        adjusted_uv = _unwrap_periodic_triangle(face_uv)
+        expanded_face: list[int] = []
+        for corner, vertex_index_value in enumerate(face):
+            vertex_index = int(vertex_index_value)
+            key = (
+                vertex_index,
+                int(round(float(adjusted_uv[corner, 0]) * 100_000_000)),
+                int(round(float(adjusted_uv[corner, 1]) * 100_000_000)),
+            )
+            mapped_index = vertex_lookup.get(key)
+            if mapped_index is None:
+                mapped_index = len(expanded_positions)
+                vertex_lookup[key] = mapped_index
+                expanded_positions.append(positions[vertex_index])
+                expanded_uvs.append(adjusted_uv[corner])
+                expanded_normals.append(vertex_normals[vertex_index])
+            expanded_face.append(mapped_index)
+        expanded_faces.append(
+            (expanded_face[0], expanded_face[1], expanded_face[2])
+        )
+
+    return (
+        np.asarray(expanded_positions, dtype=np.float64),
+        np.asarray(expanded_faces, dtype=np.uint32),
+        np.asarray(expanded_uvs, dtype=np.float64),
+        np.asarray(expanded_normals, dtype=np.float64),
+    )
 
 
 def _project_cave_vertex_uvs(vertices: np.ndarray) -> np.ndarray:
@@ -290,6 +1253,140 @@ def _project_cave_vertex_uvs(vertices: np.ndarray) -> np.ndarray:
     vertical_coord = vertices[:, 2] - float(np.mean(vertices[:, 2]))
     v_coord = np.arctan2(vertical_coord, lateral_coord) / (2.0 * np.pi) + 0.5
     return np.column_stack((u_coord, v_coord))
+
+
+def _route_frame_tangents(
+    vertices: np.ndarray,
+    normals: np.ndarray,
+    texture_frames: tuple[SurfaceTextureFrame, ...],
+) -> np.ndarray:
+    """Build a shared tangent basis that remains identical across UV wraps."""
+
+    positions = np.asarray(vertices, dtype=np.float64)
+    vertex_normals = np.asarray(normals, dtype=np.float64)
+    centers = np.asarray([frame.center for frame in texture_frames], dtype=np.float64)
+    _distances, frame_indices = cKDTree(centers).query(positions, k=1)
+    route_tangents = np.asarray(
+        [texture_frames[int(index)].tangent for index in frame_indices],
+        dtype=np.float64,
+    )
+    frame_normals = np.asarray(
+        [texture_frames[int(index)].normal for index in frame_indices],
+        dtype=np.float64,
+    )
+    frame_binormals = np.asarray(
+        [texture_frames[int(index)].binormal for index in frame_indices],
+        dtype=np.float64,
+    )
+    offsets = positions - centers[frame_indices]
+    lateral = np.einsum("vi,vi->v", offsets, frame_normals)
+    vertical = np.einsum("vi,vi->v", offsets, frame_binormals)
+    expected_bitangents = (
+        -vertical[:, None] * frame_normals
+        + lateral[:, None] * frame_binormals
+    )
+    frame_orientations = np.asarray(
+        [
+            _profile_orientation_sign(frame.profile_points)
+            for frame in texture_frames
+        ],
+        dtype=np.float64,
+    )
+    profile_orientations = frame_orientations[frame_indices]
+    expected_bitangents *= profile_orientations[:, None]
+
+    tangents = route_tangents - vertex_normals * np.einsum(
+        "vi,vi->v",
+        route_tangents,
+        vertex_normals,
+    )[:, None]
+    lengths = np.linalg.norm(tangents, axis=1)
+    missing = lengths <= 1e-12
+    if np.any(missing):
+        references = np.tile(np.array((0.0, 0.0, 1.0)), (len(positions), 1))
+        vertical_normals = np.abs(vertex_normals[:, 2]) >= 0.9
+        references[vertical_normals] = np.array((1.0, 0.0, 0.0))
+        tangents[missing] = np.cross(
+            references[missing],
+            vertex_normals[missing],
+        )
+        lengths = np.linalg.norm(tangents, axis=1)
+    tangents /= np.maximum(lengths[:, None], 1e-12)
+
+    handedness = np.ones(len(positions), dtype=np.float64)
+    handedness[
+        np.einsum(
+            "vi,vi->v",
+            np.cross(vertex_normals, tangents),
+            expected_bitangents,
+        )
+        < 0.0
+    ] = -1.0
+    return np.column_stack((tangents, handedness))
+
+
+def _hybrid_route_chart_tangents(
+    vertices: np.ndarray,
+    faces: np.ndarray,
+    texcoords: np.ndarray,
+    route_tangents: np.ndarray,
+    mesh_tangents: np.ndarray,
+) -> np.ndarray:
+    """Use chart tangents only where a non-periodic UV seam requires them."""
+
+    positions = np.asarray(vertices, dtype=np.float64)
+    uv = np.asarray(texcoords, dtype=np.float64)
+    output = np.asarray(route_tangents, dtype=np.float64).copy()
+    chart_tangents = np.asarray(mesh_tangents, dtype=np.float64)
+    rounded = np.round(positions, decimals=6)
+    _unique, inverse, counts = np.unique(
+        rounded,
+        axis=0,
+        return_inverse=True,
+        return_counts=True,
+    )
+    chart_vertices = np.zeros(len(positions), dtype=bool)
+    periodic_groups: list[np.ndarray] = []
+    for group_index in np.flatnonzero(counts > 1):
+        group = np.flatnonzero(inverse == group_index)
+        uv_delta = uv[group] - uv[group[0]]
+        integer_error = float(
+            np.max(np.abs(uv_delta - np.round(uv_delta)))
+        )
+        if integer_error > 1e-4:
+            chart_vertices[group] = True
+        else:
+            periodic_groups.append(group)
+    triangles = np.asarray(faces, dtype=np.int64)
+    if np.any(chart_vertices):
+        chart_faces = np.any(chart_vertices[triangles], axis=1)
+        chart_region_vertices = np.unique(triangles[chart_faces])
+        output[chart_region_vertices] = chart_tangents[chart_region_vertices]
+    for group in periodic_groups:
+        output[group] = route_tangents[group]
+    return output
+
+
+def _profile_orientation_sign(
+    profile_points: tuple[tuple[float, float], ...],
+) -> float:
+    """Return +1 for counter-clockwise UV profiles and -1 for clockwise."""
+
+    if len(profile_points) < 3:
+        return 1.0
+    profile = np.asarray(profile_points, dtype=np.float64)
+    if np.allclose(profile[0], profile[-1]):
+        profile = profile[:-1]
+    if len(profile) < 3:
+        return 1.0
+    following = np.roll(profile, -1, axis=0)
+    signed_double_area = float(
+        np.sum(
+            profile[:, 0] * following[:, 1]
+            - following[:, 0] * profile[:, 1]
+        )
+    )
+    return 1.0 if signed_double_area >= 0.0 else -1.0
 
 
 def _angle_weighted_vertex_normals(
@@ -436,14 +1533,20 @@ def _cave_strict_glb_material(cave_geometry: CaveGeometry, *, builder, image_cac
         base_color_factor=(0.36, 0.35, 0.31, 1.0),
         base_color_texture=diffuse_image,
         normal_texture=normal_image,
+        normal_scale=cave_geometry.config.cave_normal_scale,
         metallic_roughness_texture=roughness_image,
         metallic_factor=0.0,
         roughness_factor=0.92,
-        double_sided=True,
+        double_sided=False,
     )
 
 
-def _write_geometry_manifest(cave_geometry: CaveGeometry, output_path: Path) -> Path:
+def _write_geometry_manifest(
+    cave_geometry: CaveGeometry,
+    output_path: Path,
+    *,
+    displacement: DisplacementMetadata,
+) -> Path:
     payload = {
         "schema": "plume.geometry_manifest.v2",
         "coordinates": {
@@ -460,8 +1563,33 @@ def _write_geometry_manifest(cave_geometry: CaveGeometry, output_path: Path) -> 
                 "normal": cave_geometry.config.cave_normal_texture,
                 "roughness": cave_geometry.config.cave_roughness_texture,
                 "displacement": cave_geometry.config.cave_displacement_texture,
-                "uv_projection": "dominant_route_cylindrical",
+                "uv_projection": "xatlas_metric_charts",
                 "uv_scale_m": GLB_CAVE_TEXTURE_SCALE_METERS,
+                "surface_order": [
+                    "visual_smoothing",
+                    "xatlas_chart_generation",
+                    "metric_uv_rescaling",
+                    "seam_consistent_vertex_displacement",
+                    "final_normals_and_tangents",
+                    "material_binding",
+                ],
+                "normal_scale": cave_geometry.config.cave_normal_scale,
+                "visual_smoothing_iterations": (
+                    cave_geometry.config.cave_smoothing_iterations
+                ),
+                "displacement_baked": bool(displacement.get("baked", False)),
+                "displacement_scale_m": float(displacement.get("scale_m", 0.0)),
+                "displacement_midlevel": float(
+                    displacement.get(
+                        "midlevel",
+                        cave_geometry.config.cave_displacement_midlevel,
+                    )
+                ),
+                "displacement_range_m": [
+                    float(displacement.get("minimum_offset_m", 0.0)),
+                    float(displacement.get("maximum_offset_m", 0.0)),
+                ],
+                "double_sided": False,
             },
         },
         "events": [
@@ -472,6 +1600,9 @@ def _write_geometry_manifest(cave_geometry: CaveGeometry, output_path: Path) -> 
                 "material_hint": event_mesh.material_hint,
                 "source_generator": event_mesh.source_generator,
                 "source_shape_type": event_mesh.source_shape_type,
+                "debris_family_id": event_mesh.debris_family_id,
+                "family_anchor_event_id": event_mesh.family_anchor_event_id,
+                "debris_role": event_mesh.debris_role,
                 "vertex_count": event_mesh.vertex_count,
                 "face_count": event_mesh.face_count,
                 "material_maps": dict(event_mesh.material_maps),
@@ -593,6 +1724,11 @@ def _event_strict_glb_material(
             )
     material_index = builder.material(
         name=_event_shared_material_name(event_mesh),
+        base_color_factor=(
+            (1.0, 1.0, 1.0, 1.0)
+            if diffuse_image is not None
+            else _event_fallback_color(event_mesh)
+        ),
         base_color_texture=diffuse_image,
         normal_texture=normal_image,
         metallic_roughness_texture=roughness_image,
@@ -602,6 +1738,16 @@ def _event_strict_glb_material(
     )
     material_cache[cache_key] = material_index
     return material_index
+
+
+def _event_fallback_color(event_mesh) -> tuple[float, float, float, float]:
+    """Return a non-white basalt fallback for native, untextured props."""
+
+    if event_mesh.kind == "boulder":
+        return (0.18, 0.17, 0.15, 1.0)
+    if event_mesh.kind == "rock":
+        return (0.22, 0.20, 0.17, 1.0)
+    return (0.25, 0.23, 0.20, 1.0)
 
 
 class _StrictGlbBuilder:
@@ -624,6 +1770,7 @@ class _StrictGlbBuilder:
         base_color_factor: tuple[float, float, float, float] | None = None,
         base_color_texture=None,
         normal_texture=None,
+        normal_scale: float = 1.0,
         metallic_roughness_texture=None,
         metallic_factor: float = 0.0,
         roughness_factor: float = 0.86,
@@ -646,7 +1793,10 @@ class _StrictGlbBuilder:
             "doubleSided": bool(double_sided),
         }
         if normal_texture is not None:
-            material["normalTexture"] = {"index": self._texture(normal_texture)}
+            material["normalTexture"] = {
+                "index": self._texture(normal_texture),
+                "scale": float(normal_scale),
+            }
         self._materials.append(material)
         return len(self._materials) - 1
 
@@ -869,9 +2019,17 @@ class _StrictGlbBuilder:
 
     def to_glb(self) -> bytes:
         document = {
-            "asset": {"version": "2.0", "generator": "PLUME-Advanced strict GLB exporter"},
+            "asset": {
+                "version": "2.0",
+                "generator": "PLUME-Advanced portable GLB exporter",
+                "extras": {
+                    "content": "complete procedural cave scene",
+                    "length_unit": "metre",
+                    "visual_displacement": "baked into POSITION",
+                },
+            },
             "scene": 0,
-            "scenes": [{"nodes": [0]}],
+            "scenes": [{"name": "PLUME portable cave scene", "nodes": [0]}],
             "nodes": self._nodes,
             "meshes": self._meshes,
             "materials": self._materials,
@@ -1033,6 +2191,46 @@ def _load_metallic_roughness_texture(
     return Image.merge("RGBA", (one, roughness_channel, zero, one))
 
 
+def _load_displacement_image(
+    path: str | None,
+    image_cache: dict[str, object],
+    *,
+    max_size: int = GLB_EMBEDDED_TEXTURE_MAX_SIZE,
+):
+    """Load a height map without saturating 16-bit displacement masters."""
+
+    if not path:
+        return None
+    texture_path = Path(path)
+    if texture_path.suffix.lower() not in {".jpg", ".jpeg", ".png", ".exr"}:
+        return None
+    max_size = max(int(max_size), 1)
+    cache_key = f"{texture_path.resolve()}@displacement@{max_size}"
+    if cache_key in image_cache:
+        return image_cache[cache_key]
+    try:
+        from PIL import Image
+
+        if texture_path.suffix.lower() == ".exr":
+            source = _convert_exr_to_image(texture_path, max_size=max_size)
+            if source is None:
+                return None
+            pixels = np.asarray(source.convert("L"), dtype=np.float32) / 255.0
+        else:
+            source = Image.open(texture_path)
+            pixels = np.asarray(source, dtype=np.float32)
+            if pixels.ndim == 3:
+                pixels = pixels[:, :, 0]
+            maximum = 65_535.0 if pixels.size and float(pixels.max()) > 255.0 else 255.0
+            pixels = np.clip(pixels / maximum, 0.0, 1.0)
+        image = Image.fromarray(pixels, mode="F")
+        image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+        image_cache[cache_key] = image.copy()
+        return image_cache[cache_key]
+    except (OSError, ImportError, ValueError):
+        return None
+
+
 def _convert_exr_to_image(
     texture_path: Path,
     *,
@@ -1063,8 +2261,46 @@ def _convert_exr_to_image(
         return Image.open(temp_file.name).convert("RGBA").copy()
 
 
-def _write_event_mtl(event_mtl_path: Path, event_meshes: list, obj_dir: Path) -> None:
-    lines: list[str] = []
+def _write_obj_mtl(
+    event_mtl_path: Path,
+    cave_geometry: CaveGeometry,
+    event_meshes: list,
+    obj_dir: Path,
+) -> None:
+    """Write cave and event materials without reapplying baked displacement."""
+
+    cave_maps = {
+        "diffuse": cave_geometry.config.cave_diffuse_texture,
+        "normal": cave_geometry.config.cave_normal_texture,
+        "roughness": cave_geometry.config.cave_roughness_texture,
+    }
+    lines: list[str] = [
+        "newmtl cave_wall_material",
+        "Ka 0.05 0.05 0.05",
+        "Kd 0.36 0.35 0.31",
+        "Ks 0.02 0.02 0.02",
+        "Ns 8.0",
+        "Pm 0.0",
+        "Pr 0.92",
+    ]
+    if cave_maps["diffuse"]:
+        lines.append(f"map_Kd {_relative_path(cave_maps['diffuse'], obj_dir)}")
+    if cave_maps["normal"]:
+        normal_reference = _relative_path(cave_maps["normal"], obj_dir)
+        lines.append(
+            f"map_Bump -bm {cave_geometry.config.cave_normal_scale:.6g} "
+            f"{normal_reference}"
+        )
+        lines.append(f"norm {normal_reference}")
+    if cave_maps["roughness"]:
+        lines.append(f"map_Pr {_relative_path(cave_maps['roughness'], obj_dir)}")
+    lines.extend(
+        [
+            "# The configured displacement map is baked into cave vertex positions.",
+            "",
+        ]
+    )
+
     written: set[str] = set()
     for event_mesh in event_meshes:
         material_name = _event_material_name(event_mesh)
@@ -1072,13 +2308,16 @@ def _write_event_mtl(event_mtl_path: Path, event_meshes: list, obj_dir: Path) ->
             continue
         written.add(material_name)
         material_maps = dict(event_mesh.material_maps)
+        red, green, blue, _alpha = _event_fallback_color(event_mesh)
         lines.extend(
             [
                 f"newmtl {material_name}",
-                "Ka 0.15 0.15 0.15",
-                "Kd 0.82 0.82 0.82",
+                f"Ka {0.2 * red:.6g} {0.2 * green:.6g} {0.2 * blue:.6g}",
+                f"Kd {red:.6g} {green:.6g} {blue:.6g}",
                 "Ks 0.04 0.04 0.04",
                 "Ns 18.0",
+                "Pm 0.0",
+                "Pr 0.88",
             ]
         )
         if "diffuse" in material_maps:

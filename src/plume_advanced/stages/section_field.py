@@ -832,24 +832,46 @@ class SectionFieldGenerator:
     ) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
         tangent_vector = np.array(tangent, dtype=float)
         up = np.array([0.0, 0.0, 1.0], dtype=float)
-        normal = np.cross(up, tangent_vector)
-        normal_norm = float(np.linalg.norm(normal))
-        if math.isclose(normal_norm, 0.0):
+        tangent_norm = float(np.linalg.norm(tangent_vector))
+        if math.isclose(tangent_norm, 0.0):
+            tangent_vector = np.array([1.0, 0.0, 0.0], dtype=float)
+        else:
+            tangent_vector /= tangent_norm
+
+        # The second profile coordinate represents physical vertical: positive
+        # values are the roof and negative values are the floor.  Construct it
+        # by projecting world-up into the section plane, rather than choosing a
+        # sign from the preceding segment.  Negating the lateral axis for frame
+        # continuity also negates ``tangent x normal`` and used to turn whole
+        # sections upside down at some junctions.
+        binormal = up - float(np.dot(up, tangent_vector)) * tangent_vector
+        binormal_norm = float(np.linalg.norm(binormal))
+        if not math.isclose(binormal_norm, 0.0):
+            binormal /= binormal_norm
+            normal = np.cross(binormal, tangent_vector)
+            normal /= max(float(np.linalg.norm(normal)), 1e-12)
+        else:
+            # A vertical conduit has no section-plane direction that points
+            # upward.  Preserve the transported lateral direction only for
+            # this degenerate case, after projecting it off the tangent.
             normal = (
                 np.array(previous_normal, dtype=float)
                 if previous_normal is not None
                 else np.array([1.0, 0.0, 0.0], dtype=float)
             )
-        else:
-            normal /= normal_norm
-        if previous_normal is not None and float(np.dot(normal, np.array(previous_normal, dtype=float))) < 0.0:
-            normal *= -1.0
-        binormal = np.cross(tangent_vector, normal)
-        binormal_norm = float(np.linalg.norm(binormal))
-        if math.isclose(binormal_norm, 0.0):
-            binormal = up
-        else:
-            binormal /= binormal_norm
+            normal -= float(np.dot(normal, tangent_vector)) * tangent_vector
+            normal_norm = float(np.linalg.norm(normal))
+            if math.isclose(normal_norm, 0.0):
+                fallback = np.array([1.0, 0.0, 0.0], dtype=float)
+                if abs(float(np.dot(fallback, tangent_vector))) > 0.9:
+                    fallback = np.array([0.0, 1.0, 0.0], dtype=float)
+                normal = fallback - float(
+                    np.dot(fallback, tangent_vector)
+                ) * tangent_vector
+                normal_norm = float(np.linalg.norm(normal))
+            normal /= max(normal_norm, 1e-12)
+            binormal = np.cross(tangent_vector, normal)
+            binormal /= max(float(np.linalg.norm(binormal)), 1e-12)
         return (
             (float(normal[0]), float(normal[1]), float(normal[2])),
             (float(binormal[0]), float(binormal[1]), float(binormal[2])),

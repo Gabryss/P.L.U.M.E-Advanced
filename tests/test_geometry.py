@@ -37,7 +37,10 @@ class GeometryTests(unittest.TestCase):
         self.assertGreater(int(summary["stamped_sample_count"]), 0)
         self.assertGreater(int(summary["voxel_count"]), 0)
         self.assertGreater(int(summary["carved_voxel_count"]), 0)
-        self.assertAlmostEqual(summary["voxel_size_m"], 1.0)
+        self.assertAlmostEqual(
+            summary["voxel_size_m"],
+            project_config.geometry.voxel_size,
+        )
         self.assertGreaterEqual(summary["characteristic_passage_samples"], 10.0)
         minimum_diameter_samples = (
             2.0
@@ -57,11 +60,55 @@ class GeometryTests(unittest.TestCase):
         self.assertGreaterEqual(int(summary["vertex_count"]), 3)
         self.assertGreaterEqual(int(summary["face_count"]), 1)
 
-        density = cave_geometry.voxel_grid.density
-        self.assertEqual(density.ndim, 3)
-        self.assertTrue(np.isfinite(density).all())
-        self.assertGreaterEqual(float(density.max()), project_config.geometry.iso_level)
-        self.assertLess(float(density.min()), project_config.geometry.iso_level)
+        frames_by_segment = {}
+        for frame in cave_geometry.surface_texture_frames:
+            frames_by_segment.setdefault(frame.segment_id, []).append(frame)
+            self.assertGreaterEqual(
+                frame.binormal[2],
+                -1e-7,
+                "texture-frame vertical axes must point upward",
+            )
+            handed_binormal = np.cross(
+                np.asarray(frame.tangent),
+                np.asarray(frame.normal),
+            )
+            self.assertGreater(
+                float(np.dot(handed_binormal, np.asarray(frame.binormal))),
+                0.99,
+                "texture frames must remain right-handed",
+            )
+        for frames in frames_by_segment.values():
+            for first, second in zip(frames, frames[1:], strict=False):
+                center_delta = np.asarray(second.center) - np.asarray(first.center)
+                longitudinal_delta = (
+                    second.longitudinal_m - first.longitudinal_m
+                )
+                if abs(longitudinal_delta) <= 1e-9:
+                    continue
+                tangent_progress = float(
+                    np.dot(np.asarray(first.tangent), center_delta)
+                )
+                self.assertGreaterEqual(
+                    tangent_progress * longitudinal_delta,
+                    -1e-7,
+                    "texture tangents must point toward increasing longitudinal UV",
+                )
+
+        if hasattr(cave_geometry.voxel_grid, "density"):
+            density_tiles = (cave_geometry.voxel_grid.density,)
+        else:
+            density_tiles = tuple(cave_geometry.voxel_grid.tiles.values())
+        self.assertTrue(density_tiles)
+        self.assertTrue(all(tile.ndim == 3 for tile in density_tiles))
+        self.assertTrue(all(np.isfinite(tile).all() for tile in density_tiles))
+        self.assertGreaterEqual(
+            max(float(tile.max()) for tile in density_tiles),
+            project_config.geometry.iso_level,
+        )
+        self.assertLess(
+            min(float(tile.min()) for tile in density_tiles),
+            project_config.geometry.iso_level,
+        )
 
         vertices = np.array(cave_geometry.assembled_vertices, dtype=float)
         self.assertTrue(np.isfinite(vertices).all())

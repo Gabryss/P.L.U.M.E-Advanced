@@ -63,6 +63,23 @@ class SectionFieldTests(unittest.TestCase):
                 self.assertLess(abs(float(np.linalg.norm(tangent)) - 1.0), 1e-5)
                 self.assertLess(abs(float(np.linalg.norm(normal)) - 1.0), 1e-5)
                 self.assertLess(abs(float(np.linalg.norm(binormal)) - 1.0), 1e-5)
+                self.assertGreaterEqual(
+                    float(binormal[2]),
+                    -1e-8,
+                    "section vertical axes must never point below world horizontal",
+                )
+                profile = np.asarray(sample.profile_points, dtype=float)
+                roof = profile[int(np.argmax(profile[:, 1]))]
+                floor = profile[int(np.argmin(profile[:, 1]))]
+                roof_world_z = sample.z + roof[0] * normal[2] + roof[1] * binormal[2]
+                floor_world_z = (
+                    sample.z + floor[0] * normal[2] + floor[1] * binormal[2]
+                )
+                self.assertGreater(
+                    float(roof_world_z),
+                    float(floor_world_z),
+                    "profile roof must remain above its floor in world space",
+                )
                 for influence in sample.junction_influences:
                     self.assertIn(influence.junction_id, junction_ids)
                     self.assertGreaterEqual(influence.weight, 0.08)
@@ -162,6 +179,17 @@ class SectionFieldTests(unittest.TestCase):
                 max(separations),
                 project_config.section_field.minimum_vertical_clearance,
             )
+
+    def test_frame_cannot_be_inverted_by_previous_segment_orientation(self) -> None:
+        generator = SectionFieldGenerator()
+
+        normal, binormal = generator._build_frame(
+            tangent=(1.0, 0.0, 0.0),
+            previous_normal=(0.0, -1.0, 0.0),
+        )
+
+        self.assertTrue(np.allclose(normal, (0.0, 1.0, 0.0)))
+        self.assertTrue(np.allclose(binormal, (0.0, 0.0, 1.0)))
 
 
 if __name__ == "__main__":

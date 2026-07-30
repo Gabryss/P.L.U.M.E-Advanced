@@ -6,8 +6,9 @@ The major architecture upgrade is active on
 `feature/major-procedural-upgrade`. Its implementation roadmap, acceptance
 criteria, and dependency policy are in
 [`docs/MAJOR_UPGRADE_PLAN.md`](docs/MAJOR_UPGRADE_PLAN.md). Blender is the
-default target, but is not a runtime dependency: generation and export use
-Python libraries and open interchange formats.
+one supported consumer, but the default asset is a simulator-neutral,
+self-contained GLB: generation and export use Python libraries and open
+interchange formats.
 
 The current implementation focuses on the full inspectable cave-shape pipeline:
 build a readable terrain substrate, derive a cave-network skeleton, generate a
@@ -22,9 +23,9 @@ are still intentionally incomplete.
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
 | B. Cave Network | Implemented | Generate a host-driven, body-scaled braided cave-network skeleton | `outputs/stage_b_cave_network.png`, `outputs/stage_b_network_report.json` |
 | C. Section Field | Implemented | Build adaptive lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png` |
-| D. Geometry | Implemented | Stamp the cave network into a voxel grid, polygonize it, and build a globally welded render mesh | `outputs/stage_d_geometry.png`, target export package |
+| D. Geometry | Implemented | Stamp the cave network into a voxel grid, polygonize it, and build a globally welded render mesh | `outputs/stage_d_geometry.png`, complete portable scene package |
 | E. Geological Events | Implemented | Ground rocks/boulders on the base cave and apply collapse/choke/infill as structural modifiers | `outputs/stage_e_geological_events.png` |
-| F. Surface Detail / Texturing | Placeholder | Wall detail, floor variation, material masks | TODO |
+| F. Surface Detail / Texturing | Partial | Coherent UVs/tangents, embedded PBR maps, smoothed and displacement-baked visual wall | `outputs/export_neutral/plume_cave_scene.glb` |
 
 ## Current Outputs
 
@@ -225,7 +226,9 @@ Implemented in `src/plume_advanced/stages/geometry.py`.
 Stage D turns the section field into a voxel-first mesh. The generator currently:
 
 - stamps Stage C section-profile densities along every segment, with higher density meaning carved space
-- adds controlled seeded wall roughness near the isosurface for less capsule-like walls
+- adds zoned, multi-scale seeded wall relief near the isosurface, including
+  stronger floor terrain variation, so smooth flow-lined regions alternate
+  with rougher rocky regions
 - stamps widened junction/chamber regions into the same field
 - processes the field in 3D chunks
 - switches from a dense field to overlapping sparse tiles when the configured
@@ -307,11 +310,11 @@ dev_max_route_length_m = 1500.0
 dev_max_braid_zones = 2
 
 [events]
-enabled = false
-enabled_kinds = []
+enabled = true
+include_rock_props = false # cave walls, but no separate rocks or boulders
 
 [export]
-target = "blender"
+target = "neutral"
 format = "glb"
 ```
 
@@ -375,6 +378,9 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `wall_roughness_*` | add seeded near-wall roughness before marching cubes |
 | `junction_irregularity_*` | deform junction/chamber volumes so they blend less like perfect ellipsoids |
 | `minimum_radius`, `weld_tolerance` | keep thin passages meshable and weld repeated isosurface vertices |
+| `cave_normal_scale` | control tangent-space normal-map strength |
+| `cave_smoothing_iterations` | remove marching-cubes terraces from the visual mesh without changing collision |
+| `cave_displacement_scale_m`, `cave_displacement_midlevel` | bake bounded height relief into portable visual-mesh positions |
 
 With `resolution_policy = "body"`, Stage D resolves the voxel size from the
 selected body and `[run].quality`:
@@ -382,7 +388,7 @@ selected body and `[run].quality`:
 | Quality | Earth | Mars | Moon |
 |---|---:|---:|---:|
 | `preview` | 1.0 m | 2.0 m | 4.0 m |
-| `standard` | 0.7 m | 1.4 m | 2.8 m |
+| `standard` | 0.6 m | 1.2 m | 2.4 m |
 | `production` | 0.5 m | 1.0 m | 2.0 m |
 
 The policy guarantees at least ten nominal samples across an Earth preview
@@ -395,18 +401,69 @@ with the body policy is rejected instead of silently choosing one.
 
 | Key Group | Purpose |
 |---|---|
-| `rock_density_per_100m`, `boulder_density_per_100m` | control loose debris density along sampled cave length |
+| `include_rock_props` | include separate rock/boulder meshes; set `false` for a wall-only scene while retaining structural cave events |
+| `rock_population_multiplier` | scale background rocks, boulder anchors, rubble-cluster frequency, and collapse fragments together; the project default is `10.0` |
+| `debris_density_basis` | use `floor_area` so wider galleries receive proportionally more debris, or `length` for legacy projects |
+| `rock_density_per_100m2`, `boulder_density_per_100m2` | control sparse unassociated debris and true boulder density over integrated gallery floor area |
+| `rock_density_per_100m`, `boulder_density_per_100m` | legacy length-based density controls |
 | `geological_event_density_per_100m` | control larger collapse/choke/infill event density |
 | `collapse_event_fraction`, `choke_event_fraction`, `infill_event_fraction` | split larger geological events by type |
-| `*_radius_range` | bound event sizes before they are clipped to local tube dimensions |
+| `*_radius_range` | bound the heavy-tailed size family before applying the local gallery capacity |
+| `gallery_width_size_fraction`, `gallery_clearance_size_fraction`, `boulder_max_height_fraction`, `roof_block_size_fraction` | derive local fragment limits; boulders may reach two-thirds of available cave height by default |
 | `minimum_event_spacing` | keep major event centers from clustering too tightly |
-| `minimum_rock_spacing`, `minimum_boulder_spacing` | use denser small-rock scatter without crowding major obstacles |
+| `minimum_rock_spacing`, `minimum_boulder_spacing`, `background_contact_spacing` | combine a small absolute floor with footprint-aware separation |
 | `clustered_debris_fraction` | target share of props preferentially sampled around collapses |
-| `collapse_cluster_radius_scale`, `collapse_cluster_spacing_scale` | control collapse-debris reach and local packing |
-| `max_lateral_floor_fraction` | keep floor debris inside the local tube profile |
+| `collapse_cluster_radius_scale`, `collapse_cluster_spacing_scale` | control collapse-debris reach, size decay, and talus contact packing |
+| `max_lateral_floor_fraction`, `edge_accumulation_strength`, `placement_jitter_m` | favour natural wall-side deposition while removing discrete floor-atlas rows |
+| `rover_width_m`, `rover_side_margin_m`, `rover_max_lateral_slope`, `preserve_rover_route` | inflate obstacles and preserve a continuous rover-width interval through each segment |
+| `enable_debris_families`, `boulder_satellite_count_range`, `boulder_halo_radius_range_m` | surround each large boulder with a compact, size-biased family of rubble, companions, and runout fragments |
+| `collapse_fragment_count_range`, `collapse_talus_radius_range_m` | derive larger talus-family populations from collapse volume and distribute them in anisotropic fans |
+| `minor_cluster_density_per_1000m2`, `minor_cluster_count_range`, `minor_cluster_radius_range_m` | replace uniform pebble scatter with compact parent-and-child rubble patches separated by clean floor |
+| `clean_floor_fraction`, `debris_patch_length_m` | retain coherent clean lava-floor patches instead of uniform salt-and-pepper coverage |
+| `wall_scree_fraction`, `transported_lag_fraction` | split background debris between wall margins, low/flat transported deposits, and general scatter |
 | `mesh_latitude_segments`, `mesh_longitude_segments` | control generated event mesh resolution |
 | `enabled`, `enabled_kinds` | export an empty tube or enable selected event families |
-| `use_rocky_meshes`, `strict_optional_provider` | control the optional Rocky provider without importing it when disabled |
+| `rock_size_bias`, `boulder_size_bias` | bias deterministic size sampling toward abundant small debris while retaining occasional large obstacles |
+| `rocky_texture_dir`, `rocky_resolution_scale`, `rocky_max_subdivisions` | select Rocky material inputs and geometric detail |
+| `use_rocky_meshes`, `strict_optional_provider` | enable Rocky and prevent silent fallback to the legacy low-resolution mesh |
+
+Rocks and boulders are generated by
+[Gabryss/Rocky](https://github.com/Gabryss/Rocky), pinned to a tested commit in
+`pyproject.toml`. Stage E deterministically selects rounded, angular,
+vesicular, slab, ropy-lava, and eroded families; scales them to the sampled
+physical dimensions; aligns local up with the final floor normal; embeds the
+base slightly; and clusters part of the debris near collapse events. Placement
+is joint rather than independent: the sampled floor position determines the
+maximum plausible fragment size, footprint-aware spacing permits dense talus,
+and fragment size decreases away from its collapse source. The floor combines
+coherent clean patches, sparse unassociated debris, wall scree, transported
+lag deposits, compact minor rubble patches, boulder aprons, and volume-scaled
+collapse fans. Boulder aprons mix tiny fragments with a substantial visible
+10–65 cm companion population and a sparse runout tail. Minor patches use a
+parent-and-child process: an identifiable 28–70 cm anchor is surrounded by
+8–18 smaller fragments within 1.2–3.0 m, leaving broad clean intervals instead
+of a uniform pebble grid. Family ids, anchor event ids, and debris roles are
+exported as GLB node extras and USD custom metadata. A continuous lateral
+jitter is raycast back onto the final floor, and elongated fragments follow
+runout/downhill direction instead of receiving unconstrained yaw.
+
+`rock_population_multiplier = 10.0` targets ten times the complete population,
+not merely ten times the sparse background layer. Because accepted placements
+must still fit the cave, avoid intersections, and preserve the rover route,
+Stage E replenishes rejected, tightly packed family slots as 3–12 cm
+distributed micro debris in active debris patches. This maintains the global
+density target without forcing unsafe overlap around an individual boulder or
+collapse. Dense scenes increase generation time and scene size approximately
+linearly.
+
+The default rover envelope is 1.0 m wide with 0.1 m clearance per side. Every
+accepted prop must leave a connected 1.2 m corridor through its tunnel segment;
+this can be disabled for intentionally impassable scenario generation. Normal
+maps improve RGB shading but do not change ordinary depth or collision output,
+so rover-relevant fragments remain mesh geometry. Rocky UVs and material maps
+are retained on the separate prop nodes in GLB and USD exports. With
+`strict_optional_provider = true`, a missing or incompatible Rocky installation
+stops generation instead of quietly restoring the smooth fallback spheres.
 
 ## Project Layout
 
@@ -485,9 +542,14 @@ Regenerate all documentation figures in one batch:
 .venv/bin/python scripts/generate_body_figures.py
 ```
 
-The generator prints progress bars for configuration loading, stages A-C,
-Stage-E geological event placement, detailed Stage-D voxel/mesh generation,
-Stage-D visualization, and the selected target export.
+The generator prints progress bars and ETAs for configuration loading, stages
+A-C, Stage-E geological event placement, detailed Stage-D voxel/mesh
+generation, Stage-D visualization, and the selected target export. Stage E
+reports boulder anchors, individual requested prop slots with running accepted
+and rejected totals plus the current debris role, and final Rocky mesh
+construction. Its total can grow while minor-cluster child counts are resolved.
+It can grow again if rejected local-family slots need a distributed
+micro-debris recovery pass.
 Geometry progress reports stamp counts, chunk meshing status, assembled face
 counts, and final component counts.
 
@@ -511,27 +573,96 @@ That one command produces:
   and elapsed time
 - `outputs/export_<target>/...`
 
-### Import the default Blender package
+### Import the complete portable scene
 
-The default configuration writes a validated Blender package to
-`outputs/export_blender/`. Import the cave through Blender's import menu; do
-not use `File > Open`, which is for Blender project files:
+The default configuration writes
+`outputs/export_neutral/plume_cave_scene.glb`. This is the final scene rather
+than a Stage-D-only intermediate: it contains the cave wall after structural
+events, separate editable rock/boulder nodes, vertex normals, tangents, UVs,
+embedded base-colour/metallic-roughness/normal textures, and visual
+displacement baked into vertex positions. No source texture files are required
+after copying the GLB.
 
-1. Choose `File > Import > glTF 2.0 (.glb/.gltf)`.
-2. Select `outputs/export_blender/stage_d_geometry.glb`.
+The neutral package also writes `plume_cave_scene_fallback.obj` with its MTL,
+using the same processed wall positions, UVs, and normals as the GLB. The
+separate `plume_cave_scene_collision.obj` remains the simplified physics mesh;
+do not use that collision sidecar as the rendered cave.
 
-Every Blender GLB package also contains:
+Import the GLB through the target application's glTF importer. Blender uses
+`File > Import > glTF 2.0`; UE5, Unity, Gazebo, and other simulators require
+their available glTF/GLB importer. A single interchange file cannot prescribe
+an engine's physics settings, so the package also provides
+`plume_cave_scene_collision.obj` for consumers that require a separate,
+lower-complexity collision mesh.
 
-- `stage_d_geometry_fallback.obj`, a geometry fallback imported through
-  `File > Import > Wavefront (.obj)`;
-- `stage_d_geometry_import_blender.py`, which tries GLB first and OBJ second
-  when run from Blender's Scripting workspace;
-- `README_IMPORT_BLENDER.txt`, containing the same package-local instructions;
-- `stage_d_geometry.blender_validation.json`, proving that the generated asset
-  passed an independent parse and finite-bounds check before export completed.
+Select `target = "blender"`, `"ue5"`, `"unity"`, or `"gazebo"` when an
+application-specific descriptor or package is needed. These adapters do not
+change the canonical cave.
 
-The OBJ fallback prioritizes dependable geometry interchange. Use the GLB when
-you want the generated material and texture data.
+The cave GLB and USD outputs use xatlas to split the final visual wall into
+topology-aware conformal charts. The atlas result is rescaled so one repeated
+rock-texture tile represents approximately 8 m in either UV direction; atlas
+normalization therefore cannot stretch one tile over the complete cave.
+xatlas duplicates vertices where charts require seams, including around
+branches and openings. Displacement samples from every copy of a seam vertex
+are averaged before moving the original welded surface, preventing UV seams
+from opening physical cracks. Smooth geometric normals are recomputed on that
+welded displaced surface and copied to the chart vertices, while tangents are
+derived from the final xatlas UV orientation for correct normal-map shading.
+The visual mesh receives a light global cleanup followed by spatially varying
+extra smoothing: rough zones keep geometric relief, while smooth lava-flow
+zones receive more cleanup. Collision geometry retains the original
+conservative isosurface. Cave faces are oriented toward the traversable
+interior and exported single-sided because the generated surface is a void
+boundary, not an exterior rock shell. The
+`geometry.cave_normal_scale`, `geometry.cave_smoothing_iterations`,
+`geometry.cave_displacement_scale_m`, and
+`geometry.cave_displacement_midlevel` settings control normal-map strength,
+visual smoothing, and portable vertex displacement. Their defaults are
+`2.0`, `4`, `0.12 m`, and `0.5`. Displacement is visual-only: collision keeps
+the undisplaced surface for stable simulation contact.
+
+OBJ export now uses the same smoothed and displacement-baked cave surface as
+GLB. It writes mesh-bound `vt` UV coordinates, smooth `vn` vertex normals, and
+an MTL that references the colour, roughness, and normal maps. OBJ cannot embed
+those images, so copy its texture dependencies with the OBJ/MTL; prefer GLB
+when a single drag-and-drop file is required.
+
+Surface processing happens only after Stage-D geometry and Stage-E structural
+events are complete. The order is visual smoothing, xatlas chart generation,
+metric UV rescaling, seam-consistent UV-driven displacement, final
+normal/tangent recomputation, and material binding. The diffuse, roughness,
+and normal materials therefore do not participate in cave generation or
+pre-smoothing geometry.
+
+UVs do not increase polygon resolution or change the silhouette. They define
+where the material and tangent-space normal map are sampled. A coherent UV
+layout and tangent basis can remove shading seams and make small rock detail
+look better, but geometric normals improve only when they are recomputed from
+the final displaced mesh—as this exporter does—or when the mesh itself becomes
+denser. The baked normal map adds sub-polygon shading detail; the 0.6 m standard
+voxel resolution and baked vertex displacement provide the actual geometry.
+
+Validate the generated asset with visible phase progress:
+
+```bash
+.venv/bin/plume-validate outputs/export_neutral/plume_cave_scene.glb
+```
+
+Run the complete Python regression suite first, with an individual-test
+progress bar, and then validate the asset:
+
+```bash
+.venv/bin/plume-validate \
+  outputs/export_neutral/plume_cave_scene.glb \
+  --run-tests
+```
+
+Validation writes `outputs/validation/validation_report.json` and
+`outputs/validation/validation_summary.md`. Checks cover the GLB container,
+embedded maps, topology, normals/tangents, UV continuity, collapsed UV
+triangles, localized 95th/99th-percentile distortion, event completeness,
+baked displacement, and run-manifest hashes.
 
 Optional:
 
@@ -546,7 +677,7 @@ Optional:
   --geometry-output outputs/stage_d_geometry.png \
   --geometry-chunk-output outputs/stage_d_geometry_chunks.png \
   --geometry-presentation-output outputs/stage_d_geometry_presentation.png \
-  --geometry-glb-output outputs/stage_d_geometry.glb
+  --geometry-glb-output outputs/plume_cave_scene.glb
 ```
 
 Optional host-field debug render:

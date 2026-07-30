@@ -41,6 +41,10 @@ class GeometryConfig:
     weld_tolerance: float = 1e-5
     strict_texture_loading: bool = True
     embedded_texture_max_size: int = 1024
+    cave_normal_scale: float = 2.0
+    cave_smoothing_iterations: int = 4
+    cave_displacement_scale_m: float = 0.12
+    cave_displacement_midlevel: float = 0.5
     cave_diffuse_texture: str = "texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg"
     cave_normal_texture: str = "texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr"
     cave_roughness_texture: str = "texture/dark_rock_8k/textures/dark_rock_rough_8k.exr"
@@ -361,6 +365,21 @@ class GeometryChunkMesh:
 
 
 @dataclass(frozen=True)
+class SurfaceTextureFrame:
+    """Route-local frame used to map the cave wall without global stretching."""
+
+    segment_id: int
+    center: tuple[float, float, float]
+    tangent: tuple[float, float, float]
+    normal: tuple[float, float, float]
+    binormal: tuple[float, float, float]
+    longitudinal_m: float
+    longitudinal_rate: float = 1.0
+    profile_points: tuple[tuple[float, float], ...] = ()
+    profile_perimeter_m: float = 0.0
+
+
+@dataclass(frozen=True)
 class CaveGeometry:
     """Stage-D output for voxel-stamped cave geometry."""
 
@@ -374,6 +393,7 @@ class CaveGeometry:
     stamped_segment_ids: tuple[int, ...]
     minimum_section_width_m: float = 0.0
     protected_route_points: tuple[tuple[float, float, float], ...] = ()
+    surface_texture_frames: tuple[SurfaceTextureFrame, ...] = ()
     event_meshes: tuple[GeologicalEventMesh, ...] = ()
     structural_event_ids: tuple[int, ...] = ()
 
@@ -499,6 +519,7 @@ __all__ = [
     "CaveGeometry",
     "GeometryChunkMesh",
     "GeometryConfig",
+    "SurfaceTextureFrame",
     "SurfaceHit",
     "TiledVoxelGrid",
     "VoxelGrid",

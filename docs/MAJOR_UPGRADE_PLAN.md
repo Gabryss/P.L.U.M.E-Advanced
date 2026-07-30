@@ -23,6 +23,16 @@ Status: active on `feature/major-procedural-upgrade`.
 
 - Runtime code now lives under the installable `plume_advanced` namespace;
   scripts and tests no longer mutate `sys.path`.
+- Cave GLBs and USD assets use xatlas conformal charts generated from the final
+  visual wall, metric UV rescaling, seam-consistent displacement,
+  UV-derived tangents, inward single-sided surfaces, non-shrinking visual
+  smoothing, and configurable normal-map strength.
+- The default complete scene is a neutral self-contained GLB. Height relief is
+  baked into metre-scale vertex positions for cross-simulator portability;
+  the conservative collision sidecar remains undisplaced.
+- `plume-validate` runs phased container, material, geometry, normal/tangent,
+  UV, event, displacement, and reproducibility checks with Rich progress and
+  emits JSON plus Markdown reports.
 - Wheels include a compact, texture-free default project so the
   `plume-generate` entry point works outside a source checkout.
 - Nested TOML validation reports complete setting paths, and configured
@@ -101,10 +111,14 @@ Exit criteria:
 ## Phase 2 — event and structural geology
 
 Status: foundational two-pass implementation complete. Base-volume raycasts,
-surface-aligned rock/boulder props, class-specific spacing, and collapse/choke/
-infill density modifiers are active. Collapse-centred debris clusters and
-post-event geological floor masks are also active. Area-aware blue-noise
-sampling, cached instances, and full prop collision rejection remain.
+surface-aligned rock/boulder props, footprint-aware spacing, and collapse/choke/
+infill density modifiers are active. Collapse-centred debris families, local
+gallery/roof-conditioned size caps, floor-area density, continuous placement
+jitter, stable runout orientation, and a one-metre-rover route constraint are
+active. Layered clean-floor/background/scree/lag populations, compact
+boulder-satellite families, volume-scaled collapse talus fans, exported family
+metadata, and post-event geological floor masks are also active. Cached
+instances and full mesh-versus-wall collision rejection remain.
 
 - Split events into props (`rock`, `boulder`), modifiers (`collapse`, `choke`,
   `infill`, `skylight`), and material masks.
@@ -294,7 +308,7 @@ Core generation remains installable through Python packaging. Candidate
 libraries will be evaluated behind small interfaces:
 
 - sparse volumes/SDF: OpenVDB Python bindings or a chunked NumPy/SciPy backend;
-- UV atlas: xatlas Python bindings;
+- UV atlas: xatlas Python bindings (integrated for the final visual wall);
 - mesh processing/LOD: trimesh plus meshoptimizer or pymeshlab where licensing
   and distribution are suitable;
 - tangents: a MikkTSpace-compatible binding or a tested local implementation;

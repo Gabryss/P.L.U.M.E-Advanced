@@ -15,6 +15,16 @@ def test_packaged_default_config_is_available() -> None:
     assert not config.geometry.cave_diffuse_texture
 
 
+def test_default_complete_scene_uses_portable_asset_name() -> None:
+    args = cli.parse_args([])
+    assert args.geometry_glb_output is None
+    assert args.geometry_mesh_output is None
+    expected_glb = args.output.with_name("plume_cave_scene.glb")
+    expected_obj = args.output.with_name("plume_cave_scene.obj")
+    assert expected_glb.name == "plume_cave_scene.glb"
+    assert expected_obj.name == "plume_cave_scene.obj"
+
+
 def test_pipeline_failure_writes_failed_manifest(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
