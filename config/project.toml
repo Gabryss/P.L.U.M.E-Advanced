@@ -28,8 +28,8 @@ render_diagnostics = true
 overwrite_outputs = false
 
 [export]
-target = "neutral"
-format = "glb"
+target = "omniverse"
+format = "usd"
 quality = "standard"
 generate_visual = true
 generate_collision = true
