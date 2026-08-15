@@ -11,7 +11,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from plume_advanced.stages.floor_map import FloorAtlas
+from plume_advanced.stages.floor_map import FloorAtlas, FloorCell
 
 _GEOLOGY_COLORS = {
     "bare_basalt": "#4b5563",
@@ -161,11 +161,11 @@ class FloorMapPlotter:
             for event in getattr(event_field, "events", ())
             if event.kind in {"rock", "boulder"}
         ]
-        mapped = [
-            (event, cell_lookup.get(event.floor_cell_id))
-            for event in props
-        ]
-        mapped = [(event, cell) for event, cell in mapped if cell is not None]
+        mapped: list[tuple[Any, FloorCell]] = []
+        for event in props:
+            cell = cell_lookup.get(event.floor_cell_id)
+            if cell is not None:
+                mapped.append((event, cell))
         if mapped:
             axis.scatter(
                 [cell.atlas_x_m for _event, cell in mapped],

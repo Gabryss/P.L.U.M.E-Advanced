@@ -383,20 +383,6 @@ class GeometryGenerator:
             component_offset = max(finite, default=component_offset) + 1.0
         return distances
 
-    def apply_events(
-        self,
-        base_geometry: CaveGeometry,
-        event_field: GeologicalEventField,
-        progress: GeometryProgressCallback | None = None,
-    ) -> CaveGeometry:
-        """Apply grounded structural events and remesh the base cave volume."""
-
-        return self.finalize(
-            base_geometry,
-            event_field,
-            progress=progress,
-        )
-
     def _apply_structural_events_to_grid(
         self,
         voxel_grid: VoxelGrid | TiledVoxelGrid,

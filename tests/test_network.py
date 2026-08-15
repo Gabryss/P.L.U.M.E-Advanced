@@ -24,6 +24,79 @@ from plume_advanced.stages.network import (
 
 
 class CaveNetworkTests(unittest.TestCase):
+    def test_split_and_merge_conserve_flux_and_advance_thermal_state(self) -> None:
+        config = CaveNetworkConfig(
+            source_flux=10.0,
+            source_temperature_k=1400.0,
+            cooling_k_per_m=1.0,
+            nominal_flow_speed_m_s=2.0,
+            minimum_passage_radius=0.1,
+            maximum_passage_radius=100.0,
+        )
+        nodes = [
+            CaveNode(0, 0.0, 0.0, 0.0, 0.0, "entry"),
+            CaveNode(1, 10.0, 0.0, 10.0, 0.0, "junction"),
+            CaveNode(2, 20.0, -2.0, 20.0, -2.0, "junction"),
+            CaveNode(3, 20.0, 2.0, 20.0, 2.0, "junction"),
+            CaveNode(4, 30.0, 0.0, 30.0, 0.0, "junction"),
+            CaveNode(5, 40.0, 0.0, 40.0, 0.0, "exit"),
+        ]
+
+        def segment(
+            segment_id: int,
+            start: int,
+            end: int,
+            width: float,
+        ) -> CaveSegment:
+            return CaveSegment(
+                segment_id=segment_id,
+                start_node_id=start,
+                end_node_id=end,
+                kind="backbone",
+                z_level=0,
+                points=tuple(
+                    CavePoint(
+                        index=index,
+                        x=float(index * 10),
+                        y=0.0,
+                        elevation=0.0,
+                        slope_degrees=0.0,
+                        cover_thickness=10.0,
+                        roof_competence=1.0,
+                        growth_cost=0.0,
+                        arc_length=float(index * 10),
+                        width=width,
+                    )
+                    for index in range(2)
+                ),
+                metadata={},
+            )
+
+        resolved = CaveNetworkGenerator(config)._assign_conserved_flow(
+            nodes,
+            [
+                segment(0, 0, 1, 4.0),
+                segment(1, 1, 2, 4.0),
+                segment(2, 1, 3, 2.0),
+                segment(3, 2, 4, 4.0),
+                segment(4, 3, 4, 2.0),
+                segment(5, 4, 5, 4.0),
+            ],
+        )
+        by_id = {item.segment_id: item for item in resolved}
+
+        self.assertAlmostEqual(by_id[0].mean_flux, 10.0)
+        self.assertAlmostEqual(by_id[1].mean_flux, 8.0)
+        self.assertAlmostEqual(by_id[2].mean_flux, 2.0)
+        self.assertAlmostEqual(by_id[1].mean_flux + by_id[2].mean_flux, 10.0)
+        self.assertAlmostEqual(by_id[3].mean_flux + by_id[4].mean_flux, 10.0)
+        self.assertAlmostEqual(by_id[5].mean_flux, 10.0)
+        self.assertLess(by_id[5].points[0].temperature_k, config.source_temperature_k)
+        self.assertGreater(by_id[5].points[0].age_s, 0.0)
+        for item in resolved:
+            self.assertLessEqual(item.points[-1].temperature_k, item.points[0].temperature_k)
+            self.assertGreaterEqual(item.points[-1].age_s, item.points[0].age_s)
+
     def test_flow_scaling_preserves_configured_small_passages(self) -> None:
         config = CaveNetworkConfig(
             source_flux=1.0,

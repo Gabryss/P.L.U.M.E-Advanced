@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import trimesh
@@ -13,12 +14,85 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 
 from plume_advanced.exporters import export_target_asset
+from plume_advanced.exporters import targets as target_module
 from plume_advanced.stages.events import GeologicalEventMesh
 from plume_advanced.stages.geometry_types import CaveGeometry, GeometryConfig, VoxelGrid
 from plume_advanced.world import ExportConfig
 
 
 class TargetExporterTests(unittest.TestCase):
+    def test_failed_staged_export_preserves_previous_complete_package(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output = Path(temp_dir) / "package"
+            output.mkdir()
+            marker = output / "previous-package.txt"
+            marker.write_text("complete", encoding="utf-8")
+
+            with patch.object(
+                target_module,
+                "_export_glb_or_obj",
+                side_effect=RuntimeError("synthetic adapter failure"),
+            ), self.assertRaisesRegex(RuntimeError, "synthetic adapter failure"):
+                export_target_asset(
+                    self._geometry(),
+                    ExportConfig(target="neutral", file_format="glb"),
+                    output,
+                    asset_name="tube",
+                )
+
+            self.assertEqual(tuple(output.iterdir()), (marker,))
+            self.assertEqual(marker.read_text(encoding="utf-8"), "complete")
+            self.assertFalse(tuple(output.parent.glob(".package.staging-*")))
+
+    def test_successful_export_replaces_the_complete_previous_package(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output = Path(temp_dir) / "package"
+            output.mkdir()
+            stale = output / "stale.txt"
+            stale.write_text("old", encoding="utf-8")
+
+            result = export_target_asset(
+                self._geometry(),
+                ExportConfig(
+                    target="neutral",
+                    file_format="obj",
+                    generate_collision=False,
+                ),
+                output,
+                asset_name="tube",
+            )
+
+            self.assertTrue(result.primary_asset.is_file())
+            self.assertFalse(stale.exists())
+            self.assertFalse(tuple(output.parent.glob(".package.backup-*")))
+
+    def test_exporter_rejects_invalid_direct_configs_before_writing_assets(self) -> None:
+        cases = (
+            (ExportConfig(target="unknown", file_format="glb"), "Unsupported export target"),
+            (ExportConfig(target="all", file_format="glb"), "must be 'auto'"),
+            (ExportConfig(target="neutral", file_format="usd"), "supports glb or obj"),
+            (ExportConfig(target="gazebo", file_format="glb"), "must be 'obj'"),
+            (ExportConfig(target="omniverse", file_format="glb"), "must be 'usd'"),
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            for index, (config, message) in enumerate(cases):
+                output = Path(temp_dir) / str(index)
+                output.mkdir()
+                marker = output / "existing.txt"
+                marker.write_text("preserve", encoding="utf-8")
+                with self.subTest(target=config.target), self.assertRaisesRegex(
+                    ValueError,
+                    message,
+                ):
+                    export_target_asset(
+                        self._geometry(),
+                        config,
+                        output,
+                        asset_name="tube",
+                    )
+                self.assertEqual(tuple(output.iterdir()), (marker,))
+                self.assertEqual(marker.read_text(encoding="utf-8"), "preserve")
+
     def test_neutral_package_describes_self_contained_portable_glb(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             result = export_target_asset(
@@ -109,11 +183,88 @@ class TargetExporterTests(unittest.TestCase):
                 descriptor["asset_coordinates"],
                 "glTF right-handed Y-up metres",
             )
+            self.assertTrue((Path(temp_dir) / "README_IMPORT_UE5.txt").is_file())
 
-    def test_gazebo_package_contains_relocatable_sdf_model(self) -> None:
+    def test_unity_package_declares_handedness_and_optional_collision(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             result = export_target_asset(
                 self._geometry(),
+                ExportConfig(
+                    target="unity",
+                    file_format="glb",
+                    generate_collision=False,
+                ),
+                temp_dir,
+                asset_name="tube",
+            )
+
+            output = Path(temp_dir)
+            self.assertEqual(result.primary_asset, output / "tube.glb")
+            self.assertFalse((output / "tube_collision.obj").exists())
+            descriptor = json.loads(
+                (output / "tube.unity.json").read_text(encoding="utf-8")
+            )
+            conventions = descriptor["target_conventions"]
+            self.assertEqual(conventions["application_coordinates"], "left-handed Y-up")
+            self.assertEqual(conventions["application_length_unit"], "metre")
+            self.assertEqual(conventions["recommended_import_uniform_scale"], 1.0)
+            guide = (output / "README_IMPORT_UNITY.txt").read_text(encoding="utf-8")
+            self.assertIn("Add collision in Unity", guide)
+
+    def test_all_package_builds_every_application_target(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with patch.object(
+                target_module,
+                "prepare_export_scene",
+                wraps=target_module.prepare_export_scene,
+            ) as prepare:
+                result = export_target_asset(
+                    self._geometry(),
+                    ExportConfig(target="all", file_format="auto"),
+                    temp_dir,
+                    asset_name="tube",
+                )
+
+            self.assertEqual(prepare.call_count, 1)
+
+            self.assertEqual(result.target, "all")
+            manifest = json.loads(result.primary_asset.read_text(encoding="utf-8"))
+            self.assertEqual(
+                set(manifest["targets"]),
+                {"blender", "ue5", "unity", "gazebo", "omniverse"},
+            )
+            self.assertTrue((Path(temp_dir) / "blender" / "tube.glb").is_file())
+            self.assertTrue((Path(temp_dir) / "ue5" / "tube.glb").is_file())
+            self.assertTrue((Path(temp_dir) / "unity" / "tube.glb").is_file())
+            self.assertTrue(
+                (Path(temp_dir) / "gazebo" / "tube" / "model.sdf").is_file()
+            )
+            self.assertTrue((Path(temp_dir) / "omniverse" / "tube.usd").is_file())
+            recorded_files: set[Path] = {result.primary_asset}
+            for target, record in manifest["targets"].items():
+                primary = Path(temp_dir) / record["primary_asset"]
+                files = [Path(temp_dir) / value for value in record["files"]]
+                self.assertTrue(primary.is_file(), target)
+                self.assertIn(primary, files, target)
+                self.assertTrue(all(path.is_file() for path in files), target)
+                self.assertEqual(len(files), len(set(files)), target)
+                recorded_files.update(files)
+            self.assertEqual(set(result.files), recorded_files)
+
+    def test_gazebo_package_contains_relocatable_sdf_model(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source_texture = Path(temp_dir) / "source_diffuse.png"
+            Image.new("RGB", (4, 4), (90, 82, 72)).save(source_texture)
+            geometry = self._geometry()
+            geometry = replace(
+                geometry,
+                config=replace(
+                    geometry.config,
+                    cave_diffuse_texture=str(source_texture),
+                ),
+            )
+            result = export_target_asset(
+                geometry,
                 ExportConfig(target="gazebo", file_format="obj"),
                 temp_dir,
                 asset_name="tube",
@@ -124,9 +275,20 @@ class TargetExporterTests(unittest.TestCase):
             self.assertTrue((package / "model.config").is_file())
             self.assertTrue((package / "meshes" / "tube_collision.obj").is_file())
             sdf = (package / "model.sdf").read_text(encoding="utf-8")
+            self.assertIn('<sdf version="1.12">', sdf)
             self.assertIn("model://tube/meshes/tube.obj", sdf)
             self.assertIn("model://tube/meshes/tube_collision.obj", sdf)
             self.assertIn("<static>true</static>", sdf)
+            self.assertTrue((Path(temp_dir) / "tube.world.sdf").is_file())
+            descriptor = json.loads(
+                (package / "plume_export.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(descriptor["gazebo_release"], "Jetty")
+            self.assertEqual(descriptor["sdformat_major"], 16)
+            copied_texture = package / "materials" / "textures" / source_texture.name
+            self.assertTrue(copied_texture.is_file())
+            material = (package / "meshes" / "tube.mtl").read_text(encoding="utf-8")
+            self.assertIn("../materials/textures/source_diffuse.png", material)
 
     def test_omniverse_package_declares_usd_units_and_axis(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -223,6 +385,71 @@ class TargetExporterTests(unittest.TestCase):
                     / "cave_metallic_roughness.png"
                 ).is_file()
             )
+
+    def test_collision_can_be_disabled_for_gazebo_and_omniverse(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            gazebo = export_target_asset(
+                self._geometry(),
+                ExportConfig(
+                    target="gazebo",
+                    file_format="obj",
+                    generate_collision=False,
+                ),
+                root / "gazebo",
+                asset_name="tube",
+            )
+            gazebo_sdf = gazebo.primary_asset.read_text(encoding="utf-8")
+            self.assertFalse(
+                (root / "gazebo" / "tube" / "meshes" / "tube_collision.obj").exists()
+            )
+            self.assertEqual(gazebo_sdf.count("model://tube/meshes/tube.obj"), 2)
+
+            omniverse = export_target_asset(
+                self._geometry(),
+                ExportConfig(
+                    target="omniverse",
+                    file_format="usd",
+                    generate_collision=False,
+                ),
+                root / "omniverse",
+                asset_name="tube",
+            )
+            usda = omniverse.primary_asset.read_text(encoding="utf-8")
+            self.assertNotIn('def Mesh "CaveCollision"', usda)
+            self.assertNotIn("PhysicsCollisionAPI", usda)
+
+    def test_asset_name_is_sanitized_and_cannot_escape_output_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output = Path(temp_dir) / "package"
+            result = export_target_asset(
+                self._geometry(),
+                ExportConfig(
+                    target="neutral",
+                    file_format="obj",
+                    generate_collision=False,
+                ),
+                output,
+                asset_name="../../Tube A",
+            )
+
+            self.assertEqual(result.primary_asset, output / "Tube_A.obj")
+            self.assertTrue(result.primary_asset.is_file())
+            self.assertTrue(
+                all(path.resolve().is_relative_to(output.resolve()) for path in result.files)
+            )
+
+            fallback = export_target_asset(
+                self._geometry(),
+                ExportConfig(
+                    target="neutral",
+                    file_format="obj",
+                    generate_collision=False,
+                ),
+                output / "fallback",
+                asset_name="../..",
+            )
+            self.assertEqual(fallback.primary_asset.name, "plume_cave.obj")
 
     @staticmethod
     def _geometry() -> CaveGeometry:

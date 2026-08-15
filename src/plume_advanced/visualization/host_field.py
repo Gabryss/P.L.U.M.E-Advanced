@@ -5,8 +5,19 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from pathlib import Path
+from typing import NotRequired, TypedDict
+
+import numpy as np
 
 from plume_advanced.stages.host_field import HostField
+
+
+class _PanelSpec(TypedDict):
+    values: np.ndarray
+    title: str
+    cmap: str
+    colorbar_label: str
+    draw_contours: NotRequired[bool]
 
 
 @dataclass(frozen=True)
@@ -29,7 +40,7 @@ class HostFieldPlotter:
         output = Path(output_path)
         output.parent.mkdir(parents=True, exist_ok=True)
 
-        panel_specs = [
+        panel_specs: list[_PanelSpec] = [
             {
                 "values": host_field.elevation,
                 "title": "Terrain Elevation",

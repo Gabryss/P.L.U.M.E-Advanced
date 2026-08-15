@@ -405,7 +405,7 @@ class FloorMapGenerator:
                 )
         structural_class = max(
             ("sediment", "breakdown", "constriction"),
-            key=class_scores.get,
+            key=lambda name: class_scores[name],
         )
         if class_scores[structural_class] > 0.0:
             geology_class = structural_class

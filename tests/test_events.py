@@ -106,6 +106,7 @@ class GeologicalEventTests(unittest.TestCase):
         base = GeologicalEventGenerator(
             GeologicalEventConfig(
                 enabled=False,
+                include_rock_props=True,
                 rock_population_multiplier=1.0,
                 rock_density_per_100m2=1.0,
                 boulder_density_per_100m2=0.1,
@@ -114,6 +115,7 @@ class GeologicalEventTests(unittest.TestCase):
         dense = GeologicalEventGenerator(
             GeologicalEventConfig(
                 enabled=False,
+                include_rock_props=True,
                 rock_population_multiplier=10.0,
                 rock_density_per_100m2=1.0,
                 boulder_density_per_100m2=0.1,
@@ -579,6 +581,7 @@ class GeologicalEventTests(unittest.TestCase):
         config = GeologicalEventConfig(
             random_seed=42,
             enabled_kinds=("rock", "boulder"),
+            include_rock_props=True,
             use_rocky_meshes=True,
             strict_optional_provider=True,
             rocky_source_path="",

@@ -1,4 +1,4 @@
-schema_version = 2
+schema_version = 3
 procedural_seed = 3
 
 [world]
@@ -28,14 +28,11 @@ render_diagnostics = true
 overwrite_outputs = false
 
 [export]
-target = "omniverse"
-format = "usd"
-quality = "standard"
-generate_visual = true
+# Build ready-to-import packages for Blender, UE5, Unity, Gazebo Jetty, and
+# NVIDIA Omniverse from the same canonical cave mesh.
+target = "all"
+format = "auto"
 generate_collision = true
-generate_lods = false
-generate_wall_shell = false
-wall_thickness_m = 0.5
 
 [host_field]
 # Scale the Earth-authored base ranges using the selected body's host profile.

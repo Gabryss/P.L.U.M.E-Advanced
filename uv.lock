@@ -719,11 +719,15 @@ dependencies = [
     { name = "numpy" },
     { name = "pillow" },
     { name = "rich" },
-    { name = "rocky" },
     { name = "scikit-image" },
     { name = "scipy" },
     { name = "trimesh" },
     { name = "xatlas" },
+]
+
+[package.optional-dependencies]
+rocks = [
+    { name = "rocky" },
 ]
 
 [package.dev-dependencies]
@@ -740,7 +744,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.26" },
     { name = "pillow", specifier = ">=10.0" },
     { name = "rich", specifier = ">=13.7" },
-    { name = "rocky", git = "https://github.com/Gabryss/Rocky.git?rev=03c1db59ba45c9da74ab0859ebb547e81e552529" },
+    { name = "rocky", marker = "extra == 'rocks'", git = "https://github.com/Gabryss/Rocky.git?rev=03c1db59ba45c9da74ab0859ebb547e81e552529" },
     { name = "scikit-image", specifier = ">=0.23" },
     { name = "scipy", specifier = ">=1.12" },
     { name = "trimesh", specifier = ">=4.4" },

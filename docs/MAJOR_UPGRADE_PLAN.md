@@ -1,6 +1,6 @@
 # PLUME-Advanced major upgrade plan
 
-Status: active on `feature/major-procedural-upgrade`.
+Status: active on `major-procedural-upgrade`.
 
 ## Product constraints
 
@@ -40,6 +40,15 @@ Status: active on `feature/major-procedural-upgrade`.
 - The run manifest is written atomically at every major stage. It records
   running, complete, or failed state, the current/failed stage, and SHA-256
   metadata for available inputs and completed outputs.
+- Schema 3 is current. Schema 1 and 2 inputs migrate when removed export
+  scaffolding was inactive; enabled LOD/wall-shell promises are rejected.
+- Stage artifacts are checkpointed atomically and `--resume` validates the
+  resolved configuration, inputs, production sources, Python version, and
+  payload checksum before reuse.
+- Export adapters consume one prepared canonical scene and publish complete
+  packages through recoverable staging-directory swaps.
+- Rocky and all separate rock/boulder generation are optional. The base
+  package does not depend on Rocky and disabled props do not import it.
 - CI checks Python 3.12 and 3.13, import ordering, an expanded typed core,
   compilation, a 70% repository coverage floor, and wheel construction.
 
@@ -57,9 +66,9 @@ Status: active on `feature/major-procedural-upgrade`.
    collision-validated against the final surface.
 6. **Surface** — globally coherent normals, tangents, UVs or triplanar
    coordinates, geological masks, and baked PBR material sets.
-7. **Scene asset** — one semantic model containing render meshes, LODs,
-   simplified collisions, instances, materials, transforms, units, and
-   metadata.
+7. **Scene asset** — one prepared semantic model currently containing the
+   render mesh, simplified collision, event meshes, materials, transforms,
+   units, and metadata. Visual LODs remain future work.
 8. **Export adapters** — GLB/OBJ, Blender-compatible USD, UE5, Unity, Gazebo,
    and Omniverse packages.
 
@@ -71,9 +80,11 @@ Status: active on `feature/major-procedural-upgrade`.
 - Add development mode that limits extent and graph complexity without
   changing body dimensions.
 - Add global and per-kind geological-event switches.
-- Add export target, format, quality, LOD, collision, and wall-shell controls.
-- Derive stable named sub-seeds for host, network, sections, events, geometry,
-  surface, and export.
+- Add export target, format, quality, and collision controls. LOD and finite
+  wall-shell controls are intentionally absent until those assets exist.
+- Derive stable named sub-seeds for host, network, sections, events, and
+  geometry. Surface/export preparation is deterministic from geometry and does
+  not own a redundant seed.
 - Validate dimensions, enum values, ranges, and incompatible target/format
   selections with actionable errors.
 - Emit a resolved configuration/manifest beside every generated asset.
@@ -84,7 +95,8 @@ Exit criteria:
 - Switching events off yields a valid empty event field and does not load
   optional rock generators.
 - Development mode caps physical route extent and grammar complexity.
-- Existing schema-v1 configurations continue to load.
+- Existing schema-v1 and schema-v2 configurations migrate to schema 3 when
+  they do not request removed, unimplemented export capabilities.
 
 ## Phase 1 — mesh and export correctness
 
@@ -92,7 +104,8 @@ Exit criteria:
   processing chunks.
 - Compute angle-weighted vertex normals after welding.
 - Generate seam-aware UVs and MikkTSpace-compatible tangents.
-- Convert canonical coordinates into the target convention exactly once.
+- Prepare the canonical visual/collision scene exactly once; adapters serialize
+  it without rebuilding UVs, displacement, event geometry, or collision.
 - Add a neutral standards-compliant GLB writer and complete OBJ materials,
   normals, and texture coordinates.
 - Add asset checks for finite values, bounds, winding, manifold state, normals,

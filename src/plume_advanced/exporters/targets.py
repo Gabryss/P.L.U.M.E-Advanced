@@ -7,7 +7,9 @@ do not invoke Blender or require a GUI application.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+import shlex
+import shutil
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Iterable
 from xml.sax.saxutils import escape
@@ -22,7 +24,10 @@ from plume_advanced.stages.geometry_export import (
     export_geometry_obj,
 )
 from plume_advanced.stages.geometry_types import CaveGeometry
-from plume_advanced.world import ExportConfig
+from plume_advanced.world import APPLICATION_EXPORT_FORMATS, ExportConfig
+
+from .atomic import atomic_output_directory
+from .scene import PreparedExportScene, canonical_cave_mesh, prepare_export_scene
 
 
 @dataclass(frozen=True)
@@ -42,12 +47,63 @@ def export_target_asset(
     *,
     asset_name: str = "plume_cave",
 ) -> ExportResult:
-    """Export a canonical cave using the selected target package."""
+    """Prepare once, stage a complete package, and publish it atomically."""
 
     output = Path(output_root)
-    output.mkdir(parents=True, exist_ok=True)
     safe_name = _safe_asset_name(asset_name)
+    _validate_export_request(export_config)
+    scene = prepare_export_scene(cave_geometry)
+    with atomic_output_directory(output) as staging:
+        staged = _export_target_asset_in_place(
+            scene,
+            export_config,
+            staging,
+            safe_name,
+        )
+    return ExportResult(
+        target=staged.target,
+        primary_asset=output / staged.primary_asset.relative_to(staging),
+        files=tuple(output / path.relative_to(staging) for path in staged.files),
+        warnings=staged.warnings,
+    )
+
+
+def _validate_export_request(export_config: ExportConfig) -> None:
+    """Reject impossible direct API requests before preparing expensive geometry."""
+
     target = export_config.target
+    file_format = export_config.file_format
+    if target not in {"all", "neutral", *APPLICATION_EXPORT_FORMATS}:
+        raise ValueError(f"Unsupported export target {target!r}")
+    if target == "all" and file_format != "auto":
+        raise ValueError("All-target export.format must be 'auto'")
+    if target in {"neutral", "blender", "ue5", "unity"} and file_format not in {
+        "glb",
+        "obj",
+    }:
+        raise ValueError(
+            f"Target {target!r} currently supports glb or obj; got {file_format!r}. "
+            "USD is supported by the Omniverse adapter."
+        )
+    if target == "gazebo" and file_format != "obj":
+        raise ValueError("Gazebo export.format must be 'obj'")
+    if target == "omniverse" and file_format != "usd":
+        raise ValueError("Omniverse export.format must be 'usd'")
+
+
+def _export_target_asset_in_place(
+    scene: PreparedExportScene,
+    export_config: ExportConfig,
+    output: Path,
+    safe_name: str,
+) -> ExportResult:
+    """Serialize one already prepared scene inside an isolated directory."""
+
+    cave_geometry = scene.geometry
+    target = export_config.target
+
+    if target == "all":
+        return _export_all_targets(scene, export_config, output, safe_name)
 
     if target == "blender":
         result = _export_blender(
@@ -55,6 +111,7 @@ def export_target_asset(
             export_config,
             output,
             safe_name,
+            scene,
         )
         descriptor = _write_target_descriptor(result, export_config, output, safe_name)
         return ExportResult(
@@ -69,12 +126,14 @@ def export_target_asset(
             export_config,
             output,
             safe_name,
+            scene,
         )
         files = list(result.files)
         if target == "neutral" and export_config.file_format == "glb":
             fallback_obj = export_geometry_obj(
                 cave_geometry,
                 output / f"{safe_name}_fallback.obj",
+                visual_surface=scene.canonical_visual,
             )
             files.append(fallback_obj)
             fallback_mtl = fallback_obj.with_suffix(".mtl")
@@ -87,17 +146,81 @@ def export_target_asset(
                 warnings=result.warnings,
             )
         descriptor = _write_target_descriptor(result, export_config, output, safe_name)
+        guide = _write_engine_import_guide(
+            export_config.target,
+            output,
+            result.primary_asset,
+            collision_asset=next(
+                (path for path in result.files if path.name.endswith("_collision.obj")),
+                None,
+            ),
+        )
         return ExportResult(
             target=target,
             primary_asset=result.primary_asset,
-            files=result.files + (descriptor,),
+            files=result.files + (descriptor,) + ((guide,) if guide else ()),
             warnings=result.warnings,
         )
     if target == "gazebo":
-        return _export_gazebo(cave_geometry, export_config, output, safe_name)
+        return _export_gazebo(cave_geometry, export_config, output, safe_name, scene)
     if target == "omniverse":
-        return _export_omniverse(cave_geometry, export_config, output, safe_name)
+        return _export_omniverse(cave_geometry, export_config, output, safe_name, scene)
     raise ValueError(f"Unsupported export target {target!r}")
+
+
+def _export_all_targets(
+    scene: PreparedExportScene,
+    export_config: ExportConfig,
+    output: Path,
+    asset_name: str,
+) -> ExportResult:
+    """Build every application package from one canonical cave geometry."""
+
+    results: list[ExportResult] = []
+    for target, file_format in APPLICATION_EXPORT_FORMATS.items():
+        target_config = replace(
+            export_config,
+            target=target,
+            file_format=file_format,
+        )
+        results.append(
+            _export_target_asset_in_place(
+                scene,
+                target_config,
+                output / target,
+                asset_name,
+            )
+        )
+
+    manifest = output / f"{asset_name}.all_exports.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema": "plume.all_exports.v1",
+                "source_coordinates": "right-handed Z-up metres",
+                "targets": {
+                    result.target: {
+                        "primary_asset": result.primary_asset.relative_to(output).as_posix(),
+                        "files": [
+                            path.relative_to(output).as_posix() for path in result.files
+                        ],
+                        "warnings": list(result.warnings),
+                    }
+                    for result in results
+                },
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    files = tuple(path for result in results for path in result.files) + (manifest,)
+    warnings = tuple(warning for result in results for warning in result.warnings)
+    return ExportResult(
+        target="all",
+        primary_asset=manifest,
+        files=files,
+        warnings=warnings,
+    )
 
 
 def _export_blender(
@@ -105,6 +228,7 @@ def _export_blender(
     export_config: ExportConfig,
     output: Path,
     asset_name: str,
+    scene: PreparedExportScene,
 ) -> ExportResult:
     """Write a Blender-oriented package without invoking Blender."""
 
@@ -113,6 +237,7 @@ def _export_blender(
         export_config,
         output,
         asset_name,
+        scene,
     )
     files = list(result.files)
     fallback_obj: Path | None = None
@@ -120,6 +245,7 @@ def _export_blender(
         fallback_obj = export_geometry_obj(
             cave_geometry,
             output / f"{asset_name}_fallback.obj",
+            visual_surface=scene.canonical_visual,
         )
         files.append(fallback_obj)
         fallback_mtl = fallback_obj.with_suffix(".mtl")
@@ -265,16 +391,18 @@ def _write_blender_validation_report(asset: Path, output_path: Path) -> Path:
             declared_length = int.from_bytes(data[8:12], "little")
             if magic != b"glTF" or version != 2 or declared_length != len(data):
                 raise ValueError("GLB header or declared byte length is invalid")
-        scene = trimesh.load(asset, force="scene", process=False)
-        bounds = np.asarray(scene.bounds, dtype=float)
+        loaded_scene: object = trimesh.load(asset, force="scene", process=False)
+        if not isinstance(loaded_scene, trimesh.Scene):
+            raise ValueError("Imported asset did not produce a scene")
+        bounds = np.asarray(loaded_scene.bounds, dtype=float)
         if bounds.shape != (2, 3) or not np.isfinite(bounds).all():
             raise ValueError("Imported scene has invalid bounds")
         report.update(
             {
                 "valid": True,
                 "parser": "trimesh",
-                "geometry_count": len(scene.geometry),
-                "scene_node_count": len(scene.graph.nodes_geometry),
+                "geometry_count": len(loaded_scene.geometry),
+                "scene_node_count": len(loaded_scene.graph.nodes_geometry),
                 "bounds": bounds.tolist(),
             }
         )
@@ -293,36 +421,46 @@ def _export_glb_or_obj(
     export_config: ExportConfig,
     output: Path,
     asset_name: str,
+    scene: PreparedExportScene,
 ) -> ExportResult:
     file_format = export_config.file_format
+    files: list[Path]
     if file_format == "glb":
-        asset = export_geometry_glb(cave_geometry, output / f"{asset_name}.glb")
-        files = (asset, asset.with_suffix(".manifest.json"))
+        asset = export_geometry_glb(
+            cave_geometry,
+            output / f"{asset_name}.glb",
+            visual_surface=scene.gltf_visual,
+        )
+        files = [asset, asset.with_suffix(".manifest.json")]
     elif file_format == "obj":
-        asset = export_geometry_obj(cave_geometry, output / f"{asset_name}.obj")
-        files = tuple(
+        asset = export_geometry_obj(
+            cave_geometry,
+            output / f"{asset_name}.obj",
+            visual_surface=scene.canonical_visual,
+        )
+        files = [
             path
             for path in (asset, asset.with_suffix(".mtl"))
             if path.exists()
-        )
+        ]
     else:
         raise ValueError(
             f"Target {export_config.target!r} currently supports glb or obj; "
             f"got {file_format!r}. USD is supported by the Omniverse adapter."
         )
-    files = list(files)
     if export_config.generate_collision:
         files.append(
             _write_simplified_collision_obj(
                 cave_geometry,
                 output / f"{asset_name}_collision.obj",
+                prepared_scene=scene,
             )
         )
     return ExportResult(
         target=export_config.target,
         primary_asset=asset,
         files=tuple(files),
-        warnings=_pending_feature_warnings(export_config),
+        warnings=(),
     )
 
 
@@ -388,28 +526,85 @@ def _write_target_descriptor(
     return descriptor
 
 
+def _write_engine_import_guide(
+    target: str,
+    output: Path,
+    primary_asset: Path,
+    *,
+    collision_asset: Path | None,
+) -> Path | None:
+    """Write concise, version-resilient import settings beside engine assets."""
+
+    if target == "ue5":
+        name = "README_IMPORT_UE5.txt"
+        lines = (
+            "PLUME-Advanced Unreal Engine 5 import",
+            "======================================",
+            "",
+            "1. Enable the Interchange Editor and Interchange Framework plugins.",
+            f"2. Drag {primary_asset.name} into the Content Browser, or use Import Into Level.",
+            "3. Keep import scale at 1.0; Interchange converts glTF metres to UE centimetres.",
+            "4. Preserve imported normals/tangents and enable full-precision UVs for large caves.",
+            "5. Disable automatically generated collision for the visual static meshes.",
+            (
+                f"6. Import {collision_asset.name} as the dedicated complex collision mesh."
+                if collision_asset is not None
+                else "6. Generate collision in UE if physics is required."
+            ),
+        )
+    elif target == "unity":
+        name = "README_IMPORT_UNITY.txt"
+        lines = (
+            "PLUME-Advanced Unity import",
+            "============================",
+            "",
+            "Unity does not provide a universal built-in GLB importer across supported releases.",
+            "Install a glTF 2.0 importer compatible with your Unity version (for example glTFast).",
+            f"Import {primary_asset.name} with scale 1.0 and preserve normals/tangents.",
+            "The GLB is Y-up, metre-based, self-contained, and uses metallic/roughness PBR.",
+            (
+                f"Use {collision_asset.name} for a MeshCollider; disable rendering on that object."
+                if collision_asset is not None
+                else "Add collision in Unity if physics is required."
+            ),
+            "For large cave meshes, use a non-convex static MeshCollider and "
+            "keep the object static.",
+        )
+    else:
+        return None
+    guide = output / name
+    guide.write_text("\n".join((*lines, "")), encoding="utf-8")
+    return guide
+
+
 def _export_gazebo(
     cave_geometry: CaveGeometry,
     export_config: ExportConfig,
     output: Path,
     asset_name: str,
+    scene: PreparedExportScene,
 ) -> ExportResult:
-    if export_config.file_format not in {"obj", "dae"}:
-        raise ValueError("Gazebo export.format must be 'obj' or 'dae'")
-    if export_config.file_format == "dae":
-        raise ValueError(
-            "DAE output is planned but not yet available without an additional "
-            "Collada library; select export.format = 'obj'."
-        )
+    if export_config.file_format != "obj":
+        raise ValueError("Gazebo export.format must be 'obj'")
 
     package = output / asset_name
     meshes = package / "meshes"
     meshes.mkdir(parents=True, exist_ok=True)
-    visual_mesh = export_geometry_obj(cave_geometry, meshes / f"{asset_name}.obj")
+    visual_mesh = export_geometry_obj(
+        cave_geometry,
+        meshes / f"{asset_name}.obj",
+        visual_surface=scene.canonical_visual,
+    )
+    material = visual_mesh.with_suffix(".mtl")
+    relocated_textures = _relocate_obj_material_textures(
+        material,
+        package / "materials" / "textures",
+    )
     collision_mesh = (
         _write_simplified_collision_obj(
             cave_geometry,
             meshes / f"{asset_name}_collision.obj",
+            prepared_scene=scene,
         )
         if export_config.generate_collision
         else visual_mesh
@@ -423,7 +618,7 @@ def _export_gazebo(
                 "<model>",
                 f"  <name>{escape(asset_name)}</name>",
                 "  <version>1.0</version>",
-                "  <sdf version=\"1.10\">model.sdf</sdf>",
+                "  <sdf version=\"1.12\">model.sdf</sdf>",
                 "  <description>Procedural PLUME lava tube</description>",
                 "</model>",
                 "",
@@ -438,7 +633,7 @@ def _export_gazebo(
         "\n".join(
             (
                 '<?xml version="1.0"?>',
-                '<sdf version="1.10">',
+                '<sdf version="1.12">',
                 f'  <model name="{escape(asset_name)}">',
                 "    <static>true</static>",
                 '    <link name="cave">',
@@ -461,12 +656,16 @@ def _export_gazebo(
         encoding="utf-8",
     )
     descriptor = package / "plume_export.json"
-    warnings = _pending_feature_warnings(export_config)
+    warnings: tuple[str, ...] = ()
     descriptor.write_text(
         json.dumps(
             {
                 "schema": "plume.target_export.v1",
                 "target": "gazebo",
+                "gazebo_release": "Jetty",
+                "gazebo_sim_major": 10,
+                "sdformat_major": 16,
+                "sdf_specification": "1.12",
                 "coordinates": "right-handed Z-up metres",
                 "requirements": asdict(export_config),
                 "warnings": list(warnings),
@@ -475,8 +674,52 @@ def _export_gazebo(
         ),
         encoding="utf-8",
     )
-    files = [visual_mesh, collision_mesh, model_config, model_sdf, descriptor]
-    material = visual_mesh.with_suffix(".mtl")
+    world = output / f"{asset_name}.world.sdf"
+    world.write_text(
+        "\n".join(
+            (
+                '<?xml version="1.0"?>',
+                '<sdf version="1.12">',
+                f'  <world name="{escape(asset_name)}_world">',
+                '    <include>',
+                f'      <uri>model://{escape(asset_name)}</uri>',
+                '    </include>',
+                '  </world>',
+                '</sdf>',
+                '',
+            )
+        ),
+        encoding="utf-8",
+    )
+    guide = output / "README_RUN_GAZEBO.txt"
+    guide.write_text(
+        "\n".join(
+            (
+                "PLUME-Advanced Gazebo Jetty package",
+                "====================================",
+                "",
+                "This package targets Gazebo Jetty (gz-sim 10, sdformat 16, SDF 1.12).",
+                "From this directory run:",
+                '  GZ_SIM_RESOURCE_PATH="$PWD${GZ_SIM_RESOURCE_PATH:+:'
+                '$GZ_SIM_RESOURCE_PATH}" gz sim '
+                f"{world.name}",
+                "",
+                "The model is static, metre-based, Z-up, and uses a separate collision mesh.",
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
+    files = [
+        visual_mesh,
+        collision_mesh,
+        model_config,
+        model_sdf,
+        descriptor,
+        world,
+        guide,
+        *relocated_textures,
+    ]
     if material.exists():
         files.append(material)
     return ExportResult(
@@ -487,19 +730,51 @@ def _export_gazebo(
     )
 
 
+def _relocate_obj_material_textures(
+    material_path: Path,
+    texture_directory: Path,
+) -> tuple[Path, ...]:
+    """Copy MTL texture dependencies into a relocatable target package."""
+
+    if not material_path.is_file():
+        return ()
+    rewritten: list[str] = []
+    copied: dict[Path, Path] = {}
+    map_directives = {"map_Kd", "map_Pr", "map_Pm", "map_Bump", "bump"}
+    for line in material_path.read_text(encoding="utf-8").splitlines():
+        try:
+            tokens = shlex.split(line, comments=False, posix=True)
+        except ValueError:
+            tokens = []
+        if tokens and tokens[0] in map_directives and len(tokens) >= 2:
+            source = (material_path.parent / tokens[-1]).resolve()
+            if source.is_file():
+                texture_directory.mkdir(parents=True, exist_ok=True)
+                destination = texture_directory / source.name
+                if destination.exists() and source not in copied:
+                    destination = texture_directory / (
+                        f"{source.stem}_{len(copied):02d}{source.suffix}"
+                    )
+                if source not in copied:
+                    shutil.copy2(source, destination)
+                    copied[source] = destination
+                relative = copied[source].relative_to(material_path.parent.parent).as_posix()
+                tokens[-1] = f"../{relative}"
+                line = " ".join(tokens)
+        rewritten.append(line)
+    material_path.write_text("\n".join((*rewritten, "")), encoding="utf-8")
+    return tuple(copied.values())
+
+
 def _export_omniverse(
     cave_geometry: CaveGeometry,
     export_config: ExportConfig,
     output: Path,
     asset_name: str,
+    scene: PreparedExportScene,
 ) -> ExportResult:
-    if export_config.file_format not in {"usd", "usdc"}:
-        raise ValueError("Omniverse export.format must be 'usd' or 'usdc'")
-    if export_config.file_format == "usdc":
-        raise ValueError(
-            "Binary USDC requires the optional OpenUSD Python package; "
-            "select export.format = 'usd' for dependency-free USDA output."
-        )
+    if export_config.file_format != "usd":
+        raise ValueError("Omniverse export.format must be 'usd'")
 
     asset = output / f"{asset_name}.usd"
     texture_files = _write_usda(
@@ -507,9 +782,10 @@ def _export_omniverse(
         asset,
         asset_name,
         generate_collision=export_config.generate_collision,
+        prepared_scene=scene,
     )
     descriptor = output / f"{asset_name}.omniverse.json"
-    warnings = _pending_feature_warnings(export_config)
+    warnings: tuple[str, ...] = ()
     descriptor.write_text(
         json.dumps(
             {
@@ -525,10 +801,27 @@ def _export_omniverse(
         ),
         encoding="utf-8",
     )
+    guide = output / "README_IMPORT_OMNIVERSE.txt"
+    guide.write_text(
+        "\n".join(
+            (
+                "PLUME-Advanced NVIDIA Omniverse import",
+                "=======================================",
+                "",
+                f"Open or drag {asset.name} into USD Composer's Content Browser.",
+                f"Keep the adjacent {asset_name}_textures directory with the USD file.",
+                "The stage declares Z-up and metersPerUnit=1 and uses UsdPreviewSurface.",
+                "CaveCollision has PhysicsCollisionAPI and is hidden with guide purpose.",
+                "Run usdchecker on the USD when an OpenUSD toolchain is installed.",
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
     return ExportResult(
         target="omniverse",
         primary_asset=asset,
-        files=(asset, descriptor, *texture_files),
+        files=(asset, descriptor, guide, *texture_files),
         warnings=warnings,
     )
 
@@ -539,10 +832,12 @@ def _write_usda(
     asset_name: str,
     *,
     generate_collision: bool = False,
+    prepared_scene: PreparedExportScene | None = None,
 ) -> tuple[Path, ...]:
-    visual = build_cave_visual_surface(
-        cave_geometry,
-        convert_to_gltf=False,
+    visual = (
+        prepared_scene.canonical_visual
+        if prepared_scene is not None
+        else build_cave_visual_surface(cave_geometry, convert_to_gltf=False)
     )
     vertices = np.asarray(visual["positions"], dtype=np.float64)
     faces = np.asarray(visual["faces"], dtype=np.int64)
@@ -579,9 +874,10 @@ def _write_usda(
         )
     )
     if generate_collision:
-        collision_vertices, collision_faces = _simplified_collision_arrays(
-            cave_geometry
-        )
+        if prepared_scene is None:
+            prepared_scene = prepare_export_scene(cave_geometry)
+        collision_vertices = prepared_scene.collision_vertices
+        collision_faces = prepared_scene.collision_faces
         lines.extend(
             _usda_mesh_lines(
                 "CaveCollision",
@@ -638,25 +934,6 @@ def _write_usda(
     output.write_text("\n".join(lines), encoding="utf-8")
     return tuple(texture_files.values())
 
-
-def _canonical_cave_mesh(cave_geometry: CaveGeometry) -> tuple[np.ndarray, np.ndarray]:
-    if cave_geometry.assembled_vertices and cave_geometry.assembled_faces:
-        return (
-            np.asarray(cave_geometry.assembled_vertices, dtype=np.float64),
-            np.asarray(cave_geometry.assembled_faces, dtype=np.int64),
-        )
-
-    vertices: list[tuple[float, float, float]] = []
-    faces: list[tuple[int, int, int]] = []
-    offset = 0
-    for chunk in cave_geometry.chunk_meshes:
-        vertices.extend(chunk.vertices)
-        faces.extend(
-            tuple(int(index) + offset for index in face)
-            for face in chunk.faces
-        )
-        offset += len(chunk.vertices)
-    return np.asarray(vertices, dtype=np.float64), np.asarray(faces, dtype=np.int64)
 
 
 def _usda_mesh_lines(
@@ -878,17 +1155,24 @@ def _tuple_text(values: Iterable[float]) -> str:
 
 
 def _safe_asset_name(value: str) -> str:
-    safe = "".join(character if character.isalnum() or character == "_" else "_" for character in value)
+    safe = "".join(
+        character if character.isalnum() or character == "_" else "_"
+        for character in value
+    )
     return safe.strip("_") or "plume_cave"
 
 
 def _write_simplified_collision_obj(
     cave_geometry: CaveGeometry,
     output_path: Path,
+    *,
+    prepared_scene: PreparedExportScene | None = None,
 ) -> Path:
     """Write a deterministic vertex-clustered collision approximation."""
 
-    clustered, remapped = _simplified_collision_arrays(cave_geometry)
+    scene = prepared_scene or prepare_export_scene(cave_geometry)
+    clustered = scene.collision_vertices
+    remapped = scene.collision_faces
     collision = trimesh.Trimesh(
         vertices=clustered,
         faces=remapped,
@@ -902,7 +1186,7 @@ def _write_simplified_collision_obj(
         or not np.isfinite(collision.vertices).all()
         or not collision.is_winding_consistent
     ):
-        vertices, faces = _canonical_cave_mesh(cave_geometry)
+        vertices, faces = canonical_cave_mesh(cave_geometry)
         collision = trimesh.Trimesh(
             vertices=vertices,
             faces=faces,
@@ -915,59 +1199,3 @@ def _write_simplified_collision_obj(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     collision.export(output_path)
     return output_path
-
-
-def _simplified_collision_arrays(
-    cave_geometry: CaveGeometry,
-) -> tuple[np.ndarray, np.ndarray]:
-    vertices, faces = _canonical_cave_mesh(cave_geometry)
-    if len(vertices) == 0 or len(faces) == 0:
-        raise ValueError("Cannot create collision geometry from an empty cave mesh")
-    bounds = np.ptp(vertices, axis=0)
-    cell_size = max(
-        cave_geometry.voxel_grid.voxel_size * 2.5,
-        float(np.max(bounds)) / 240.0,
-        1e-6,
-    )
-    keys = np.floor((vertices - vertices.min(axis=0)) / cell_size).astype(np.int64)
-    unique_keys, inverse = np.unique(keys, axis=0, return_inverse=True)
-    clustered = np.zeros((len(unique_keys), 3), dtype=np.float64)
-    counts = np.bincount(inverse)
-    for axis in range(3):
-        clustered[:, axis] = np.bincount(
-            inverse,
-            weights=vertices[:, axis],
-            minlength=len(unique_keys),
-        ) / np.maximum(counts, 1)
-    remapped = inverse[faces]
-    valid = (
-        (remapped[:, 0] != remapped[:, 1])
-        & (remapped[:, 1] != remapped[:, 2])
-        & (remapped[:, 2] != remapped[:, 0])
-    )
-    simplified_faces: list[tuple[int, int, int]] = []
-    seen_faces: set[tuple[int, int, int]] = set()
-    for face in remapped[valid]:
-        oriented = tuple(int(value) for value in face)
-        signature = tuple(sorted(oriented))
-        if signature in seen_faces:
-            continue
-        seen_faces.add(signature)
-        simplified_faces.append(oriented)
-    if not simplified_faces:
-        return vertices, faces
-    return clustered, np.asarray(simplified_faces, dtype=np.int64)
-
-
-def _pending_feature_warnings(export_config: ExportConfig) -> tuple[str, ...]:
-    warnings: list[str] = []
-    if export_config.generate_lods:
-        warnings.append(
-            f"Generated LOD meshes are not implemented yet for the {export_config.target} adapter."
-        )
-    if export_config.generate_wall_shell:
-        warnings.append(
-            "Finite wall-shell generation is configured but remains scheduled "
-            "for the sparse-SDF geometry phase."
-        )
-    return tuple(warnings)

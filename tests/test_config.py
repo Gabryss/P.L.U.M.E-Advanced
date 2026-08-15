@@ -16,7 +16,7 @@ class ProjectConfigurationTests(unittest.TestCase):
     def test_project_uses_resolved_earth_profile_and_named_seeds(self) -> None:
         config = load_project_config(ROOT / "config" / "project.toml")
 
-        self.assertEqual(config.schema_version, 2)
+        self.assertEqual(config.schema_version, 3)
         self.assertEqual(config.world.body.name, "earth")
         self.assertEqual(config.section_field.maximum_tube_width, 10.0)
         self.assertEqual(config.section_field.chamber_max_tube_width, 20.0)
@@ -38,8 +38,8 @@ class ProjectConfigurationTests(unittest.TestCase):
             config.geometry.characteristic_samples_across_passage,
             10.0 / 0.6,
         )
-        self.assertEqual(config.export.target, "neutral")
-        self.assertEqual(config.export.file_format, "glb")
+        self.assertEqual(config.export.target, "all")
+        self.assertEqual(config.export.file_format, "auto")
         self.assertLessEqual(
             config.host_field.grid.height,
             config.run.dev_max_route_length_m,
@@ -51,10 +51,8 @@ class ProjectConfigurationTests(unittest.TestCase):
             config.stage_seeds.sections,
             config.stage_seeds.events,
             config.stage_seeds.geometry,
-            config.stage_seeds.surface,
-            config.stage_seeds.export,
         }
-        self.assertEqual(len(stage_seed_values), 7)
+        self.assertEqual(len(stage_seed_values), 5)
         self.assertEqual(config.host_field.random_seed, config.stage_seeds.host)
         self.assertEqual(config.events.random_seed, config.stage_seeds.events)
 
@@ -343,12 +341,38 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(manifest["geometry"]["resolution_policy"], "fixed")
         self.assertEqual(manifest["canonical_coordinates"]["up_axis"], "Z")
 
-    def test_schema_v1_minimal_configuration_still_loads(self) -> None:
+    def test_schema_v1_minimal_configuration_migrates_to_current(self) -> None:
         config = self._load_minimal("procedural_seed = 11")
 
-        self.assertEqual(config.schema_version, 1)
+        self.assertEqual(config.schema_version, 3)
         self.assertEqual(config.world.body.name, "earth")
         self.assertFalse(config.run.dev_mode)
+
+    def test_schema_v2_removed_scaffolding_migrates_when_it_was_inactive(self) -> None:
+        config = self._load_minimal(
+            """
+            schema_version = 2
+            [export]
+            quality = "preview"
+            generate_visual = true
+            generate_lods = false
+            generate_wall_shell = false
+            wall_thickness_m = 0.5
+            """
+        )
+
+        self.assertEqual(config.schema_version, 3)
+        self.assertEqual(config.export.target, "blender")
+
+    def test_schema_v2_enabled_removed_capability_cannot_be_migrated(self) -> None:
+        with self.assertRaisesRegex(ValueError, "generate_lods"):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [export]
+                generate_lods = true
+                """
+            )
 
     def test_invalid_body_has_actionable_error(self) -> None:
         with self.assertRaisesRegex(ValueError, "world.body must be one of"):
@@ -409,6 +433,19 @@ class ProjectConfigurationTests(unittest.TestCase):
                 """
             )
 
+    def test_all_export_target_uses_automatic_native_formats(self) -> None:
+        config = self._load_minimal(
+            """
+            schema_version = 2
+            [export]
+            target = "all"
+            format = "auto"
+            """
+        )
+
+        self.assertEqual(config.export.target, "all")
+        self.assertEqual(config.export.file_format, "auto")
+
     def test_invalid_rock_population_controls_are_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "rock_population_multiplier"):
             self._load_minimal(
@@ -427,15 +464,40 @@ class ProjectConfigurationTests(unittest.TestCase):
                 """
             )
 
-    def test_unimplemented_export_capability_is_rejected_during_config_load(self) -> None:
-        with self.assertRaisesRegex(ValueError, "generate_lods"):
-            self._load_minimal(
-                """
-                schema_version = 2
-                [export]
-                generate_lods = true
-                """
-            )
+    def test_removed_export_scaffolding_is_rejected_during_config_load(self) -> None:
+        for key, value in (
+            ("quality", '"preview"'),
+            ("generate_visual", "true"),
+            ("generate_lods", "true"),
+            ("generate_wall_shell", "true"),
+            ("wall_thickness_m", "0.5"),
+        ):
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, key):
+                self._load_minimal(
+                    f"""
+                    schema_version = 3
+                    [export]
+                    {key} = {value}
+                    """
+                )
+
+    def test_removed_world_metadata_is_rejected_during_config_load(self) -> None:
+        for key, value in (
+            ("atmosphere", '"dense"'),
+            ("erosion_regime", '"weathering"'),
+            ("surface_deposit", '"basalt"'),
+            ("cohesion_mpa", "12.0"),
+            ("friction_angle_degrees", "38.0"),
+            ("mean_joint_spacing_m", "1.8"),
+        ):
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, key):
+                self._load_minimal(
+                    f"""
+                    schema_version = 3
+                    [world]
+                    {key} = {value}
+                    """
+                )
 
     @staticmethod
     def _load_minimal(contents: str):

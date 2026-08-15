@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -135,7 +136,7 @@ class CaveNetworkPlotter:
             x_coords = [point.x for point in segment.points]
             y_coords = [point.y for point in segment.points]
             is_dominant = (segment.start_node_id, segment.end_node_id) in dominant_pairs
-            linestyle = "-"
+            linestyle: Any = "-"
             if is_dominant:
                 color = "#22d3ee"
                 linewidth = 1.4 if dense_graph else 1.8

@@ -55,6 +55,7 @@ from plume_advanced.output_guard import (
     OutputOverwriteRefused,
     require_output_overwrite_confirmation,
 )
+from plume_advanced.pipeline import StageCheckpointStore, pipeline_fingerprint
 from plume_advanced.run_manifest import write_run_manifest
 from plume_advanced.stages.events import GeologicalEventGenerator
 from plume_advanced.stages.floor_map import FloorMapGenerator, export_floor_atlas
@@ -245,6 +246,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Intended for deliberate unattended or debug generation."
         ),
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help=(
+            "Reuse validated stage checkpoints whose configuration, inputs, "
+            "Python version, and production source fingerprint still match."
+        ),
+    )
+    parser.add_argument(
+        "--checkpoint-directory",
+        type=Path,
+        default=None,
+        help="Checkpoint directory; defaults to .plume-checkpoints beside the outputs.",
+    )
     return parser.parse_args(argv)
 
 
@@ -289,7 +304,11 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     try:
         require_output_overwrite_confirmation(
             output_directories,
-            allow_overwrite=(args.force_overwrite or project_config.run.overwrite_outputs),
+            allow_overwrite=(
+                args.resume
+                or args.force_overwrite
+                or project_config.run.overwrite_outputs
+            ),
         )
     except OutputOverwriteRefused as error:
         print(error, file=sys.stderr)
@@ -310,6 +329,29 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     )
     manifest_inputs = _run_inputs(args.config, project_config)
     completed_outputs: list[Path] = [resolved_config_path]
+    checkpoint_root = (
+        args.checkpoint_directory
+        if args.checkpoint_directory is not None
+        else args.output.parent / ".plume-checkpoints"
+    )
+    checkpoint_store: StageCheckpointStore = StageCheckpointStore(
+        checkpoint_root,
+        pipeline_fingerprint(
+            project_config,
+            inputs=manifest_inputs,
+            source_root=SOURCE_ROOT,
+        ),
+    )
+
+    def resumable(stage: str, builder):
+        artifact, reused = checkpoint_store.load_or_build(
+            stage,
+            builder,
+            resume=args.resume,
+        )
+        if reused:
+            progress.log(f"[cyan]Resumed {stage} from a validated checkpoint.[/cyan]")
+        return artifact
 
     def checkpoint(stage: str) -> None:
         write_run_manifest(
@@ -325,7 +367,10 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
 
     checkpoint("host_field")
     progress.start("Stage A - Host Field", "generating scalar fields")
-    host_field = HostFieldGenerator(project_config.host_field).generate()
+    host_field = resumable(
+        "host_field",
+        lambda: HostFieldGenerator(project_config.host_field).generate(),
+    )
     host_influence_path = export_host_influence_report(
         host_field,
         host_output.with_name("stage_a_host_influence.json"),
@@ -343,7 +388,10 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
 
     checkpoint("network")
     progress.start("Stage B - Cave Network", "tracing cave skeleton")
-    cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
+    cave_network = resumable(
+        "network",
+        lambda: CaveNetworkGenerator(project_config.network).generate(host_field),
+    )
     network_summary = cave_network.summary()
     network_report_path = export_network_report(
         cave_network,
@@ -373,7 +421,10 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
 
     checkpoint("section_field")
     progress.start("Stage C - Section Field", "sampling tunnel profiles")
-    section_field = SectionFieldGenerator(project_config.section_field).generate(cave_network)
+    section_field = resumable(
+        "section_field",
+        lambda: SectionFieldGenerator(project_config.section_field).generate(cave_network),
+    )
     section_summary = section_field.summary()
     progress.update(
         1,
@@ -405,20 +456,26 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
             f"({project_config.geometry.resolution_quality})"
         ),
     )
-    base_geometry = geometry_generator.build_base_volume(
-        cave_network,
-        section_field,
-        progress=geometry_progress,
+    base_geometry = resumable(
+        "base_geometry",
+        lambda: geometry_generator.build_base_volume(
+            cave_network,
+            section_field,
+            progress=geometry_progress,
+        ),
     )
     progress.finish(f"built {int(base_geometry.summary()['carved_voxel_count'])} cave voxels")
 
     floor_map_generator = FloorMapGenerator(project_config.floor_map)
     checkpoint("base_floor_atlas")
     progress.start("Stage C2 - Base Floor Atlas", "raycasting event-placement cells")
-    base_floor_atlas = floor_map_generator.generate(
-        cave_network,
-        section_field,
-        base_geometry,
+    base_floor_atlas = resumable(
+        "base_floor_atlas",
+        lambda: floor_map_generator.generate(
+            cave_network,
+            section_field,
+            base_geometry,
+        ),
     )
     base_floor_summary = base_floor_atlas.summary()
     progress.finish(f"{int(base_floor_summary['cell_count'])} placement cells")
@@ -429,11 +486,14 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     def event_progress(phase: str, current: int, total: int, message: str) -> None:
         progress.update(current, total, f"{phase}: {message}")
 
-    event_field = GeologicalEventGenerator(project_config.events).generate(
-        section_field,
-        base_geometry,
-        base_floor_atlas,
-        progress=event_progress,
+    event_field = resumable(
+        "geological_events",
+        lambda: GeologicalEventGenerator(project_config.events).generate(
+            section_field,
+            base_geometry,
+            base_floor_atlas,
+            progress=event_progress,
+        ),
     )
     event_summary = event_field.summary()
     progress.update(
@@ -457,10 +517,13 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
 
     checkpoint("final_geometry")
     progress.start("Stage D2 - Final Geometry", "applying structural events")
-    cave_geometry = geometry_generator.finalize(
-        base_geometry,
-        event_field,
-        progress=geometry_progress,
+    cave_geometry = resumable(
+        "final_geometry",
+        lambda: geometry_generator.finalize(
+            base_geometry,
+            event_field,
+            progress=geometry_progress,
+        ),
     )
     progress.finish(
         (
@@ -471,12 +534,15 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
 
     checkpoint("final_floor_atlas")
     progress.start("Stage C3 - Final Floor Map", "relifting post-event geology")
-    floor_atlas = floor_map_generator.revalidate(
-        cave_network,
-        section_field,
-        cave_geometry,
-        base_floor_atlas,
-        event_field,
+    floor_atlas = resumable(
+        "final_floor_atlas",
+        lambda: floor_map_generator.revalidate(
+            cave_network,
+            section_field,
+            cave_geometry,
+            base_floor_atlas,
+            event_field,
+        ),
     )
     floor_npz_path, floor_json_path = export_floor_atlas(
         floor_atlas,

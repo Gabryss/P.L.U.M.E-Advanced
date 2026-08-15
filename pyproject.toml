@@ -16,6 +16,10 @@ dependencies = [
   "scipy>=1.12",
   "trimesh>=4.4",
   "xatlas>=0.0.11",
+]
+
+[project.optional-dependencies]
+rocks = [
   "rocky @ git+https://github.com/Gabryss/Rocky.git@03c1db59ba45c9da74ab0859ebb547e81e552529",
 ]
 
@@ -45,6 +49,7 @@ testpaths = ["tests"]
 addopts = "--strict-markers"
 markers = [
   "integration: slower end-to-end generation and exporter tests",
+  "performance: bounded regression checks with deliberately generous CI budgets",
 ]
 filterwarnings = [
   "ignore:Setting the shape on a NumPy array has been deprecated:DeprecationWarning:skimage.*",

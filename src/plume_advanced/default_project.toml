@@ -1,4 +1,4 @@
-schema_version = 2
+schema_version = 3
 procedural_seed = 3
 
 [run]
@@ -12,11 +12,7 @@ overwrite_outputs = false
 [export]
 target = "neutral"
 format = "glb"
-quality = "preview"
-generate_visual = true
 generate_collision = false
-generate_lods = false
-generate_wall_shell = false
 
 [host_field]
 apply_body_scaling = false
@@ -40,7 +36,8 @@ branches_per_zone = [2, 2]
 
 [events]
 enabled = false
-include_rock_props = true
+include_rock_props = false
+use_rocky_meshes = false
 rock_population_multiplier = 10.0
 debris_density_basis = "floor_area"
 rock_density_per_100m2 = 0.45

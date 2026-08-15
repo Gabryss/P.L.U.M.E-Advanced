@@ -46,12 +46,27 @@ class CavePrimitivePayload(TypedDict):
     displacement: DisplacementMetadata
 
 
-def export_geometry_obj(cave_geometry: CaveGeometry, output_path: str | Path) -> Path:
+class EventGlbPayload(TypedDict):
+    positions: np.ndarray
+    faces: np.ndarray
+    material_index: int
+    texcoords: np.ndarray | None
+    normals: np.ndarray
+    tangents: np.ndarray | None
+    translation: tuple[float, float, float]
+
+
+def export_geometry_obj(
+    cave_geometry: CaveGeometry,
+    output_path: str | Path,
+    *,
+    visual_surface: CavePrimitivePayload | None = None,
+) -> Path:
     """Write the same processed visual cave used by GLB as Wavefront OBJ."""
 
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
-    cave_payload = build_cave_visual_surface(
+    cave_payload = visual_surface or build_cave_visual_surface(
         cave_geometry,
         convert_to_gltf=False,
     )
@@ -225,7 +240,12 @@ def export_cave_texture_files(
     return exported
 
 
-def export_geometry_glb(cave_geometry: CaveGeometry, output_path: str | Path) -> Path:
+def export_geometry_glb(
+    cave_geometry: CaveGeometry,
+    output_path: str | Path,
+    *,
+    visual_surface: CavePrimitivePayload | None = None,
+) -> Path:
     """Write a drag-and-drop GLB scene with separately editable event nodes."""
 
     output = Path(output_path)
@@ -255,6 +275,7 @@ def export_geometry_glb(cave_geometry: CaveGeometry, output_path: str | Path) ->
         cave_geometry,
         cave_material,
         displacement_image=displacement_image,
+        visual_surface=visual_surface,
     )
 
     for event_mesh in cave_geometry.event_meshes:
@@ -348,6 +369,7 @@ def _add_cave_wall_to_strict_glb(
     cave_material: int,
     *,
     displacement_image=None,
+    visual_surface: CavePrimitivePayload | None = None,
 ) -> DisplacementMetadata:
     if (
         (
@@ -364,7 +386,7 @@ def _add_cave_wall_to_strict_glb(
             "maximum_offset_m": 0.0,
             "mean_offset_m": 0.0,
         }
-    payload = build_cave_visual_surface(
+    payload = visual_surface or build_cave_visual_surface(
         cave_geometry,
         convert_to_gltf=True,
         displacement_image=displacement_image,
@@ -398,7 +420,11 @@ def _assemble_export_chunks(chunk_meshes) -> tuple[np.ndarray, np.ndarray]:
     for chunk_mesh in chunk_meshes:
         vertices.extend(chunk_mesh.vertices)
         faces.extend(
-            tuple(int(index) + offset for index in face)
+            (
+                int(face[0]) + offset,
+                int(face[1]) + offset,
+                int(face[2]) + offset,
+            )
             for face in chunk_mesh.faces
         )
         offset += len(chunk_mesh.vertices)
@@ -863,532 +889,6 @@ def _orient_faces_toward_cave_interior(
     return triangles
 
 
-def _project_route_local_vertex_uvs(
-    vertices: np.ndarray,
-    texture_frames: tuple[SurfaceTextureFrame, ...],
-    *,
-    scale_m: float,
-) -> np.ndarray:
-    """Map route length and profile perimeter with comparable metric density.
-
-    The previous angular V coordinate allocated one texture repeat to an
-    entire cross-section, stretching the same image over 20--30 metres of
-    roof.  Profile-aware frames instead measure distance along the actual
-    Stage-C contour and use an integer repeat count per segment.  Integer
-    counts keep the profile seam repeat-wrapped while maintaining roughly
-    square texels in world space.
-    """
-
-    positions = np.asarray(vertices, dtype=np.float64)
-    if not texture_frames:
-        return _project_cave_vertex_uvs(positions)
-
-    scale = max(float(scale_m), 1e-6)
-    segment_perimeters: dict[int, list[float]] = {}
-    for frame in texture_frames:
-        if frame.profile_perimeter_m > 1e-6:
-            segment_perimeters.setdefault(frame.segment_id, []).append(
-                frame.profile_perimeter_m
-            )
-    valid_perimeters = [
-        perimeter
-        for perimeters in segment_perimeters.values()
-        for perimeter in perimeters
-    ]
-    connected_surface_repeats = max(
-        1,
-        int(round(float(np.median(valid_perimeters)) / scale)),
-    ) if valid_perimeters else 1
-    segment_repeats = {
-        segment_id: connected_surface_repeats
-        for segment_id in segment_perimeters
-    }
-
-    centers = np.asarray([frame.center for frame in texture_frames], dtype=np.float64)
-    _nearest_distances, nearest_indices = cKDTree(centers).query(positions, k=1)
-    frame_segment_ids = np.asarray(
-        [frame.segment_id for frame in texture_frames],
-        dtype=np.int64,
-    )
-    nearest_segment_ids = frame_segment_ids[nearest_indices]
-    texcoords = np.empty((len(positions), 2), dtype=np.float64)
-    blend_width = max(0.75 * scale, 1e-6)
-
-    # Blend only within the selected segment. Adjacent branches can occupy the
-    # same junction volume while using incompatible profile directions; mixing
-    # those frames creates the visible chevrons this interpolation removes.
-    for segment_id in np.unique(nearest_segment_ids):
-        vertex_selection = nearest_segment_ids == segment_id
-        segment_positions = positions[vertex_selection]
-        segment_frame_indices = np.flatnonzero(frame_segment_ids == segment_id)
-        blend_count = min(4, len(segment_frame_indices))
-        distances, local_indices = cKDTree(
-            centers[segment_frame_indices]
-        ).query(segment_positions, k=blend_count)
-        if blend_count == 1:
-            distances = distances[:, None]
-            local_indices = local_indices[:, None]
-        candidate_frame_indices = segment_frame_indices[local_indices]
-        candidate_uvs = np.empty(
-            (len(segment_positions), blend_count, 2),
-            dtype=np.float64,
-        )
-        for candidate_index in range(blend_count):
-            candidate_uvs[:, candidate_index] = _project_uvs_with_selected_frames(
-                segment_positions,
-                texture_frames,
-                centers,
-                candidate_frame_indices[:, candidate_index],
-                segment_repeats,
-                scale=scale,
-            )
-
-        # UV textures repeat on whole tiles. Align each candidate to the nearest
-        # frame's tile before blending so a 0.99/0.01 wrap averages at the seam,
-        # rather than halfway across the texture.
-        reference_uvs = candidate_uvs[:, :1, :]
-        candidate_uvs -= np.round(candidate_uvs - reference_uvs)
-        relative_distances = distances - distances[:, :1]
-        weights = np.exp(-np.square(relative_distances / blend_width))
-        weights /= np.maximum(weights.sum(axis=1, keepdims=True), 1e-12)
-        texcoords[vertex_selection] = np.einsum(
-            "vk,vki->vi",
-            weights,
-            candidate_uvs,
-        )
-    return texcoords
-
-
-def _project_uvs_with_selected_frames(
-    positions: np.ndarray,
-    texture_frames: tuple[SurfaceTextureFrame, ...],
-    centers: np.ndarray,
-    frame_indices: np.ndarray,
-    segment_repeats: dict[int, int],
-    *,
-    scale: float,
-) -> np.ndarray:
-    """Project vertices through one selected frame per vertex."""
-
-    selected_centers = centers[frame_indices]
-    tangents = np.asarray(
-        [texture_frames[int(index)].tangent for index in frame_indices],
-        dtype=np.float64,
-    )
-    normals = np.asarray(
-        [texture_frames[int(index)].normal for index in frame_indices],
-        dtype=np.float64,
-    )
-    binormals = np.asarray(
-        [texture_frames[int(index)].binormal for index in frame_indices],
-        dtype=np.float64,
-    )
-    longitudinal = np.asarray(
-        [texture_frames[int(index)].longitudinal_m for index in frame_indices],
-        dtype=np.float64,
-    )
-    longitudinal_rates = np.asarray(
-        [texture_frames[int(index)].longitudinal_rate for index in frame_indices],
-        dtype=np.float64,
-    )
-    offsets = positions - selected_centers
-    local_along = np.einsum("vi,vi->v", offsets, tangents)
-    local_lateral = np.einsum("vi,vi->v", offsets, normals)
-    local_vertical = np.einsum("vi,vi->v", offsets, binormals)
-    u_coord = (
-        longitudinal + longitudinal_rates * local_along
-    ) / scale
-    v_coord = np.empty(len(positions), dtype=np.float64)
-    for frame_index in np.unique(frame_indices):
-        selection = frame_indices == frame_index
-        frame = texture_frames[int(frame_index)]
-        if len(frame.profile_points) >= 3 and frame.profile_perimeter_m > 1e-6:
-            profile = np.asarray(frame.profile_points, dtype=np.float64)
-            fractions = _profile_arc_fractions(
-                local_lateral[selection],
-                local_vertical[selection],
-                profile,
-            )
-            roof_height = float(np.max(profile[:, 1]))
-            roof_points = profile[
-                np.isclose(profile[:, 1], roof_height, rtol=0.0, atol=1e-9)
-            ]
-            roof_fraction = _profile_arc_fractions(
-                np.asarray([float(np.mean(roof_points[:, 0]))]),
-                np.asarray([roof_height]),
-                profile,
-            )[0]
-            repeats = segment_repeats.get(frame.segment_id, 1)
-            v_coord[selection] = (
-                fractions - float(roof_fraction)
-            ) * float(repeats)
-        else:
-            v_coord[selection] = (
-                np.arctan2(
-                    local_vertical[selection],
-                    local_lateral[selection],
-                )
-                / (2.0 * np.pi)
-                + 0.5
-            )
-    return np.column_stack((u_coord, v_coord))
-
-
-def _profile_arc_fractions(
-    lateral: np.ndarray,
-    vertical: np.ndarray,
-    profile_points: np.ndarray,
-) -> np.ndarray:
-    """Project local wall points onto a closed profile's cumulative arc length."""
-
-    profile = np.asarray(profile_points, dtype=np.float64)
-    if len(profile) < 3:
-        return np.mod(
-            np.arctan2(vertical, lateral) / (2.0 * np.pi) + 0.5,
-            1.0,
-        )
-    if not np.allclose(profile[0], profile[-1]):
-        profile = np.vstack((profile, profile[0]))
-    starts = profile[:-1]
-    edges = profile[1:] - starts
-    edge_lengths = np.linalg.norm(edges, axis=1)
-    valid = edge_lengths > 1e-9
-    if not np.any(valid):
-        return np.zeros(len(lateral), dtype=np.float64)
-    starts = starts[valid]
-    edges = edges[valid]
-    edge_lengths = edge_lengths[valid]
-    cumulative = np.concatenate(([0.0], np.cumsum(edge_lengths)))
-    points = np.column_stack((lateral, vertical))
-    relative = points[:, None, :] - starts[None, :, :]
-    parameters = np.clip(
-        np.einsum("vsi,si->vs", relative, edges)
-        / np.maximum(np.square(edge_lengths)[None, :], 1e-12),
-        0.0,
-        1.0,
-    )
-    closest = starts[None, :, :] + parameters[:, :, None] * edges[None, :, :]
-    distances_squared = np.sum(np.square(points[:, None, :] - closest), axis=2)
-    nearest = np.argmin(distances_squared, axis=1)
-    arc_lengths = (
-        cumulative[nearest]
-        + parameters[np.arange(len(points)), nearest] * edge_lengths[nearest]
-    )
-    return np.mod(arc_lengths / max(float(cumulative[-1]), 1e-9), 1.0)
-
-
-def _unwrap_periodic_triangle(face_uv: np.ndarray) -> np.ndarray:
-    """Choose integer tile offsets that minimize interpolation across a face."""
-
-    raw = np.asarray(face_uv, dtype=np.float64)
-    adjusted = raw.copy()
-    for axis in range(2):
-        values = raw[:, axis]
-        base_offsets = -np.round(values - values[0]).astype(np.int64)
-        best_values = values + base_offsets
-        best_score = (
-            float(np.ptp(best_values)),
-            int(np.sum(np.abs(base_offsets))),
-        )
-        for delta_1 in (-1, 0, 1):
-            for delta_2 in (-1, 0, 1):
-                offsets = base_offsets.copy()
-                offsets[1] += delta_1
-                offsets[2] += delta_2
-                candidate = values + offsets
-                score = (
-                    float(np.ptp(candidate)),
-                    int(np.sum(np.abs(offsets))),
-                )
-                if score < best_score:
-                    best_values = candidate
-                    best_score = score
-        adjusted[:, axis] = best_values
-    return adjusted
-
-
-def _relax_pathological_uvs(
-    faces: np.ndarray,
-    texcoords: np.ndarray,
-    *,
-    iterations: int = 10,
-    relaxation: float = 0.55,
-) -> np.ndarray:
-    """Locally repair phase outliers without smoothing the full UV field."""
-
-    triangles = np.asarray(faces, dtype=np.int64)
-    output = np.asarray(texcoords, dtype=np.float64).copy()
-    if len(triangles) == 0 or len(output) == 0 or iterations <= 0:
-        return output
-
-    sources = np.concatenate(
-        (
-            triangles[:, 0],
-            triangles[:, 1],
-            triangles[:, 1],
-            triangles[:, 2],
-            triangles[:, 2],
-            triangles[:, 0],
-        )
-    )
-    targets = np.concatenate(
-        (
-            triangles[:, 1],
-            triangles[:, 0],
-            triangles[:, 2],
-            triangles[:, 1],
-            triangles[:, 0],
-            triangles[:, 2],
-        )
-    )
-    neighbor_counts = np.bincount(sources, minlength=len(output))
-
-    for axis in range(2):
-        for _iteration in range(iterations):
-            values = output[:, axis]
-            phase_values = np.sort(np.mod(values[triangles], 1.0), axis=1)
-            gaps = np.concatenate(
-                (
-                    np.diff(phase_values, axis=1),
-                    1.0 + phase_values[:, :1] - phase_values[:, -1:],
-                ),
-                axis=1,
-            )
-            minimum_spans = 1.0 - np.max(gaps, axis=1)
-            pathological = minimum_spans > 0.500001
-            if not np.any(pathological):
-                break
-            affected = np.unique(triangles[pathological])
-            phases = np.exp(2j * np.pi * np.mod(values, 1.0))
-            neighbor_phase_sums = np.zeros(len(output), dtype=np.complex128)
-            np.add.at(
-                neighbor_phase_sums,
-                sources,
-                phases[targets],
-            )
-            target_values = (
-                np.angle(
-                    neighbor_phase_sums[affected]
-                    / np.maximum(neighbor_counts[affected], 1)
-                )
-                / (2.0 * np.pi)
-            )
-            current_values = values[affected]
-            target_values += np.round(current_values - target_values)
-            output[affected, axis] = current_values + float(relaxation) * (
-                target_values - current_values
-            )
-    return output
-
-
-def _split_periodic_uv_seams(
-    vertices: np.ndarray,
-    faces: np.ndarray,
-    texcoords: np.ndarray,
-    normals: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Duplicate only vertices that cross an unavoidable periodic tile seam."""
-
-    positions = np.asarray(vertices, dtype=np.float64)
-    triangles = np.asarray(faces, dtype=np.uint32)
-    uv = np.asarray(texcoords, dtype=np.float64)
-    vertex_normals = np.asarray(normals, dtype=np.float64)
-    expanded_positions: list[np.ndarray] = []
-    expanded_uvs: list[np.ndarray] = []
-    expanded_normals: list[np.ndarray] = []
-    expanded_faces: list[tuple[int, int, int]] = []
-    vertex_lookup: dict[tuple[int, int, int], int] = {}
-
-    for face_index, face in enumerate(triangles):
-        face_uv = uv[face_index] if uv.ndim == 3 else uv[face]
-        adjusted_uv = _unwrap_periodic_triangle(face_uv)
-        expanded_face: list[int] = []
-        for corner, vertex_index_value in enumerate(face):
-            vertex_index = int(vertex_index_value)
-            key = (
-                vertex_index,
-                int(round(float(adjusted_uv[corner, 0]) * 100_000_000)),
-                int(round(float(adjusted_uv[corner, 1]) * 100_000_000)),
-            )
-            mapped_index = vertex_lookup.get(key)
-            if mapped_index is None:
-                mapped_index = len(expanded_positions)
-                vertex_lookup[key] = mapped_index
-                expanded_positions.append(positions[vertex_index])
-                expanded_uvs.append(adjusted_uv[corner])
-                expanded_normals.append(vertex_normals[vertex_index])
-            expanded_face.append(mapped_index)
-        expanded_faces.append(
-            (expanded_face[0], expanded_face[1], expanded_face[2])
-        )
-
-    return (
-        np.asarray(expanded_positions, dtype=np.float64),
-        np.asarray(expanded_faces, dtype=np.uint32),
-        np.asarray(expanded_uvs, dtype=np.float64),
-        np.asarray(expanded_normals, dtype=np.float64),
-    )
-
-
-def _project_cave_vertex_uvs(vertices: np.ndarray) -> np.ndarray:
-    """Build a coherent dominant-route cylindrical projection.
-
-    This is an interim runtime-safe mapping.  A seam-aware atlas remains part
-    of the surface phase, but this avoids the previous per-triangle UV islands.
-    """
-
-    xy = vertices[:, :2]
-    centered_xy = xy - xy.mean(axis=0)
-    if len(vertices) >= 2 and np.any(np.abs(centered_xy) > 1e-9):
-        _u, _s, vh = np.linalg.svd(centered_xy, full_matrices=False)
-        longitudinal = vh[0]
-    else:
-        longitudinal = np.array((0.0, 1.0), dtype=float)
-    if longitudinal[1] < 0.0:
-        longitudinal = -longitudinal
-    lateral = np.array((-longitudinal[1], longitudinal[0]), dtype=float)
-    scale = max(GLB_CAVE_TEXTURE_SCALE_METERS, 1e-6)
-    u_coord = centered_xy @ longitudinal / scale
-    lateral_coord = centered_xy @ lateral
-    vertical_coord = vertices[:, 2] - float(np.mean(vertices[:, 2]))
-    v_coord = np.arctan2(vertical_coord, lateral_coord) / (2.0 * np.pi) + 0.5
-    return np.column_stack((u_coord, v_coord))
-
-
-def _route_frame_tangents(
-    vertices: np.ndarray,
-    normals: np.ndarray,
-    texture_frames: tuple[SurfaceTextureFrame, ...],
-) -> np.ndarray:
-    """Build a shared tangent basis that remains identical across UV wraps."""
-
-    positions = np.asarray(vertices, dtype=np.float64)
-    vertex_normals = np.asarray(normals, dtype=np.float64)
-    centers = np.asarray([frame.center for frame in texture_frames], dtype=np.float64)
-    _distances, frame_indices = cKDTree(centers).query(positions, k=1)
-    route_tangents = np.asarray(
-        [texture_frames[int(index)].tangent for index in frame_indices],
-        dtype=np.float64,
-    )
-    frame_normals = np.asarray(
-        [texture_frames[int(index)].normal for index in frame_indices],
-        dtype=np.float64,
-    )
-    frame_binormals = np.asarray(
-        [texture_frames[int(index)].binormal for index in frame_indices],
-        dtype=np.float64,
-    )
-    offsets = positions - centers[frame_indices]
-    lateral = np.einsum("vi,vi->v", offsets, frame_normals)
-    vertical = np.einsum("vi,vi->v", offsets, frame_binormals)
-    expected_bitangents = (
-        -vertical[:, None] * frame_normals
-        + lateral[:, None] * frame_binormals
-    )
-    frame_orientations = np.asarray(
-        [
-            _profile_orientation_sign(frame.profile_points)
-            for frame in texture_frames
-        ],
-        dtype=np.float64,
-    )
-    profile_orientations = frame_orientations[frame_indices]
-    expected_bitangents *= profile_orientations[:, None]
-
-    tangents = route_tangents - vertex_normals * np.einsum(
-        "vi,vi->v",
-        route_tangents,
-        vertex_normals,
-    )[:, None]
-    lengths = np.linalg.norm(tangents, axis=1)
-    missing = lengths <= 1e-12
-    if np.any(missing):
-        references = np.tile(np.array((0.0, 0.0, 1.0)), (len(positions), 1))
-        vertical_normals = np.abs(vertex_normals[:, 2]) >= 0.9
-        references[vertical_normals] = np.array((1.0, 0.0, 0.0))
-        tangents[missing] = np.cross(
-            references[missing],
-            vertex_normals[missing],
-        )
-        lengths = np.linalg.norm(tangents, axis=1)
-    tangents /= np.maximum(lengths[:, None], 1e-12)
-
-    handedness = np.ones(len(positions), dtype=np.float64)
-    handedness[
-        np.einsum(
-            "vi,vi->v",
-            np.cross(vertex_normals, tangents),
-            expected_bitangents,
-        )
-        < 0.0
-    ] = -1.0
-    return np.column_stack((tangents, handedness))
-
-
-def _hybrid_route_chart_tangents(
-    vertices: np.ndarray,
-    faces: np.ndarray,
-    texcoords: np.ndarray,
-    route_tangents: np.ndarray,
-    mesh_tangents: np.ndarray,
-) -> np.ndarray:
-    """Use chart tangents only where a non-periodic UV seam requires them."""
-
-    positions = np.asarray(vertices, dtype=np.float64)
-    uv = np.asarray(texcoords, dtype=np.float64)
-    output = np.asarray(route_tangents, dtype=np.float64).copy()
-    chart_tangents = np.asarray(mesh_tangents, dtype=np.float64)
-    rounded = np.round(positions, decimals=6)
-    _unique, inverse, counts = np.unique(
-        rounded,
-        axis=0,
-        return_inverse=True,
-        return_counts=True,
-    )
-    chart_vertices = np.zeros(len(positions), dtype=bool)
-    periodic_groups: list[np.ndarray] = []
-    for group_index in np.flatnonzero(counts > 1):
-        group = np.flatnonzero(inverse == group_index)
-        uv_delta = uv[group] - uv[group[0]]
-        integer_error = float(
-            np.max(np.abs(uv_delta - np.round(uv_delta)))
-        )
-        if integer_error > 1e-4:
-            chart_vertices[group] = True
-        else:
-            periodic_groups.append(group)
-    triangles = np.asarray(faces, dtype=np.int64)
-    if np.any(chart_vertices):
-        chart_faces = np.any(chart_vertices[triangles], axis=1)
-        chart_region_vertices = np.unique(triangles[chart_faces])
-        output[chart_region_vertices] = chart_tangents[chart_region_vertices]
-    for group in periodic_groups:
-        output[group] = route_tangents[group]
-    return output
-
-
-def _profile_orientation_sign(
-    profile_points: tuple[tuple[float, float], ...],
-) -> float:
-    """Return +1 for counter-clockwise UV profiles and -1 for clockwise."""
-
-    if len(profile_points) < 3:
-        return 1.0
-    profile = np.asarray(profile_points, dtype=np.float64)
-    if np.allclose(profile[0], profile[-1]):
-        profile = profile[:-1]
-    if len(profile) < 3:
-        return 1.0
-    following = np.roll(profile, -1, axis=0)
-    signed_double_area = float(
-        np.sum(
-            profile[:, 0] * following[:, 1]
-            - following[:, 0] * profile[:, 1]
-        )
-    )
-    return 1.0 if signed_double_area >= 0.0 else -1.0
-
-
 def _angle_weighted_vertex_normals(
     vertices: np.ndarray,
     faces: np.ndarray,
@@ -1495,6 +995,22 @@ def _canonical_to_gltf_tangents(tangents: np.ndarray) -> np.ndarray:
     tangent_values = np.asarray(tangents, dtype=np.float64)
     transformed_xyz = _canonical_to_gltf_vectors(tangent_values[:, :3])
     return np.column_stack((transformed_xyz, tangent_values[:, 3])).astype(np.float32)
+
+
+def canonical_visual_to_gltf(
+    visual_surface: CavePrimitivePayload,
+) -> CavePrimitivePayload:
+    """Transform one prepared canonical surface without rebuilding its atlas."""
+
+    return {
+        "positions": _canonical_to_gltf_vectors(visual_surface["positions"]),
+        "faces": visual_surface["faces"],
+        "texcoords": visual_surface["texcoords"],
+        "normals": _canonical_to_gltf_vectors(visual_surface["normals"]),
+        "tangents": _canonical_to_gltf_tangents(visual_surface["tangents"]),
+        "material_index": visual_surface["material_index"],
+        "displacement": visual_surface["displacement"],
+    }
 
 
 def _canonical_to_gltf_translation(
@@ -1624,7 +1140,7 @@ def _event_mesh_to_glb_payload(
     image_cache: dict,
     strict: bool,
     max_size: int,
-) -> dict[str, object]:
+) -> EventGlbPayload:
     vertices = np.array(event_mesh.vertices, dtype=np.float32)
     pivot = _event_pivot(vertices)
     local_vertices = vertices - pivot
@@ -1644,7 +1160,10 @@ def _event_mesh_to_glb_payload(
         for face, face_uvs in zip(event_mesh.faces, event_mesh.face_uvs, strict=True):
             start = len(expanded_vertices)
             for vertex_index, uv in zip(face, face_uvs, strict=True):
-                expanded_vertices.append(tuple(float(value) for value in local_vertices[vertex_index]))
+                vertex = local_vertices[vertex_index]
+                expanded_vertices.append(
+                    (float(vertex[0]), float(vertex[1]), float(vertex[2]))
+                )
                 expanded_uvs.append((float(uv[0]), float(1.0 - uv[1])))
             expanded_faces.append((start, start + 1, start + 2))
         expanded_positions = np.array(expanded_vertices, dtype=np.float64)
@@ -1902,46 +1421,10 @@ class _StrictGlbBuilder:
             node["extras"] = extras
         node_index = len(self._nodes)
         self._nodes.append(node)
-        self._nodes[0].setdefault("children", []).append(node_index)
-        return node_index
-
-    def multi_primitive_mesh_node(
-        self,
-        *,
-        name: str,
-        primitives: list[dict[str, object]],
-        translation: tuple[float, float, float] | None = None,
-        extras: dict[str, object] | None = None,
-    ) -> int:
-        gltf_primitives: list[dict[str, object]] = []
-        for primitive in primitives:
-            positions = np.asarray(primitive["positions"], dtype=np.float32)
-            faces = np.asarray(primitive["faces"], dtype=np.uint32)
-            if positions.size == 0 or faces.size == 0:
-                continue
-            gltf_primitives.append(
-                self._primitive(
-                    positions=positions,
-                    faces=faces,
-                    material_index=int(primitive["material_index"]),
-                    texcoords=primitive.get("texcoords"),
-                    normals=primitive.get("normals"),
-                    tangents=primitive.get("tangents"),
-                )
-            )
-        if not gltf_primitives:
-            raise ValueError(f"Cannot export empty mesh node {name!r}")
-
-        mesh_index = len(self._meshes)
-        self._meshes.append({"name": name, "primitives": gltf_primitives})
-        node: dict[str, object] = {"name": name, "mesh": mesh_index}
-        if translation is not None:
-            node["translation"] = [float(value) for value in translation]
-        if extras:
-            node["extras"] = extras
-        node_index = len(self._nodes)
-        self._nodes.append(node)
-        self._nodes[0].setdefault("children", []).append(node_index)
+        children = self._nodes[0].setdefault("children", [])
+        if not isinstance(children, list):
+            raise TypeError("Root glTF node children must be a list")
+        children.append(node_index)
         return node_index
 
     def _primitive(

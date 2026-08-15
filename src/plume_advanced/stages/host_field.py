@@ -18,12 +18,24 @@ import json
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TypedDict
 
 import numpy as np
 from numpy.typing import NDArray
 
 Array1D = NDArray[np.float64]
 Array2D = NDArray[np.float64]
+
+
+class HostVariation(TypedDict):
+    wave_phase_offsets: tuple[float, ...]
+    corridor_depth_scale: Array2D
+    corridor_width_scale: Array2D
+    competence_bias: Array2D
+    fracture_center_offset: float
+    fracture_width_scale: float
+    drainage_phase_offset: float
+    cross_drainage_phase_offset: float
 
 
 def _default_waves() -> tuple["TerrainWave", ...]:
@@ -363,7 +375,7 @@ class HostFieldGenerator:
         self,
         x_grid: Array2D,
         y_grid: Array2D,
-    ) -> dict[str, Array2D | tuple[float, ...] | float]:
+    ) -> HostVariation:
         wave_phase_offsets = tuple(0.0 for _ in self.config.waves)
         corridor_depth_scale = np.ones_like(x_grid, dtype=float)
         corridor_width_scale = np.ones_like(x_grid, dtype=float)
@@ -479,7 +491,7 @@ class HostFieldGenerator:
         self,
         x_grid: Array2D,
         y_grid: Array2D,
-        variation: dict[str, Array2D | tuple[float, ...] | float],
+        variation: HostVariation,
     ) -> Array2D:
         seed_x, seed_y = self.config.seed_point
         relative_x = x_grid - seed_x
@@ -526,28 +538,19 @@ class HostFieldGenerator:
 
     def _build_gradient(self, elevation: Array2D) -> tuple[Array2D, Array2D]:
         grid = self.config.grid
-        return np.gradient(
+        gradient_y, gradient_x = np.gradient(
             elevation,
             grid.spacing_y,
             grid.spacing_x,
+        )
+        return (
+            np.asarray(gradient_y, dtype=np.float64),
+            np.asarray(gradient_x, dtype=np.float64),
         )
 
     def _build_slope_degrees(self, gradient_x: Array2D, gradient_y: Array2D) -> Array2D:
         slope_rise = np.hypot(gradient_x, gradient_y)
         return np.degrees(np.arctan(slope_rise))
-
-    def _build_cover_thickness(
-        self,
-        elevation: Array2D,
-        slope_degrees: Array2D,
-    ) -> Array2D:
-        relief_bonus = 0.18 * (elevation - float(elevation.mean()))
-        slope_penalty = 0.45 * slope_degrees
-        cover = self.config.volcanic_layer_thickness + relief_bonus - slope_penalty
-
-        minimum_cover = self.config.minimum_stable_cover
-        maximum_cover = self.config.volcanic_layer_thickness * 1.35
-        return np.clip(cover, minimum_cover, maximum_cover)
 
     def _build_process_layers(
         self,
@@ -555,7 +558,7 @@ class HostFieldGenerator:
         x_grid: Array2D,
         y_grid: Array2D,
         slope_degrees: Array2D,
-        variation: dict[str, Array2D | tuple[float, ...] | float],
+        variation: HostVariation,
     ) -> dict[str, Array2D]:
         """Build distinct causal proxies before combining them for routing."""
 
@@ -707,7 +710,7 @@ class HostFieldGenerator:
         self,
         x_grid: Array2D,
         y_grid: Array2D,
-        variation: dict[str, Array2D | tuple[float, ...] | float],
+        variation: HostVariation,
     ) -> Array2D:
         """Build an explicit roof-stability field for later geometry and texturing."""
 

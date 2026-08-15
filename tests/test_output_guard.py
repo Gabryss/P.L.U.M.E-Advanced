@@ -15,6 +15,23 @@ from plume_advanced.output_guard import (
 
 
 class OutputGuardTests(unittest.TestCase):
+    def test_populated_directories_are_resolved_deduplicated_and_sorted(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            first = root / "b"
+            second = root / "a"
+            first.mkdir()
+            second.mkdir()
+            (first / "one.txt").write_text("1", encoding="utf-8")
+            (second / "one.txt").write_text("1", encoding="utf-8")
+            (second / "two.txt").write_text("2", encoding="utf-8")
+
+            populated = populated_output_directories(
+                (first, second, first, first / ".." / "b")
+            )
+
+            self.assertEqual(populated, ((second.resolve(), 2), (first.resolve(), 1)))
+
     def test_empty_or_missing_directories_do_not_prompt(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             empty = Path(temp_dir) / "empty"

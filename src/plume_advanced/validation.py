@@ -859,6 +859,7 @@ def _sha256(path: Path) -> str:
 
 def _default_asset() -> Path:
     candidates = (
+        Path("outputs/export_all/blender/plume_cave_scene.glb"),
         Path("outputs/export_neutral/plume_cave_scene.glb"),
         Path("outputs/export_blender/plume_cave_scene.glb"),
         Path("outputs/export_blender/stage_d_geometry.glb"),

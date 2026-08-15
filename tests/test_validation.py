@@ -153,3 +153,16 @@ def test_portable_validator_checks_embedded_materials_and_displacement(
     assert "Portable displacement contract" in markdown_report.read_text(
         encoding="utf-8"
     )
+
+    manifest.write_text(
+        manifest.read_text(encoding="utf-8") + "\n",
+        encoding="utf-8",
+    )
+    tampered_checks = validator.validate()
+    hash_check = next(
+        check
+        for check in tampered_checks
+        if check.name == "Generated output hashes"
+    )
+    assert not hash_check.passed
+    assert "verified=2/3" in hash_check.detail

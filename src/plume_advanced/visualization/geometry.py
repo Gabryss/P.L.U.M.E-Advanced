@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from plume_advanced.stages.geometry import CaveGeometry
+from plume_advanced.stages.geometry_types import VoxelGrid
 from plume_advanced.stages.network import CaveNetwork
 
 
@@ -274,6 +275,8 @@ class GeometryPlotter:
         from matplotlib.patches import Rectangle
 
         ax.set_title("Chunk Y/Z Coverage")
+        if not isinstance(cave_geometry.voxel_grid, VoxelGrid):
+            raise TypeError("Chunk profile requires dense voxel storage")
         origin = np.array(cave_geometry.voxel_grid.origin, dtype=float)
         voxel_size = cave_geometry.voxel_grid.voxel_size
         carved = cave_geometry.voxel_grid.density >= cave_geometry.voxel_grid.iso_level
@@ -387,6 +390,8 @@ class GeometryPlotter:
 
     def _draw_slice_panel(self, ax, cave_geometry: CaveGeometry) -> None:
         ax.set_title("Representative Cross Sections")
+        if not isinstance(cave_geometry.voxel_grid, VoxelGrid):
+            raise TypeError("Density slices require dense voxel storage")
         density = cave_geometry.voxel_grid.density
         carved = density >= cave_geometry.voxel_grid.iso_level
         y_indices = np.where(np.any(carved, axis=(0, 2)))[0]
@@ -528,6 +533,8 @@ class GeometryPlotter:
     @staticmethod
     def _carved_footprint(cave_geometry: CaveGeometry) -> tuple[np.ndarray, tuple[float, float, float, float]]:
         grid = cave_geometry.voxel_grid
+        if not isinstance(grid, VoxelGrid):
+            raise TypeError("A dense voxel grid is required for footprint visualization.")
         carved = grid.density >= grid.iso_level
         footprint = np.max(carved, axis=2).astype(float)
         origin = np.array(grid.origin, dtype=float)
@@ -542,6 +549,8 @@ class GeometryPlotter:
     @staticmethod
     def _carved_profile(cave_geometry: CaveGeometry) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         grid = cave_geometry.voxel_grid
+        if not isinstance(grid, VoxelGrid):
+            raise TypeError("A dense voxel grid is required for profile visualization.")
         carved = grid.density >= grid.iso_level
         y_indices = np.where(np.any(carved, axis=(0, 2)))[0]
         if len(y_indices) == 0:

@@ -94,7 +94,7 @@ class SectionFieldPlotter:
             ax.plot(
                 x_values,
                 y_values,
-                color=plt.cm.viridis(width_ratio),
+                color=plt.get_cmap("viridis")(width_ratio),
                 linewidth=1.0 + 1.4 * width_ratio,
                 alpha=0.92,
             )

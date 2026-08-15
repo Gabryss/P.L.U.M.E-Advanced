@@ -17,13 +17,21 @@ from plume_advanced.stages.section_field import SectionField, SectionSample
 EventProgressCallback = Callable[[str, int, int, str], None]
 
 
+def _float3(values: Any) -> tuple[float, float, float]:
+    return (float(values[0]), float(values[1]), float(values[2]))
+
+
+def _int3(values: Any) -> tuple[int, int, int]:
+    return (int(values[0]), int(values[1]), int(values[2]))
+
+
 @dataclass(frozen=True)
 class GeologicalEventConfig:
     """Parameters controlling mesh-stage geological event placement."""
 
     random_seed: int | None = None
     enabled: bool = True
-    include_rock_props: bool = True
+    include_rock_props: bool = False
     enabled_kinds: tuple[str, ...] = ("rock", "boulder", "collapse", "choke", "infill")
     rock_population_multiplier: float = 10.0
     debris_density_basis: str = "floor_area"
@@ -48,7 +56,7 @@ class GeologicalEventConfig:
     max_lateral_floor_fraction: float = 0.62
     mesh_latitude_segments: int = 8
     mesh_longitude_segments: int = 14
-    use_rocky_meshes: bool = True
+    use_rocky_meshes: bool = False
     rocky_source_path: str = ""
     rocky_texture_dir: str = ""
     rocky_output_dir: str = "outputs/rocky_stage_e"
@@ -277,7 +285,8 @@ class GeologicalEventGenerator:
         if should_load_rocky and self._rocky_api is None and self.config.strict_optional_provider:
             raise RuntimeError(
                 "Rocky meshes were requested but the optional Rocky provider "
-                f"could not be imported from {self.config.rocky_source_path!r}"
+                f"could not be imported from {self.config.rocky_source_path!r}. "
+                "Install PLUME-Advanced[rocks] or disable events.use_rocky_meshes."
             )
 
     def generate(
@@ -782,8 +791,10 @@ class GeologicalEventGenerator:
                 [],
             ).append(event)
             position = np.asarray(event.contact_point, dtype=float)
-            key = tuple(
-                int(math.floor(float(value) / self._runtime_bin_size_m)) for value in position
+            key = (
+                int(math.floor(float(position[0]) / self._runtime_bin_size_m)),
+                int(math.floor(float(position[1]) / self._runtime_bin_size_m)),
+                int(math.floor(float(position[2]) / self._runtime_bin_size_m)),
             )
             self._runtime_prop_bins.setdefault(key, []).append(event)
         elif event.is_structural_modifier:
@@ -921,18 +932,18 @@ class GeologicalEventGenerator:
             f"0 accepted; planning {progress_total} initial prop slots",
         )
         for anchor, roles in family_plans:
-            role_candidate_cache: dict[
+            collapse_candidate_cache: dict[
                 str,
                 list[tuple[float, SectionSample, FloorCell]],
             ] = {}
             for role in roles:
-                if role not in role_candidate_cache:
-                    role_candidate_cache[role] = self._family_candidates(
+                if role not in collapse_candidate_cache:
+                    collapse_candidate_cache[role] = self._family_candidates(
                         candidates,
                         anchor,
                         role,
                     )
-                family_candidates = role_candidate_cache[role]
+                family_candidates = collapse_candidate_cache[role]
                 event = self._choose_and_build_prop(
                     "rock",
                     rng,
@@ -969,7 +980,7 @@ class GeologicalEventGenerator:
             "minor_cluster_anchor",
         )
         for _cluster_index in range(minor_cluster_count):
-            anchor = self._choose_and_build_prop(
+            minor_anchor = self._choose_and_build_prop(
                 "rock",
                 rng,
                 anchor_candidates,
@@ -984,7 +995,7 @@ class GeologicalEventGenerator:
                 ),
             )
             completed += 1
-            if anchor is None:
+            if minor_anchor is None:
                 self._emit_progress(
                     progress,
                     "props",
@@ -993,14 +1004,14 @@ class GeologicalEventGenerator:
                     (f"{accepted} accepted, {completed - accepted} rejected; minor cluster anchor"),
                 )
                 continue
-            anchor = replace(
-                anchor,
-                debris_family_id=anchor.event_id,
-                family_anchor_event_id=anchor.event_id,
+            minor_anchor = replace(
+                minor_anchor,
+                debris_family_id=minor_anchor.event_id,
+                family_anchor_event_id=minor_anchor.event_id,
             )
-            placed.append(anchor)
-            all_events.append(anchor)
-            self._register_runtime_event(anchor)
+            placed.append(minor_anchor)
+            all_events.append(minor_anchor)
+            self._register_runtime_event(minor_anchor)
             accepted += 1
             child_count = int(
                 rng.integers(
@@ -1024,18 +1035,18 @@ class GeologicalEventGenerator:
                     ("minor_cluster_runout", 0.10),
                 ),
             )
-            role_candidate_cache: dict[
+            minor_candidate_cache: dict[
                 str,
                 list[tuple[float, SectionSample, FloorCell]],
             ] = {}
             for role in roles:
-                if role not in role_candidate_cache:
-                    role_candidate_cache[role] = self._family_candidates(
+                if role not in minor_candidate_cache:
+                    minor_candidate_cache[role] = self._family_candidates(
                         candidates,
-                        anchor,
+                        minor_anchor,
                         role,
                     )
-                family_candidates = role_candidate_cache[role]
+                family_candidates = minor_candidate_cache[role]
                 child = self._choose_and_build_prop(
                     "rock",
                     rng,
@@ -1044,10 +1055,10 @@ class GeologicalEventGenerator:
                     sample_lookup,
                     voxel_grid,
                     material_hint,
-                    family_anchor_event=anchor,
-                    debris_family_id=anchor.event_id,
+                    family_anchor_event=minor_anchor,
+                    debris_family_id=minor_anchor.event_id,
                     debris_role=role,
-                    prop_diameter_range=self._role_diameter_range(role, anchor),
+                    prop_diameter_range=self._role_diameter_range(role, minor_anchor),
                 )
                 completed += 1
                 if child is not None:
@@ -1079,17 +1090,17 @@ class GeologicalEventGenerator:
                 ),
             ),
         )
-        role_candidate_cache: dict[
+        background_candidate_cache: dict[
             str,
             list[tuple[float, SectionSample, FloorCell]],
         ] = {}
         for role in background_roles:
-            if role not in role_candidate_cache:
-                role_candidate_cache[role] = self._background_role_candidates(
+            if role not in background_candidate_cache:
+                background_candidate_cache[role] = self._background_role_candidates(
                     background_candidates,
                     role,
                 )
-            role_candidates = role_candidate_cache[role]
+            role_candidates = background_candidate_cache[role]
             event = self._choose_and_build_prop(
                 "rock",
                 rng,
@@ -1118,7 +1129,7 @@ class GeologicalEventGenerator:
         requested_accepted_target = progress_total
         shortfall = max(0, requested_accepted_target - accepted)
         if shortfall > 0:
-            recovery_candidates = role_candidate_cache.get(
+            recovery_candidates = background_candidate_cache.get(
                 "background_scatter",
                 background_candidates,
             )
@@ -1716,31 +1727,6 @@ class GeologicalEventGenerator:
                 return sample
         return None
 
-    def _choose_floor_candidate(
-        self,
-        kind: str,
-        rng: np.random.Generator,
-        candidates: list[tuple[float, SectionSample, FloorCell]],
-        occupied_positions: list[tuple[np.ndarray, str]],
-        *,
-        spacing_scale: float = 1.0,
-    ) -> tuple[SectionSample, FloorCell] | None:
-        if not candidates:
-            return None
-        weights = np.asarray([score for score, _sample, _cell in candidates], dtype=float)
-        weights /= max(float(weights.sum()), 1e-9)
-        for _attempt in range(max(100, 2 * len(candidates))):
-            index = int(rng.choice(len(candidates), p=weights))
-            _score, sample, cell = candidates[index]
-            position = np.asarray(cell.position, dtype=float)
-            if all(
-                float(np.linalg.norm(position - occupied))
-                >= spacing_scale * self._pair_spacing(kind, occupied_kind)
-                for occupied, occupied_kind in occupied_positions
-            ):
-                return sample, cell
-        return None
-
     def _pair_spacing(self, first_kind: str, second_kind: str) -> float:
         pair = {first_kind, second_kind}
         if "collapse" in pair and pair.intersection({"rock", "boulder"}):
@@ -1928,8 +1914,8 @@ class GeologicalEventGenerator:
             angle=angle,
             severity=severity,
             material_hint=material_hint,
-            contact_point=tuple(float(value) for value in contact),
-            contact_normal=tuple(float(value) for value in contact_normal),
+            contact_point=_float3(contact),
+            contact_normal=_float3(contact_normal),
             grounded=grounded,
             floor_cell_id=floor_cell.cell_id if floor_cell is not None else -1,
             cluster_parent_event_id=cluster_parent_event_id,
@@ -2004,12 +1990,12 @@ class GeologicalEventGenerator:
             cached = self._ground_contact_cache.get(cache_key)
             if cached is not None:
                 return cached[0].copy(), cached[1].copy()
-            seed = (
+            contact_seed = (
                 (int(self.config.random_seed or 0) + 1) * 2_654_435_761
                 + (floor_cell.cell_id + 1) * 2_246_822_519
                 + (slot + 1) * 3_266_489_917
             ) & 0xFFFFFFFF
-            offset_rng = np.random.default_rng(seed)
+            offset_rng = np.random.default_rng(contact_seed)
         tangent_offset = float(offset_rng.uniform(-jitter, jitter))
         lateral_offset = float(offset_rng.uniform(-jitter, jitter))
         target_lateral = float(
@@ -2019,7 +2005,7 @@ class GeologicalEventGenerator:
                 0.5 * sample.tube_width * self.config.max_lateral_floor_fraction,
             )
         )
-        seed = (
+        contact_seed_point = (
             contact
             + tangent * tangent_offset
             + normal * (target_lateral - floor_cell.lateral_offset_m)
@@ -2027,11 +2013,11 @@ class GeologicalEventGenerator:
         fallback_normal = np.asarray(floor_cell.normal, dtype=float)
         fallback_normal /= max(float(np.linalg.norm(fallback_normal)), 1e-12)
         if voxel_grid is None:
-            return seed, fallback_normal
+            return contact_seed_point, fallback_normal
 
         lift = max(0.35, 1.5 * float(voxel_grid.voxel_size))
         hit = voxel_grid.raycast_isosurface(
-            seed + binormal * lift,
+            contact_seed_point + binormal * lift,
             -binormal,
             lift + 3.0 * float(voxel_grid.voxel_size),
         )
@@ -2145,7 +2131,7 @@ class GeologicalEventGenerator:
                 local_y = event.radius_y * roughness * sin_phi * math.sin(theta)
                 local_z = event.radius_z * roughness * cos_phi
                 world = center + heading * local_x + side * local_y + up * local_z
-                vertices.append(tuple(float(value) for value in world))
+                vertices.append(_float3(world))
 
         for lat_index in range(lat_segments):
             for lon_index in range(lon_segments):
@@ -2251,7 +2237,7 @@ class GeologicalEventGenerator:
             kind=event.kind,
             material_hint=event.material_hint,
             vertices=vertices,
-            faces=tuple(tuple(int(index) for index in face) for face in state.mesh.faces),
+            faces=tuple(_int3(face) for face in state.mesh.faces),
             face_uvs=tuple(state.mesh.face_uvs),
             material_maps=tuple((name, str(path)) for name, path in sorted(material_maps.items())),
             source_generator="rocky",
@@ -2291,7 +2277,7 @@ class GeologicalEventGenerator:
             local_y = float(vertex.y - bounds_min.y)
             local_z = float(vertex.z)
             world = contact + heading * local_x + side * local_z + up * local_y
-            vertices.append(tuple(float(value) for value in world))
+            vertices.append(_float3(world))
         return tuple(vertices)
 
     @staticmethod

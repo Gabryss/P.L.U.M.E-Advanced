@@ -31,7 +31,7 @@ from plume_advanced.world import (
     resolve_world_config,
 )
 
-CURRENT_SCHEMA_VERSION = 2
+CURRENT_SCHEMA_VERSION = 3
 SUPPORTED_TOP_LEVEL_KEYS = frozenset(
     {
         "schema_version",
@@ -99,6 +99,13 @@ def load_project_config(
     config_path = Path(path)
     with config_path.open("rb") as config_file:
         raw_config = tomllib.load(config_file)
+    source_schema_version = int(raw_config.get("schema_version", 1))
+    if source_schema_version not in {1, 2, CURRENT_SCHEMA_VERSION}:
+        raise ValueError(
+            f"Unsupported schema_version {source_schema_version}; "
+            f"supported versions are 1, 2, and {CURRENT_SCHEMA_VERSION}"
+        )
+    raw_config = _migrate_project_config(raw_config, source_schema_version)
     unknown_top_level = set(raw_config) - SUPPORTED_TOP_LEVEL_KEYS
     if unknown_top_level:
         raise ValueError(
@@ -110,12 +117,7 @@ def load_project_config(
         world_data.pop("material", None)
         raw_config["world"] = world_data
 
-    schema_version = int(raw_config.get("schema_version", 1))
-    if schema_version not in {1, CURRENT_SCHEMA_VERSION}:
-        raise ValueError(
-            f"Unsupported schema_version {schema_version}; "
-            f"supported versions are 1 and {CURRENT_SCHEMA_VERSION}"
-        )
+    schema_version = CURRENT_SCHEMA_VERSION
     procedural_seed = raw_config.get("procedural_seed")
     if procedural_seed is not None:
         procedural_seed = int(procedural_seed)
@@ -187,6 +189,60 @@ def load_project_config(
         events=events,
         geometry=geometry,
     )
+
+
+def _migrate_project_config(
+    raw_config: dict[str, Any],
+    source_schema_version: int,
+) -> dict[str, Any]:
+    """Normalize supported historical schemas into the active schema."""
+
+    migrated = dict(raw_config)
+    if source_schema_version >= CURRENT_SCHEMA_VERSION:
+        return migrated
+
+    export = dict(migrated.get("export", {}))
+    unsupported_enabled = [
+        key
+        for key in ("generate_lods", "generate_wall_shell")
+        if bool(export.get(key, False))
+    ]
+    if export.get("generate_visual", True) is False:
+        unsupported_enabled.append("generate_visual = false")
+    if unsupported_enabled:
+        raise ValueError(
+            "Cannot migrate removed export capabilities: "
+            + ", ".join(unsupported_enabled)
+        )
+    for key in (
+        "quality",
+        "generate_visual",
+        "generate_lods",
+        "generate_wall_shell",
+        "wall_thickness_m",
+    ):
+        export.pop(key, None)
+    if export:
+        migrated["export"] = export
+    elif "export" in migrated:
+        migrated["export"] = {}
+
+    world = dict(migrated.get("world", {}))
+    for key in (
+        "atmosphere",
+        "erosion_regime",
+        "surface_deposit",
+        "cohesion_mpa",
+        "friction_angle_degrees",
+        "mean_joint_spacing_m",
+    ):
+        world.pop(key, None)
+    if world:
+        migrated["world"] = world
+    elif "world" in migrated:
+        migrated["world"] = {}
+    migrated["schema_version"] = CURRENT_SCHEMA_VERSION
+    return migrated
 
 
 def project_config_manifest(project_config: ProjectConfig) -> dict[str, Any]:

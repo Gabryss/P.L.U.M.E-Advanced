@@ -297,7 +297,9 @@ class CaveNetwork:
         if not self.nodes:
             return 0
 
-        adjacency = {node.node_id: set() for node in self.nodes}
+        adjacency: dict[int, set[int]] = {
+            node.node_id: set() for node in self.nodes
+        }
         for segment in self.segments:
             adjacency[segment.start_node_id].add(segment.end_node_id)
             adjacency[segment.end_node_id].add(segment.start_node_id)
@@ -554,7 +556,7 @@ class CaveNetworkGenerator:
                     )
                 )
 
-        skeleton_mask, selected_flux, selected_family_flux = self._build_representative_fields(
+        skeleton_mask, selected_flux, _ = self._build_representative_fields(
             shape=host_field.growth_cost.shape,
             selected_paths=tuple(selected_paths),
         )
@@ -1746,8 +1748,12 @@ class CaveNetworkGenerator:
         for segment in segments:
             mean_flux = np.mean([point.width for point in segment.points]) if segment.points else 1.0
             cost = segment.total_length / max(mean_flux, 1.0)
-            adjacency[segment.start_node_id].append((segment.end_node_id, cost))
-            adjacency[segment.end_node_id].append((segment.start_node_id, cost))
+            adjacency[segment.start_node_id].append(
+                (segment.end_node_id, float(cost))
+            )
+            adjacency[segment.end_node_id].append(
+                (segment.start_node_id, float(cost))
+            )
 
         distances = {node.node_id: math.inf for node in nodes}
         predecessor: dict[int, int] = {}
@@ -2026,14 +2032,6 @@ class CaveNetworkGenerator:
                 self.config.minimum_passage_radius,
                 self.config.maximum_passage_radius,
             )
-        )
-
-    def _normalize_cover_field(self, host_field: HostField) -> np.ndarray:
-        return np.clip(
-            (host_field.cover_thickness - host_field.config.minimum_stable_cover)
-            / max(host_field.config.volcanic_layer_thickness, 1.0),
-            0.0,
-            1.0,
         )
 
     def _transition_cost(

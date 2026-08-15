@@ -15,17 +15,26 @@ import numpy as np
 
 SUPPORTED_EVENT_KINDS = frozenset({"rock", "boulder", "collapse", "choke", "infill"})
 SUPPORTED_EXPORT_TARGETS = frozenset(
-    {"neutral", "blender", "ue5", "unity", "gazebo", "omniverse"}
+    {"all", "neutral", "blender", "ue5", "unity", "gazebo", "omniverse"}
 )
-SUPPORTED_EXPORT_FORMATS = frozenset({"glb", "obj", "fbx", "usd", "usdc", "dae"})
+SUPPORTED_EXPORT_FORMATS = frozenset({"auto", "glb", "obj", "usd"})
 SUPPORTED_QUALITY_LEVELS = frozenset({"preview", "standard", "production"})
 EXPORT_FORMATS_BY_TARGET = {
+    "all": frozenset({"auto"}),
     "neutral": frozenset({"glb", "obj"}),
     "blender": frozenset({"glb", "obj"}),
     "ue5": frozenset({"glb", "obj"}),
     "unity": frozenset({"glb", "obj"}),
     "gazebo": frozenset({"obj"}),
     "omniverse": frozenset({"usd"}),
+}
+
+APPLICATION_EXPORT_FORMATS = {
+    "blender": "glb",
+    "ue5": "glb",
+    "unity": "glb",
+    "gazebo": "obj",
+    "omniverse": "usd",
 }
 
 
@@ -39,9 +48,6 @@ class CelestialBodyProfile:
 
     name: str
     gravity_m_s2: float
-    atmosphere: str
-    erosion_regime: str
-    surface_deposit: str
     default_material: str
     maximum_passage_width_m: float
     maximum_room_width_m: float
@@ -59,10 +65,7 @@ class GeologicalMaterialProfile:
     name: str
     bulk_density_kg_m3: float
     intact_tensile_strength_mpa: float
-    cohesion_mpa: float
-    friction_angle_degrees: float
     rock_mass_quality: float
-    mean_joint_spacing_m: float
     weathering: float
 
     @property
@@ -133,12 +136,7 @@ class ExportConfig:
 
     target: str = "blender"
     file_format: str = "glb"
-    quality: str = "standard"
-    generate_visual: bool = True
     generate_collision: bool = True
-    generate_lods: bool = False
-    generate_wall_shell: bool = False
-    wall_thickness_m: float = 0.5
 
 
 @dataclass(frozen=True)
@@ -150,17 +148,12 @@ class StageSeeds:
     sections: int | None
     events: int | None
     geometry: int | None
-    surface: int | None
-    export: int | None
 
 
 BODY_PRESETS: dict[str, CelestialBodyProfile] = {
     "earth": CelestialBodyProfile(
         name="earth",
         gravity_m_s2=9.80665,
-        atmosphere="dense",
-        erosion_regime="weathering_and_water",
-        surface_deposit="weathered_basalt",
         default_material="terrestrial_basalt",
         maximum_passage_width_m=10.0,
         maximum_room_width_m=20.0,
@@ -173,9 +166,6 @@ BODY_PRESETS: dict[str, CelestialBodyProfile] = {
     "mars": CelestialBodyProfile(
         name="mars",
         gravity_m_s2=3.71,
-        atmosphere="thin",
-        erosion_regime="aeolian_and_thermal",
-        surface_deposit="martian_dust",
         default_material="martian_basalt",
         maximum_passage_width_m=50.0,
         maximum_room_width_m=100.0,
@@ -188,9 +178,6 @@ BODY_PRESETS: dict[str, CelestialBodyProfile] = {
     "moon": CelestialBodyProfile(
         name="moon",
         gravity_m_s2=1.62,
-        atmosphere="vacuum",
-        erosion_regime="impact_and_thermal",
-        surface_deposit="lunar_regolith",
         default_material="mare_basalt",
         maximum_passage_width_m=100.0,
         maximum_room_width_m=200.0,
@@ -208,30 +195,21 @@ MATERIAL_PRESETS: dict[str, GeologicalMaterialProfile] = {
         name="terrestrial_basalt",
         bulk_density_kg_m3=2_900.0,
         intact_tensile_strength_mpa=8.0,
-        cohesion_mpa=12.0,
-        friction_angle_degrees=38.0,
         rock_mass_quality=0.55,
-        mean_joint_spacing_m=1.8,
         weathering=0.30,
     ),
     "martian_basalt": GeologicalMaterialProfile(
         name="martian_basalt",
         bulk_density_kg_m3=2_950.0,
         intact_tensile_strength_mpa=9.0,
-        cohesion_mpa=14.0,
-        friction_angle_degrees=40.0,
         rock_mass_quality=0.62,
-        mean_joint_spacing_m=2.5,
         weathering=0.14,
     ),
     "mare_basalt": GeologicalMaterialProfile(
         name="mare_basalt",
         bulk_density_kg_m3=3_050.0,
         intact_tensile_strength_mpa=10.0,
-        cohesion_mpa=16.0,
-        friction_angle_degrees=42.0,
         rock_mass_quality=0.68,
-        mean_joint_spacing_m=3.2,
         weathering=0.04,
     ),
 }
@@ -254,9 +232,6 @@ def resolve_world_config(raw_config: dict[str, Any] | None) -> WorldConfig:
 
     body_keys = {
         "gravity_m_s2",
-        "atmosphere",
-        "erosion_regime",
-        "surface_deposit",
         "maximum_passage_width_m",
         "maximum_room_width_m",
         "default_route_length_m",
@@ -268,10 +243,7 @@ def resolve_world_config(raw_config: dict[str, Any] | None) -> WorldConfig:
     material_keys = {
         "bulk_density_kg_m3",
         "intact_tensile_strength_mpa",
-        "cohesion_mpa",
-        "friction_angle_degrees",
         "rock_mass_quality",
-        "mean_joint_spacing_m",
         "weathering",
     }
     unknown = set(data) - body_keys - material_keys
@@ -340,7 +312,7 @@ def build_export_config(raw_config: dict[str, Any] | None) -> ExportConfig:
         if "file_format" in data:
             raise ValueError("Use only one of export.format or export.file_format")
         data["file_format"] = data.pop("format")
-    for key in ("target", "file_format", "quality"):
+    for key in ("target", "file_format"):
         if key in data:
             data[key] = str(data[key]).strip().lower()
     config = ExportConfig(**data)
@@ -352,35 +324,11 @@ def build_export_config(raw_config: dict[str, Any] | None) -> ExportConfig:
         raise ValueError(
             f"export.format must be one of: {', '.join(sorted(SUPPORTED_EXPORT_FORMATS))}"
         )
-    if config.quality not in SUPPORTED_QUALITY_LEVELS:
-        raise ValueError(
-            f"export.quality must be one of: {', '.join(sorted(SUPPORTED_QUALITY_LEVELS))}"
-        )
-    if config.wall_thickness_m <= 0.0:
-        raise ValueError("export.wall_thickness_m must be positive")
     supported_formats = EXPORT_FORMATS_BY_TARGET[config.target]
     if config.file_format not in supported_formats:
         raise ValueError(
             f"export target {config.target!r} supports format(s): "
             f"{', '.join(sorted(supported_formats))}; got {config.file_format!r}"
-        )
-    unsupported_capabilities = [
-        name
-        for name, enabled in (
-            ("generate_lods", config.generate_lods),
-            ("generate_wall_shell", config.generate_wall_shell),
-        )
-        if enabled
-    ]
-    if unsupported_capabilities:
-        raise ValueError(
-            "Unsupported export capabilities requested: "
-            + ", ".join(unsupported_capabilities)
-        )
-    if not config.generate_visual:
-        raise ValueError(
-            "export.generate_visual = false is not supported because every "
-            "current target package requires a primary visual asset"
         )
     return config
 
@@ -402,7 +350,7 @@ def _reject_unknown_keys(
 def derive_stage_seeds(procedural_seed: int | None) -> StageSeeds:
     """Derive reproducible seeds by label rather than by call order."""
 
-    labels = ("host", "network", "sections", "events", "geometry", "surface", "export")
+    labels = ("host", "network", "sections", "events", "geometry")
     if procedural_seed is None:
         return StageSeeds(**{label: None for label in labels})
 
@@ -437,8 +385,6 @@ def _validate_world(
     positive_material_values = {
         "bulk_density_kg_m3": material.bulk_density_kg_m3,
         "intact_tensile_strength_mpa": material.intact_tensile_strength_mpa,
-        "cohesion_mpa": material.cohesion_mpa,
-        "mean_joint_spacing_m": material.mean_joint_spacing_m,
     }
     for name, value in positive_material_values.items():
         if float(value) <= 0.0:
