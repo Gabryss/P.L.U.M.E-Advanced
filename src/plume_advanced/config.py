@@ -14,7 +14,12 @@ import numpy as np
 from plume_advanced.stages.events import GeologicalEventConfig
 from plume_advanced.stages.floor_map import FloorMapConfig
 from plume_advanced.stages.geometry import GeometryConfig
-from plume_advanced.stages.host_field import GridConfig, HostFieldConfig, TerrainWave
+from plume_advanced.stages.host_field import (
+    GridConfig,
+    HostFieldConfig,
+    RoutingWeights,
+    TerrainWave,
+)
 from plume_advanced.stages.network import BraidGrammarConfig, CaveNetworkConfig
 from plume_advanced.stages.section_field import SectionFieldConfig
 from plume_advanced.world import (
@@ -89,6 +94,7 @@ def load_project_config(
     path: str | Path,
     *,
     world_body: str | None = None,
+    dev_mode: bool | None = None,
 ) -> ProjectConfig:
     """Load the project TOML configuration file.
 
@@ -116,6 +122,10 @@ def load_project_config(
         world_data["body"] = world_body
         world_data.pop("material", None)
         raw_config["world"] = world_data
+    if dev_mode is not None:
+        run_data = dict(raw_config.get("run", {}))
+        run_data["dev_mode"] = dev_mode
+        raw_config["run"] = run_data
 
     schema_version = CURRENT_SCHEMA_VERSION
     procedural_seed = raw_config.get("procedural_seed")
@@ -203,16 +213,13 @@ def _migrate_project_config(
 
     export = dict(migrated.get("export", {}))
     unsupported_enabled = [
-        key
-        for key in ("generate_lods", "generate_wall_shell")
-        if bool(export.get(key, False))
+        key for key in ("generate_lods", "generate_wall_shell") if bool(export.get(key, False))
     ]
     if export.get("generate_visual", True) is False:
         unsupported_enabled.append("generate_visual = false")
     if unsupported_enabled:
         raise ValueError(
-            "Cannot migrate removed export capabilities: "
-            + ", ".join(unsupported_enabled)
+            "Cannot migrate removed export capabilities: " + ", ".join(unsupported_enabled)
         )
     for key in (
         "quality",
@@ -287,7 +294,7 @@ def _build_host_field_config(
         "host_field",
         raw_config,
         HostFieldConfig,
-        extras=frozenset({"apply_body_scaling", "ranges", "wave_ranges"}),
+        extras=frozenset({"apply_body_scaling", "ranges", "wave_ranges", "routing_weights"}),
     )
     config_data = dict(raw_config)
     apply_body_scaling = bool(config_data.pop("apply_body_scaling", True))
@@ -310,6 +317,7 @@ def _build_host_field_config(
     wave_data = config_data.pop("waves", None)
     range_data = config_data.pop("ranges", {})
     wave_range_data = config_data.pop("wave_ranges", None)
+    routing_weights_data = config_data.pop("routing_weights", {})
 
     _reject_unknown_keys("host_field.grid", grid_data, GridConfig)
     if wave_data is not None:
@@ -322,6 +330,12 @@ def _build_host_field_config(
             TerrainWave,
             extras=frozenset({"count"}),
         )
+    _reject_unknown_keys(
+        "host_field.routing_weights",
+        routing_weights_data,
+        RoutingWeights,
+    )
+    config_data["routing_weights"] = RoutingWeights(**routing_weights_data)
     supported_ranges = {field.name for field in fields(HostFieldConfig)} | {
         "seed_point_x",
         "seed_point_y",
@@ -679,6 +693,8 @@ def _build_section_field_config(
     for key in (
         "minimum_sample_spacing",
         "maximum_sample_spacing",
+        "uniform_sample_spacing",
+        "reference_sample_spacing",
         "centerline_wobble_amplitude",
         "centerline_wobble_wavelength",
     ):
@@ -947,6 +963,7 @@ def _validate_pipeline_configs(
         <= 0.0
     ):
         raise ValueError("host_field body scales and target route must be positive")
+    host_field.routing_weights.resolved()
 
     radii = (
         network.minimum_passage_radius,
@@ -983,6 +1000,18 @@ def _validate_pipeline_configs(
         raise ValueError(
             "section_field.chamber_max_tube_width cannot be smaller than maximum_tube_width"
         )
+    if section_field.sampling_policy not in {"adaptive", "uniform", "reference"}:
+        raise ValueError("section_field.sampling_policy must be adaptive, uniform, or reference")
+    if (
+        min(
+            section_field.minimum_sample_spacing,
+            section_field.maximum_sample_spacing,
+            section_field.uniform_sample_spacing,
+            section_field.reference_sample_spacing,
+        )
+        <= 0.0
+    ):
+        raise ValueError("section_field sample spacings must be positive")
     if (
         min(
             section_field.vertical_level_spacing,

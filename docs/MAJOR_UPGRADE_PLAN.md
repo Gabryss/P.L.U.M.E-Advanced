@@ -12,8 +12,8 @@ Status: active on `major-procedural-upgrade`.
 - The canonical generated world uses metres and a documented right-handed,
   Z-up coordinate system.
 - Celestial-body selection changes geology and generation. Export target
-  selection changes representation, axes, units, packaging, LODs, and
-  collisions, but never changes the underlying cave.
+  selection changes representation, axes, units, packaging, and collisions,
+  but never changes the underlying cave. Explicit visual LODs remain deferred.
 - Every stage is deterministic from a named sub-seed. Disabling events or an
   exporter cannot change the host field or cave network.
 - Production quality may take longer, but processing should be tiled and
@@ -287,11 +287,11 @@ supported and default interactive target.
 - **Blender:** validated GLB output plus an OBJ fallback, package-local import
   instructions, and a convenience script that tries GLB then OBJ. Blender is
   not invoked during generation.
-- **UE5:** FBX or GLB Interchange package, centimetre conversion, Nanite-ready
-  visual mesh or streaming chunks, UV1 option, collision naming, and import
-  metadata/script.
-- **Unity:** metre/Y-up package with prefab metadata, LOD groups, material
-  assignments, and separate mesh colliders.
+- **UE5:** GLB Interchange package, centimetre convention metadata, collision
+  naming, and import guidance. Nanite/streaming specialization remains future
+  target-native work.
+- **Unity:** metre/Y-up package with material guidance and separate mesh
+  colliders. Prefabs and LOD groups remain future target-native work.
 - **Gazebo:** relocatable `model.config` + `model.sdf`, DAE/OBJ visual meshes,
   simplified collision meshes, and PBR texture paths.
 - **Omniverse:** USD/USDC with `metersPerUnit`, `upAxis`, payload tiles,

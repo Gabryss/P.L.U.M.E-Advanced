@@ -22,6 +22,9 @@ class SectionFieldConfig:
     chamber_max_tube_width: float = 24.0
     minimum_sample_spacing: float = 8.0
     maximum_sample_spacing: float = 34.0
+    sampling_policy: str = "adaptive"
+    uniform_sample_spacing: float = 16.0
+    reference_sample_spacing: float = 2.0
     curvature_spacing_weight: float = 120.0
     width_gradient_spacing_weight: float = 34.0
     junction_spacing_weight: float = 1.15
@@ -116,9 +119,7 @@ class SectionField:
             }
 
         all_samples = [
-            sample
-            for segment_field in self.segment_fields
-            for sample in segment_field.samples
+            sample for segment_field in self.segment_fields for sample in segment_field.samples
         ]
         tube_widths = np.array([sample.tube_width for sample in all_samples], dtype=float)
         tube_heights = np.array([sample.tube_height for sample in all_samples], dtype=float)
@@ -166,7 +167,7 @@ class SectionFieldGenerator:
                 for junction in cave_network.junctions
                 if segment.segment_id in junction.segment_ids
             )
-            arc_positions = self._build_adaptive_arc_positions(segment, connected_junctions)
+            arc_positions = self._build_arc_positions(segment, connected_junctions)
             phase = float(rng.uniform(-math.pi, math.pi))
             samples = self._build_segment_samples(
                 segment=segment,
@@ -193,7 +194,9 @@ class SectionFieldGenerator:
             segment_fields.append(
                 SegmentSectionField(
                     segment_id=segment.segment_id,
-                    connected_junction_ids=segment_fields_by_id[segment.segment_id].connected_junction_ids,
+                    connected_junction_ids=segment_fields_by_id[
+                        segment.segment_id
+                    ].connected_junction_ids,
                     samples=segment_fields_by_id[segment.segment_id].samples,
                 )
             )
@@ -201,6 +204,35 @@ class SectionFieldGenerator:
             config=self.config,
             segment_fields=tuple(segment_fields),
             dominant_route_segment_ids=dominant_route_segment_ids,
+        )
+
+    def _build_arc_positions(
+        self,
+        segment: CaveSegment,
+        connected_junctions: tuple[CaveJunction, ...],
+    ) -> tuple[float, ...]:
+        policy = self.config.sampling_policy
+        if policy == "adaptive":
+            return self._build_adaptive_arc_positions(segment, connected_junctions)
+        spacing = (
+            self.config.uniform_sample_spacing
+            if policy == "uniform"
+            else self.config.reference_sample_spacing
+        )
+        return self._build_uniform_arc_positions(segment, spacing)
+
+    @staticmethod
+    def _build_uniform_arc_positions(
+        segment: CaveSegment,
+        spacing: float,
+    ) -> tuple[float, ...]:
+        if not segment.points:
+            return ()
+        if math.isclose(segment.total_length, 0.0):
+            return (0.0,)
+        count = max(1, int(math.ceil(segment.total_length / spacing)))
+        return tuple(
+            float(value) for value in np.linspace(0.0, segment.total_length, count + 1, dtype=float)
         )
 
     def _build_dominant_route_segment_ids(
@@ -482,9 +514,10 @@ class SectionFieldGenerator:
 
         wavelength = max(self.config.centerline_wobble_wavelength, 1.0)
         segment_phase = phase + 0.73 * segment.segment_id
-        wave = (
-            math.sin((2.0 * math.pi * arc_length / wavelength) + segment_phase)
-            + 0.42 * math.sin((2.0 * math.pi * arc_length / (0.47 * wavelength)) + 1.7 * segment_phase)
+        wave = math.sin(
+            (2.0 * math.pi * arc_length / wavelength) + segment_phase
+        ) + 0.42 * math.sin(
+            (2.0 * math.pi * arc_length / (0.47 * wavelength)) + 1.7 * segment_phase
         )
         lateral = self.config.centerline_wobble_amplitude * envelope * wave
         vertical = (
@@ -520,8 +553,7 @@ class SectionFieldGenerator:
         growth_cost = self._interpolate_attr(segment, arc_length, "growth_cost")
         flatness = (
             self.config.floor_flatness_base
-            + self.config.floor_flatness_width_weight
-            * np.clip((width - 7.0) / 6.0, 0.0, 1.0)
+            + self.config.floor_flatness_width_weight * np.clip((width - 7.0) / 6.0, 0.0, 1.0)
             + 0.06 * growth_cost
         )
         return float(np.clip(flatness, 0.28, 0.92))
@@ -593,13 +625,20 @@ class SectionFieldGenerator:
                     capacity_bias=junction.capacity_bias,
                 )
             )
-            if junction.split_style == "pre_widen_then_split" or junction.merge_style == "pre_widen_then_split":
+            if (
+                junction.split_style == "pre_widen_then_split"
+                or junction.merge_style == "pre_widen_then_split"
+            ):
                 width_scale += self.config.junction_pre_widen_gain * weight * junction.capacity_bias
                 height_scale += 0.10 * weight * junction.capacity_bias
                 flatness_delta += 0.10 * weight
                 arch_delta += 0.06 * weight
             else:
-                width_scale += self.config.junction_constant_envelope_gain * weight * (junction.capacity_bias - 0.85)
+                width_scale += (
+                    self.config.junction_constant_envelope_gain
+                    * weight
+                    * (junction.capacity_bias - 0.85)
+                )
                 height_scale += 0.03 * weight * junction.capacity_bias
                 flatness_delta += 0.04 * weight
                 arch_delta += 0.02 * weight
@@ -614,16 +653,13 @@ class SectionFieldGenerator:
                 width_cap = max(
                     width_cap,
                     self.config.maximum_tube_width
-                    + chamber_weight * (self.config.chamber_max_tube_width - self.config.maximum_tube_width),
+                    + chamber_weight
+                    * (self.config.chamber_max_tube_width - self.config.maximum_tube_width),
                 )
 
         filtered_influences = tuple(
             sorted(
-                (
-                    influence
-                    for influence in influences
-                    if influence.weight >= 0.08
-                ),
+                (influence for influence in influences if influence.weight >= 0.08),
                 key=lambda influence: influence.weight,
                 reverse=True,
             )
@@ -651,7 +687,8 @@ class SectionFieldGenerator:
         growth_cost = self._interpolate_attr(segment, arc_length, "growth_cost")
         preferred_roof = (
             self.config.minimum_roof_thickness
-            + self.config.preferred_cover_fraction * max(cover_thickness - self.config.minimum_roof_thickness, 0.0)
+            + self.config.preferred_cover_fraction
+            * max(cover_thickness - self.config.minimum_roof_thickness, 0.0)
             + 1.6 * max(roof_competence - 0.5, 0.0)
             - 1.2 * growth_cost
         )
@@ -731,10 +768,7 @@ class SectionFieldGenerator:
         roof_profile = [
             (
                 float(x_coord + skew_offset * (1.0 - normalized_value**2)),
-                float(
-                    half_height
-                    * max(0.0, 1.0 - normalized_value**top_exp) ** (1.0 / top_exp)
-                ),
+                float(half_height * max(0.0, 1.0 - normalized_value**top_exp) ** (1.0 / top_exp)),
             )
             for x_coord, normalized_value in zip(x_values, normalized, strict=True)
         ]
@@ -747,7 +781,9 @@ class SectionFieldGenerator:
                     * max(0.0, 1.0 - normalized_value**bottom_exp) ** (1.0 / bottom_exp)
                 ),
             )
-            for x_coord, normalized_value in zip(reversed(x_values), reversed(normalized), strict=True)
+            for x_coord, normalized_value in zip(
+                reversed(x_values), reversed(normalized), strict=True
+            )
         ]
         closed_profile = floor_profile + roof_profile + [floor_profile[0]]
         return tuple(closed_profile)
@@ -771,14 +807,18 @@ class SectionFieldGenerator:
     def _estimate_width_gradient(self, segment: CaveSegment, arc_length: float) -> float:
         delta = max(8.0, 0.05 * max(segment.total_length, 1.0))
         start_width = self._interpolate_attr(segment, max(0.0, arc_length - delta), "width")
-        end_width = self._interpolate_attr(segment, min(segment.total_length, arc_length + delta), "width")
+        end_width = self._interpolate_attr(
+            segment, min(segment.total_length, arc_length + delta), "width"
+        )
         return abs(end_width - start_width) / max(2.0 * delta, 1.0)
 
     def _estimate_curvature(self, segment: CaveSegment, arc_length: float) -> float:
         delta = max(6.0, 0.05 * max(segment.total_length, 1.0))
         previous = self._interpolate_position(segment, max(0.0, arc_length - delta))
         current = self._interpolate_position(segment, arc_length)
-        next_position = self._interpolate_position(segment, min(segment.total_length, arc_length + delta))
+        next_position = self._interpolate_position(
+            segment, min(segment.total_length, arc_length + delta)
+        )
         vector_a = np.array(
             [
                 current[0] - previous[0],
@@ -810,7 +850,9 @@ class SectionFieldGenerator:
     ) -> tuple[float, float, float]:
         delta = max(4.0, 0.03 * max(segment.total_length, 1.0))
         previous = self._interpolate_position(segment, max(0.0, arc_length - delta))
-        next_position = self._interpolate_position(segment, min(segment.total_length, arc_length + delta))
+        next_position = self._interpolate_position(
+            segment, min(segment.total_length, arc_length + delta)
+        )
         vector = np.array(
             [
                 next_position[0] - previous[0],
@@ -865,9 +907,7 @@ class SectionFieldGenerator:
                 fallback = np.array([1.0, 0.0, 0.0], dtype=float)
                 if abs(float(np.dot(fallback, tangent_vector))) > 0.9:
                     fallback = np.array([0.0, 1.0, 0.0], dtype=float)
-                normal = fallback - float(
-                    np.dot(fallback, tangent_vector)
-                ) * tangent_vector
+                normal = fallback - float(np.dot(fallback, tangent_vector)) * tangent_vector
                 normal_norm = float(np.linalg.norm(normal))
             normal /= max(normal_norm, 1e-12)
             binormal = np.cross(tangent_vector, normal)

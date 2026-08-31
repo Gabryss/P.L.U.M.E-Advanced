@@ -38,6 +38,15 @@ generate_collision = true
 # Scale the Earth-authored base ranges using the selected body's host profile.
 apply_body_scaling = true
 
+[host_field.routing_weights]
+slope = 0.12
+cover = 0.10
+fracture = 0.22
+capacity = 0.28
+stability = 0.28
+normalize = true
+enabled = true
+
 [host_field.grid]
 width = 1800.0
 height = 6000.0
@@ -105,6 +114,7 @@ ladder_rung_count = [1, 2]
 chamber_radius_scale = [1.0, 1.60]
 
 [section_field]
+sampling_policy = "adaptive"
 base_height_ratio = 0.64
 minimum_height_ratio = 0.50
 maximum_height_ratio = 0.84

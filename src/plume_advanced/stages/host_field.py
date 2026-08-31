@@ -75,6 +75,58 @@ class TerrainWave:
 
 
 @dataclass(frozen=True)
+class RoutingWeights:
+    """Inspectable weights for the process-informed routing surrogate.
+
+    The defaults are the legacy Stage-A constants.  ``resolved`` is the only
+    path used by generation so evaluation ablations cannot accidentally apply
+    a different normalization convention.
+    """
+
+    slope: float = 0.12
+    cover: float = 0.10
+    fracture: float = 0.22
+    capacity: float = 0.28
+    stability: float = 0.28
+    normalize: bool = True
+    enabled: bool = True
+
+    def resolved(self) -> dict[str, float]:
+        values = {
+            "slope": float(self.slope),
+            "cover": float(self.cover),
+            "fracture": float(self.fracture),
+            "capacity": float(self.capacity),
+            "stability": float(self.stability),
+        }
+        if not all(math.isfinite(value) and value >= 0.0 for value in values.values()):
+            raise ValueError("host_field.routing_weights must be finite and non-negative")
+        total = sum(values.values())
+        if self.enabled and total <= 0.0:
+            raise ValueError("at least one host_field.routing_weights value must be positive")
+        if not self.enabled:
+            return {name: 0.0 for name in values}
+        if self.normalize:
+            return {name: value / total for name, value in values.items()}
+        return values
+
+    def without(self, component: str) -> "RoutingWeights":
+        """Return a single-term ablation with the remaining weights normalized."""
+
+        if component not in {"slope", "cover", "fracture", "capacity", "stability"}:
+            raise ValueError(f"Unknown routing component: {component}")
+        values = {
+            "slope": self.slope,
+            "cover": self.cover,
+            "fracture": self.fracture,
+            "capacity": self.capacity,
+            "stability": self.stability,
+        }
+        values[component] = 0.0
+        return RoutingWeights(**values, normalize=True, enabled=self.enabled)
+
+
+@dataclass(frozen=True)
 class HostFieldConfig:
     """Parameters controlling stage-A host field generation."""
 
@@ -103,6 +155,7 @@ class HostFieldConfig:
     material_quality: float = 0.55
     material_weathering: float = 0.30
     characteristic_passage_span_m: float = 10.0
+    routing_weights: RoutingWeights = field(default_factory=RoutingWeights)
     waves: tuple[TerrainWave, ...] = field(default_factory=_default_waves)
 
 
@@ -206,11 +259,12 @@ class HostField:
         for name, term in terms.items():
             flat = term.ravel()
             correlation = (
-                float(np.corrcoef(flat, cost_flat)[0, 1])
-                if float(np.std(flat)) > 1e-12
-                else 0.0
+                float(np.corrcoef(flat, cost_flat)[0, 1]) if float(np.std(flat)) > 1e-12 else 0.0
             )
             result[name] = {
+                "minimum": float(np.min(flat)),
+                "maximum": float(np.max(flat)),
+                "mean": float(np.mean(flat)),
                 "standard_deviation": float(np.std(flat)),
                 "mean_absolute_contribution": float(np.mean(np.abs(flat))),
                 "correlation_with_routing_cost": correlation,
@@ -229,17 +283,11 @@ class HostField:
             emplacement_thickness=self._bilinear_sample(
                 self.emplacement_thickness, x_coord, y_coord
             ),
-            lithology_quality=self._bilinear_sample(
-                self.lithology_quality, x_coord, y_coord
-            ),
-            fracture_intensity=self._bilinear_sample(
-                self.fracture_intensity, x_coord, y_coord
-            ),
+            lithology_quality=self._bilinear_sample(self.lithology_quality, x_coord, y_coord),
+            fracture_intensity=self._bilinear_sample(self.fracture_intensity, x_coord, y_coord),
             cooling_index=self._bilinear_sample(self.cooling_index, x_coord, y_coord),
             flow_capacity=self._bilinear_sample(self.flow_capacity, x_coord, y_coord),
-            deposit_thickness=self._bilinear_sample(
-                self.deposit_thickness, x_coord, y_coord
-            ),
+            deposit_thickness=self._bilinear_sample(self.deposit_thickness, x_coord, y_coord),
             erosion_index=self._bilinear_sample(self.erosion_index, x_coord, y_coord),
             roof_stability=self._bilinear_sample(self.roof_stability, x_coord, y_coord),
             gradient_x=self._bilinear_sample(self.gradient_x, x_coord, y_coord),
@@ -417,33 +465,38 @@ class HostFieldGenerator:
             self.config.fracture_zone_angle_degrees,
         )
 
-        wave_phase_offsets = tuple(
-            float(rng.uniform(-0.25, 0.25)) for _ in self.config.waves
-        )
+        wave_phase_offsets = tuple(float(rng.uniform(-0.25, 0.25)) for _ in self.config.waves)
 
         long_wavelength = float(rng.uniform(1800.0, 3400.0))
         cross_wavelength = float(rng.uniform(950.0, 1800.0))
         corridor_depth_scale = np.clip(
             1.0
-            + 0.10 * np.sin(2.0 * math.pi * drainage / long_wavelength + rng.uniform(-math.pi, math.pi))
-            + 0.03 * np.cos(2.0 * math.pi * cross_drainage / cross_wavelength + rng.uniform(-math.pi, math.pi)),
+            + 0.10
+            * np.sin(2.0 * math.pi * drainage / long_wavelength + rng.uniform(-math.pi, math.pi))
+            + 0.03
+            * np.cos(
+                2.0 * math.pi * cross_drainage / cross_wavelength + rng.uniform(-math.pi, math.pi)
+            ),
             0.82,
             1.18,
         )
         corridor_width_scale = np.clip(
             1.0
-            + 0.08 * np.cos(2.0 * math.pi * drainage / (long_wavelength * 0.82) + rng.uniform(-math.pi, math.pi))
-            + 0.03 * np.sin(2.0 * math.pi * cross_drainage / (cross_wavelength * 1.35) + rng.uniform(-math.pi, math.pi)),
+            + 0.08
+            * np.cos(
+                2.0 * math.pi * drainage / (long_wavelength * 0.82) + rng.uniform(-math.pi, math.pi)
+            )
+            + 0.03
+            * np.sin(
+                2.0 * math.pi * cross_drainage / (cross_wavelength * 1.35)
+                + rng.uniform(-math.pi, math.pi)
+            ),
             0.88,
             1.18,
         )
 
-        fracture_center_offset = float(
-            rng.normal(0.0, self.config.fracture_zone_width * 0.12)
-        )
-        fracture_width_scale = float(
-            np.clip(rng.normal(1.0, 0.08), 0.88, 1.18)
-        )
+        fracture_center_offset = float(rng.normal(0.0, self.config.fracture_zone_width * 0.12))
+        fracture_width_scale = float(np.clip(rng.normal(1.0, 0.08), 0.88, 1.18))
         drainage_phase_offset = float(rng.uniform(-0.25, 0.25))
         cross_drainage_phase_offset = float(rng.uniform(-0.20, 0.20))
 
@@ -468,9 +521,7 @@ class HostFieldGenerator:
                 self.config.fracture_zone_center_offset
                 + rng.normal(0.0, self.config.fracture_zone_width * 0.25)
             )
-            band_width = float(
-                self.config.fracture_zone_width * rng.uniform(0.85, 1.45)
-            )
+            band_width = float(self.config.fracture_zone_width * rng.uniform(0.85, 1.45))
             band_strength = float(rng.uniform(-0.03, 0.04))
             competence_bias += band_strength * np.exp(
                 -np.square((fracture_axis - band_center) / max(band_width, 1.0))
@@ -511,10 +562,7 @@ class HostFieldGenerator:
         flow_min, flow_max = self._projected_bounds(self.config.flow_angle_degrees)
         normalized_flow = (flow_projection - flow_min) / max(flow_max - flow_min, 1.0)
 
-        terrain = (
-            self.config.high_side_elevation
-            - self.config.longitudinal_drop * normalized_flow
-        )
+        terrain = self.config.high_side_elevation - self.config.longitudinal_drop * normalized_flow
         corridor_width = self.config.corridor_width * variation["corridor_width_scale"]
         corridor_depth = self.config.corridor_depth * variation["corridor_depth_scale"]
         terrain -= corridor_depth * np.exp(
@@ -565,9 +613,7 @@ class HostFieldGenerator:
         seed_x, seed_y = self.config.seed_point
         relative_x = x_grid - seed_x
         relative_y = y_grid - seed_y
-        along = self._project_along_angle(
-            relative_x, relative_y, self.config.flow_angle_degrees
-        )
+        along = self._project_along_angle(relative_x, relative_y, self.config.flow_angle_degrees)
         cross = self._project_along_angle(
             relative_x, relative_y, self.config.flow_angle_degrees + 90.0
         )
@@ -575,9 +621,7 @@ class HostFieldGenerator:
             relative_x, relative_y, self.config.fracture_zone_angle_degrees
         )
         along_norm = self._normalize_percentile(along, lower=0.0, upper=100.0)
-        edge_norm = np.clip(
-            np.abs(cross) / max(0.5 * self.config.grid.width, 1.0), 0.0, 1.0
-        )
+        edge_norm = np.clip(np.abs(cross) / max(0.5 * self.config.grid.width, 1.0), 0.0, 1.0)
         corridor = np.exp(
             -np.square(
                 cross
@@ -606,8 +650,7 @@ class HostFieldGenerator:
                     - float(variation["fracture_center_offset"])
                 )
                 / max(
-                    self.config.fracture_zone_width
-                    * float(variation["fracture_width_scale"]),
+                    self.config.fracture_zone_width * float(variation["fracture_width_scale"]),
                     1.0,
                 )
             )
@@ -624,7 +667,9 @@ class HostFieldGenerator:
         )
 
         cooling_index = np.clip(
-            0.18 + 0.52 * along_norm + 0.25 * edge_norm
+            0.18
+            + 0.52 * along_norm
+            + 0.25 * edge_norm
             + 0.08 * np.sin(2.0 * math.pi * along / 920.0),
             0.0,
             1.0,
@@ -654,16 +699,12 @@ class HostFieldGenerator:
         lithology_seed = self._build_roof_competence(x_grid, y_grid, variation)
         cooling_quality = 1.0 - 0.55 * np.abs(cooling_index - 0.52)
         lithology_quality = np.clip(
-            0.46 * lithology_seed
-            + 0.34 * self.config.material_quality
-            + 0.20 * cooling_quality,
+            0.46 * lithology_seed + 0.34 * self.config.material_quality + 0.20 * cooling_quality,
             0.0,
             1.0,
         )
         roof_competence = np.clip(
-            lithology_quality
-            * (1.0 - 0.68 * fracture_intensity)
-            * (1.0 - 0.28 * erosion_index),
+            lithology_quality * (1.0 - 0.68 * fracture_intensity) * (1.0 - 0.28 * erosion_index),
             0.0,
             1.0,
         )
@@ -676,8 +717,7 @@ class HostFieldGenerator:
             0.46 * corridor
             + 0.34 * emplacement_norm
             + 0.20 * (1.0 - fracture_intensity)
-            - 0.18 * deposit_thickness
-            / max(self.config.volcanic_layer_thickness, 1.0),
+            - 0.18 * deposit_thickness / max(self.config.volcanic_layer_thickness, 1.0),
             0.0,
             1.0,
         )
@@ -734,19 +774,10 @@ class HostFieldGenerator:
             self.config.fracture_zone_angle_degrees,
         )
 
-        structural_bands = (
-            0.55
-            * np.sin(
-                2.0 * math.pi * drainage / 1550.0
-                + 0.35
-                + variation["drainage_phase_offset"]
-            )
-            + 0.45
-            * np.cos(
-                2.0 * math.pi * cross_drainage / 980.0
-                - 0.2
-                + variation["cross_drainage_phase_offset"]
-            )
+        structural_bands = 0.55 * np.sin(
+            2.0 * math.pi * drainage / 1550.0 + 0.35 + variation["drainage_phase_offset"]
+        ) + 0.45 * np.cos(
+            2.0 * math.pi * cross_drainage / 980.0 - 0.2 + variation["cross_drainage_phase_offset"]
         )
         fracture_zone = np.exp(
             -np.square(
@@ -799,13 +830,20 @@ class HostFieldGenerator:
             1.0,
         )
         terms = {
-            "slope": 0.12 * slope_penalty,
-            "cover": 0.10 * cover_penalty,
-            "fracture": 0.22 * fracture_intensity,
-            "capacity": 0.28 * (1.0 - flow_capacity),
-            "stability": 0.28 * (1.0 - roof_stability),
+            name: self.config.routing_weights.resolved()[name] * penalty
+            for name, penalty in {
+                "slope": slope_penalty,
+                "cover": cover_penalty,
+                "fracture": fracture_intensity,
+                "capacity": 1.0 - flow_capacity,
+                "stability": 1.0 - roof_stability,
+            }.items()
         }
-        growth_cost = sum(terms.values())
+        growth_cost = (
+            sum(terms.values())
+            if self.config.routing_weights.enabled
+            else np.full_like(slope_penalty, 0.5, dtype=float)
+        )
         return np.clip(growth_cost, 0.0, 1.0), terms
 
     @staticmethod
@@ -850,21 +888,56 @@ class HostFieldGenerator:
 def export_host_influence_report(
     host_field: HostField,
     output_path: str | Path,
+    *,
+    generation_context: dict[str, object] | None = None,
 ) -> Path:
     """Write the measurable contribution of every routing term."""
 
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     report = {
-        "schema": "plume.host-routing-influence.v1",
-        "routing_formula": {
-            "slope": 0.12,
-            "cover": 0.10,
-            "fracture": 0.22,
-            "capacity": 0.28,
-            "stability": 0.28,
+        "schema": "plume.host-routing-influence.v2",
+        "seed": host_field.config.random_seed,
+        "grid": {
+            "nx": host_field.config.grid.nx,
+            "ny": host_field.config.grid.ny,
+            "spacing_x_m": host_field.config.grid.spacing_x,
+            "spacing_y_m": host_field.config.grid.spacing_y,
+        },
+        "routing_enabled": host_field.config.routing_weights.enabled,
+        "routing_formula": host_field.config.routing_weights.resolved(),
+        "generation_context": generation_context or {},
+        "field_summary": {
+            name: {
+                "minimum": float(np.min(values)),
+                "maximum": float(np.max(values)),
+                "mean": float(np.mean(values)),
+                "standard_deviation": float(np.std(values)),
+            }
+            for name, values in {
+                "elevation": host_field.elevation,
+                "slope_degrees": host_field.slope_degrees,
+                "cover_thickness": host_field.cover_thickness,
+                "roof_competence": host_field.roof_competence,
+                "fracture_intensity": host_field.fracture_intensity,
+                "flow_capacity": host_field.flow_capacity,
+                "roof_stability": host_field.roof_stability,
+                "routing_cost": host_field.routing_cost,
+            }.items()
         },
         "influence": host_field.routing_influence_summary(),
     }
     output.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
     return output
+
+
+__all__ = [
+    "GridConfig",
+    "HostField",
+    "HostFieldConfig",
+    "HostFieldGenerator",
+    "HostFieldSample",
+    "RoutingWeights",
+    "TerrainWave",
+    "export_host_influence_report",
+]

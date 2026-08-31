@@ -22,10 +22,15 @@ dependencies = [
 rocks = [
   "rocky @ git+https://github.com/Gabryss/Rocky.git@03c1db59ba45c9da74ab0859ebb547e81e552529",
 ]
+paper = [
+  "psutil>=6.0",
+  "openpyxl>=3.1",
+]
 
 [project.scripts]
 plume-generate = "plume_advanced.cli:main"
 plume-validate = "plume_advanced.validation:main"
+plume-evaluate = "plume_advanced.evaluation.cli:main"
 
 [dependency-groups]
 dev = [
@@ -50,6 +55,7 @@ addopts = "--strict-markers"
 markers = [
   "integration: slower end-to-end generation and exporter tests",
   "performance: bounded regression checks with deliberately generous CI budgets",
+  "paper: scientific paper experiment smoke tests only",
 ]
 filterwarnings = [
   "ignore:Setting the shape on a NumPy array has been deprecated:DeprecationWarning:skimage.*",

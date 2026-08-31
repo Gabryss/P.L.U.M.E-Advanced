@@ -12,18 +12,20 @@ from one canonical scene using Python libraries and open interchange formats.
 The current implementation focuses on the full inspectable cave-shape pipeline:
 build a readable terrain substrate, derive a cave-network skeleton, generate a
 geometry-ready section field around that skeleton, stamp that network into a
-voxel density grid, and mesh the carved volume. Later surface/texturing stages
-are still intentionally incomplete.
+voxel density grid, and mesh the carved volume. The portable visual-surface
+path includes xatlas UVs, normals/tangents, PBR packaging, smoothing, and
+displacement baking; geology-conditioned material synthesis, visual LODs, and
+finite wall shells remain deferred.
 
 ## Pipeline
 
 | Stage | Status | Purpose | Current Output |
 |---|---|---|---|
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
-| B. Cave Network | Implemented | Generate a host-driven, body-scaled braided cave-network skeleton | `outputs/stage_b_cave_network.png`, `outputs/stage_b_network_report.json` |
-| C. Section Field | Implemented | Build adaptive lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png` |
-| D. Geometry | Implemented | Stamp the cave network into a voxel grid, polygonize it, and build a globally welded render mesh | `outputs/stage_d_geometry.png`, complete portable scene package |
-| E. Geological Events | Implemented | Ground rocks/boulders on the base cave and apply collapse/choke/infill as structural modifiers | `outputs/stage_e_geological_events.png` |
+| B. Cave Network | Implemented | Generate a host-driven, body-scaled braided cave-network skeleton | `outputs/stage_b_cave_network.png`, `outputs/stage_b_network.json`, diagnostics report |
+| C. Section Field | Implemented | Build adaptive/uniform/reference lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png`, `outputs/stage_c_sections.{json,npz}` |
+| D. Geometry | Implemented | Stamp the cave network into a voxel grid, polygonize it, and build a globally welded render mesh | `outputs/stage_d_geometry.png`, geometry report, portable scene package |
+| E. Geological Events | Implemented | Ground rocks/boulders on the base cave and apply parameterized collapse/choke/infill structural modifiers | visualization and event report |
 | F. Surface Detail / Texturing | Partial | Coherent UVs/tangents, embedded PBR maps, smoothed and displacement-baked visual wall | `outputs/export_neutral/plume_cave_scene.glb` |
 
 ## Current Outputs
@@ -744,10 +746,25 @@ export correctness, SDF-grounded events, a causal host model, a flux-conserving
 multi-source network, sparse tiled geometry, procedural PBR surfaces, target
 packages, and validation/performance gates.
 
+## Scientific evaluation
+
+The installed `plume-evaluate` command provides the separate, resumable paper
+workflow documented in [`paper/README.md`](paper/README.md). It includes PDC
+v2.0 auditing, cross-section morphometry, matched controllability and host
+ablations, adaptive-sampling fidelity, child-process scalability measurement,
+export consistency, determinism, saved-data figures, and generated LaTeX.
+Normal generation also emits stable semantic graph/section artifacts, geometry
+and event reports, semantic hashes, and per-stage timings.
+
+These instruments support falsifiable claims about a process-informed,
+host-conditioned environment generator. They do not turn the host model into a
+full lava-emplacement simulation, and the Moon/Mars presets remain controlled
+scenario envelopes rather than physically validated cave distributions.
+
 ## Existing stages and deferred work
 
-The remaining placeholders focus on surface synthesis and target-native scene
-features.
+Remaining work focuses on geology-conditioned surface synthesis and
+target-native scene features.
 
 ### Stage D: Geometry
 
@@ -763,8 +780,8 @@ What exists now:
 Still deferred:
 
 - watertight versus blend-ready export modes
-- seam-aware UV atlas generation and production surface cleanup
 - higher-quality event-specific cleanup for rocks, boulders, collapse, choke points, and infill
+- explicit visual LOD generation and finite wall-shell modes
 
 ### Stage E: Geological Events
 
@@ -791,13 +808,11 @@ Still deferred:
 
 ### Stage F: Surface Detail / Texturing
 
-Placeholder.
-
-Planned role:
-
-- add wall and floor detail
-- derive texturing masks from competence, events, and geometry
-- avoid using detail noise to define topology
+Partially implemented. The portable visual path generates xatlas charts,
+metric UVs, normals/tangents, PBR texture bindings, smoothing, and
+displacement-baked wall geometry. Direct use of host/floor geology masks,
+event-specific cleanup, and explicit visual LODs remain future work. Detail
+continues to affect representation rather than defining network topology.
 
 ## Summary
 
@@ -809,7 +824,8 @@ The current project state is intentionally narrow:
 - Stage D1 stamps the base network into a voxel density field
 - Stage E grounds prop meshes and creates structural density modifiers
 - Stage D2 meshes the final cave and exports grounded props alongside it
-- Stage F and watertight/detail work remain for the next passes
+- Stage F's geology-conditioned synthesis, explicit visual LODs, and specialized
+  watertight/wall-shell modes remain for later passes
 
 That keeps the pipeline inspectable while still leaving a clear path toward the
 final pyroduct mesh and texture stages.

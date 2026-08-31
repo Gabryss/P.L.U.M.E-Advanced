@@ -11,7 +11,7 @@ import sys
 import tempfile
 from importlib import metadata
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from plume_advanced.config import ProjectConfig, project_config_manifest
 
@@ -28,6 +28,7 @@ def write_run_manifest(
     failed_stage: str | None = None,
     error: str | None = None,
     inputs: Iterable[str | Path] = (),
+    timings: Mapping[str, float] | None = None,
 ) -> Path:
     """Atomically write a run manifest with hashes, versions, and status."""
 
@@ -40,6 +41,10 @@ def write_run_manifest(
         "schema": "plume.run-manifest.v1",
         "status": status,
         "elapsed_seconds": float(elapsed_seconds),
+        "timings": {
+            **{name: float(value) for name, value in (timings or {}).items()},
+            "total_s": float(elapsed_seconds),
+        },
         "python": {
             "version": platform.python_version(),
             "implementation": platform.python_implementation(),

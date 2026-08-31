@@ -2,6 +2,10 @@
 *.pdf
 # Generated cave artifacts are local inspection/build products.
 outputs/
+paper/outputs/**
+!paper/outputs/.gitkeep
+paper/data/**
+!paper/data/README.md
 .codex
 .vscode
 

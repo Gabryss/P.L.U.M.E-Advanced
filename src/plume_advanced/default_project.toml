@@ -17,6 +17,18 @@ generate_collision = false
 [host_field]
 apply_body_scaling = false
 
+[host_field.routing_weights]
+slope = 0.12
+cover = 0.10
+fracture = 0.22
+capacity = 0.28
+stability = 0.28
+normalize = true
+enabled = true
+
+[section_field]
+sampling_policy = "adaptive"
+
 [host_field.grid]
 width = 600.0
 height = 1800.0

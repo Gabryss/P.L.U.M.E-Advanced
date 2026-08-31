@@ -9,6 +9,7 @@ import os
 import sys
 import tempfile
 import time
+from dataclasses import asdict
 from pathlib import Path
 from typing import ClassVar
 
@@ -49,6 +50,12 @@ from plume_advanced.config import (
     ProjectConfig,
     load_project_config,
     write_project_config_manifest,
+)
+from plume_advanced.evaluation.artifacts import (
+    export_event_report,
+    export_geometry_report,
+    export_network_artifact,
+    export_section_artifact,
 )
 from plume_advanced.exporters import export_target_asset
 from plume_advanced.output_guard import (
@@ -265,6 +272,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def _run_pipeline(argv: list[str] | None = None) -> int:
     run_started = time.perf_counter()
+    stage_timings: dict[str, float] = {}
     args = parse_args(argv)
     project_config = load_project_config(args.config, world_body=args.body)
     host_output = args.host_output or args.output.with_name("stage_a_host_field.png")
@@ -305,9 +313,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         require_output_overwrite_confirmation(
             output_directories,
             allow_overwrite=(
-                args.resume
-                or args.force_overwrite
-                or project_config.run.overwrite_outputs
+                args.resume or args.force_overwrite or project_config.run.overwrite_outputs
             ),
         )
     except OutputOverwriteRefused as error:
@@ -320,6 +326,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         project_config,
         resolved_config_output,
     )
+    stage_timings["configuration_s"] = time.perf_counter() - run_started
     progress.finish(
         (
             f"{project_config.world.body.name}/"
@@ -363,10 +370,12 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
             status="running",
             current_stage=stage,
             inputs=manifest_inputs,
+            timings=stage_timings,
         )
 
     checkpoint("host_field")
     progress.start("Stage A - Host Field", "generating scalar fields")
+    stage_started = time.perf_counter()
     host_field = resumable(
         "host_field",
         lambda: HostFieldGenerator(project_config.host_field).generate(),
@@ -374,6 +383,11 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     host_influence_path = export_host_influence_report(
         host_field,
         host_output.with_name("stage_a_host_influence.json"),
+        generation_context={
+            "body_id": project_config.world.body.name,
+            "material_id": project_config.world.material.name,
+            "flow_regime": asdict(project_config.flow_regime),
+        },
     )
     if project_config.run.render_diagnostics:
         progress.update(1, 2, "rendering host-field plot")
@@ -385,9 +399,11 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     completed_outputs.extend(
         path for path in (host_influence_path, host_output_path) if path is not None
     )
+    stage_timings["host_s"] = time.perf_counter() - stage_started
 
     checkpoint("network")
     progress.start("Stage B - Cave Network", "tracing cave skeleton")
+    stage_started = time.perf_counter()
     cave_network = resumable(
         "network",
         lambda: CaveNetworkGenerator(project_config.network).generate(host_field),
@@ -396,6 +412,10 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     network_report_path = export_network_report(
         cave_network,
         args.output.with_name("stage_b_network_report.json"),
+    )
+    network_artifact_path = export_network_artifact(
+        cave_network,
+        args.output.with_name("stage_b_network.json"),
     )
     progress.update(
         1,
@@ -416,16 +436,24 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         network_output_path = None
         progress.finish("diagnostic render disabled")
     completed_outputs.extend(
-        path for path in (network_report_path, network_output_path) if path is not None
+        path
+        for path in (network_report_path, network_artifact_path, network_output_path)
+        if path is not None
     )
+    stage_timings["network_s"] = time.perf_counter() - stage_started
 
     checkpoint("section_field")
     progress.start("Stage C - Section Field", "sampling tunnel profiles")
+    stage_started = time.perf_counter()
     section_field = resumable(
         "section_field",
         lambda: SectionFieldGenerator(project_config.section_field).generate(cave_network),
     )
     section_summary = section_field.summary()
+    section_npz_path, section_json_path = export_section_artifact(
+        section_field,
+        section_output.with_name("stage_c_sections"),
+    )
     progress.update(
         1,
         2,
@@ -443,6 +471,8 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         progress.finish("diagnostic render disabled")
     if section_output_path is not None:
         completed_outputs.append(section_output_path)
+    completed_outputs.extend((section_npz_path, section_json_path))
+    stage_timings["sections_s"] = time.perf_counter() - stage_started
 
     def geometry_progress(phase: str, current: int, total: int, message: str) -> None:
         progress.update(current, total, f"{phase}: {message}")
@@ -456,6 +486,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
             f"({project_config.geometry.resolution_quality})"
         ),
     )
+    stage_started = time.perf_counter()
     base_geometry = resumable(
         "base_geometry",
         lambda: geometry_generator.build_base_volume(
@@ -465,10 +496,12 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         ),
     )
     progress.finish(f"built {int(base_geometry.summary()['carved_voxel_count'])} cave voxels")
+    stage_timings["base_geometry_s"] = time.perf_counter() - stage_started
 
     floor_map_generator = FloorMapGenerator(project_config.floor_map)
     checkpoint("base_floor_atlas")
     progress.start("Stage C2 - Base Floor Atlas", "raycasting event-placement cells")
+    stage_started = time.perf_counter()
     base_floor_atlas = resumable(
         "base_floor_atlas",
         lambda: floor_map_generator.generate(
@@ -479,9 +512,11 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     )
     base_floor_summary = base_floor_atlas.summary()
     progress.finish(f"{int(base_floor_summary['cell_count'])} placement cells")
+    stage_timings["floor_base_s"] = time.perf_counter() - stage_started
 
     checkpoint("geological_events")
     progress.start("Stage E - Geological Events", "grounding props and modifiers")
+    stage_started = time.perf_counter()
 
     def event_progress(phase: str, current: int, total: int, message: str) -> None:
         progress.update(current, total, f"{phase}: {message}")
@@ -514,9 +549,11 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         progress.finish("diagnostic render disabled")
     if event_output_path is not None:
         completed_outputs.append(event_output_path)
+    stage_timings["events_s"] = time.perf_counter() - stage_started
 
     checkpoint("final_geometry")
     progress.start("Stage D2 - Final Geometry", "applying structural events")
+    stage_started = time.perf_counter()
     cave_geometry = resumable(
         "final_geometry",
         lambda: geometry_generator.finalize(
@@ -531,9 +568,18 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
             f"{int(cave_geometry.summary()['export_face_count'])} exported faces"
         )
     )
+    stage_timings["geometry_s"] = (
+        stage_timings.get("base_geometry_s", 0.0) + time.perf_counter() - stage_started
+    )
+    geometry_report_path = export_geometry_report(
+        cave_geometry,
+        geometry_output.with_name("stage_d_geometry_report.json"),
+    )
+    completed_outputs.append(geometry_report_path)
 
     checkpoint("final_floor_atlas")
     progress.start("Stage C3 - Final Floor Map", "relifting post-event geology")
+    stage_started = time.perf_counter()
     floor_atlas = resumable(
         "final_floor_atlas",
         lambda: floor_map_generator.revalidate(
@@ -570,9 +616,17 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     completed_outputs.extend((floor_npz_path, floor_json_path))
     if floor_map_output_path is not None:
         completed_outputs.append(floor_map_output_path)
+    stage_timings["floor_final_s"] = time.perf_counter() - stage_started
+    event_report_path = export_event_report(
+        event_field,
+        event_output.with_name("stage_e_event_report.json"),
+        invalidated_floor_cells=int(floor_summary["invalidated_cell_count"]),
+    )
+    completed_outputs.append(event_report_path)
 
     checkpoint("export")
     progress.start("Stage D - Export", "preparing target package")
+    stage_started = time.perf_counter()
     geometry_output_path = None
     geometry_presentation_output_path = None
     geometry_chunk_output_path = None
@@ -626,6 +680,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         asset_name=selected_output.stem,
     )
     progress.finish(f"wrote {export_result.primary_asset.name}")
+    stage_timings["export_s"] = time.perf_counter() - stage_started
 
     progress.close()
     progress.log("Generated cave pipeline artifacts.")
@@ -633,6 +688,11 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     progress.log(f"Resolved configuration: {resolved_config_path}")
     progress.log(f"Host routing influence: {host_influence_path}")
     progress.log(f"Network diagnostics: {network_report_path}")
+    progress.log(f"Network semantic artifact: {network_artifact_path}")
+    progress.log(f"Section arrays: {section_npz_path}")
+    progress.log(f"Section metadata: {section_json_path}")
+    progress.log(f"Geometry report: {geometry_report_path}")
+    progress.log(f"Event report: {event_report_path}")
     progress.log(
         "World: "
         f"{project_config.world.body.name} "
@@ -710,6 +770,11 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         resolved_config_path,
         host_influence_path,
         network_report_path,
+        network_artifact_path,
+        section_npz_path,
+        section_json_path,
+        geometry_report_path,
+        event_report_path,
         floor_npz_path,
         floor_json_path,
         export_result.primary_asset,
@@ -738,6 +803,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         status="complete",
         current_stage="complete",
         inputs=manifest_inputs,
+        timings=stage_timings,
     )
     progress.log(f"Run manifest: {run_manifest_path}")
 
