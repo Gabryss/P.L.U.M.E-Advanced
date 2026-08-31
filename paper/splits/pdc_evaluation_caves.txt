@@ -1,0 +1,20 @@
+# PDC v2.0 cave-level held-out evaluation partition (19 caves).
+AU.QLD.01 Barkers Cave 2
+AU.VIC.02 Darcy Cave
+AU.VIC.04 Porndon Arch Cave
+ES.LPA.00 Cueva de Barros
+IT.SIC.01 Grotta Corsaro
+JO.HAS.02 Abu Al-Kursi Cave
+JO.HAS.03 Al-Howa Cave
+PT.AZR.05 Gruta do Leão
+PT.AZR.06 Gruta do Pico da Cruz
+PT.AZR.11 Gruta da Giesta
+PT.AZR.13 Gruta da Quinta Irene
+PT.AZR.18 Gruta do Carvão
+USA.HAW.03 Lonely Bat Cave
+USA.HAW.05 Upper Oozing Red Puka
+USA.HAW.06 Pole 127x Cave
+USA.HAW.19 Kazumura II
+USA.NMX.01 Cave 29
+USA.ORE.02 Wind Cave
+USA.ORE.04 Skeleton Cave

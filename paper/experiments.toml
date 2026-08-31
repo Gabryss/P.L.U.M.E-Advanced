@@ -15,10 +15,14 @@ doi = "10.5281/zenodo.17750755"
 recommended_citation_doi = "10.5281/zenodo.14535885"
 source_archive_md5 = "cccad95bbf3ef56d1bd48ac75273682c"
 path_env = "PLUME_PDC_ROOT"
+calibration_caves = "splits/pdc_calibration_caves.txt"
+evaluation_caves = "splits/pdc_evaluation_caves.txt"
 
 [morphometry]
 body = "earth"
 seed_file = "seeds/network_seeds.txt"
+reference_partition = "evaluation"
+exclude_self_intersections = true
 stop_after_stage = "sections"
 baseline = "ellipse"
 metrics = ["width_m", "height_m", "aspect_ratio", "area_m2", "compactness", "floor_residual_norm", "roof_asymmetry_norm"]

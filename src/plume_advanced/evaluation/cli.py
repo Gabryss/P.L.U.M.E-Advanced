@@ -47,6 +47,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         command.add_argument("--force", action="store_true")
         if name in {"morphometry", "all"}:
             command.add_argument("--data-root", type=Path, default=None)
+        if name == "morphometry":
+            command.add_argument(
+                "--reference-partition",
+                choices=("calibration", "evaluation", "all"),
+                default=None,
+            )
+            command.add_argument("--max-seeds", type=int, default=None)
     aggregate = subparsers.add_parser("aggregate")
     aggregate.add_argument("--results", type=Path, default=None)
     figures = subparsers.add_parser("figures")
@@ -73,6 +80,8 @@ def main(argv: list[str] | None = None) -> int:
             config,
             config.pdc_root(args.data_root),
             force=args.force,
+            reference_partition=args.reference_partition,
+            max_seeds=args.max_seeds,
         )
     elif command == "controllability":
         payload = run_controllability(config, force=args.force)
@@ -121,10 +130,20 @@ def main(argv: list[str] | None = None) -> int:
 
 def _audit(config) -> dict:
     project = load_project_config(config.project_config)
+    calibration_caves = set(config.pdc_cave_partition("calibration"))
+    evaluation_caves = set(config.pdc_cave_partition("evaluation"))
+    overlap = calibration_caves & evaluation_caves
+    if overlap:
+        raise ValueError(f"PDC cave partitions overlap: {sorted(overlap)}")
     provenance = capture_provenance(
         ROOT,
         resolved_config=project_config_manifest(project),
-        inputs=(config.path, config.project_config),
+        inputs=(
+            config.path,
+            config.project_config,
+            config.pdc_partition_path("calibration"),
+            config.pdc_partition_path("evaluation"),
+        ),
     )
     payload = {
         "schema": "plume.evaluation-audit.v1",
@@ -134,6 +153,11 @@ def _audit(config) -> dict:
         "output_root": str(config.output_root),
         "routing_weights": project.host_field.routing_weights.resolved(),
         "sampling_policy": project.section_field.sampling_policy,
+        "pdc_partition": {
+            "calibration_caves": len(calibration_caves),
+            "evaluation_caves": len(evaluation_caves),
+            "overlap_caves": 0,
+        },
         "provenance": provenance,
     }
     config.output_root.mkdir(parents=True, exist_ok=True)

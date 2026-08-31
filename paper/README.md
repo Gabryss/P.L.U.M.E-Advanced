@@ -15,8 +15,19 @@ export PLUME_PDC_ROOT=/absolute/path/to/PDC-v2
 uv run plume-evaluate --config paper/experiments.toml pdc-audit
 ```
 
-Manually inspect the PDC inventory and rejections. If calibration is introduced,
-split by cave ID and commit the partition before tuning.
+Manually inspect the PDC inventory and rejections. The frozen cave-level split
+is documented in `paper/splits/README.md`; calibration may read only the 76-cave
+calibration partition.
+
+The bounded development pilot is:
+
+```bash
+uv run plume-evaluate --config paper/experiments.toml morphometry \
+  --reference-partition calibration --max-seeds 3
+```
+
+Do not use `--reference-partition evaluation` while selecting parameters. The
+default declared morphometry run uses the 19-cave confirmatory partition.
 
 ## Run
 

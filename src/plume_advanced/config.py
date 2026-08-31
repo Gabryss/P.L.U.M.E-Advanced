@@ -685,6 +685,14 @@ def _build_section_field_config(
         world.body.maximum_passage_width_m,
     )
     config_data.setdefault(
+        "minimum_tube_width",
+        0.44 * world.body.maximum_passage_width_m,
+    )
+    config_data.setdefault(
+        "minimum_tube_height",
+        0.30 * world.body.maximum_passage_width_m,
+    )
+    config_data.setdefault(
         "chamber_max_tube_width",
         world.body.maximum_room_width_m,
     )
@@ -994,8 +1002,39 @@ def _validate_pipeline_configs(
         raise ValueError("network.cooling_k_per_m cannot be negative")
     if not 0.0 < network.chamber_radius_fraction <= 1.0:
         raise ValueError("network.chamber_radius_fraction must be in (0, 1]")
-    if section_field.maximum_tube_width <= 0.0:
-        raise ValueError("section_field.maximum_tube_width must be positive")
+    if not 0.0 < section_field.minimum_tube_width <= section_field.maximum_tube_width:
+        raise ValueError(
+            "section_field widths must satisfy 0 < minimum_tube_width <= maximum_tube_width"
+        )
+    if section_field.minimum_tube_height <= 0.0:
+        raise ValueError("section_field.minimum_tube_height must be positive")
+    if not (
+        0.0
+        < section_field.minimum_height_ratio
+        <= section_field.base_height_ratio
+        <= section_field.maximum_height_ratio
+    ):
+        raise ValueError(
+            "section_field height ratios must satisfy "
+            "0 < minimum_height_ratio <= base_height_ratio <= maximum_height_ratio"
+        )
+    if section_field.width_scale_median <= 0.0:
+        raise ValueError("section_field.width_scale_median must be positive")
+    nonnegative_morphology_values = {
+        "width_scale_log_sigma": section_field.width_scale_log_sigma,
+        "width_longitudinal_variation": section_field.width_longitudinal_variation,
+        "height_ratio_variation": section_field.height_ratio_variation,
+        "height_ratio_longitudinal_variation": (section_field.height_ratio_longitudinal_variation),
+        "floor_relief_base": section_field.floor_relief_base,
+        "floor_relief_variation": section_field.floor_relief_variation,
+        "wall_roughness_base": section_field.wall_roughness_base,
+        "wall_roughness_variation": section_field.wall_roughness_variation,
+    }
+    if any(value < 0.0 for value in nonnegative_morphology_values.values()):
+        names = ", ".join(
+            name for name, value in nonnegative_morphology_values.items() if value < 0.0
+        )
+        raise ValueError(f"section_field morphology amplitudes cannot be negative: {names}")
     if section_field.chamber_max_tube_width < section_field.maximum_tube_width:
         raise ValueError(
             "section_field.chamber_max_tube_width cannot be smaller than maximum_tube_width"

@@ -42,10 +42,33 @@ def run_morphometry(
     data_root: str | Path,
     *,
     force: bool = False,
+    reference_partition: str | None = None,
+    max_seeds: int | None = None,
 ) -> dict[str, Any]:
     section = config.section("morphometry")
+    partition = reference_partition or str(section.get("reference_partition", "evaluation"))
+    if partition not in {"calibration", "evaluation", "all"}:
+        raise ValueError("morphometry reference partition must be calibration, evaluation, or all")
     pdc_sections, rejections = load_pdc(data_root)
-    if not pdc_sections:
+    partition_ids = (
+        set(config.pdc_cave_partition(partition))
+        if partition in {"calibration", "evaluation"}
+        else None
+    )
+    selected_sections = [
+        item
+        for item in pdc_sections
+        if partition_ids is None or item.reference_cave_id in partition_ids
+    ]
+    excluded_self_intersections = []
+    if bool(section.get("exclude_self_intersections", True)):
+        excluded_self_intersections = [
+            item for item in selected_sections if item.self_intersection_count > 0
+        ]
+        selected_sections = [
+            item for item in selected_sections if item.self_intersection_count == 0
+        ]
+    if not selected_sections:
         raise ValueError("PDC audit retained no contours; inspect pdc_rejections.csv")
     reference = [
         {
@@ -54,7 +77,7 @@ def run_morphometry(
             "relative_path": item.relative_path,
             **contour_morphometry(item.contour),
         }
-        for item in pdc_sections
+        for item in selected_sections
     ]
     base = load_project_config(
         config.project_config, world_body=section.get("body", "earth"), dev_mode=False
@@ -63,15 +86,29 @@ def run_morphometry(
     provenance = capture_provenance(
         config.project_config.parent.parent,
         resolved_config={"experiment": section},
-        inputs=(config.project_config, config.seed_file("morphometry")),
+        inputs=(
+            config.project_config,
+            config.seed_file("morphometry"),
+            *(
+                (config.pdc_partition_path(partition),)
+                if partition in {"calibration", "evaluation"}
+                else ()
+            ),
+        ),
     )
-    store = ResultStore(config.output_root, "morphometry")
-    for seed in config.seeds("morphometry"):
+    experiment_name = "morphometry" if partition == "evaluation" else f"morphometry_{partition}"
+    store = ResultStore(config.output_root, experiment_name)
+    seeds = config.seeds("morphometry")
+    if max_seeds is not None:
+        if max_seeds <= 0:
+            raise ValueError("max_seeds must be positive")
+        seeds = seeds[:max_seeds]
+    for seed in seeds:
         project = for_seed(base, seed)
         template = ExperimentResult(
-            experiment_name="morphometry",
+            experiment_name=experiment_name,
             run_id=f"seed-{seed:06d}-earth-sections",
-            condition_id="plume_advanced",
+            condition_id=f"plume_advanced_{partition}",
             seed=seed,
             status="complete",
             git_commit=str(provenance["git_commit"]),
@@ -125,9 +162,23 @@ def run_morphometry(
         [
             {"relative_path": item.relative_path, "reason": item.reason, "detail": item.detail}
             for item in rejections
+        ]
+        + [
+            {
+                "relative_path": item.relative_path,
+                "reason": "self_intersection",
+                "detail": f"{item.self_intersection_count} proper boundary intersections",
+            }
+            for item in excluded_self_intersections
         ],
     )
     summary = _summarize(config, section, reference, generated, baseline, store.rows())
+    summary.update(
+        {
+            "reference_partition": partition,
+            "excluded_self_intersecting_sections": len(excluded_self_intersections),
+        }
+    )
     (output / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -188,15 +239,31 @@ def _summarize(
     aggregate_values = [
         row["generated_normalized_w1"] for row in summaries if row["metric"] in aggregate_metrics
     ]
+    aggregate_baseline_values = [
+        row["baseline_normalized_w1"] for row in summaries if row["metric"] in aggregate_metrics
+    ]
+    generated_aggregate = float(np.mean(aggregate_values)) if aggregate_values else None
+    baseline_aggregate = (
+        float(np.mean(aggregate_baseline_values)) if aggregate_baseline_values else None
+    )
     return {
-        "schema": "plume.morphometry-summary.v1",
+        "schema": "plume.morphometry-summary.v2",
         "planned_worlds": len(rows),
         "complete_worlds": sum(row["status"] == "complete" for row in rows),
         "failed_worlds": sum(row["status"] in {"failed", "timeout"} for row in rows),
         "reference_caves": len({row["reference_cave_id"] for row in reference}),
         "reference_sections": len(reference),
         "generated_sections": len(generated),
-        "aggregate_normalized_w1": float(np.mean(aggregate_values)) if aggregate_values else None,
+        "aggregate_normalized_w1": generated_aggregate,
+        "aggregate_generated_normalized_w1": generated_aggregate,
+        "aggregate_baseline_normalized_w1": baseline_aggregate,
+        "aggregate_relative_improvement_vs_baseline": (
+            1.0 - generated_aggregate / baseline_aggregate
+            if generated_aggregate is not None
+            and baseline_aggregate is not None
+            and baseline_aggregate > 0.0
+            else None
+        ),
         "metrics": summaries,
     }
 

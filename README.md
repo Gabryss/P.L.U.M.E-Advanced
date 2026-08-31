@@ -215,7 +215,9 @@ The generator:
 - moves the section centerline below the host surface using cover thickness and roof-thickness heuristics
 - builds geometry-ready local frames (`tangent`, `normal`, `binormal`)
 - turns underpass levels into smooth, clearance-constrained vertical grades
-- derives smooth section controls such as width, height, floor flattening, roof arch, and lateral skew
+- derives smooth section controls such as width, height, floor relief, roof arch, and lateral skew
+- samples fixed-draw segment morphology latents for broader but deterministic size and aspect-ratio variation
+- adds bounded multi-harmonic wall/floor relief while keeping every local profile finite, simple, and closed
 - uses explicit Stage-B junction regions to blend split/merge morphology without hard jumps at nodes
 - records per-sample junction influences for later split/merge volume construction
 - stores closed local 2D section contours and scalar profile controls for the voxel geometry stage
@@ -352,7 +354,9 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `minimum_sample_spacing`, `maximum_sample_spacing` | bound adaptive section-sample spacing |
 | `curvature_spacing_weight`, `width_gradient_spacing_weight`, `junction_spacing_weight` | make sampling denser where the skeleton or morphology changes faster |
 | `profile_resolution` | control local section contour resolution |
-| `floor_flatness_*`, `roof_arch_*`, `lateral_skew_amplitude` | shape the lava-tube profile |
+| `width_scale_*`, `width_longitudinal_variation` | broaden passage sizes smoothly within resolved world limits |
+| `height_ratio_*`, `minimum_tube_height` | control aspect-ratio diversity without under-resolved vertical pinches |
+| `floor_flatness_*`, `floor_relief_*`, `wall_roughness_*`, `roof_arch_*`, `lateral_skew_amplitude` | shape deterministic irregular wall, roof, and floor profiles |
 | `centerline_wobble_*` | add bounded centerline meander to avoid unnaturally straight tube runs |
 | `junction_*_gain` | control how strongly junction regions widen or stay tight through splits/merges |
 

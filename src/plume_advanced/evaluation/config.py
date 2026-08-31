@@ -68,6 +68,26 @@ class EvaluationConfig:
             raise ValueError(f"PDC path is not set; pass --data-root or define {environment_name}")
         return Path(value).expanduser().resolve()
 
+    def pdc_cave_partition(self, name: str) -> tuple[str, ...]:
+        path = self.pdc_partition_path(name)
+        cave_ids = tuple(
+            line.strip()
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        )
+        if not cave_ids or len(cave_ids) != len(set(cave_ids)):
+            raise ValueError(f"PDC {name} cave partition is empty or contains duplicates: {path}")
+        return cave_ids
+
+    def pdc_partition_path(self, name: str) -> Path:
+        if name not in {"calibration", "evaluation"}:
+            raise ValueError("PDC partition must be calibration or evaluation")
+        dataset = self.section("datasets").get("pdc", {})
+        value = dataset.get(f"{name}_caves")
+        if not value:
+            raise ValueError(f"datasets.pdc.{name}_caves is required")
+        return _resolve(self.path.parent, value)
+
 
 def load_evaluation_config(path: str | Path) -> EvaluationConfig:
     config_path = Path(path).resolve()

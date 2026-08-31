@@ -15,9 +15,16 @@ class SectionFieldConfig:
     """Parameters controlling stage-C section-field generation."""
 
     random_seed: int | None = None
-    base_height_ratio: float = 0.64
-    minimum_height_ratio: float = 0.50
-    maximum_height_ratio: float = 0.84
+    base_height_ratio: float = 0.66
+    minimum_height_ratio: float = 0.34
+    maximum_height_ratio: float = 0.96
+    width_scale_median: float = 0.84
+    width_scale_log_sigma: float = 0.60
+    width_longitudinal_variation: float = 0.18
+    height_ratio_variation: float = 0.18
+    height_ratio_longitudinal_variation: float = 0.07
+    minimum_tube_width: float = 1.0
+    minimum_tube_height: float = 3.0
     maximum_tube_width: float = 12.0
     chamber_max_tube_width: float = 24.0
     minimum_sample_spacing: float = 8.0
@@ -29,11 +36,15 @@ class SectionFieldConfig:
     width_gradient_spacing_weight: float = 34.0
     junction_spacing_weight: float = 1.15
     profile_resolution: int = 28
-    floor_flatness_base: float = 0.48
+    floor_flatness_base: float = 0.36
     floor_flatness_width_weight: float = 0.12
+    floor_relief_base: float = 0.13
+    floor_relief_variation: float = 0.035
     roof_arch_base: float = 1.08
     roof_arch_roof_weight: float = 0.18
-    lateral_skew_amplitude: float = 0.10
+    wall_roughness_base: float = 0.14
+    wall_roughness_variation: float = 0.045
+    lateral_skew_amplitude: float = 0.16
     centerline_wobble_amplitude: float = 2.4
     centerline_wobble_wavelength: float = 95.0
     junction_pre_widen_gain: float = 0.18
@@ -56,6 +67,20 @@ class SectionJunctionInfluence:
     split_style: str
     merge_style: str
     capacity_bias: float
+
+
+@dataclass(frozen=True)
+class _SegmentMorphologyState:
+    """Fixed-draw latent morphology shared by every sample on one segment."""
+
+    width_scale: float
+    height_ratio_offset: float
+    floor_relief: float
+    wall_roughness: float
+    skew_bias: float
+    primary_phase: float
+    secondary_phase: float
+    floor_phase: float
 
 
 @dataclass(frozen=True)
@@ -168,12 +193,12 @@ class SectionFieldGenerator:
                 if segment.segment_id in junction.segment_ids
             )
             arc_positions = self._build_arc_positions(segment, connected_junctions)
-            phase = float(rng.uniform(-math.pi, math.pi))
+            morphology = self._sample_segment_morphology(rng)
             samples = self._build_segment_samples(
                 segment=segment,
                 connected_junctions=connected_junctions,
                 arc_positions=arc_positions,
-                phase=phase,
+                morphology=morphology,
                 initial_normal=(
                     node_normal_preferences.get(segment.start_node_id)
                     or node_normal_preferences.get(segment.end_node_id)
@@ -353,7 +378,7 @@ class SectionFieldGenerator:
         segment: CaveSegment,
         connected_junctions: tuple[CaveJunction, ...],
         arc_positions: tuple[float, ...],
-        phase: float,
+        morphology: _SegmentMorphologyState,
         initial_normal: tuple[float, float, float] | None,
     ) -> list[SectionSample]:
         samples: list[SectionSample] = []
@@ -367,15 +392,16 @@ class SectionFieldGenerator:
             normal, binormal = self._build_frame(tangent, previous_normal)
             previous_normal = normal
 
-            width = self._smoothed_width(segment, arc_length)
-            height_ratio = self._height_ratio(segment, arc_length)
-            tube_height = width * height_ratio
+            width = self._section_width(segment, arc_length, morphology)
+            height_ratio = self._height_ratio(segment, arc_length, morphology)
+            tube_height = max(width * height_ratio, self.config.minimum_tube_height)
             floor_flatness = self._floor_flatness(segment, arc_length, width)
             roof_arch = self._roof_arch(segment, arc_length)
             lateral_skew = self._lateral_skew(
                 segment=segment,
                 arc_length=arc_length,
-                phase=phase,
+                phase=morphology.primary_phase,
+                bias=morphology.skew_bias,
             )
             (
                 tube_width,
@@ -405,7 +431,7 @@ class SectionFieldGenerator:
             lateral_offset, vertical_offset = self._centerline_wobble_offsets(
                 segment=segment,
                 arc_length=arc_length,
-                phase=phase,
+                phase=morphology.primary_phase,
                 junction_blend_weight=junction_blend_weight,
             )
             x_coord += lateral_offset * normal[0]
@@ -429,6 +455,14 @@ class SectionFieldGenerator:
                 floor_flatness=floor_flatness,
                 roof_arch=roof_arch,
                 lateral_skew=lateral_skew,
+                wall_roughness=morphology.wall_roughness,
+                floor_relief=morphology.floor_relief,
+                roughness_phase=self._morphology_phase(
+                    segment, arc_length, morphology.secondary_phase, wavelength_fraction=0.38
+                ),
+                floor_phase=self._morphology_phase(
+                    segment, arc_length, morphology.floor_phase, wavelength_fraction=0.52
+                ),
             )
             samples.append(
                 SectionSample(
@@ -528,13 +562,91 @@ class SectionFieldGenerator:
         )
         return float(lateral), float(vertical)
 
-    def _height_ratio(self, segment: CaveSegment, arc_length: float) -> float:
+    def _sample_segment_morphology(self, rng: np.random.Generator) -> _SegmentMorphologyState:
+        width_deviate = float(np.clip(rng.normal(), -2.25, 2.25))
+        height_deviate = float(np.clip(rng.normal(), -2.25, 2.25))
+        floor_deviate = float(np.clip(rng.normal(), -2.0, 2.0))
+        roughness_deviate = float(np.clip(rng.normal(), -2.0, 2.0))
+        skew_deviate = float(np.clip(rng.normal(), -2.0, 2.0))
+        return _SegmentMorphologyState(
+            width_scale=float(
+                np.exp(
+                    math.log(self.config.width_scale_median)
+                    + self.config.width_scale_log_sigma * width_deviate
+                )
+            ),
+            height_ratio_offset=self.config.height_ratio_variation * height_deviate,
+            floor_relief=float(
+                np.clip(
+                    self.config.floor_relief_base
+                    + self.config.floor_relief_variation * floor_deviate,
+                    0.0,
+                    0.18,
+                )
+            ),
+            wall_roughness=float(
+                np.clip(
+                    self.config.wall_roughness_base
+                    + self.config.wall_roughness_variation * roughness_deviate,
+                    0.0,
+                    0.20,
+                )
+            ),
+            skew_bias=0.55 * self.config.lateral_skew_amplitude * skew_deviate,
+            primary_phase=float(rng.uniform(-math.pi, math.pi)),
+            secondary_phase=float(rng.uniform(-math.pi, math.pi)),
+            floor_phase=float(rng.uniform(-math.pi, math.pi)),
+        )
+
+    def _section_width(
+        self,
+        segment: CaveSegment,
+        arc_length: float,
+        morphology: _SegmentMorphologyState,
+    ) -> float:
+        base = self._smoothed_width(segment, arc_length)
+        phase = self._morphology_phase(
+            segment,
+            arc_length,
+            morphology.primary_phase,
+            wavelength_fraction=0.46,
+        )
+        modulation = math.exp(
+            self.config.width_longitudinal_variation
+            * (0.72 * math.sin(phase) + 0.28 * math.sin(2.17 * phase + 0.6))
+        )
+        return float(
+            np.clip(
+                base * morphology.width_scale * modulation,
+                self.config.minimum_tube_width,
+                self.config.maximum_tube_width,
+            )
+        )
+
+    def _height_ratio(
+        self,
+        segment: CaveSegment,
+        arc_length: float,
+        morphology: _SegmentMorphologyState,
+    ) -> float:
         roof_competence = self._interpolate_attr(segment, arc_length, "roof_competence")
         width = self._smoothed_width(segment, arc_length)
+        interior_envelope = self._segment_interior_envelope(segment, arc_length)
         raw_ratio = (
             self.config.base_height_ratio
             + 0.08 * (roof_competence - 0.5)
             - 0.06 * np.clip((width - 9.5) / 7.5, 0.0, 1.0)
+            + interior_envelope * morphology.height_ratio_offset
+            + self.config.height_ratio_longitudinal_variation
+            * interior_envelope
+            * math.sin(
+                self._morphology_phase(
+                    segment,
+                    arc_length,
+                    morphology.secondary_phase,
+                    wavelength_fraction=0.55,
+                )
+            )
         )
         return float(
             np.clip(
@@ -543,6 +655,13 @@ class SectionFieldGenerator:
                 self.config.maximum_height_ratio,
             )
         )
+
+    @staticmethod
+    def _segment_interior_envelope(segment: CaveSegment, arc_length: float) -> float:
+        if segment.total_length <= 1e-9:
+            return 0.0
+        progress = float(np.clip(arc_length / segment.total_length, 0.0, 1.0))
+        return float(max(math.sin(math.pi * progress), 0.0) ** 0.65)
 
     def _floor_flatness(
         self,
@@ -574,11 +693,13 @@ class SectionFieldGenerator:
         segment: CaveSegment,
         arc_length: float,
         phase: float,
+        bias: float,
     ) -> float:
         total_length = max(segment.total_length, 1.0)
         wavelength = max(0.75 * total_length, 70.0)
         return float(
-            self.config.lateral_skew_amplitude
+            bias
+            + self.config.lateral_skew_amplitude
             * math.sin((2.0 * math.pi * arc_length / wavelength) + phase)
         )
 
@@ -650,12 +771,13 @@ class SectionFieldGenerator:
                 height_scale += 0.18 * chamber_weight
                 flatness_delta += 0.10 * chamber_weight
                 arch_delta += 0.08 * chamber_weight
-                width_cap = max(
-                    width_cap,
-                    self.config.maximum_tube_width
-                    + chamber_weight
-                    * (self.config.chamber_max_tube_width - self.config.maximum_tube_width),
-                )
+                if weight >= 0.08:
+                    width_cap = max(
+                        width_cap,
+                        self.config.maximum_tube_width
+                        + chamber_weight
+                        * (self.config.chamber_max_tube_width - self.config.maximum_tube_width),
+                    )
 
         filtered_influences = tuple(
             sorted(
@@ -754,6 +876,10 @@ class SectionFieldGenerator:
         floor_flatness: float,
         roof_arch: float,
         lateral_skew: float,
+        wall_roughness: float,
+        floor_relief: float,
+        roughness_phase: float,
+        floor_phase: float,
     ) -> tuple[tuple[float, float], ...]:
         half_width = 0.5 * tube_width
         half_height = 0.5 * tube_height
@@ -765,10 +891,26 @@ class SectionFieldGenerator:
         floor_depth_factor = float(np.clip(0.74 - 0.22 * floor_flatness, 0.45, 0.78))
         skew_offset = lateral_skew * half_width
 
+        def envelope(value: float) -> float:
+            return max(0.0, 1.0 - value * value) ** 0.72
+
+        def wall_relief(value: float) -> float:
+            harmonic = math.sin(3.0 * math.pi * value + roughness_phase)
+            harmonic += 0.55 * math.sin(7.0 * math.pi * value + 1.37 * roughness_phase)
+            return half_height * wall_roughness * envelope(value) * harmonic / 1.55
+
+        def floor_relief_offset(value: float) -> float:
+            harmonic = math.sin(2.0 * math.pi * value + floor_phase)
+            harmonic += 0.45 * math.sin(5.0 * math.pi * value - 0.73 * floor_phase)
+            return half_height * floor_relief * envelope(value) * harmonic / 1.45
+
         roof_profile = [
             (
                 float(x_coord + skew_offset * (1.0 - normalized_value**2)),
-                float(half_height * max(0.0, 1.0 - normalized_value**top_exp) ** (1.0 / top_exp)),
+                float(
+                    half_height * max(0.0, 1.0 - normalized_value**top_exp) ** (1.0 / top_exp)
+                    + wall_relief(float(x_coord / max(half_width, 1e-9)))
+                ),
             )
             for x_coord, normalized_value in zip(x_values, normalized, strict=True)
         ]
@@ -779,6 +921,8 @@ class SectionFieldGenerator:
                     -half_height
                     * floor_depth_factor
                     * max(0.0, 1.0 - normalized_value**bottom_exp) ** (1.0 / bottom_exp)
+                    + 0.45 * wall_relief(float(x_coord / max(half_width, 1e-9)))
+                    + floor_relief_offset(float(x_coord / max(half_width, 1e-9)))
                 ),
             )
             for x_coord, normalized_value in zip(
@@ -787,6 +931,17 @@ class SectionFieldGenerator:
         ]
         closed_profile = floor_profile + roof_profile + [floor_profile[0]]
         return tuple(closed_profile)
+
+    @staticmethod
+    def _morphology_phase(
+        segment: CaveSegment,
+        arc_length: float,
+        phase: float,
+        *,
+        wavelength_fraction: float,
+    ) -> float:
+        wavelength = max(70.0, wavelength_fraction * max(segment.total_length, 1.0))
+        return float((2.0 * math.pi * arc_length / wavelength) + phase)
 
     def _smoothed_width(self, segment: CaveSegment, arc_length: float) -> float:
         window = max(12.0, 0.08 * max(segment.total_length, 1.0))
