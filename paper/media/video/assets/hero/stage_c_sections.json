@@ -1,0 +1,5055 @@
+{
+  "coordinate_system": {
+    "handedness": "right",
+    "length_unit": "metre",
+    "up_axis": "Z"
+  },
+  "junction_influences": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.09145478904252656
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.10072585212874398
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.10876900820161235
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.11713996219689898
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.12651170944636572
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.1414763421830427
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.1602351009850328
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.17222969560439555
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.1850454777946965
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.19982728180168316
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.21882045195573616
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.2456105258272316
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.2880462428442515
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.33604679816584476
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.38402404300834003
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.419751459062355
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.45120614814378107
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.4816252461255118
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.5140187899770009
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.5519083673094352
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.6077984312928182
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.671704742308386
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.7145281208109815
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.7565474172704867
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.8010377449232047
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.8481444178431997
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.8982327671320235
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.9563943125218736
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.8997443039234331
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.8048552790904389
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.7155984865169109
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.632210493681432
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.5548857389795058
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.48371999436370905
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.4187006174029072
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.35983726546324063
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.307056096585903
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.2601955928428016
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.2190081302281599
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.18316776690945516
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.15228376054121073
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.12591837714407977
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.1036068870208758
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.08487744050041753
+      }
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2784888015848454
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.33083711746629957
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.38983156034468025
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4127564074239008
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.43702939730905777
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.46272981031198557
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.49666176031045645
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5258689771277572
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5567937844309442
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5895371886628998
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6242061361582254
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6609138624507965
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7453197786071587
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7891498418646853
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8355574221830752
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8962182419776283
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9604079356022905
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8991438084853215
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.803573376987827
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7555482853931209
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2197330225202801
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2631290531299698
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3123608768916955
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.342299409531309
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.40258272483271945
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.42625743037827823
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4513243756999023
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.47786543432249506
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.505967294512066
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.53572174241649
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6122227535457758
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6482257723651005
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6863460227910544
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7267080129849837
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7694435730668684
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8337019759516868
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9014972722785114
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9739483880256631
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.33491561846186163
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.39355344120044755
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.457609870710181
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.48452056080078626
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5594439308513391
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5923431823968663
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6271771421277317
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.703062775269202
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7842829469631825
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8708053444673772
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9624744314790855
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9215691569014529
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.870384410608236
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8220425092968431
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.770906236777563
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7280894390909
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6876507232988702
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.649458008680749
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6291481442236893
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8991438084853215
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8245557913609368
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8991438084853215
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.803573376987827
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7907023645239344
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.209392670602548
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2501652039775285
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2954250161624931
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3127980921466778
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3671551323962328
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3887464454676848
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4524191180591727
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4790245552589007
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5530568466620718
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5855804925788715
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6673828667900531
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7576164534205075
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8021696479438292
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8493428847501175
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8992902408171959
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9807213247585344
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9166704086877869
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8657577430980019
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8176728108929652
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7722585573201394
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6999842015475171
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6483187457599241
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.1893423787634108
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2250296480442129
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2630385765988291
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2785071013615043
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.29488528455309665
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3122266205093619
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3305877494105474
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.38440750868757884
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.44444260155961335
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.470578963292964
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5454838432795123
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6265608763647842
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6874585299333051
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7278859433989883
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7706907741027466
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8283047127607103
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8889128553428893
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9525367546312185
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.18854789338614292
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2249876705493305
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.264543079428154
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2818479597533436
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3297377275973389
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.38356527244044125
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4435334924392835
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5097587176026518
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5397361279436917
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5714764215856419
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6050832685085729
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6406664352190597
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6783421432689679
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7703266232166809
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.815627265429129
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8635919051239581
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9143772041549416
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9923520413822877
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9190159579560297
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8521256144487735
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7914245391465213
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7555482853931209
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8580771848652881
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9390232635134449
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9058458470098655
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8216458490756736
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7428693308936825
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6798922530668611
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8991438084853215
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.803573376987827
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7135661449806376
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6293754027128986
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5512172855165671
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.479256484322648
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4135917283496253
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3906204868253037
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3336242818561376
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2828235069477159
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.26711524529370234
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2242635931096433
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.21180779960770235
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.20004381162627288
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.18359256150748898
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.17803259481586134
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9141563186386475
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8414857391099339
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.77462862236543
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.731605080170779
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6909711026391565
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6525939712869714
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6163483389297478
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5821158202738113
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5497846052468646
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4820777577007762
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.42046649425665944
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.36451641264113754
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.31412727855751016
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2691297730011904
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.23439296060706805
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9049407630604358
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8193297554783876
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7391307092229472
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6798922530668611
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9073872286992845
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8255123483955507
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7490976065046409
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6771996727410109
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6098667687812378
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5759942421249776
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5440030248313705
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.513788627354835
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.44579998621107936
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3834241218634511
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3621284152381708
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.34201549053716274
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3230196550316058
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.28511467574917415
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.25104225631007776
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.24521306503639131
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.899676365739064
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8050947325164919
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7362964551863366
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9066757670824415
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8214308879357425
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.775807907520721
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.732718866810816
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6627288309433659
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5972228374266794
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5615927340511678
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9078844741025628
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8267397191508783
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7510711076140337
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.679848413620156
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.613113899223919
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5508808982042674
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5202844977049611
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4913874476942369
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.43354398612957556
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.40946457898925476
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3867225629021593
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3652436580150176
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.34495771004171294
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.32579846112572275
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3071024803036741
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.26231890926676504
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.24774949066352447
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.23398927014299087
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.22099330414530863
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.208719145314723
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.17616963114247972
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.16638501779353093
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.15714385031415434
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.14841594525175722
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.1348960170886397
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.12029046441858413
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9067274508873809
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8212978860896073
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7756822927119015
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7326002287568846
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6651482693316534
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6229917143737239
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9008283584692022
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8083308702953654
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7213064934614005
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6812445083233502
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6434076004135657
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6076721870225363
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5615927340511678
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.909818833420748
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8314274012373581
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.758591574419906
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6882288588817468
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6193054880614298
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5495778524832101
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4812911430793524
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.42390426901747624
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3867132931987711
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.36523490315895546
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.34494944143791195
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3257906517673127
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3076959578091523
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2906062587692419
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2528250370951685
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.21580011259039916
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2015107741462011
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9032817049694715
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8149903019719061
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7321114689652543
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7031039799371007
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9139584641769486
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8580771848652881
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.900714554014853
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8080144355440702
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7207921621825176
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6798922530668611
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9030059989524203
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8131962672059279
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7299258296218218
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6842066449872
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6462052174507662
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6103144219951329
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.576417032293046
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5444023328686343
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4906622508697576
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4634104460124116
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.43767222991529003
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.41336353655241503
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.39040496899744126
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3687215400978323
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.348242427552218
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.32890074259096636
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3106333115044359
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2933804693053381
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.26855186926760777
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.23471980410915494
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.22168326362453739
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2093707838490368
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.1936100944337122
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.1727801562803728
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.15990228466381534
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.14415342878215617
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.12116903170661798
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.11136184882079808
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.10111575111371938
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.0918131940102568
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.08671380997966971
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.08189765013893596
+      }
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8245557913609365
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9029560753334118
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9745007296439882
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9166897237570206
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8471406499731626
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8000897271869263
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7556520532574252
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7136824860879094
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6668244895705208
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6156851078295315
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5814894256012727
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5467208932196108
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5037693842634539
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4416408218184731
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3849939448807074
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.35951462783554805
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3395468751425936
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.31938371051092723
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2945696207975793
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.25865974237036654
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2442935570544318
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.23072528206903564
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2179106007858193
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.20580765796020853
+      },
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.08456352569284027
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.1801741913498881
+      },
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.09659441810899622
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.17016716127106385
+      },
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.10227485163238023
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.16071593027893583
+      },
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.10828933473797898
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.15178962881257138
+      },
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.11465751189886282
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.1380799059274212
+      },
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.12604166446093418
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.15121454855440594
+      },
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.11509356300752768
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.18102259101520926
+      },
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.09614170846907794
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.2032498664176674
+      },
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.08562771271857798
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.216318507287559
+      },
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.08045461014838608
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.2292854640573931
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.24668093819132014
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.27503327820219425
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.3219231610133041
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.3408545149318119
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.36089916607335804
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.3821225841720226
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.40459408904431854
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.4415489666345225
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.46751516221174627
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.510975490370127
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.5410244555375641
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.5728405119347189
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.6065275769975746
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.6421956792407729
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.6799613176321689
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.7199478421011479
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.7630358486703862
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.8446176873500648
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 0.9323458113158889
+      }
+    ],
+    [
+      {
+        "capacity_bias": 0.98,
+        "junction_id": 2,
+        "kind": "split_merge",
+        "merge_style": "constant_envelope_then_divide",
+        "split_style": "constant_envelope_then_divide",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6798922530668611
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7599314242672172
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8355149471310758
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9153515088998724
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9105031586616347
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8599330274606706
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8121716049888906
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.767062893139546
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7174510278065106
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6776031785582194
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6399685132460766
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6044241097242794
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.555093697499186
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5242633144913726
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.49514527756259186
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4676444815338508
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.42900518039957525
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4051778624465113
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3826739342956581
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3586215755907815
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3058545116060255
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.2849699064865089
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.269142431949757
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.254194029007968
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.24007587326611438
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.22293044080817062
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.1879858735553568
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.15768594353902685
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.1316313011973211
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.10940154706356522
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.10263038511983898
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.09693020495973427
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.09062120904952158
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.08059421812513128
+      }
+    ],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9035213244691119
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8156248589000934
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7331390178183269
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6557503157148353
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5835670751600682
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.5166579086354738
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4879622825114339
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.46086043622679573
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.43526384987383876
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.41108892001691033
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3882566866273242
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 1,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3772002623479193
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 1.0
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.9193221473103214
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.852776726586819
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.8054127712414972
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.760679450851391
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.7184306576808362
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6381184114514412
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.6026767641799655
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.560770704673943
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.49269345534665326
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4653288356397206
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.43948407052711813
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.4150747459730345
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.36045563734118174
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.3404356201681883
+      }
+    ],
+    [
+      {
+        "capacity_bias": 1.18,
+        "junction_id": 0,
+        "kind": "chamber",
+        "merge_style": "pre_widen_then_split",
+        "split_style": "pre_widen_then_split",
+        "weight": 0.298872340097703
+      }
+    ]
+  ],
+  "npz_file": "stage_c_sections.npz",
+  "npz_sha256": "3239be6a1d37cb1d2148ec5a175c42692d5e8d6eaec8af6d3762e5a63348674f",
+  "sample_count": 603,
+  "sampling_policy": "adaptive",
+  "schema": "plume.section-field.v1",
+  "segment_count": 37,
+  "semantic_sha256": "d94bc283249aa8652f62c93a1bf75db49810514f13c27cb9dcba1c15370e3a33"
+}

@@ -1,0 +1,17 @@
+{
+  "coordinate_system": {
+    "length_unit": "metre",
+    "up_axis": "Z"
+  },
+  "field_names": [
+    "elevation",
+    "cover_thickness",
+    "fracture_intensity",
+    "roof_stability",
+    "routing_cost"
+  ],
+  "npz_file": "stage_a_host_fields.npz",
+  "npz_sha256": "91d7741b5f5f0cab1fd48b976f82e572d9fb3031e26aa3f6b4480d50490acabb",
+  "schema": "plume.manim-host-fields.v1",
+  "semantic_sha256": "4534c56653d11631e00a0de8a09533d8d0d285ed705773b758490abfac61f5ee"
+}

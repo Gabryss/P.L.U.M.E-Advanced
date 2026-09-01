@@ -6,6 +6,7 @@ paper/outputs/**
 !paper/outputs/.gitkeep
 paper/data/**
 !paper/data/README.md
+paper/media/video/renders/
 .codex
 .vscode
 

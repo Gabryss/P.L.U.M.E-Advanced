@@ -1,0 +1,15 @@
+{
+  "artifacts": {
+    "stage_a_host_fields.json": "dfe2dcc69c005c6a2ceb5450039728670a7eeb513998b72ec1aa599a89abb6db",
+    "stage_a_host_fields.npz": "91d7741b5f5f0cab1fd48b976f82e572d9fb3031e26aa3f6b4480d50490acabb",
+    "stage_b_network.json": "c13923243a835867ab22a766b16aa6ec911ec1f8565b43b1a0bbe3661f14652a",
+    "stage_c_sections.json": "eca6e6735a72b1dcb4ba76e27a478113e352d86f06b7da295b7facbe8fa7bf0f",
+    "stage_c_sections.npz": "3239be6a1d37cb1d2148ec5a175c42692d5e8d6eaec8af6d3762e5a63348674f"
+  },
+  "body": "earth",
+  "config_path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/project.toml",
+  "config_sha256": "7a95ebae462cd91b4bf9467002d3759d876d47b5e3068bdb868d9f71d9227d6d",
+  "git_commit": "30b53cf0600e7548b1df6272598b2b65627200e5",
+  "resolved_config_sha256": "ca1dd01cbbe8851219b1509a41c9305d01d33c35aa7ba6a5070b11b7ea4fafa2",
+  "schema": "plume.manim-inputs.v1"
+}

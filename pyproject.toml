@@ -26,6 +26,9 @@ paper = [
   "psutil>=6.0",
   "openpyxl>=3.1",
 ]
+video = [
+  "manim>=0.21,<0.22",
+]
 
 [project.scripts]
 plume-generate = "plume_advanced.cli:main"
