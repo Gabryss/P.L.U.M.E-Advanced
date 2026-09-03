@@ -23,6 +23,8 @@ from typing import TypedDict
 import numpy as np
 from numpy.typing import NDArray
 
+from plume_advanced.procedural import procedural_rng
+
 Array1D = NDArray[np.float64]
 Array2D = NDArray[np.float64]
 
@@ -424,28 +426,7 @@ class HostFieldGenerator:
         x_grid: Array2D,
         y_grid: Array2D,
     ) -> HostVariation:
-        wave_phase_offsets = tuple(0.0 for _ in self.config.waves)
-        corridor_depth_scale = np.ones_like(x_grid, dtype=float)
-        corridor_width_scale = np.ones_like(x_grid, dtype=float)
-        competence_bias = np.zeros_like(x_grid, dtype=float)
-        fracture_center_offset = 0.0
-        fracture_width_scale = 1.0
-        drainage_phase_offset = 0.0
-        cross_drainage_phase_offset = 0.0
-
-        if self.config.random_seed is None:
-            return {
-                "wave_phase_offsets": wave_phase_offsets,
-                "corridor_depth_scale": corridor_depth_scale,
-                "corridor_width_scale": corridor_width_scale,
-                "competence_bias": competence_bias,
-                "fracture_center_offset": fracture_center_offset,
-                "fracture_width_scale": fracture_width_scale,
-                "drainage_phase_offset": drainage_phase_offset,
-                "cross_drainage_phase_offset": cross_drainage_phase_offset,
-            }
-
-        rng = np.random.default_rng(self.config.random_seed)
+        rng = procedural_rng(self.config.random_seed, "host-field-variation")
         seed_x, seed_y = self.config.seed_point
         relative_x = x_grid - seed_x
         relative_y = y_grid - seed_y

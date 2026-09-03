@@ -118,6 +118,15 @@ def section_semantic_payload(section_field: SectionField, *, tolerance: float = 
                             ),
                             tolerance,
                         ),
+                        "flow_state": quantized_array(
+                            (
+                                sample.lava_flux,
+                                sample.lava_temperature_k,
+                                sample.lava_age_s,
+                                sample.flow_maturity,
+                            ),
+                            tolerance,
+                        ),
                         "profile": quantized_array(sample.profile_points, tolerance),
                     }
                     for sample in segment_field.samples
@@ -173,6 +182,10 @@ def export_section_artifact(
         roof_arch=np.asarray([sample.roof_arch for sample in samples]),
         lateral_skew=np.asarray([sample.lateral_skew for sample in samples]),
         junction_influence=np.asarray([sample.junction_blend_weight for sample in samples]),
+        lava_flux=np.asarray([sample.lava_flux for sample in samples]),
+        lava_temperature_k=np.asarray([sample.lava_temperature_k for sample in samples]),
+        lava_age_s=np.asarray([sample.lava_age_s for sample in samples]),
+        flow_maturity=np.asarray([sample.flow_maturity for sample in samples]),
         floor_location_xyz_m=floor_locations,
         profile_offsets=offsets,
         profile_points=profile_points,

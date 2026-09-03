@@ -13,6 +13,7 @@ import numpy as np
 from scipy.interpolate import CubicHermiteSpline, CubicSpline
 from scipy.ndimage import gaussian_filter1d
 
+from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.host_field import HostField
 
 SegmentMetadataValue = str | int | float | bool | None
@@ -435,9 +436,7 @@ class CaveNetworkGenerator:
         geometry = self._build_flow_geometry(host_field)
         # Match Stage A's baseline semantics: an unspecified seed produces a
         # stable canonical network, while configured seeds select variations.
-        rng = np.random.default_rng(
-            0 if self.config.random_seed is None else self.config.random_seed
-        )
+        rng = procedural_rng(self.config.random_seed, "network-grammar")
         source_cells = self._select_source_cells(host_field, geometry)
         support_field = self._build_support_field(host_field, geometry)
         downstream_potential = self._build_downstream_potential(
@@ -1510,6 +1509,12 @@ class CaveNetworkGenerator:
                     mask = distances >= length - reach
                 coords[mask] = transition(distances[mask])
             coords[0], coords[-1] = raw[0], raw[-1]
+            # Cubic interpolation may overshoot an edge endpoint by a few
+            # millimetres even though every routed cell is inside the host.
+            # Keep the fitted centreline within the field sampled below.
+            if hasattr(host, "x_coords") and hasattr(host, "y_coords"):
+                coords[:, 0] = np.clip(coords[:, 0], host.x_coords[0], host.x_coords[-1])
+                coords[:, 1] = np.clip(coords[:, 1], host.y_coords[0], host.y_coords[-1])
             new_arc = np.r_[0.0, np.cumsum(np.linalg.norm(np.diff(coords, axis=0), axis=1))]
             widths = np.interp(distances, arc, [point.width for point in segment.points])
             points = []
@@ -1814,12 +1819,35 @@ class CaveNetworkGenerator:
         available_flux: defaultdict[int, float] = defaultdict(float)
         temperature_energy: defaultdict[int, float] = defaultdict(float)
         age_flux: defaultdict[int, float] = defaultdict(float)
-        for node in nodes:
-            if node.kind == "entry":
-                available_flux[node.node_id] += self.config.source_flux
-                temperature_energy[node.node_id] += (
-                    self.config.source_flux * self.config.source_temperature_k
-                )
+        entry_nodes = [node for node in nodes if node.kind == "entry"]
+        entry_strengths: list[float] = []
+        for node in entry_nodes:
+            initial_capacity = sum(
+                max(segment_lookup[segment_id].mean_width, 1e-6) ** 2
+                for segment_id in outgoing.get(node.node_id, [])
+            )
+            source_rng = procedural_rng(
+                self.config.random_seed,
+                "source-strength",
+                node.node_id,
+            )
+            seeded_variation = math.exp(float(source_rng.normal(0.0, 0.18)))
+            entry_strengths.append(max(initial_capacity, 1e-6) * seeded_variation)
+        strength_sum = sum(entry_strengths)
+        for node, strength in zip(entry_nodes, entry_strengths, strict=True):
+            # ``source_flux`` remains the mean inlet discharge, so the total
+            # supply is stable while individual fissure-fed entries vary with
+            # their local carrying capacity and named seed.
+            inlet_flux = (
+                self.config.source_flux
+                * len(entry_nodes)
+                * strength
+                / max(strength_sum, 1e-9)
+            )
+            available_flux[node.node_id] += inlet_flux
+            temperature_energy[node.node_id] += (
+                inlet_flux * self.config.source_temperature_k
+            )
 
         flux_by_segment: dict[int, float] = {}
         temperature_by_segment: dict[int, float] = {}

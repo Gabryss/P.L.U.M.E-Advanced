@@ -11,6 +11,7 @@ from typing import Any
 
 import numpy as np
 
+from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.events import GeologicalEventConfig
 from plume_advanced.stages.floor_map import FloorMapConfig
 from plume_advanced.stages.geometry import GeometryConfig
@@ -346,7 +347,7 @@ def _build_host_field_config(
         raise ValueError(f"Unknown configuration keys: {qualified}")
 
     grid = GridConfig(**grid_data)
-    rng = np.random.default_rng(procedural_seed)
+    rng = procedural_rng(procedural_seed, "host-config-ranges")
 
     for key, value_range in range_data.items():
         if key in {"seed_point_x", "seed_point_y"}:

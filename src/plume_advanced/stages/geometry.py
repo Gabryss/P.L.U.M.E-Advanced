@@ -13,6 +13,7 @@ from scipy import ndimage
 from scipy.spatial import cKDTree
 from skimage import measure
 
+from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.events import (
     GeologicalEvent,
     GeologicalEventField,
@@ -48,8 +49,11 @@ class GeometryGenerator:
 
     def __init__(self, config: GeometryConfig | None = None) -> None:
         self.config = config or GeometryConfig()
-        self._rng = np.random.default_rng(self.config.random_seed)
-        self._roughness_phase = tuple(float(value) for value in self._rng.uniform(0.0, 2.0 * math.pi, size=3))
+        roughness_rng = procedural_rng(self.config.random_seed, "wall-roughness")
+        self._roughness_phase = tuple(
+            float(value)
+            for value in roughness_rng.uniform(0.0, 2.0 * math.pi, size=3)
+        )
 
     def generate(
         self,
@@ -1151,7 +1155,11 @@ class GeometryGenerator:
             radius_long = max(blend_radius, self.config.minimum_radius)
             short_scale = 0.68 if junction.kind == "chamber" else 0.58
             radius_short = max(radius_long * short_scale, sample_radius, self.config.minimum_radius)
-            phase_values = self._rng.uniform(0.0, 2.0 * math.pi, size=3)
+            phase_values = procedural_rng(
+                self.config.random_seed,
+                "junction",
+                junction.junction_id,
+            ).uniform(0.0, 2.0 * math.pi, size=3)
             phase = (
                 float(phase_values[0]),
                 float(phase_values[1]),

@@ -11,6 +11,7 @@ from typing import Any
 
 import numpy as np
 
+from plume_advanced.procedural import derive_subseed, procedural_rng
 from plume_advanced.stages.floor_map import FloorAtlas, FloorCell
 from plume_advanced.stages.section_field import SectionField, SectionSample
 
@@ -301,7 +302,7 @@ class GeologicalEventGenerator:
         if not self.config.enabled or not self.config.enabled_kinds:
             return GeologicalEventField(config=self.config, events=(), meshes=())
 
-        rng = np.random.default_rng(self.config.random_seed)
+        rng = procedural_rng(self.config.random_seed, "event-placement")
         samples = [
             sample
             for segment_field in section_field.segment_fields
@@ -643,6 +644,7 @@ class GeologicalEventGenerator:
         samples: list[SectionSample],
     ) -> list[tuple[float, SectionSample]]:
         scored: list[tuple[float, SectionSample]] = []
+        maximum_flux = max((sample.lava_flux for sample in samples), default=0.0)
         for sample in samples:
             if sample.tube_width <= 0.0 or sample.tube_height <= 0.0:
                 continue
@@ -651,21 +653,47 @@ class GeologicalEventGenerator:
             width_score = sample.tube_width
             narrow_score = 1.0 / max(sample.tube_width, 1.0)
             stability_demand = self._roof_demand_ratio(sample)
+            flux_fraction = float(
+                np.clip(sample.lava_flux / max(maximum_flux, 1e-9), 0.0, 1.0)
+            )
+            low_flow_fraction = 1.0 - flux_fraction
+            flow_maturity = float(np.clip(sample.flow_maturity, 0.0, 1.0))
             if kind == "collapse":
                 score = (
                     2.0 * weak_roof_score
                     + 1.2 * junction_score
                     + 0.05 * width_score
                     + 2.5 * min(stability_demand, 4.0)
+                    + 0.45 * flow_maturity
                 )
             elif kind == "choke":
-                score = 2.0 * narrow_score + 0.8 * junction_score
+                score = (
+                    2.0 * narrow_score
+                    + 0.8 * junction_score
+                    + 0.70 * flow_maturity
+                    + 0.35 * low_flow_fraction
+                )
             elif kind == "infill":
-                score = 0.08 * width_score + 0.5 * junction_score + 0.3 * sample.floor_flatness
+                score = (
+                    0.08 * width_score
+                    + 0.5 * junction_score
+                    + 0.3 * sample.floor_flatness
+                    + 1.10 * flow_maturity
+                    + 0.50 * low_flow_fraction
+                )
             elif kind == "boulder":
-                score = 0.06 * width_score + 0.7 * junction_score + 0.7 * weak_roof_score
+                score = (
+                    0.06 * width_score
+                    + 0.7 * junction_score
+                    + 0.7 * weak_roof_score
+                    + 0.25 * flow_maturity
+                )
             else:
-                score = 0.04 * width_score + 0.25 * junction_score
+                score = (
+                    0.04 * width_score
+                    + 0.25 * junction_score
+                    + 0.20 * flow_maturity
+                )
             scored.append((max(score, 1e-6), sample))
         scored.sort(key=lambda item: item[0], reverse=True)
         return scored
@@ -1259,7 +1287,12 @@ class GeologicalEventGenerator:
                 if edge > 0.70:
                     continue
                 flatness = 1.0 / (1.0 + max(cell.surface_slope_degrees, 0.0) / 8.0)
-                role_weight = (1.25 - edge) * (0.5 + flatness)
+                maturity = float(np.clip(sample.flow_maturity, 0.0, 1.0))
+                role_weight = (
+                    (1.25 - edge)
+                    * (0.5 + flatness)
+                    * (0.65 + 1.10 * maturity)
+                )
             else:
                 role_weight = 1.0
             selected.append((score * role_weight, sample, cell))
@@ -1269,13 +1302,13 @@ class GeologicalEventGenerator:
     def _debris_patch_is_active(self, sample: SectionSample) -> bool:
         patch_length = max(self.config.debris_patch_length_m, 1.0)
         patch_index = int(math.floor(sample.segment_arc_length / patch_length))
-        seed = int(self.config.random_seed or 0)
-        mixed = (
-            (seed + 1) * 2_654_435_761
-            + (sample.segment_id + 1) * 2_246_822_519
-            + (patch_index + 1) * 3_266_489_917
-        ) & 0xFFFFFFFF
-        value = mixed / float(0xFFFFFFFF)
+        mixed = derive_subseed(
+            self.config.random_seed,
+            "debris-patch",
+            sample.segment_id,
+            patch_index,
+        )
+        value = mixed / float(np.iinfo(np.uint32).max)
         return value >= self.config.clean_floor_fraction
 
     def _family_candidates(
@@ -1990,12 +2023,12 @@ class GeologicalEventGenerator:
             cached = self._ground_contact_cache.get(cache_key)
             if cached is not None:
                 return cached[0].copy(), cached[1].copy()
-            contact_seed = (
-                (int(self.config.random_seed or 0) + 1) * 2_654_435_761
-                + (floor_cell.cell_id + 1) * 2_246_822_519
-                + (slot + 1) * 3_266_489_917
-            ) & 0xFFFFFFFF
-            offset_rng = np.random.default_rng(contact_seed)
+            offset_rng = procedural_rng(
+                self.config.random_seed,
+                "ground-contact",
+                floor_cell.cell_id,
+                slot,
+            )
         tangent_offset = float(offset_rng.uniform(-jitter, jitter))
         lateral_offset = float(offset_rng.uniform(-jitter, jitter))
         target_lateral = float(
@@ -2222,7 +2255,7 @@ class GeologicalEventGenerator:
             texture_sets = discover_texture_sets(config.texture_dir)
             material_maps = choose_texture_set(
                 texture_sets,
-                np.random.default_rng(seed),
+                procedural_rng(seed, "rock-material-selection"),
                 material_type,
             )
         except Exception as error:
@@ -2342,23 +2375,25 @@ class GeologicalEventGenerator:
             ("ropy_lava_fragment", "ropy_lava_clast", "porous_lava", "icosphere"),
             ("eroded_irregular", "weird_erosion", "dry_boulder", "icosphere"),
         )
-        profile_index = (event.event_id + int(self.config.random_seed or 0)) % len(profiles)
+        profile_offset = derive_subseed(
+            self.config.random_seed,
+            "rock-profile-family",
+        ) % len(profiles)
+        profile_index = (event.event_id + profile_offset) % len(profiles)
         if event.kind == "boulder":
             profile_index = (profile_index + 1) % len(profiles)
         return profiles[profile_index]
 
     def _event_seed(self, event: GeologicalEvent) -> int:
-        base_seed = self.config.random_seed or 0
         return (
-            int(
-                (
-                    base_seed * 1_000_003
-                    + event.event_id * 9_176
-                    + event.segment_id * 131
-                    + event.sample_index
-                )
-                % (2**31 - 1)
+            derive_subseed(
+                self.config.random_seed,
+                "rock-mesh",
+                event.event_id,
+                event.segment_id,
+                event.sample_index,
             )
+            % (2**31 - 1)
             or 1
         )
 

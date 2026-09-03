@@ -4,6 +4,7 @@ from dataclasses import fields
 
 import pytest
 
+from plume_advanced.procedural import derive_subseed, procedural_rng
 from plume_advanced.world import (
     APPLICATION_EXPORT_FORMATS,
     EXPORT_FORMATS_BY_TARGET,
@@ -49,6 +50,16 @@ def test_stage_seeds_are_named_deterministic_and_independent() -> None:
     assert all(
         getattr(derive_stage_seeds(None), name) is None
         for name in names
+    )
+
+
+def test_procedural_subseeds_are_stable_and_domain_isolated() -> None:
+    assert derive_subseed(17, "segment", 4) == derive_subseed(17, "segment", 4)
+    assert derive_subseed(None, "segment", 4) == derive_subseed(0, "segment", 4)
+    assert derive_subseed(17, "segment", 4) != derive_subseed(17, "segment", 5)
+    assert derive_subseed(17, "segment", 4) != derive_subseed(17, "junction", 4)
+    assert procedural_rng(17, "segment", 4).normal() == pytest.approx(
+        procedural_rng(17, "segment", 4).normal()
     )
 
 

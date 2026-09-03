@@ -19,6 +19,7 @@ import trimesh
 import xatlas
 from scipy.spatial import cKDTree
 
+from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.geometry_types import CaveGeometry, SurfaceTextureFrame
 
 GLB_EMBEDDED_TEXTURE_MAX_SIZE = 1024
@@ -833,7 +834,7 @@ def _surface_roughness_weights(
     positions = np.asarray(vertices, dtype=np.float64)
     if len(positions) == 0:
         return np.empty(0, dtype=np.float64)
-    rng = np.random.default_rng(0 if variation_seed is None else variation_seed)
+    rng = procedural_rng(variation_seed, "export-surface-detail")
     phase_a, phase_b, phase_c = rng.uniform(0.0, 2.0 * np.pi, size=3)
     frequency = max(float(roughness_frequency) * 0.28, 0.025)
     x_coord, y_coord, z_coord = positions.T

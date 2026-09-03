@@ -1,6 +1,7 @@
 """Smoke tests for the stage-C section field."""
 
 import math
+import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
@@ -10,6 +11,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 
 from plume_advanced.config import load_project_config
+from plume_advanced.evaluation.artifacts import export_section_artifact
 from plume_advanced.stages.host_field import HostFieldGenerator
 from plume_advanced.stages.network import CaveNetworkGenerator
 from plume_advanced.stages.section_field import SectionFieldGenerator
@@ -42,6 +44,12 @@ class SectionFieldTests(unittest.TestCase):
             self.assertTrue(segment_field.samples)
             for start, end in zip(segment_field.samples, segment_field.samples[1:]):
                 sample_spacings.append(end.segment_arc_length - start.segment_arc_length)
+                self.assertGreaterEqual(end.lava_age_s + 1e-9, start.lava_age_s)
+                self.assertLessEqual(
+                    end.lava_temperature_k,
+                    start.lava_temperature_k + 1e-9,
+                )
+                self.assertGreaterEqual(end.flow_maturity + 1e-9, start.flow_maturity)
             for sample in segment_field.samples:
                 self.assertGreater(sample.tube_width, 0.0)
                 self.assertGreater(sample.tube_height, 0.0)
@@ -53,6 +61,11 @@ class SectionFieldTests(unittest.TestCase):
                 self.assertGreater(sample.centerline_depth, 0.5 * sample.tube_height)
                 self.assertGreater(sample.roof_thickness, 0.0)
                 self.assertGreater(sample.cover_thickness, sample.roof_thickness)
+                self.assertGreater(sample.lava_flux, 0.0)
+                self.assertGreater(sample.lava_temperature_k, 273.15)
+                self.assertGreaterEqual(sample.lava_age_s, 0.0)
+                self.assertGreaterEqual(sample.flow_maturity, 0.0)
+                self.assertLessEqual(sample.flow_maturity, 1.0)
                 self.assertTrue(np.allclose(sample.profile_points[0], sample.profile_points[-1]))
                 tangent = np.array(sample.tangent, dtype=float)
                 normal = np.array(sample.normal, dtype=float)
@@ -117,6 +130,21 @@ class SectionFieldTests(unittest.TestCase):
             room_cap,
         )
         self.assertGreater(float(np.mean(surface_offsets)), 6.0)
+        self.assertGreater(summary["mean_lava_flux"], 0.0)
+        self.assertGreater(summary["mean_lava_temperature_k"], 273.15)
+        self.assertGreater(summary["max_lava_age_s"], 0.0)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            npz_path, _ = export_section_artifact(
+                section_field,
+                Path(temp_dir) / "sections",
+            )
+            with np.load(npz_path) as artifact:
+                self.assertIn("lava_flux", artifact)
+                self.assertIn("lava_temperature_k", artifact)
+                self.assertIn("lava_age_s", artifact)
+                self.assertIn("flow_maturity", artifact)
+                self.assertEqual(artifact["lava_flux"].shape, widths.shape)
 
         segment_field_lookup = {
             segment_field.segment_id: segment_field for segment_field in section_field.segment_fields

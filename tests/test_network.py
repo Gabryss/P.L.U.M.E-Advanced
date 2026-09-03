@@ -180,6 +180,53 @@ class CaveNetworkTests(unittest.TestCase):
 
         self.assertAlmostEqual(resolved[0].mean_width, 4.0)
 
+    def test_seeded_inlet_strengths_vary_but_preserve_total_supply(self) -> None:
+        config = CaveNetworkConfig(random_seed=31, source_flux=5.0)
+        nodes = [
+            CaveNode(0, 0.0, -5.0, 0.0, -5.0, "entry"),
+            CaveNode(1, 0.0, 5.0, 0.0, 5.0, "entry"),
+            CaveNode(2, 10.0, 0.0, 10.0, 0.0, "junction"),
+            CaveNode(3, 20.0, 0.0, 20.0, 0.0, "exit"),
+        ]
+
+        def segment(segment_id: int, start: int, end: int, width: float) -> CaveSegment:
+            return CaveSegment(
+                segment_id,
+                start,
+                end,
+                "source_feeder" if start in {0, 1} else "backbone",
+                0,
+                tuple(
+                    CavePoint(
+                        index=index,
+                        x=float(index * 10),
+                        y=0.0,
+                        elevation=0.0,
+                        slope_degrees=0.0,
+                        cover_thickness=10.0,
+                        roof_competence=1.0,
+                        growth_cost=0.0,
+                        arc_length=float(index * 10),
+                        width=width,
+                    )
+                    for index in range(2)
+                ),
+                {},
+            )
+
+        resolved = CaveNetworkGenerator(config)._assign_conserved_flow(
+            nodes,
+            [
+                segment(0, 0, 2, 3.0),
+                segment(1, 1, 2, 6.0),
+                segment(2, 2, 3, 6.0),
+            ],
+        )
+        by_id = {item.segment_id: item for item in resolved}
+        self.assertNotAlmostEqual(by_id[0].mean_flux, by_id[1].mean_flux)
+        self.assertAlmostEqual(by_id[0].mean_flux + by_id[1].mean_flux, 10.0)
+        self.assertAlmostEqual(by_id[2].mean_flux, 10.0)
+
     def test_spur_direction_is_authoritative_when_it_bends_upstream(self) -> None:
         config = CaveNetworkConfig(source_flux=9.0)
         nodes = [

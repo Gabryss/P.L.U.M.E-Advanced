@@ -2,8 +2,8 @@
 
 `PLUME-Advanced` is a staged procedural pyroduct / lava-tube prototype.
 
-The major architecture upgrade is active on
-`major-procedural-upgrade`. Its implementation roadmap, acceptance
+The network reliability and procedural-flow upgrade is active on
+`codex/network-reliability-overhaul`. Its implementation roadmap, acceptance
 criteria, and dependency policy are in
 [`docs/MAJOR_UPGRADE_PLAN.md`](docs/MAJOR_UPGRADE_PLAN.md). The configured
 export builds packages for Blender, UE5, Unity, Gazebo, and NVIDIA Omniverse
@@ -81,7 +81,9 @@ splits/merges, and every point carries flux, temperature, and lava age.
 Stage C generates geometry-ready cross-section samples along the network:
 adaptive sample spacing, underground centerline placement, 3D local frames,
 lava-tube profile controls, and junction-aware blending through split/merge
-regions.
+regions. Flux, temperature, lava age, and derived flow maturity remain attached
+to every sample, so later morphology and deposits follow the same formation
+history as the network.
 
 ### Stage D: Geometry
 
@@ -113,6 +115,9 @@ change the final render and collision topology instead of adding decorative
 ellipsoids. A configurable share of loose debris is sampled from floor cells
 around collapse regions, with relaxed intra-cluster spacing and explicit
 parent-collapse metadata.
+Candidate ranking also follows the inherited flow state: mature, cooled, and
+lower-flux reaches preferentially accumulate infill and transported lag, while
+structural controls continue to govern collapse and choke placement.
 
 ## Celestial-body comparison
 
@@ -246,6 +251,8 @@ The generator:
 - turns underpass levels into smooth, clearance-constrained vertical grades
 - derives smooth section controls such as width, height, floor relief, roof arch, and lateral skew
 - samples fixed-draw segment morphology latents for broader but deterministic size and aspect-ratio variation
+- interpolates Stage-B flux, temperature, and lava age into every section and derives a normalized flow-maturity field
+- lets progressive cooling and age subtly lower the profile, flatten the floor, and change bounded wall relief
 - adds bounded multi-harmonic wall/floor relief while keeping every local profile finite, simple, and closed
 - uses explicit Stage-B junction regions to blend split/merge morphology without hard jumps at nodes
 - records per-sample junction influences for later split/merge volume construction
@@ -293,8 +300,14 @@ Execution flow:
 10. write source, resolved configuration, and floor-map metadata in `outputs/`
 
 `procedural_seed` is expanded into stable named seeds for host, network,
-sections, events, and geometry. Consequently, disabling events cannot perturb
-the network.
+sections, events, and geometry. Each generator then derives labeled sub-seeds
+for independent domains such as route grammar, inlet strength, per-segment
+morphology, junction relief, event placement, ground contacts, and exported
+surface detail. The streams are based on labels rather than call order, so
+adding a detail draw or disabling events cannot perturb the network. Direct
+generator use without an explicit seed resolves to the reproducible baseline
+seed `0`; it never falls back to operating-system entropy or disables
+procedural variation.
 
 ### World, run, and export config
 
@@ -823,6 +836,7 @@ Implemented as a two-pass surface-query and structural-modifier stage.
 What exists now:
 
 - deterministic placement from Stage-C samples and named event seed
+- flow-aware placement using inherited flux, temperature, age, and maturity
 - base-density floor raycasts and contact normals for prop placement
 - surface-aligned, slightly embedded rock and boulder props
 - collapse, choke, and floor-infill SDF modifiers
@@ -851,9 +865,9 @@ continues to affect representation rather than defining network topology.
 
 The current project state is intentionally narrow:
 
-- Stage A builds the terrain and structural substrate
-- Stage B builds the current braided cave-network skeleton
-- Stage C builds adaptive lava-tube cross-sections around that skeleton
+- Stage A builds a seeded terrain and structural substrate
+- Stage B grows a seeded, host-guided braided network with conserved flow and independent inlet strengths
+- Stage C builds seeded adaptive sections while preserving flux, cooling, and age along every tube
 - Stage D1 stamps the base network into a voxel density field
 - Stage E grounds prop meshes and creates structural density modifiers
 - Stage D2 meshes the final cave and exports grounded props alongside it

@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 
+from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.network import CaveJunction, CaveNetwork, CaveSegment
 
 
@@ -108,6 +109,10 @@ class SectionSample:
     junction_blend_weight: float
     junction_influences: tuple[SectionJunctionInfluence, ...]
     profile_points: tuple[tuple[float, float], ...]
+    lava_flux: float = 0.0
+    lava_temperature_k: float = 0.0
+    lava_age_s: float = 0.0
+    flow_maturity: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -141,6 +146,9 @@ class SectionField:
                 "mean_tube_height": 0.0,
                 "min_tube_height": 0.0,
                 "max_tube_height": 0.0,
+                "mean_lava_flux": 0.0,
+                "mean_lava_temperature_k": 0.0,
+                "max_lava_age_s": 0.0,
             }
 
         all_samples = [
@@ -161,6 +169,11 @@ class SectionField:
             "mean_tube_height": float(np.mean(tube_heights)),
             "min_tube_height": float(np.min(tube_heights)),
             "max_tube_height": float(np.max(tube_heights)),
+            "mean_lava_flux": float(np.mean([sample.lava_flux for sample in all_samples])),
+            "mean_lava_temperature_k": float(
+                np.mean([sample.lava_temperature_k for sample in all_samples])
+            ),
+            "max_lava_age_s": float(max(sample.lava_age_s for sample in all_samples)),
         }
 
 
@@ -171,8 +184,21 @@ class SectionFieldGenerator:
         self.config = config or SectionFieldConfig()
 
     def generate(self, cave_network: CaveNetwork) -> SectionField:
-        rng = np.random.default_rng(self.config.random_seed)
         segment_lookup = {segment.segment_id: segment for segment in cave_network.segments}
+        flow_points = [
+            point
+            for segment in cave_network.segments
+            for point in segment.points
+        ]
+        maximum_lava_age_s = max((point.age_s for point in flow_points), default=0.0)
+        maximum_lava_temperature_k = max(
+            (point.temperature_k for point in flow_points),
+            default=0.0,
+        )
+        minimum_lava_temperature_k = min(
+            (point.temperature_k for point in flow_points),
+            default=maximum_lava_temperature_k,
+        )
         dominant_route_segment_ids = self._build_dominant_route_segment_ids(
             cave_network,
             segment_lookup,
@@ -193,12 +219,21 @@ class SectionFieldGenerator:
                 if segment.segment_id in junction.segment_ids
             )
             arc_positions = self._build_arc_positions(segment, connected_junctions)
-            morphology = self._sample_segment_morphology(rng)
+            morphology = self._sample_segment_morphology(
+                procedural_rng(
+                    self.config.random_seed,
+                    "segment-morphology",
+                    segment.segment_id,
+                )
+            )
             samples = self._build_segment_samples(
                 segment=segment,
                 connected_junctions=connected_junctions,
                 arc_positions=arc_positions,
                 morphology=morphology,
+                maximum_lava_age_s=maximum_lava_age_s,
+                maximum_lava_temperature_k=maximum_lava_temperature_k,
+                minimum_lava_temperature_k=minimum_lava_temperature_k,
                 initial_normal=(
                     node_normal_preferences.get(segment.start_node_id)
                     or node_normal_preferences.get(segment.end_node_id)
@@ -515,6 +550,9 @@ class SectionFieldGenerator:
         connected_junctions: tuple[CaveJunction, ...],
         arc_positions: tuple[float, ...],
         morphology: _SegmentMorphologyState,
+        maximum_lava_age_s: float,
+        maximum_lava_temperature_k: float,
+        minimum_lava_temperature_k: float,
         initial_normal: tuple[float, float, float] | None,
     ) -> list[SectionSample]:
         samples: list[SectionSample] = []
@@ -528,10 +566,54 @@ class SectionFieldGenerator:
             normal, binormal = self._build_frame(tangent, previous_normal)
             previous_normal = normal
 
+            lava_flux = self._interpolate_attr(segment, arc_length, "flux")
+            lava_temperature_k = self._interpolate_attr(
+                segment,
+                arc_length,
+                "temperature_k",
+            )
+            lava_age_s = self._interpolate_attr(segment, arc_length, "age_s")
+            age_fraction = float(
+                np.clip(lava_age_s / max(maximum_lava_age_s, 1e-9), 0.0, 1.0)
+            )
+            temperature_span = max(
+                maximum_lava_temperature_k - minimum_lava_temperature_k,
+                1e-9,
+            )
+            cooling_fraction = float(
+                np.clip(
+                    (maximum_lava_temperature_k - lava_temperature_k)
+                    / temperature_span,
+                    0.0,
+                    1.0,
+                )
+            )
+            flow_maturity = 0.60 * age_fraction + 0.40 * cooling_fraction
+
             width = self._section_width(segment, arc_length, morphology)
-            height_ratio = self._height_ratio(segment, arc_length, morphology)
-            tube_height = max(width * height_ratio, self.config.minimum_tube_height)
-            floor_flatness = self._floor_flatness(segment, arc_length, width)
+            height_ratio = self._height_ratio(
+                segment,
+                arc_length,
+                morphology,
+                flow_maturity,
+            )
+            raw_tube_height = width * height_ratio
+            height_softness = max(0.15 * self.config.minimum_tube_height, 0.05)
+            tube_height = float(
+                self.config.minimum_tube_height
+                + height_softness
+                * np.logaddexp(
+                    0.0,
+                    (raw_tube_height - self.config.minimum_tube_height)
+                    / height_softness,
+                )
+            )
+            floor_flatness = self._floor_flatness(
+                segment,
+                arc_length,
+                width,
+                flow_maturity,
+            )
             roof_arch = self._roof_arch(segment, arc_length)
             lateral_skew = self._lateral_skew(
                 segment=segment,
@@ -591,7 +673,13 @@ class SectionFieldGenerator:
                 floor_flatness=floor_flatness,
                 roof_arch=roof_arch,
                 lateral_skew=lateral_skew,
-                wall_roughness=morphology.wall_roughness,
+                wall_roughness=float(
+                    np.clip(
+                        morphology.wall_roughness * (0.85 + 0.30 * flow_maturity),
+                        0.0,
+                        0.20,
+                    )
+                ),
                 floor_relief=morphology.floor_relief,
                 roughness_phase=self._morphology_phase(
                     segment, arc_length, morphology.secondary_phase, wavelength_fraction=0.38
@@ -623,6 +711,10 @@ class SectionFieldGenerator:
                     junction_blend_weight=junction_blend_weight,
                     junction_influences=junction_influences,
                     profile_points=profile_points,
+                    lava_flux=lava_flux,
+                    lava_temperature_k=lava_temperature_k,
+                    lava_age_s=lava_age_s,
+                    flow_maturity=flow_maturity,
                 )
             )
         return samples
@@ -764,6 +856,7 @@ class SectionFieldGenerator:
         segment: CaveSegment,
         arc_length: float,
         morphology: _SegmentMorphologyState,
+        flow_maturity: float,
     ) -> float:
         roof_competence = self._interpolate_attr(segment, arc_length, "roof_competence")
         width = self._smoothed_width(segment, arc_length)
@@ -772,6 +865,7 @@ class SectionFieldGenerator:
             self.config.base_height_ratio
             + 0.08 * (roof_competence - 0.5)
             - 0.06 * np.clip((width - 9.5) / 7.5, 0.0, 1.0)
+            - 0.055 * flow_maturity
             + interior_envelope * morphology.height_ratio_offset
             + self.config.height_ratio_longitudinal_variation
             * interior_envelope
@@ -804,12 +898,14 @@ class SectionFieldGenerator:
         segment: CaveSegment,
         arc_length: float,
         width: float,
+        flow_maturity: float,
     ) -> float:
         growth_cost = self._interpolate_attr(segment, arc_length, "growth_cost")
         flatness = (
             self.config.floor_flatness_base
             + self.config.floor_flatness_width_weight * np.clip((width - 7.0) / 6.0, 0.0, 1.0)
             + 0.06 * growth_cost
+            + 0.045 * flow_maturity
         )
         return float(np.clip(flatness, 0.28, 0.92))
 

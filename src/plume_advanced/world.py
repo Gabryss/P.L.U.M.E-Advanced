@@ -7,11 +7,12 @@ responsible for converting units and axes for target applications.
 
 from __future__ import annotations
 
-import zlib
 from dataclasses import dataclass, fields, replace
 from typing import Any
 
 import numpy as np
+
+from plume_advanced.procedural import derive_subseed
 
 SUPPORTED_EVENT_KINDS = frozenset({"rock", "boulder", "collapse", "choke", "infill"})
 SUPPORTED_EXPORT_TARGETS = frozenset(
@@ -356,9 +357,7 @@ def derive_stage_seeds(procedural_seed: int | None) -> StageSeeds:
 
     values: dict[str, int] = {}
     for label in labels:
-        label_code = zlib.crc32(label.encode("utf-8"))
-        sequence = np.random.SeedSequence([int(procedural_seed), label_code])
-        values[label] = int(sequence.generate_state(1, dtype=np.uint32)[0])
+        values[label] = derive_subseed(procedural_seed, "stage", label)
     return StageSeeds(**values)
 
 

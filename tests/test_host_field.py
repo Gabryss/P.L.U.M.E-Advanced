@@ -10,7 +10,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 
 from plume_advanced.config import load_project_config
-from plume_advanced.stages.host_field import HostFieldConfig, HostFieldGenerator
+from plume_advanced.stages.host_field import GridConfig, HostFieldConfig, HostFieldGenerator
 
 
 class HostFieldTests(unittest.TestCase):
@@ -99,6 +99,17 @@ class HostFieldTests(unittest.TestCase):
 
         self.assertGreater(mean_elevation_difference, 0.25)
         self.assertGreater(mean_roof_difference, 0.01)
+
+    def test_omitted_seed_uses_the_reproducible_seed_zero_world(self) -> None:
+        grid = GridConfig(width=300.0, height=240.0, nx=48, ny=40)
+        implicit = HostFieldGenerator(HostFieldConfig(grid=grid)).generate()
+        explicit = HostFieldGenerator(
+            HostFieldConfig(grid=grid, random_seed=0)
+        ).generate()
+
+        self.assertTrue(np.array_equal(implicit.elevation, explicit.elevation))
+        self.assertTrue(np.array_equal(implicit.roof_competence, explicit.roof_competence))
+        self.assertTrue(np.array_equal(implicit.growth_cost, explicit.growth_cost))
 
     def test_project_seed_resolves_high_level_host_ranges(self) -> None:
         config_text = (ROOT / "config" / "project.toml").read_text(encoding="utf-8")
