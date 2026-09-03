@@ -149,6 +149,12 @@ class CaveNetworkPlotter:
             elif segment.kind == "chamber_braid":
                 color = "#fb7185"
                 linewidth = 0.8 if dense_graph else 1.0
+            elif segment.kind == "anastomosis":
+                color = "#38bdff"
+                linewidth = 0.75 if dense_graph else 1.0
+            elif segment.kind == "distributary":
+                color = "#a7f3d0"
+                linewidth = 0.7 if dense_graph else 0.95
             elif segment.kind == "ladder":
                 color = "#f59e0b"
                 linewidth = 0.65 if dense_graph else 0.9
@@ -156,6 +162,10 @@ class CaveNetworkPlotter:
                 color = "#c084fc"
                 linewidth = 0.7 if dense_graph else 0.95
                 linestyle = (0, (3, 2))
+            elif segment.kind in {"abandoned_lobe", "stalled_lobe"}:
+                color = "#fb923c"
+                linewidth = 0.6 if dense_graph else 0.85
+                linestyle = (0, (2, 2))
             else:
                 color = "#facc15"
                 linewidth = 0.6 if dense_graph else 0.85
@@ -313,7 +323,7 @@ class CaveNetworkPlotter:
         widths_by_bin: list[list[float]] = [[] for _ in along_positions]
 
         for segment in cave_network.segments:
-            if segment.kind == "spur" or not segment.points:
+            if segment.kind in {"spur", "abandoned_lobe", "stalled_lobe"} or not segment.points:
                 continue
             start_node = nodes_by_id.get(segment.start_node_id)
             end_node = nodes_by_id.get(segment.end_node_id)

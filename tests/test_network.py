@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.metrics.network import network_metrics
+from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.host_field import HostFieldConfig, HostFieldGenerator
 from plume_advanced.stages.network import (
     CaveNetworkConfig,
@@ -28,6 +29,32 @@ from plume_advanced.stages.network import (
 
 
 class CaveNetworkTests(unittest.TestCase):
+    def test_downflow_perturbation_is_seeded_and_spatially_correlated(self) -> None:
+        first = CaveNetworkGenerator._correlated_terrain_perturbation(
+            (64, 64),
+            amplitude_m=2.5,
+            correlation_cells=4.0,
+            rng=procedural_rng(19, "test-downflow"),
+        )
+        repeated = CaveNetworkGenerator._correlated_terrain_perturbation(
+            (64, 64),
+            amplitude_m=2.5,
+            correlation_cells=4.0,
+            rng=procedural_rng(19, "test-downflow"),
+        )
+        changed = CaveNetworkGenerator._correlated_terrain_perturbation(
+            (64, 64),
+            amplitude_m=2.5,
+            correlation_cells=4.0,
+            rng=procedural_rng(20, "test-downflow"),
+        )
+
+        np.testing.assert_array_equal(first, repeated)
+        self.assertFalse(np.array_equal(first, changed))
+        self.assertAlmostEqual(float(np.std(first)), 2.5)
+        self.assertLess(float(np.std(np.diff(first, axis=0))), float(np.std(first)))
+        self.assertLess(float(np.std(np.diff(first, axis=1))), float(np.std(first)))
+
     def test_natural_split_envelope_has_broad_smooth_shoulders(self) -> None:
         envelope = CaveNetworkGenerator._natural_split_envelope
         self.assertEqual(envelope(0.0, 0.3, 1.0), 0.0)
@@ -394,15 +421,17 @@ class CaveNetworkTests(unittest.TestCase):
             1.5,
         )
 
+        self.assertEqual(project_config.network.growth_model, "hybrid_lobe")
         segment_kinds = {segment.kind for segment in cave_network.segments}
         self.assertIn("source_feeder", segment_kinds)
         self.assertIn("backbone", segment_kinds)
-        self.assertIn("island_bypass", segment_kinds)
-        self.assertIn("chamber_braid", segment_kinds)
-        self.assertIn("ladder", segment_kinds)
-        self.assertIn("spur", segment_kinds)
+        self.assertIn("anastomosis", segment_kinds)
+        self.assertTrue(segment_kinds & {"abandoned_lobe", "stalled_lobe"})
+        self.assertFalse(
+            segment_kinds & {"island_bypass", "chamber_braid", "inner_bypass", "ladder"}
+        )
         self.assertIn("chamber", {node.kind for node in cave_network.nodes})
-        self.assertIn("spur_terminal", {node.kind for node in cave_network.nodes})
+        self.assertIn("terminal", {node.kind for node in cave_network.nodes})
         self.assertTrue(cave_network.junctions)
         self.assertTrue(any(junction.kind == "chamber" for junction in cave_network.junctions))
         self.assertTrue(
@@ -433,17 +462,26 @@ class CaveNetworkTests(unittest.TestCase):
                 )
             )
 
-        island_segments = [segment for segment in cave_network.segments if segment.kind == "island_bypass"]
-        self.assertTrue(island_segments)
-        self.assertTrue(all(segment.metadata["island_id"] is not None for segment in island_segments))
-
         chamber_segments = [
             segment
             for segment in cave_network.segments
-            if segment.kind in {"chamber_braid", "ladder"}
+            if segment.kind == "anastomosis"
         ]
         self.assertTrue(chamber_segments)
         self.assertTrue(all(segment.metadata["chamber_id"] is not None for segment in chamber_segments))
+        self.assertTrue(
+            all(segment.metadata.get("growth_model") == "hybrid_lobe" for segment in chamber_segments)
+        )
+        self.assertTrue(
+            all(float(segment.metadata.get("initial_flux", 0.0)) > 0.0 for segment in chamber_segments)
+        )
+        self.assertTrue(
+            all(
+                float(segment.metadata.get("final_temperature_k", 0.0))
+                < project_config.network.source_temperature_k
+                for segment in chamber_segments
+            )
+        )
 
         flow_angle = math.radians(project_config.host_field.flow_angle_degrees)
         flow_direction = (math.cos(flow_angle), math.sin(flow_angle))

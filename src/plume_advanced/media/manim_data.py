@@ -315,7 +315,9 @@ def _choose_hero_segment(
     if not counts:
         raise ValueError("Network and section artifacts have no segment IDs in common")
     topology_kinds = {
+        "anastomosis",
         "chamber_braid",
+        "distributary",
         "inner_bypass",
         "island_bypass",
         "ladder",

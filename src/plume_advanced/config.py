@@ -21,7 +21,11 @@ from plume_advanced.stages.host_field import (
     RoutingWeights,
     TerrainWave,
 )
-from plume_advanced.stages.network import BraidGrammarConfig, CaveNetworkConfig
+from plume_advanced.stages.network import (
+    BraidGrammarConfig,
+    CaveNetworkConfig,
+    LobeGrowthConfig,
+)
 from plume_advanced.stages.section_field import SectionFieldConfig
 from plume_advanced.world import (
     SUPPORTED_EVENT_KINDS,
@@ -661,6 +665,24 @@ def _build_network_config(
         for key, value in braid_grammar_data.items()
     }
     config_data["braid_grammar"] = BraidGrammarConfig(**braid_grammar_values)
+    lobe_growth_data = dict(config_data.pop("lobe_growth", {}))
+    _reject_unknown_keys(
+        "network.lobe_growth",
+        lobe_growth_data,
+        LobeGrowthConfig,
+    )
+    lobe_path_range = _to_range_tuple(
+        lobe_growth_data.get("path_count", list(LobeGrowthConfig.path_count))
+    )
+    lobe_growth_data["path_count"] = [
+        max(0, int(round(value * branch_abundance_scale)))
+        for value in lobe_path_range
+    ]
+    lobe_growth_values: Any = {
+        key: _to_range_tuple(value) if isinstance(value, list) else value
+        for key, value in lobe_growth_data.items()
+    }
+    config_data["lobe_growth"] = LobeGrowthConfig(**lobe_growth_values)
     return CaveNetworkConfig(**config_data)
 
 
@@ -936,9 +958,17 @@ def _apply_dev_mode(
     else:
         zone_count = (min(zone_min, zone_cap), min(zone_max, zone_cap))
     grammar = replace(grammar, zone_count=zone_count)
+    lobe_growth = network.lobe_growth
+    path_min, path_max = lobe_growth.path_count
+    path_cap = max(1, 3 * max(zone_cap, 1))
+    lobe_growth = replace(
+        lobe_growth,
+        path_count=(min(path_min, path_cap), min(path_max, path_cap)),
+    )
     network = replace(
         network,
         braid_grammar=grammar,
+        lobe_growth=lobe_growth,
         target_route_length_m=min(network.target_route_length_m, target_height),
         trace_max_steps=max(48, target_grid.ny),
         spur_count=min(network.spur_count, max(1, zone_cap)),
@@ -1026,6 +1056,47 @@ def _validate_pipeline_configs(
         raise ValueError("network.cooling_k_per_m cannot be negative")
     if not 0.0 < network.chamber_radius_fraction <= 1.0:
         raise ValueError("network.chamber_radius_fraction must be in (0, 1]")
+    if network.growth_model not in {"hybrid_lobe", "legacy_braid"}:
+        raise ValueError("network.growth_model must be hybrid_lobe or legacy_braid")
+    lobe = network.lobe_growth
+    for name, value_range in (
+        ("path_count", lobe.path_count),
+        ("maximum_steps", lobe.maximum_steps),
+        ("branch_flux_fraction", lobe.branch_flux_fraction),
+    ):
+        if value_range[0] > value_range[1]:
+            raise ValueError(f"network.lobe_growth.{name} must have min <= max")
+    if lobe.path_count[0] < 0 or lobe.maximum_steps[0] <= 0:
+        raise ValueError("network.lobe_growth path counts and step limits are invalid")
+    if lobe.minimum_persistence_steps <= 0:
+        raise ValueError("network.lobe_growth.minimum_persistence_steps must be positive")
+    if lobe.minimum_persistence_steps > lobe.maximum_steps[1]:
+        raise ValueError(
+            "network.lobe_growth.minimum_persistence_steps cannot exceed maximum_steps"
+        )
+    positive_lobe_values = {
+        "minimum_anchor_spacing_fraction": lobe.minimum_anchor_spacing_fraction,
+        "perturbation_correlation_cells": lobe.perturbation_correlation_cells,
+        "candidate_temperature": lobe.candidate_temperature,
+        "exposed_cooling_multiplier": lobe.exposed_cooling_multiplier,
+        "retirement_temperature_k": lobe.retirement_temperature_k,
+    }
+    if any(value <= 0.0 for value in positive_lobe_values.values()):
+        raise ValueError("network.lobe_growth positive controls must be greater than zero")
+    if lobe.terrain_perturbation_m < 0.0:
+        raise ValueError("network.lobe_growth.terrain_perturbation_m cannot be negative")
+    if min(
+        lobe.inertia_weight,
+        lobe.perturbed_slope_weight,
+        lobe.downstream_potential_weight,
+        lobe.initial_divergence_weight,
+        lobe.channel_avoidance_weight,
+        lobe.channel_reuse_weight,
+        lobe.branch_flux_fraction[0],
+    ) < 0.0:
+        raise ValueError("network.lobe_growth weights and flux fractions cannot be negative")
+    if not 0.0 <= lobe.retired_path_fraction <= 1.0:
+        raise ValueError("network.lobe_growth.retired_path_fraction must be in [0, 1]")
     grammar = network.braid_grammar
     for name, value_range in (
         ("zone_count", grammar.zone_count),

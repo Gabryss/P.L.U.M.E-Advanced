@@ -264,6 +264,11 @@ class FloorMapGenerator:
                     is_terminus=is_terminus,
                 )
             )
+        cells = self._ensure_structural_event_coverage(
+            cells,
+            event_field=event_field,
+            applied_structural_ids=applied_structural_ids,
+        )
         return FloorAtlas(
             config=self.config,
             cells=tuple(cells),
@@ -369,8 +374,12 @@ class FloorMapGenerator:
         }
         position = np.asarray(cell.position, dtype=float)
         for event in events:
+            # Collapse talus remains a real floor deposit even if the optional
+            # volume cut is rejected to preserve cave connectivity.  Choke and
+            # infill classifications, by contrast, require an applied volume
+            # modifier.
             if (
-                event.kind in {"collapse", "choke", "infill"}
+                event.kind in {"choke", "infill"}
                 and event.event_id not in applied_structural_ids
             ):
                 continue
@@ -423,6 +432,91 @@ class FloorMapGenerator:
             is_chamber=is_chamber,
             is_terminus=is_terminus,
         )
+
+    @staticmethod
+    def _ensure_structural_event_coverage(
+        cells: list[FloorCell],
+        *,
+        event_field: Any | None,
+        applied_structural_ids: set[int],
+    ) -> list[FloorCell]:
+        """Project structural evidence onto the surviving floor.
+
+        Structural carving can remove every atlas sample inside an event's
+        ordinary influence radius.  In that case the nearest surviving floor
+        cell on the same segment still represents the accessible margin of the
+        feature. Collapse talus is retained even when its volume cut was
+        rejected by the connectivity safeguard.
+        """
+
+        if not cells:
+            return cells
+        kind_to_class = {
+            "collapse": "breakdown",
+            "choke": "constriction",
+            "infill": "sediment",
+        }
+        events = tuple(
+            event
+            for event in getattr(event_field, "events", ())
+            if event.kind in kind_to_class
+            and (
+                event.kind == "collapse"
+                or event.event_id in applied_structural_ids
+            )
+        )
+        claimed_cell_ids: set[int] = set()
+        for event_kind, geology_class in kind_to_class.items():
+            if any(cell.geology_class == geology_class for cell in cells):
+                continue
+            matching_events = tuple(event for event in events if event.kind == event_kind)
+            if not matching_events:
+                continue
+            best: tuple[float, int, Any] | None = None
+            for event in matching_events:
+                same_segment = tuple(
+                    (index, cell)
+                    for index, cell in enumerate(cells)
+                    if cell.segment_id == event.segment_id
+                    and cell.cell_id not in claimed_cell_ids
+                )
+                candidates = same_segment or tuple(
+                    (index, cell)
+                    for index, cell in enumerate(cells)
+                    if cell.cell_id not in claimed_cell_ids
+                )
+                event_position = np.asarray(event.position, dtype=float)
+                for index, cell in candidates:
+                    distance = float(
+                        np.linalg.norm(np.asarray(cell.position) - event_position)
+                    )
+                    candidate = (distance, index, event)
+                    if best is None or candidate[:2] < best[:2]:
+                        best = candidate
+            if best is None:
+                continue
+            distance, index, event = best
+            cell = cells[index]
+            influence = max(
+                0.05,
+                float(event.max_radius) / max(float(event.max_radius) + distance, 1e-6),
+            )
+            replacements: dict[str, Any] = {
+                "geology_class": geology_class,
+                "event_influence": max(cell.event_influence, influence),
+                "nearest_event_kind": event_kind,
+            }
+            if event_kind == "collapse":
+                replacements["debris_density"] = max(
+                    cell.debris_density, 0.65 * influence
+                )
+            elif event_kind == "infill":
+                replacements["sediment_thickness_m"] = max(
+                    cell.sediment_thickness_m, influence * event.radius_z
+                )
+            cells[index] = replace(cell, **replacements)
+            claimed_cell_ids.add(cell.cell_id)
+        return cells
 
     def _segment_band_offsets(self, section_field: SectionField) -> dict[int, float]:
         offsets: dict[int, float] = {}

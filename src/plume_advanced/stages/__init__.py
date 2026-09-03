@@ -31,6 +31,7 @@ from .network import (
     CaveNode,
     CavePoint,
     CaveSegment,
+    LobeGrowthConfig,
 )
 from .section_field import (
     SectionField,
@@ -64,6 +65,7 @@ __all__ = [
     "HostFieldConfig",
     "HostFieldGenerator",
     "HostFieldSample",
+    "LobeGrowthConfig",
     "SectionField",
     "SectionFieldConfig",
     "SectionFieldGenerator",

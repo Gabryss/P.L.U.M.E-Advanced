@@ -77,6 +77,7 @@ angle_degrees = [-65.0, 85.0]
 phase = [-3.14159, 3.14159]
 
 [network]
+growth_model = "hybrid_lobe"
 source_count = 8
 source_band_length = 90.0
 source_band_half_width = 180.0
@@ -97,6 +98,29 @@ spur_lateral_bias = 1.3
 spur_congestion_weight = 0.85
 channel_count_samples = 28
 
+# Process-based Stage-B growth. Active lobes follow a correlated perturbation
+# of the host terrain, diverge under local pressure, coalesce into downstream
+# channels, or retire when their exposed thermal budget is exhausted.
+[network.lobe_growth]
+path_count = [8, 12]
+maximum_steps = [42, 96]
+minimum_persistence_steps = 8
+minimum_anchor_spacing_fraction = 0.055
+terrain_perturbation_m = 2.4
+perturbation_correlation_cells = 3.5
+candidate_temperature = 0.38
+inertia_weight = 1.35
+perturbed_slope_weight = 2.10
+downstream_potential_weight = 3.20
+initial_divergence_weight = 2.40
+channel_avoidance_weight = 1.80
+channel_reuse_weight = 3.60
+exposed_cooling_multiplier = 5.0
+retirement_temperature_k = 1060.0
+branch_flux_fraction = [0.18, 0.58]
+retired_path_fraction = 0.24
+
+# Retained for the explicit legacy_braid compatibility mode.
 [network.braid_grammar]
 zone_count = [4, 7]
 center_fraction = [0.14, 0.88]

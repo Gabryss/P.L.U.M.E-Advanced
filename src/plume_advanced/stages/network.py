@@ -1,4 +1,4 @@
-"""Stage B: host-driven braided cave network generation."""
+"""Stage B: host-driven procedural lava-tube network generation."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pathlib import Path
 
 import numpy as np
 from scipy.interpolate import CubicHermiteSpline, CubicSpline
-from scipy.ndimage import gaussian_filter1d
+from scipy.ndimage import distance_transform_edt, gaussian_filter, gaussian_filter1d
 
 from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.host_field import HostField
@@ -40,11 +40,36 @@ class BraidGrammarConfig:
 
 
 @dataclass(frozen=True)
+class LobeGrowthConfig:
+    """Controls for process-based stochastic lava-lobe propagation."""
+
+    path_count: tuple[int, int] = (8, 12)
+    maximum_steps: tuple[int, int] = (42, 96)
+    minimum_persistence_steps: int = 8
+    minimum_anchor_spacing_fraction: float = 0.055
+    terrain_perturbation_m: float = 2.4
+    perturbation_correlation_cells: float = 3.5
+    candidate_temperature: float = 0.38
+    inertia_weight: float = 1.35
+    perturbed_slope_weight: float = 2.10
+    downstream_potential_weight: float = 3.20
+    initial_divergence_weight: float = 2.40
+    channel_avoidance_weight: float = 1.80
+    channel_reuse_weight: float = 3.60
+    exposed_cooling_multiplier: float = 5.0
+    retirement_temperature_k: float = 1_060.0
+    branch_flux_fraction: tuple[float, float] = (0.18, 0.58)
+    retired_path_fraction: float = 0.24
+
+
+@dataclass(frozen=True)
 class CaveNetworkConfig:
-    """Parameters controlling the host-driven braided cave-network generator."""
+    """Parameters controlling the host-driven lava-tube network generator."""
 
     random_seed: int | None = None
+    growth_model: str = "hybrid_lobe"
     braid_grammar: BraidGrammarConfig = BraidGrammarConfig()
+    lobe_growth: LobeGrowthConfig = LobeGrowthConfig()
     body_spatial_scale: float = 1.0
     target_route_length_m: float = 5_000.0
     source_count: int = 8
@@ -154,7 +179,7 @@ class CaveJunction:
 
 @dataclass(frozen=True)
 class CaveNetwork:
-    """Stage-B output for the host-driven braided cave network."""
+    """Stage-B output for the host-driven lava-tube network."""
 
     config: CaveNetworkConfig
     nodes: tuple[CaveNode, ...]
@@ -193,9 +218,17 @@ class CaveNetwork:
         ]
         loop_count = float(self._loop_rank())
         terminal_count = float(sum(1 for degree in self._degrees().values() if degree == 1))
-        spur_count = float(sum(1 for segment in self.segments if segment.kind == "spur"))
+        spur_count = float(
+            sum(
+                1
+                for segment in self.segments
+                if segment.kind in {"spur", "abandoned_lobe", "stalled_lobe"}
+            )
+        )
         primary_branch_kinds = {
+            "anastomosis",
             "chamber_braid",
+            "distributary",
             "inner_bypass",
             "island_bypass",
             "underpass",
@@ -424,8 +457,17 @@ class _SelectedPath:
     metadata: dict[str, SegmentMetadataValue] | None = None
 
 
+@dataclass(frozen=True)
+class _LobeTrace:
+    path: tuple[tuple[int, int], ...]
+    merged: bool
+    maximum_lateral_separation: float
+    final_temperature_k: float
+    initial_flux: float
+
+
 class CaveNetworkGenerator:
-    """Generate a host-driven braided cave network and raster occupancy."""
+    """Generate a host-driven lava-tube network and raster occupancy."""
 
     FAMILY_LABELS = ("small", "medium", "large", "spur")
 
@@ -449,12 +491,21 @@ class CaveNetworkGenerator:
             source_cells,
             key=lambda cell: abs(float(geometry.cross_grid[cell])),
         )
+        backbone_perturbation = None
+        if self.config.growth_model == "hybrid_lobe":
+            backbone_perturbation = self._correlated_terrain_perturbation(
+                host_field.elevation.shape,
+                amplitude_m=self.config.lobe_growth.terrain_perturbation_m,
+                correlation_cells=self.config.lobe_growth.perturbation_correlation_cells,
+                rng=procedural_rng(self.config.random_seed, "backbone-downflow"),
+            )
         backbone_path = self._trace_backbone_path(
             host_field=host_field,
             geometry=geometry,
             support_field=support_field,
             start_cell=backbone_source,
             downstream_potential=downstream_potential,
+            terrain_perturbation=backbone_perturbation,
         )
         if not backbone_path:
             return CaveNetwork(
@@ -516,56 +567,70 @@ class CaveNetworkGenerator:
                 )
             )
             occupied_cells.update(feeder[:-1])
-        braid_zones = self._build_braid_zones(host_field, geometry, rng)
-        for zone_index, zone in enumerate(braid_zones):
-            zone_paths = self._build_zone_paths(
-                host_field=host_field,
-                geometry=geometry,
-                support_field=support_field,
-                backbone_path=backbone_path,
-                backbone_alongs=backbone_alongs,
-                backbone_crosses=backbone_crosses,
-                zone=zone,
-                occupied_cells=occupied_cells,
-                zone_index=zone_index,
-            )
-            for selected_path in zone_paths:
-                selected_paths.append(selected_path)
-                occupied_cells.update(selected_path.path[2:-2])
-
-        _skeleton_mask, total_flux, _family_flux = self._build_representative_fields(
-            shape=host_field.growth_cost.shape,
-            selected_paths=tuple(selected_paths),
-        )
-
-        _, connectable_flux, _ = self._build_representative_fields(
-            shape=host_field.growth_cost.shape,
-            selected_paths=tuple(
-                selected_path
-                for selected_path in selected_paths
-                if selected_path.merge_shared_cells
-            ),
-        )
-        spur_starts = self._select_spur_start_cells(connectable_flux, geometry)
-        for spur_index, start_cell in enumerate(spur_starts):
-            path = self._trace_spur(
-                host_field=host_field,
-                geometry=geometry,
-                support_field=support_field,
-                start_cell=start_cell,
-                total_flux=total_flux,
-                lateral_sign=-1.0 if spur_index % 2 == 0 else 1.0,
-                rng=rng,
-            )
-            if path:
-                selected_paths.append(
-                    _SelectedPath(
-                        kind="spur",
-                        path=tuple(self._simplify_path(path)),
-                        merge_shared_cells=False,
-                        metadata=self._build_segment_metadata(kind="spur"),
-                    )
+        if self.config.growth_model == "hybrid_lobe":
+            selected_paths.extend(
+                self._build_lobe_growth_paths(
+                    host_field=host_field,
+                    geometry=geometry,
+                    support_field=support_field,
+                    downstream_potential=downstream_potential,
+                    backbone_path=backbone_path,
+                    backbone_alongs=backbone_alongs,
+                    backbone_crosses=backbone_crosses,
+                    initial_paths=tuple(selected_paths),
                 )
+            )
+        else:
+            braid_zones = self._build_braid_zones(host_field, geometry, rng)
+            for zone_index, zone in enumerate(braid_zones):
+                zone_paths = self._build_zone_paths(
+                    host_field=host_field,
+                    geometry=geometry,
+                    support_field=support_field,
+                    backbone_path=backbone_path,
+                    backbone_alongs=backbone_alongs,
+                    backbone_crosses=backbone_crosses,
+                    zone=zone,
+                    occupied_cells=occupied_cells,
+                    zone_index=zone_index,
+                )
+                for selected_path in zone_paths:
+                    selected_paths.append(selected_path)
+                    occupied_cells.update(selected_path.path[2:-2])
+
+            _skeleton_mask, total_flux, _family_flux = self._build_representative_fields(
+                shape=host_field.growth_cost.shape,
+                selected_paths=tuple(selected_paths),
+            )
+
+            _, connectable_flux, _ = self._build_representative_fields(
+                shape=host_field.growth_cost.shape,
+                selected_paths=tuple(
+                    selected_path
+                    for selected_path in selected_paths
+                    if selected_path.merge_shared_cells
+                ),
+            )
+            spur_starts = self._select_spur_start_cells(connectable_flux, geometry)
+            for spur_index, start_cell in enumerate(spur_starts):
+                path = self._trace_spur(
+                    host_field=host_field,
+                    geometry=geometry,
+                    support_field=support_field,
+                    start_cell=start_cell,
+                    total_flux=total_flux,
+                    lateral_sign=-1.0 if spur_index % 2 == 0 else 1.0,
+                    rng=rng,
+                )
+                if path:
+                    selected_paths.append(
+                        _SelectedPath(
+                            kind="spur",
+                            path=tuple(self._simplify_path(path)),
+                            merge_shared_cells=False,
+                            metadata=self._build_segment_metadata(kind="spur"),
+                        )
+                    )
 
         skeleton_mask, selected_flux, _ = self._build_representative_fields(
             shape=host_field.growth_cost.shape,
@@ -731,6 +796,425 @@ class CaveNetworkGenerator:
             )
         return tuple(selected)
 
+    def _build_lobe_growth_paths(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        support_field: np.ndarray,
+        downstream_potential: np.ndarray,
+        backbone_path: list[tuple[int, int]],
+        backbone_alongs: np.ndarray,
+        backbone_crosses: np.ndarray,
+        initial_paths: tuple[_SelectedPath, ...],
+    ) -> tuple[_SelectedPath, ...]:
+        """Grow persistent distributaries from seeded, terrain-led lava lobes.
+
+        This is a compact hybrid of DOWNFLOW-style perturbed topography and
+        MrLavaLoba-style active fronts. Each trace retains momentum, initially
+        avoids the supplying channel, and later prefers an energetically cheap
+        downstream coalescence. Branches can instead cool and retire as blind
+        lobes. The graph is extracted from the resulting path history.
+        """
+
+        controls = self.config.lobe_growth
+        rng = procedural_rng(self.config.random_seed, "lobe-growth")
+        path_count = self._sample_int_range(rng, controls.path_count)
+        anchors = self._select_lobe_anchors(
+            host_field=host_field,
+            geometry=geometry,
+            support_field=support_field,
+            backbone_path=backbone_path,
+            count=path_count,
+            rng=rng,
+        )
+        if not anchors:
+            return ()
+
+        existing_cells = set(backbone_path)
+        for selected_path in initial_paths:
+            existing_cells.update(selected_path.path)
+
+        retired_count = int(round(len(anchors) * controls.retired_path_fraction))
+        retired_indices = set(
+            int(index)
+            for index in rng.choice(
+                len(anchors),
+                size=min(retired_count, len(anchors)),
+                replace=False,
+            )
+        )
+        side_counts = {-1: 0, 1: 0}
+        result: list[_SelectedPath] = []
+        for branch_index, anchor in enumerate(anchors):
+            branch_rng = procedural_rng(
+                self.config.random_seed,
+                "lobe-front",
+                branch_index,
+                anchor[0],
+                anchor[1],
+            )
+            if side_counts[-1] == side_counts[1]:
+                lateral_sign = -1 if branch_rng.random() < 0.5 else 1
+            else:
+                lateral_sign = min(side_counts, key=lambda sign: side_counts[sign])
+            side_counts[lateral_sign] += 1
+            permit_merge = branch_index not in retired_indices
+            trace = self._trace_lobe_front(
+                host_field=host_field,
+                geometry=geometry,
+                support_field=support_field,
+                downstream_potential=downstream_potential,
+                backbone_alongs=backbone_alongs,
+                backbone_crosses=backbone_crosses,
+                start_cell=anchor,
+                existing_cells=existing_cells,
+                lateral_sign=float(lateral_sign),
+                permit_merge=permit_merge,
+                rng=branch_rng,
+            )
+            if len(trace.path) < 3:
+                lateral_sign *= -1
+                retry_rng = procedural_rng(
+                    self.config.random_seed,
+                    "lobe-front-retry",
+                    branch_index,
+                    anchor[0],
+                    anchor[1],
+                )
+                trace = self._trace_lobe_front(
+                    host_field=host_field,
+                    geometry=geometry,
+                    support_field=support_field,
+                    downstream_potential=downstream_potential,
+                    backbone_alongs=backbone_alongs,
+                    backbone_crosses=backbone_crosses,
+                    start_cell=anchor,
+                    existing_cells=existing_cells,
+                    lateral_sign=float(lateral_sign),
+                    permit_merge=permit_merge,
+                    rng=retry_rng,
+                )
+            simplified = self._simplify_path(list(trace.path))
+            if len(simplified) < 3:
+                continue
+
+            if trace.merged:
+                kind = "anastomosis"
+            elif permit_merge:
+                kind = "stalled_lobe"
+            else:
+                kind = "abandoned_lobe"
+            metadata = self._build_segment_metadata(
+                kind=kind,
+                zone_index=branch_index,
+            )
+            metadata.update(
+                {
+                    "growth_model": "hybrid_lobe",
+                    "lobe_path_id": f"lobe_{branch_index}",
+                    "termination": "coalesced" if trace.merged else "cooled_or_stranded",
+                    "initial_flux": trace.initial_flux,
+                    "final_temperature_k": trace.final_temperature_k,
+                    "maximum_lateral_separation_m": trace.maximum_lateral_separation,
+                }
+            )
+            selected = _SelectedPath(
+                kind=kind,
+                path=tuple(simplified),
+                metadata=metadata,
+            )
+            result.append(selected)
+            existing_cells.update(trace.path)
+        return tuple(result)
+
+    def _select_lobe_anchors(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        support_field: np.ndarray,
+        backbone_path: list[tuple[int, int]],
+        count: int,
+        rng: np.random.Generator,
+    ) -> tuple[tuple[int, int], ...]:
+        """Sample separated split sites from local capacity and low gradients."""
+
+        if count <= 0 or len(backbone_path) < 5:
+            return ()
+        lower = int(round(0.10 * (len(backbone_path) - 1)))
+        upper = int(round(0.90 * (len(backbone_path) - 1)))
+        candidates = list(dict.fromkeys(backbone_path[lower : upper + 1]))
+        minimum_spacing = (
+            self.config.lobe_growth.minimum_anchor_spacing_fraction
+            * geometry.along_extent
+        )
+        anchors: list[tuple[int, int]] = []
+        while candidates and len(anchors) < count:
+            scores = np.asarray(
+                [
+                    1.25 * float(host_field.flow_capacity[cell])
+                    + 0.55 * (1.0 - float(host_field.slope_degrees[cell]) / 90.0)
+                    + 0.25 * float(support_field[cell])
+                    for cell in candidates
+                ],
+                dtype=float,
+            )
+            probabilities = np.exp(scores - float(scores.max()))
+            probabilities /= float(probabilities.sum())
+            chosen_index = int(rng.choice(len(candidates), p=probabilities))
+            chosen = candidates.pop(chosen_index)
+            anchors.append(chosen)
+            chosen_along = float(geometry.along_grid[chosen])
+            candidates = [
+                cell
+                for cell in candidates
+                if abs(float(geometry.along_grid[cell]) - chosen_along)
+                >= minimum_spacing
+            ]
+        return tuple(sorted(anchors, key=lambda cell: float(geometry.along_grid[cell])))
+
+    def _trace_lobe_front(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        support_field: np.ndarray,
+        downstream_potential: np.ndarray,
+        backbone_alongs: np.ndarray,
+        backbone_crosses: np.ndarray,
+        start_cell: tuple[int, int],
+        existing_cells: set[tuple[int, int]],
+        lateral_sign: float,
+        permit_merge: bool,
+        rng: np.random.Generator,
+    ) -> _LobeTrace:
+        controls = self.config.lobe_growth
+        perturbed_elevation = (
+            host_field.elevation
+            + self._correlated_terrain_perturbation(
+                host_field.elevation.shape,
+                amplitude_m=controls.terrain_perturbation_m,
+                correlation_cells=controls.perturbation_correlation_cells,
+                rng=rng,
+            )
+        )
+
+        start_along = float(geometry.along_grid[start_cell])
+        minimum_steps = max(2, controls.minimum_persistence_steps)
+        minimum_merge_along = start_along + 0.55 * minimum_steps * geometry.cell_scale
+        eligible_merge_mask = np.zeros_like(host_field.elevation, dtype=bool)
+        if permit_merge:
+            for cell in existing_cells:
+                if float(geometry.along_grid[cell]) >= minimum_merge_along:
+                    eligible_merge_mask[cell] = True
+        has_merge_targets = bool(np.any(eligible_merge_mask))
+        if has_merge_targets:
+            channel_distance = distance_transform_edt(~eligible_merge_mask)
+        else:
+            channel_distance = np.full_like(host_field.elevation, math.inf, dtype=float)
+
+        path = [start_cell]
+        maximum_steps = self._sample_int_range(rng, controls.maximum_steps)
+        previous_step = np.asarray(
+            (
+                geometry.flow_y + lateral_sign * geometry.cross_y,
+                geometry.flow_x + lateral_sign * geometry.cross_x,
+            ),
+            dtype=float,
+        )
+        previous_step /= max(float(np.linalg.norm(previous_step)), 1e-9)
+        initial_flux = self.config.source_flux * self._sample_float_range(
+            rng,
+            controls.branch_flux_fraction,
+        )
+        temperature = max(
+            controls.retirement_temperature_k,
+            self.config.source_temperature_k
+            - self.config.cooling_k_per_m * max(start_along, 0.0),
+        )
+        maximum_separation = 0.0
+        merged = False
+
+        for step_index in range(maximum_steps):
+            current = path[-1]
+            current_world = self._cell_to_world(host_field, current)
+            current_along = float(geometry.along_grid[current])
+            current_cross = float(geometry.cross_grid[current])
+            current_potential = float(downstream_potential[current])
+            divergence_fraction = max(
+                0.0,
+                1.0 - step_index / max(1.7 * minimum_steps, 1.0),
+            )
+            candidates: list[tuple[tuple[int, int], float]] = []
+            for next_cell in self._neighbor_cells(host_field, current):
+                if next_cell in path:
+                    continue
+                next_along = float(geometry.along_grid[next_cell])
+                along_delta = next_along - current_along
+                if along_delta < -0.18 * geometry.cell_scale:
+                    continue
+                if abs(float(geometry.cross_grid[next_cell])) > max(
+                    0.72 * host_field.config.corridor_width,
+                    6.0 * geometry.cell_scale,
+                ):
+                    continue
+                on_existing = next_cell in existing_cells
+                eligible_merge = bool(eligible_merge_mask[next_cell])
+                if on_existing and not (
+                    permit_merge
+                    and step_index + 1 >= minimum_steps
+                    and eligible_merge
+                ):
+                    continue
+
+                next_world = self._cell_to_world(host_field, next_cell)
+                step_vector = np.asarray(
+                    (
+                        next_world[1] - current_world[1],
+                        next_world[0] - current_world[0],
+                    ),
+                    dtype=float,
+                )
+                step_length = max(float(np.linalg.norm(step_vector)), 1e-9)
+                step_direction = step_vector / step_length
+                actual_uphill = float(
+                    host_field.elevation[next_cell] - host_field.elevation[current]
+                )
+                hydraulic_head = (
+                    self.config.max_uphill_step
+                    + 0.65
+                    * self.config.base_passage_radius
+                    * (initial_flux / max(self.config.source_flux, 1e-9)) ** 0.25
+                )
+                if actual_uphill > hydraulic_head:
+                    continue
+                perturbed_drop = float(
+                    perturbed_elevation[current] - perturbed_elevation[next_cell]
+                )
+                next_potential = float(downstream_potential[next_cell])
+                if not math.isfinite(next_potential):
+                    continue
+                potential_gain = (current_potential - next_potential) / max(
+                    geometry.cell_scale,
+                    1.0,
+                )
+                inertia = float(np.dot(previous_step, step_direction))
+                cross_delta = (
+                    float(geometry.cross_grid[next_cell]) - current_cross
+                ) / max(geometry.cell_scale, 1.0)
+                distance_gain = (
+                    float(channel_distance[current] - channel_distance[next_cell])
+                    if has_merge_targets
+                    else 0.0
+                )
+                proximity = (
+                    math.exp(-0.5 * float(channel_distance[next_cell]))
+                    if has_merge_targets
+                    else 0.0
+                )
+                score = float(support_field[next_cell])
+                score += controls.inertia_weight * inertia
+                score += controls.perturbed_slope_weight * np.clip(
+                    perturbed_drop / max(0.25 * geometry.cell_scale, 1.0),
+                    -1.5,
+                    1.5,
+                )
+                score += controls.downstream_potential_weight * np.clip(
+                    potential_gain,
+                    -1.5,
+                    1.5,
+                )
+                score += (
+                    controls.initial_divergence_weight
+                    * divergence_fraction
+                    * lateral_sign
+                    * cross_delta
+                )
+                score -= (
+                    controls.channel_avoidance_weight
+                    * divergence_fraction
+                    * proximity
+                )
+                score += (
+                    controls.channel_reuse_weight
+                    * (1.0 - divergence_fraction)
+                    * distance_gain
+                )
+                score += 8.0 if eligible_merge and step_index + 1 >= minimum_steps else 0.0
+                candidates.append((next_cell, float(score)))
+
+            if not candidates:
+                break
+            next_cell = self._sample_candidate(
+                candidates,
+                controls.candidate_temperature,
+                rng,
+            )
+            next_world = self._cell_to_world(host_field, next_cell)
+            step_vector = np.asarray(
+                (
+                    next_world[1] - current_world[1],
+                    next_world[0] - current_world[0],
+                ),
+                dtype=float,
+            )
+            step_length = float(np.linalg.norm(step_vector))
+            previous_step = step_vector / max(step_length, 1e-9)
+            path.append(next_cell)
+
+            next_along = float(geometry.along_grid[next_cell])
+            reference_cross = float(
+                np.interp(next_along, backbone_alongs, backbone_crosses)
+            )
+            maximum_separation = max(
+                maximum_separation,
+                abs(float(geometry.cross_grid[next_cell]) - reference_cross),
+            )
+            temperature = max(
+                273.15,
+                temperature
+                - self.config.cooling_k_per_m
+                * controls.exposed_cooling_multiplier
+                * step_length,
+            )
+            if bool(eligible_merge_mask[next_cell]) and len(path) > minimum_steps:
+                merged = True
+                break
+            if temperature <= controls.retirement_temperature_k and len(path) > minimum_steps:
+                break
+            if next_along >= geometry.along_extent:
+                break
+
+        return _LobeTrace(
+            path=tuple(path),
+            merged=merged,
+            maximum_lateral_separation=maximum_separation,
+            final_temperature_k=temperature,
+            initial_flux=initial_flux,
+        )
+
+    @staticmethod
+    def _correlated_terrain_perturbation(
+        shape: tuple[int, int],
+        *,
+        amplitude_m: float,
+        correlation_cells: float,
+        rng: np.random.Generator,
+    ) -> np.ndarray:
+        """Return a smooth zero-mean DOWNFLOW-style elevation perturbation."""
+
+        if amplitude_m <= 0.0:
+            return np.zeros(shape, dtype=float)
+        correlated = gaussian_filter(
+            rng.standard_normal(shape),
+            sigma=max(correlation_cells, 0.25),
+            mode="reflect",
+        )
+        correlated -= float(np.mean(correlated))
+        scale = max(float(np.std(correlated)), 1e-9)
+        return amplitude_m * correlated / scale
+
     def _trace_spur(
         self,
         *,
@@ -821,6 +1305,7 @@ class CaveNetworkGenerator:
         support_field: np.ndarray,
         downstream_potential: np.ndarray,
         start_cell: tuple[int, int],
+        terrain_perturbation: np.ndarray | None = None,
     ) -> list[tuple[int, int]]:
         path = [start_cell]
         previous_step: tuple[float, float] | None = None
@@ -832,6 +1317,11 @@ class CaveNetworkGenerator:
             current_along = float(geometry.along_grid[current])
             current_potential = float(downstream_potential[current])
             current_elevation = float(host_field.elevation[current])
+            current_perturbed_elevation = current_elevation + (
+                float(terrain_perturbation[current])
+                if terrain_perturbation is not None
+                else 0.0
+            )
             if current_along >= geometry.along_extent or not math.isfinite(current_potential):
                 break
 
@@ -867,6 +1357,11 @@ class CaveNetworkGenerator:
                 uphill = next_elevation - current_elevation
                 if uphill > self.config.max_uphill_step:
                     continue
+                next_perturbed_elevation = next_elevation + (
+                    float(terrain_perturbation[next_cell])
+                    if terrain_perturbation is not None
+                    else 0.0
+                )
 
                 score = float(support_field[next_cell])
                 score += 1.8 * flow_alignment
@@ -874,6 +1369,12 @@ class CaveNetworkGenerator:
                 score += 4.0 * (current_potential - next_potential) / max(geometry.cell_scale, 1.0)
                 score += 0.6 * next_along / max(geometry.along_extent, 1.0)
                 score -= 0.85 * abs(next_cross) / max(max_cross, geometry.cell_scale)
+                score += 1.35 * np.clip(
+                    (current_perturbed_elevation - next_perturbed_elevation)
+                    / max(0.25 * geometry.cell_scale, 1.0),
+                    -1.5,
+                    1.5,
+                )
                 if previous_step is not None:
                     previous_length = math.hypot(previous_step[0], previous_step[1])
                     if previous_length > 0.0:
@@ -1359,11 +1860,11 @@ class CaveNetworkGenerator:
 
     @staticmethod
     def _family_label_for_kind(kind: str) -> str:
-        if kind == "spur":
+        if kind in {"spur", "abandoned_lobe", "stalled_lobe"}:
             return "spur"
-        if kind in {"backbone", "chamber_braid"}:
+        if kind in {"backbone", "chamber_braid", "anastomosis"}:
             return "large"
-        if kind in {"island_bypass", "underpass"}:
+        if kind in {"island_bypass", "underpass", "distributary"}:
             return "medium"
         return "small"
 
@@ -1382,8 +1883,12 @@ class CaveNetworkGenerator:
 
         if kind in {"island_bypass", "inner_bypass"} and zone_index is not None:
             island_id = f"island_zone_{zone_index}"
+        if kind == "distributary" and zone_index is not None:
+            island_id = f"lobe_path_{zone_index}"
         if kind in {"chamber_braid", "ladder"} and zone_index is not None:
             chamber_id = f"chamber_zone_{zone_index}"
+        if kind == "anastomosis" and zone_index is not None:
+            chamber_id = f"coalescence_lobe_{zone_index}"
         if kind == "underpass" and zone_index is not None:
             crossing_group_id = f"crossing_zone_{zone_index}"
             merge_behavior = "cross_under" if z_level < 0 else "cross_over"
@@ -1571,7 +2076,7 @@ class CaveNetworkGenerator:
         for selected_path in selected_paths:
             node_cell_set.add(selected_path.path[0])
             node_cell_set.add(selected_path.path[-1])
-            if selected_path.kind in {"chamber_braid", "ladder"}:
+            if selected_path.kind in {"chamber_braid", "ladder", "anastomosis"}:
                 chamber_cells.update(selected_path.path)
         for cell, count in path_use_counts.items():
             if count > 1:
@@ -1591,7 +2096,7 @@ class CaveNetworkGenerator:
                 node_kind = "chamber"
             elif path_use_counts.get(cell, 0) == 1:
                 node_kind = "spur_terminal" if any(
-                    selected_path.kind == "spur"
+                    selected_path.kind in {"spur", "abandoned_lobe", "stalled_lobe"}
                     and cell in {selected_path.path[0], selected_path.path[-1]}
                     for selected_path in selected_paths
                 ) else "terminal"
@@ -2010,13 +2515,17 @@ class CaveNetworkGenerator:
                 merge_style = "constant_envelope_then_divide"
                 capacity_bias = 0.92
             elif any(node.kind == "chamber" for node in cluster_nodes) or any(
-                segment.kind == "chamber_braid" for segment in cluster_segments
+                segment.kind in {"chamber_braid", "anastomosis"}
+                for segment in cluster_segments
             ):
                 kind = "chamber"
                 split_style = "pre_widen_then_split"
                 merge_style = "pre_widen_then_split"
                 capacity_bias = 1.18
-            elif any(segment.kind == "island_bypass" for segment in cluster_segments):
+            elif any(
+                segment.kind in {"island_bypass", "distributary"}
+                for segment in cluster_segments
+            ):
                 kind = "split_merge"
                 split_style = "constant_envelope_then_divide"
                 merge_style = "constant_envelope_then_divide"
@@ -2469,13 +2978,13 @@ class CaveNetworkGenerator:
                 radius=representative_radius * max(incident_scales, default=1.0),
             )
         for segment in segments:
-            if segment.kind not in {"chamber_braid", "ladder"} or len(segment.points) < 3:
+            if segment.kind not in {"chamber_braid", "ladder", "anastomosis"} or len(segment.points) < 3:
                 continue
             midpoint = segment.points[len(segment.points) // 2]
             scale_value = segment.metadata.get("chamber_radius_scale", 1.0)
             chamber_scale = float(scale_value) if isinstance(scale_value, (int, float)) else 1.0
             radius = representative_radius * (
-                0.90 if segment.kind == "chamber_braid" else 0.62
+                0.90 if segment.kind in {"chamber_braid", "anastomosis"} else 0.62
             ) * chamber_scale
             self._paint_disk(
                 host_field=host_field,

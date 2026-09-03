@@ -51,7 +51,7 @@ preview live in `docs/media/`; working renders and caches remain Git-ignored.
 | Stage | Status | Purpose | Current Output |
 |---|---|---|---|
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
-| B. Cave Network | Implemented | Generate a host-driven, body-scaled braided cave-network skeleton | `outputs/stage_b_cave_network.png`, `outputs/stage_b_network.json`, diagnostics report |
+| B. Cave Network | Implemented | Grow a seeded, host-driven lava-lobe network with splits, cooling, retirement, and coalescence | `outputs/stage_b_cave_network.png`, `outputs/stage_b_network.json`, diagnostics report |
 | C. Section Field | Implemented | Build adaptive/uniform/reference lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png`, `outputs/stage_c_sections.{json,npz}` |
 | D. Geometry | Implemented | Stamp the cave network into a voxel grid, polygonize it, and build a globally welded render mesh | `outputs/stage_d_geometry.png`, geometry report, portable scene package |
 | E. Geological Events | Implemented | Ground rocks/boulders on the base cave and apply parameterized collapse/choke/infill structural modifiers | visualization and event report |
@@ -70,9 +70,11 @@ stages: elevation, slope, cover thickness, roof competence, and growth cost.
 
 ![Stage B Cave Network](docs/figures/celestial_bodies/earth/stage_b_cave_network.png)
 
-Stage B generates a host-driven, multi-source braided cave network. Source
-feeders merge into the main route, flux is conserved through graph
-splits/merges, and every point carries flux, temperature, and lava age.
+Stage B generates a host-driven, multi-source lava-tube network. A downhill
+backbone follows a spatially correlated perturbation of the host terrain, while
+seeded lobe fronts diverge, cool, retire, or coalesce into downstream channels.
+Source feeders join the resulting graph, flux is conserved through every
+split/merge, and every point carries flux, temperature, and lava age.
 
 ### Stage C: Section Field
 
@@ -214,21 +216,25 @@ prevalidated floor contacts. Each run writes:
 
 Implemented in `src/plume_advanced/stages/network.py`.
 
-Stage B now builds the cave skeleton directly instead of starting from a single
-trunk. Its branch/split/merge grammar is seed-sampled from
-`[network.braid_grammar]`, then fitted to the generated host field. The
-generator:
+Stage B builds the cave skeleton through a hybrid process model configured by
+`growth_model = "hybrid_lobe"` and `[network.lobe_growth]`. It combines an
+active-lobe routing model, a DOWNFLOW-style spatially correlated terrain
+perturbation, and a lightweight thermal/flux budget. The generator:
 
 - uses the host field and the configured `procedural_seed`
-- traces a downhill backbone with host-guided branch motifs
-- samples localized asymmetric braid zones, branch counts, lateral offsets, ladders, and underpasses
-- supports `backbone`, `island_bypass`, `chamber_braid`, `ladder`, `spur`, and `underpass` segment kinds
-- records graph metadata such as `z_level`, `merge_behavior`, `crossing_group_id`, `island_id`, and `chamber_id`
-- clusters morphologically meaningful split/merge/crossing regions into explicit junction objects
-- keeps parallel centrelines separated in both host-corridor units and full passage widths
-- lengthens braid persistence with body spatial scale instead of only inflating passage radius
+- traces a downhill backbone over correlated, seed-controlled terrain uncertainty
+- launches active lobe fronts from separated, capacity-weighted anchors
+- balances momentum, perturbed slope, downstream potential, early channel avoidance, and later channel reuse at every growth step
+- retires exposed lobes when their thermal budget falls below the configured threshold
+- emits `anastomosis` segments when lobes coalesce and `abandoned_lobe` or `stalled_lobe` segments when they terminate
+- records each lobe's path id, termination reason, initial flux, final temperature, and lateral separation
+- clusters morphologically meaningful split/merge regions into explicit junction objects
+- solves the completed directed graph for exactly conserved flow and monotonic cooling/age
 - reserves chambers for explicit junction/confluence semantics rather than painting high-flux blobs into occupancy
 - derives occupancy and graph summaries from the resulting network
+
+`growth_model = "legacy_braid"` remains available for reproduction of older
+assets; only that compatibility mode reads `[network.braid_grammar]`.
 
 The Stage B visualization includes a longitudinal diagnostics panel. It reads
 left to right along the main flow direction: the filled step trace shows how
@@ -341,7 +347,7 @@ Higher sustained supply relative to cooling expands host correlation lengths.
 Longer duration increases the route target, inflation increases junction-room
 widening, and distributary tendency controls lateral-branch abundance.
 
-Development mode shortens the host extent and braid count but does not shrink
+Development mode shortens the host extent and active-lobe count but does not shrink
 the selected body's passages:
 
 ```toml
@@ -385,8 +391,10 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `occupancy_smoothing_passes` | clean occupancy artifacts while retaining the graph skeleton |
 | `minimum_branch_offset_widths` | keep parallel centrelines visibly separate after their physical widths are applied |
 | `chamber_*`, `base_passage_radius`, `paint_flux_chambers` | control explicit junction rooms and optionally enable legacy flux-blob painting |
-| `spur_*`, `channel_count_samples` | control terminal spur generation and braid sampling |
-| `[network.braid_grammar]` | `[min, max]` ranges and probabilities for sampled braid zones, branch counts, offsets, ladders, and underpasses |
+| `growth_model` | select the default `hybrid_lobe` process or the reproducibility-only `legacy_braid` grammar |
+| `channel_count_samples` | control longitudinal network diagnostics sampling |
+| `[network.lobe_growth]` | control active-lobe population, persistence, correlated terrain uncertainty, routing forces, branch flux, cooling, retirement, and coalescence |
+| `[network.braid_grammar]` | legacy-only ranges and probabilities used when `growth_model = "legacy_braid"` |
 
 ### Section Field Config
 
@@ -866,7 +874,7 @@ continues to affect representation rather than defining network topology.
 The current project state is intentionally narrow:
 
 - Stage A builds a seeded terrain and structural substrate
-- Stage B grows a seeded, host-guided braided network with conserved flow and independent inlet strengths
+- Stage B grows a seeded, host-guided lobe network with natural divergence, retirement, coalescence, conserved flow, and independent inlet strengths
 - Stage C builds seeded adaptive sections while preserving flux, cooling, and age along every tube
 - Stage D1 stamps the base network into a voxel density field
 - Stage E grounds prop meshes and creates structural density modifiers

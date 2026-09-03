@@ -21,6 +21,12 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(config.section_field.maximum_tube_width, 10.0)
         self.assertEqual(config.section_field.chamber_max_tube_width, 20.0)
         self.assertEqual(config.network.maximum_passage_radius, 5.0)
+        self.assertEqual(config.network.growth_model, "hybrid_lobe")
+        self.assertEqual(config.network.lobe_growth.path_count, (6, 6))
+        self.assertGreater(
+            config.network.lobe_growth.retirement_temperature_k,
+            0.0,
+        )
         self.assertEqual(config.geometry.resolution_policy, "body")
         self.assertEqual(config.geometry.resolution_quality, "standard")
         self.assertAlmostEqual(config.geometry.voxel_size, 0.6)
@@ -410,6 +416,15 @@ class ProjectConfigurationTests(unittest.TestCase):
                 schema_version = 2
                 [network.braid_grammar]
                 zon_count = [2, 3]
+                """
+            )
+
+        with self.assertRaisesRegex(ValueError, r"network\.lobe_growth\.path_cout"):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [network.lobe_growth]
+                path_cout = [6, 8]
                 """
             )
 

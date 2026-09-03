@@ -12,7 +12,14 @@ from scipy.spatial import cKDTree
 from plume_advanced.stages.host_field import HostField
 from plume_advanced.stages.network import CaveNetwork, CaveSegment
 
-PRIMARY_BRANCH_KINDS = {"chamber_braid", "inner_bypass", "island_bypass", "underpass"}
+PRIMARY_BRANCH_KINDS = {
+    "anastomosis",
+    "chamber_braid",
+    "distributary",
+    "inner_bypass",
+    "island_bypass",
+    "underpass",
+}
 
 
 def network_metrics(
@@ -62,6 +69,11 @@ def network_metrics(
         for segment in network.segments
         if segment.metadata.get("island_id") is not None
     }
+    lobe_path_ids = {
+        str(segment.metadata.get("lobe_path_id"))
+        for segment in network.segments
+        if segment.metadata.get("lobe_path_id") is not None
+    }
     report: dict[str, Any] = {
         "node_count": len(network.nodes),
         "edge_count": len(network.segments),
@@ -89,7 +101,7 @@ def network_metrics(
         if split_nodes
         else 0.0,
         "max_branch_factor": max((len(outgoing[node]) for node in split_nodes), default=0),
-        "independent_braid_or_island_count": len(island_ids),
+        "independent_braid_or_island_count": len(island_ids | lobe_path_ids),
         "underpass_count": sum(segment.kind == "underpass" for segment in network.segments),
         "distinct_z_level_count": len({segment.z_level for segment in network.segments}),
         "vertically_overlapping_xy_passage_count": _vertical_overlap_count(network),
