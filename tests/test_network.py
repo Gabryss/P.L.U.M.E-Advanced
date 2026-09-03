@@ -28,6 +28,16 @@ from plume_advanced.stages.network import (
 
 
 class CaveNetworkTests(unittest.TestCase):
+    def test_natural_split_envelope_has_broad_smooth_shoulders(self) -> None:
+        envelope = CaveNetworkGenerator._natural_split_envelope
+        self.assertEqual(envelope(0.0, 0.3, 1.0), 0.0)
+        self.assertEqual(envelope(1.0, 0.3, 1.0), 0.0)
+        self.assertLess(envelope(0.01, 0.3, 1.0), 0.03)
+        self.assertLess(envelope(0.99, 0.3, 1.0), 0.03)
+        self.assertGreater(envelope(0.35, 0.3, 1.0), 0.75)
+        self.assertGreater(envelope(0.65, 0.3, 1.0), 0.75)
+        self.assertGreater(envelope(0.50, 0.3, 1.0), envelope(0.35, 0.3, 1.0))
+
     def test_simplification_retains_branch_attachment_and_separate_underpass(self) -> None:
         paths = (
             _SelectedPath("backbone", ((0, 0), (0, 10))),

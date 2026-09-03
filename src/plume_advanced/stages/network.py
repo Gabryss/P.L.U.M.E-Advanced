@@ -1102,29 +1102,30 @@ class CaveNetworkGenerator:
         segment_end = float(geometry.along_grid[backbone_segment[-1]])
         along_span = max(segment_end - segment_start, geometry.cell_scale)
 
-        left_exponent = max(0.35, 1.0 - branch.skew)
-        right_exponent = max(0.35, 1.0 + branch.skew)
-        peak_t = left_exponent / max(left_exponent + right_exponent, 1e-6)
-        peak_raw = max(
-            peak_t ** left_exponent * (1.0 - peak_t) ** right_exponent,
-            1e-6,
-        )
-
         for index, cell in enumerate(backbone_segment[1:-1], start=1):
             along = float(geometry.along_grid[cell])
             progress = (along - segment_start) / along_span
             clamped_progress = float(np.clip(progress, 0.0, 1.0))
-            envelope = (
-                clamped_progress ** left_exponent
-                * (1.0 - clamped_progress) ** right_exponent
-            ) / peak_raw
-            wobble = branch.wobble * envelope * math.sin(
-                2.0 * math.pi * (1.25 * clamped_progress + branch.phase)
+            envelope = self._natural_split_envelope(
+                clamped_progress,
+                branch.skew,
+                branch.phase,
+            )
+            meander = branch.wobble * envelope * (
+                0.72
+                * math.sin(
+                    2.0 * math.pi * 0.58 * clamped_progress + branch.phase
+                )
+                + 0.28
+                * math.sin(
+                    2.0 * math.pi * 1.31 * clamped_progress
+                    + 0.5 * branch.phase
+                )
             )
             target_cross = (
                 float(np.interp(along, backbone_alongs, backbone_crosses))
                 + branch.lateral_offset * envelope
-                + 0.35 * host_field.config.corridor_width * wobble
+                + 0.18 * host_field.config.corridor_width * meander
             )
             target_x = geometry.seed_x + geometry.flow_x * along + geometry.cross_x * target_cross
             target_y = geometry.seed_y + geometry.flow_y * along + geometry.cross_y * target_cross
@@ -1142,6 +1143,33 @@ class CaveNetworkGenerator:
         if backbone_segment[-1] != built_path[-1]:
             built_path.append(backbone_segment[-1])
         return built_path
+
+    @staticmethod
+    def _natural_split_envelope(
+        progress: float,
+        skew: float,
+        phase: float,
+    ) -> float:
+        """Return an asymmetric, rounded offset for a split/merge path."""
+
+        t = float(np.clip(progress, 0.0, 1.0))
+        if t <= 0.0 or t >= 1.0:
+            return 0.0
+        warped = float(
+            np.clip(
+                t
+                + 0.10 * skew * math.sin(math.pi * t)
+                + 0.025 * math.sin(phase) * math.sin(2.0 * math.pi * t),
+                0.0,
+                1.0,
+            )
+        )
+        exponent = 1.15 + 0.25 * abs(skew)
+        rounded = max(math.sin(math.pi * warped), 0.0) ** exponent
+        breathing = 1.0 + 0.035 * rounded * math.sin(
+            2.0 * math.pi * 0.55 * t + phase
+        )
+        return max(0.0, rounded * breathing)
 
     def _build_zone_ladders(
         self,
@@ -1167,11 +1195,37 @@ class CaveNetworkGenerator:
             key=lambda item: np.mean([float(geometry.cross_grid[cell]) for cell in item[1]]),
         )
         ladders: list[_SelectedPath] = []
-        for rung_fraction in rungs:
-            left_branch = ordered[0][1]
-            right_branch = ordered[-1][1]
-            left_cell = left_branch[min(int(rung_fraction * (len(left_branch) - 1)), len(left_branch) - 1)]
-            right_cell = right_branch[min(int(rung_fraction * (len(right_branch) - 1)), len(right_branch) - 1)]
+        for rung_index, rung_fraction in enumerate(rungs):
+            pair_index = (zone_index + rung_index) % (len(ordered) - 1)
+            left_branch = ordered[pair_index][1]
+            right_branch = ordered[pair_index + 1][1]
+            left_alongs = [float(geometry.along_grid[cell]) for cell in left_branch]
+            right_alongs = [float(geometry.along_grid[cell]) for cell in right_branch]
+            overlap_start = max(min(left_alongs), min(right_alongs))
+            overlap_end = min(max(left_alongs), max(right_alongs))
+            overlap_span = overlap_end - overlap_start
+            if overlap_span <= 2.0 * geometry.cell_scale:
+                continue
+            center_along = overlap_start + rung_fraction * overlap_span
+            cross_gap = abs(
+                float(np.mean([geometry.cross_grid[cell] for cell in right_branch]))
+                - float(np.mean([geometry.cross_grid[cell] for cell in left_branch]))
+            )
+            along_skew = min(
+                0.38 * overlap_span,
+                max(3.5 * geometry.cell_scale, 0.55 * cross_gap),
+            )
+            skew_sign = -1.0 if (zone_index + rung_index) % 2 else 1.0
+            left_target = center_along - 0.5 * skew_sign * along_skew
+            right_target = center_along + 0.5 * skew_sign * along_skew
+            left_cell = min(
+                left_branch,
+                key=lambda cell: abs(float(geometry.along_grid[cell]) - left_target),
+            )
+            right_cell = min(
+                right_branch,
+                key=lambda cell: abs(float(geometry.along_grid[cell]) - right_target),
+            )
             connector = self._build_connector_path(
                 host_field=host_field,
                 geometry=geometry,
@@ -1184,15 +1238,17 @@ class CaveNetworkGenerator:
             simplified = self._simplify_path(connector)
             if len(simplified) < 3:
                 continue
+            metadata = self._build_segment_metadata(
+                kind="ladder",
+                zone_index=zone_index,
+                chamber_radius_scale=chamber_radius_scale,
+            )
+            metadata["connection_style"] = "oblique_anastomosis"
             ladders.append(
                 _SelectedPath(
                     kind="ladder",
                     path=tuple(simplified),
-                    metadata=self._build_segment_metadata(
-                        kind="ladder",
-                        zone_index=zone_index,
-                        chamber_radius_scale=chamber_radius_scale,
-                    ),
+                    metadata=metadata,
                 )
             )
         return tuple(ladders)
