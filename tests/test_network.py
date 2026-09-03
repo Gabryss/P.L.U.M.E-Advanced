@@ -6,6 +6,7 @@ import math
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -19,11 +20,41 @@ from plume_advanced.stages.network import (
     CaveNode,
     CavePoint,
     CaveSegment,
+    _SelectedPath,
     export_network_report,
 )
 
 
 class CaveNetworkTests(unittest.TestCase):
+    def test_simplification_retains_branch_attachment_and_separate_underpass(self) -> None:
+        paths = (
+            _SelectedPath("backbone", ((0, 0), (0, 10))),
+            _SelectedPath("source_feeder", ((4, 5), (0, 5))),
+            _SelectedPath("underpass", ((-3, 2), (0, 2), (3, 2)), merge_shared_cells=False),
+        )
+        restored = CaveNetworkGenerator._restore_attachment_cells(paths)
+        self.assertIn((0, 5), restored[0].path)
+        self.assertEqual(restored[2], paths[2])
+
+    def test_routes_round_grid_corners_and_keep_exact_attachment_positions(self) -> None:
+        substrate = SimpleNamespace(elevation=10., slope_degrees=0., cover_thickness=20.,
+                                    roof_competence=1., growth_cost=0.)
+        host = SimpleNamespace(sample=lambda x, y: substrate)
+        coordinates = ((0., 0.), (100., 0.), (100., 100.))
+        points = tuple(CavePoint(
+            index=i, x=x, y=y, elevation=10., slope_degrees=0., cover_thickness=20.,
+            roof_competence=1., growth_cost=0., arc_length=100. * i, width=10.,
+        ) for i, (x, y) in enumerate(coordinates))
+        segment = CaveSegment(0, 0, 1, "backbone", 0, points, {})
+        curved = CaveNetworkGenerator._smooth_graph_routes(host, [segment])[0]
+        xy = np.asarray([(point.x, point.y) for point in curved.points])
+        np.testing.assert_array_equal(xy[[0, -1]], np.asarray(coordinates)[[0, -1]])
+        directions = np.diff(xy, axis=0)
+        directions /= np.linalg.norm(directions, axis=1, keepdims=True)
+        turns = np.arccos(np.clip(np.sum(directions[:-1] * directions[1:], axis=1), -1, 1))
+        self.assertLess(float(np.max(turns)), math.radians(20.))
+        self.assertTrue(np.all(np.diff([point.arc_length for point in curved.points]) > 0.))
+
     def test_split_and_merge_conserve_flux_and_advance_thermal_state(self) -> None:
         config = CaveNetworkConfig(
             source_flux=10.0,
@@ -151,6 +182,19 @@ class CaveNetworkTests(unittest.TestCase):
         )
         host_field = HostFieldGenerator(project_config.host_field).generate()
         cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
+
+        adjacency = {node.node_id: set() for node in cave_network.nodes}
+        for segment in cave_network.segments:
+            adjacency[segment.start_node_id].add(segment.end_node_id)
+            adjacency[segment.end_node_id].add(segment.start_node_id)
+        seen = set()
+        pending = [cave_network.nodes[0].node_id]
+        while pending:
+            node_id = pending.pop()
+            if node_id not in seen:
+                seen.add(node_id)
+                pending.extend(adjacency[node_id] - seen)
+        self.assertEqual(seen, set(adjacency), "Every branch must attach to the route graph")
 
         summary = cave_network.summary()
         self.assertGreaterEqual(int(summary["node_count"]), 12)

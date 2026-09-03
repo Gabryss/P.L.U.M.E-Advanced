@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from scipy import ndimage
+from scipy.spatial import cKDTree
 from skimage import measure
 
 from plume_advanced.stages.events import (
@@ -119,6 +120,7 @@ class GeometryGenerator:
             cave_network,
             progress,
         )
+        self._remove_small_solid_pockets(voxel_grid)
         return CaveGeometry(
             config=self.config,
             voxel_grid=voxel_grid,
@@ -166,6 +168,8 @@ class GeometryGenerator:
                 protected_points=base_geometry.protected_route_points,
             )
             event_meshes = event_field.meshes
+            if structural_event_ids:
+                self._remove_small_solid_pockets(voxel_grid)
 
         if (
             not structural_event_ids
@@ -197,6 +201,18 @@ class GeometryGenerator:
             f"welding {sum(mesh.vertex_count for mesh in chunk_meshes)} chunk vertices",
         )
         assembled_vertices, assembled_faces = self._assemble_chunks(chunk_meshes)
+        if assembled_faces:
+            triangles = np.asarray(assembled_faces, dtype=np.int64)
+            edges = np.sort(np.concatenate([
+                triangles[:, [0, 1]], triangles[:, [1, 2]], triangles[:, [2, 0]],
+            ]), axis=1)
+            _, edge_counts = np.unique(edges, axis=0, return_counts=True)
+            if np.any(edge_counts != 2):
+                raise ValueError(
+                    "Cave mesh is not closed and manifold: "
+                    f"{np.count_nonzero(edge_counts == 1)} boundary edges, "
+                    f"{np.count_nonzero(edge_counts > 2)} nonmanifold edges"
+                )
         self._emit_progress(
             progress,
             "assemble",
@@ -227,6 +243,56 @@ class GeometryGenerator:
             event_meshes=event_meshes,
             structural_event_ids=structural_event_ids,
         )
+
+    @staticmethod
+    def _remove_small_solid_pockets(grid: VoxelGrid | TiledVoxelGrid) -> None:
+        """Remove unresolved floating rock specks, retaining connected dividers.
+
+        The solid uses face connectivity, matching the traversability grid.
+        Eight cells is a resolution criterion, not a passage-size
+        filter. A matching halo makes this independent of chunk boundaries.
+        """
+        limit = 8
+
+        def pockets(density: np.ndarray) -> np.ndarray:
+            labels, _ = ndimage.label(
+                density < grid.iso_level, structure=ndimage.generate_binary_structure(3, 1)
+            )
+            sizes = np.bincount(labels.ravel())
+            removable = sizes <= limit
+            removable[0] = False
+            for axis in range(3):
+                removable[np.unique(np.take(labels, (0, -1), axis=axis))] = False
+            return removable[labels]
+
+        if isinstance(grid, VoxelGrid):
+            grid.density[pockets(grid.density)] = grid.iso_level + 1.0
+            return
+        replacements = []
+        for key, tile in sorted(grid.tiles.items()):
+            start = np.asarray(key) * grid.tile_size - limit
+            shape = np.asarray(tile.shape) + 2 * limit
+            neighborhood = np.full(tuple(shape), grid.iso_level - 1.0, dtype=np.float32)
+            span = math.ceil(limit / grid.tile_size)
+            for delta in np.ndindex(*((2 * span + 1,) * 3)):
+                neighbor_key = tuple(key[axis] + delta[axis] - span for axis in range(3))
+                neighbor = grid.tiles.get(neighbor_key)
+                if neighbor is None:
+                    continue
+                neighbor_start = np.asarray(neighbor_key) * grid.tile_size
+                low = np.maximum(start, neighbor_start)
+                high = np.minimum(start + shape, neighbor_start + neighbor.shape)
+                if np.any(high <= low):
+                    continue
+                target = tuple(slice(int(a), int(b)) for a, b in zip(low - start, high - start))
+                source = tuple(slice(int(a), int(b)) for a, b in zip(low - neighbor_start, high - neighbor_start))
+                neighborhood[target] = neighbor[source]
+            interior = tuple(slice(limit, limit + size) for size in tile.shape)
+            mask = pockets(neighborhood)[interior]
+            if np.any(mask):
+                replacements.append((tile, mask))
+        for tile, mask in replacements:
+            tile[mask] = grid.iso_level + 1.0
 
     def _surface_texture_frames(
         self,
@@ -805,7 +871,7 @@ class GeometryGenerator:
                 junction_stamps=junction_stamp_points,
                 progress=progress,
             )
-        density = np.full(shape, -1.0, dtype=np.float32)
+        density = np.full(shape, -8.0, dtype=np.float32)
         self._emit_progress(
             progress,
             "voxel",
@@ -816,7 +882,7 @@ class GeometryGenerator:
 
         segment_items = list(samples_by_segment.items())
         for index, (_segment_id, samples) in enumerate(segment_items, start=1):
-            self._stamp_sample_chain(
+            self._stamp_network_chain(
                 density=density,
                 origin=lower,
                 samples=samples,
@@ -886,10 +952,7 @@ class GeometryGenerator:
             segment_keys: set[tuple[int, int, int]] = set()
             for sample in samples:
                 position = np.asarray((sample.x, sample.y, sample.z), dtype=float)
-                radius = max(
-                    self._radius_xy(sample),
-                    self._radius_z(sample),
-                ) + self.config.voxel_size
+                radius = self._sample_stamp_radius(sample)
                 segment_keys.update(
                     self._tile_keys_for_world_bounds(
                         position - radius,
@@ -904,11 +967,9 @@ class GeometryGenerator:
                 start_position = np.asarray((start.x, start.y, start.z), dtype=float)
                 end_position = np.asarray((end.x, end.y, end.z), dtype=float)
                 radius = max(
-                    self._radius_xy(start),
-                    self._radius_z(start),
-                    self._radius_xy(end),
-                    self._radius_z(end),
-                ) + self.config.voxel_size
+                    self._sample_stamp_radius(start),
+                    self._sample_stamp_radius(end),
+                )
                 segment_keys.update(
                     self._tile_keys_for_world_bounds(
                         np.minimum(start_position, end_position) - radius,
@@ -922,14 +983,10 @@ class GeometryGenerator:
             for key in segment_keys:
                 segments_by_key[key].append(samples)
         for stamp in junction_stamps:
-            radius_xy = max(stamp.radius_long, stamp.radius_short)
+            radius_xy = 1.22 * max(stamp.radius_long, stamp.radius_short, stamp.radius_z)
             keys = self._tile_keys_for_world_bounds(
-                stamp.center
-                - np.asarray((radius_xy, radius_xy, stamp.radius_z))
-                - self.config.voxel_size,
-                stamp.center
-                + np.asarray((radius_xy, radius_xy, stamp.radius_z))
-                + self.config.voxel_size,
+                stamp.center - radius_xy - self.config.voxel_size,
+                stamp.center + radius_xy + self.config.voxel_size,
                 lower=lower,
                 shape=shape,
                 tile_size=tile_size,
@@ -955,10 +1012,10 @@ class GeometryGenerator:
                 int(tile_end[1] - tile_start[1] + 1),
                 int(tile_end[2] - tile_start[2] + 1),
             )
-            tile = np.full(tile_shape, -1.0, dtype=np.float32)
+            tile = np.full(tile_shape, -8.0, dtype=np.float32)
             tile_origin = lower + tile_start * self.config.voxel_size
             for samples in segments_by_key.get(key, ()):
-                self._stamp_sample_chain(
+                self._stamp_network_chain(
                     density=tile,
                     origin=tile_origin,
                     samples=samples,
@@ -1049,8 +1106,19 @@ class GeometryGenerator:
         for samples in samples_by_segment.values():
             for sample in samples:
                 position = np.array((sample.x, sample.y, sample.z), dtype=float)
-                stamp_points.append((position, self._radius_xy(sample), self._radius_z(sample)))
+                radius = self._sample_stamp_radius(sample)
+                stamp_points.append((position, radius, radius))
         return stamp_points
+
+    def _sample_stamp_radius(self, sample: SectionSample) -> float:
+        radius = (
+            self._profile_bounds_radius(sample)
+            if self.config.use_section_profiles
+            else max(self._radius_xy(sample), self._radius_z(sample))
+        )
+        # Include the signed-distance band consumed by local smooth unions,
+        # not just the positive volume. Neighboring tiles need that same band.
+        return radius + 3.0 * self.config.voxel_size
 
     def _junction_stamp_points(
         self,
@@ -1065,6 +1133,10 @@ class GeometryGenerator:
 
         stamp_points: list[_JunctionStamp] = []
         for junction in cave_network.junctions:
+            # Ordinary confluences are made by the incident sweeps. A generic
+            # room at every split obscures the divider and creates swollen hubs.
+            if junction.kind != "chamber":
+                continue
             influenced_samples = samples_by_junction.get(junction.junction_id, [])
             if not influenced_samples:
                 continue
@@ -1131,7 +1203,68 @@ class GeometryGenerator:
         return max(sample.tube_width * 0.5 * scale, self.config.minimum_radius)
 
     def _radius_z(self, sample: SectionSample) -> float:
-        return max(sample.tube_height * 0.5 * self.config.tunnel_radius_scale, self.config.minimum_radius)
+        return max(
+            sample.tube_height * 0.5 * self.config.tunnel_radius_scale, self.config.minimum_radius
+        )
+
+    def _stamp_network_chain(
+        self,
+        *,
+        density: np.ndarray,
+        origin: np.ndarray,
+        samples: tuple[SectionSample, ...],
+    ) -> None:
+        """Blend incident tunnels once per chain, only near actual confluences.
+
+        Per-sample smooth unions would inflate the tunnel when sampling gets
+        denser. A bounded scratch region also keeps dense and tiled paths equal.
+        Grade-separated crossings deliberately receive no union fillet.
+        """
+        anchors: dict[int, tuple[float, SectionSample]] = {}
+        for sample in samples:
+            for influence in sample.junction_influences:
+                if influence.kind == "crossing":
+                    continue
+                if influence.weight > anchors.get(influence.junction_id, (0.0, sample))[0]:
+                    anchors[influence.junction_id] = (influence.weight, sample)
+        if not anchors:
+            self._stamp_sample_chain(density=density, origin=origin, samples=samples)
+            return
+        positions = np.asarray([(sample.x, sample.y, sample.z) for sample in samples])
+        radii = np.asarray([self._sample_stamp_radius(sample) for sample in samples])
+        voxel = self.config.voxel_size
+        lower = np.maximum(
+            np.floor((np.min(positions - radii[:, None], axis=0) - origin) / voxel).astype(int), 0
+        )
+        upper = np.minimum(
+            np.ceil((np.max(positions + radii[:, None], axis=0) - origin) / voxel).astype(int) + 1,
+            density.shape,
+        )
+        if np.any(upper <= lower):
+            return
+        slices = tuple(slice(int(a), int(b)) for a, b in zip(lower, upper))
+        region = density[slices]
+        # A -1 background lies inside the blend band and can spuriously widen
+        # an unrelated tube even when this chain has no support in its tile.
+        incoming = np.full(region.shape, -8.0, dtype=np.float32)
+        local_origin = origin + lower * voxel
+        self._stamp_sample_chain(density=incoming, origin=local_origin, samples=samples)
+        coordinates = np.ogrid[tuple(slice(0, size) for size in region.shape)]
+        blend = np.zeros(region.shape, dtype=np.float32)
+        for weight, sample in anchors.values():
+            center = (sample.x, sample.y, sample.z)
+            reach = max(sample.tube_width, sample.tube_height) * 1.5
+            distance_squared = sum(
+                (local_origin[axis] + coordinates[axis] * voxel - center[axis]) ** 2
+                for axis in range(3)
+            )
+            envelope = np.clip(1.0 - distance_squared / (reach * reach), 0.0, 1.0)
+            # At most half a voxel of added radius; do not erase rock islands.
+            np.maximum(blend, 2.0 * weight * envelope * envelope, out=blend)
+        difference = np.abs(region - incoming)
+        overlap = np.maximum(blend - difference, 0.0)
+        result = np.maximum(region, incoming) + overlap * overlap / np.maximum(4.0 * blend, 1e-12)
+        region[...] = result
 
     def _stamp_sample_chain(
         self,
@@ -1158,12 +1291,8 @@ class GeometryGenerator:
                     start_radius_z=0.45 * self._radius_z(start),
                     end_radius_z=0.45 * self._radius_z(end),
                 )
-            for sample in (samples[0], samples[-1]):
-                self._stamp_profile_cap(
-                    density=density,
-                    origin=origin,
-                    sample=sample,
-                )
+            if len(samples) == 1:
+                self._stamp_profile_cap(density=density, origin=origin, sample=samples[0])
             return
 
         for start, end in zip(samples, samples[1:]):
@@ -1202,18 +1331,26 @@ class GeometryGenerator:
             self._stamp_profile_cap(density=density, origin=origin, sample=start)
             return
 
-        radius = max(
-            self._profile_bounds_radius(start),
-            self._profile_bounds_radius(end),
-            self.config.minimum_radius,
+        radius = (
+            max(
+                self._profile_bounds_radius(start),
+                self._profile_bounds_radius(end),
+                self.config.minimum_radius,
+            )
+            + 3.0 * self.config.voxel_size
         )
         voxel_size = self.config.voxel_size
         lower = np.maximum(
-            np.floor((np.minimum(start_position, end_position) - radius - origin) / voxel_size).astype(int),
+            np.floor(
+                (np.minimum(start_position, end_position) - radius - origin) / voxel_size
+            ).astype(int),
             0,
         )
         upper = np.minimum(
-            np.ceil((np.maximum(start_position, end_position) + radius - origin) / voxel_size).astype(int) + 1,
+            np.ceil(
+                (np.maximum(start_position, end_position) + radius - origin) / voxel_size
+            ).astype(int)
+            + 1,
             np.array(density.shape, dtype=int),
         )
         if np.any(upper <= lower):
@@ -1230,6 +1367,12 @@ class GeometryGenerator:
         projection = (
             point_x * segment[0] + point_y * segment[1] + point_z * segment[2]
         ) / segment_length_squared
+        # Retain longitudinal distance before clamping the closest point.
+        # A cross-section distance alone extrudes the endpoint indefinitely,
+        # leaving the stamp's rectangular allocation bounds as the tube end.
+        axial_outside = np.maximum(-projection, projection - 1.0) * math.sqrt(
+            segment_length_squared
+        )
         projection = np.clip(projection, 0.0, 1.0)
 
         closest_x = start_position[0] + projection * segment[0]
@@ -1264,6 +1407,20 @@ class GeometryGenerator:
             start_profile,
             end_profile,
         ).reshape(section_x.shape)
+        # Round the finite sweep ends. Adjacent sweeps overlap continuously;
+        # true termini close smoothly without a planar clipping surface.
+        end_radius = max(
+            min(self._profile_bounds_radius(start), self._profile_bounds_radius(end)),
+            self.config.minimum_radius,
+        )
+        rounded_end = (
+            np.hypot(
+                np.maximum(signed_distance + end_radius, 0.0),
+                np.maximum(axial_outside, 0.0),
+            )
+            - end_radius
+        )
+        signed_distance = np.where(axial_outside > 0.0, rounded_end, signed_distance)
         density_values = -signed_distance / max(voxel_size, 1e-6)
         density_values += self._wall_roughness(
             x_grid,
@@ -1285,8 +1442,8 @@ class GeometryGenerator:
     ) -> None:
         position = np.array((sample.x, sample.y, sample.z), dtype=float)
         profile_radius = max(self._profile_bounds_radius(sample), self.config.minimum_radius)
-        cap_length = max(1.5 * self.config.voxel_size, 0.35 * profile_radius)
-        radius = max(profile_radius, cap_length)
+        cap_length = profile_radius
+        radius = profile_radius + self.config.voxel_size
         voxel_size = self.config.voxel_size
         lower = np.maximum(np.floor((position - radius - origin) / voxel_size).astype(int), 0)
         upper = np.minimum(
@@ -1310,19 +1467,13 @@ class GeometryGenerator:
         section_z = dx * binormal[0] + dy * binormal[1] + dz * binormal[2]
         along = dx * tangent[0] + dy * tangent[1] + dz * tangent[2]
         profile = np.array(sample.profile_points, dtype=float) * self._profile_scale(sample)
-        normalized_along = np.clip(np.abs(along) / max(cap_length, 1e-6), 0.0, 1.0)
-        taper = 1.0 - 0.45 * normalized_along * normalized_along
-        cap_phase = (
-            0.45 * np.sin(0.37 * section_x + self._roughness_phase[0])
-            + 0.28 * np.cos(0.31 * section_z + self._roughness_phase[1])
-        )
-        taper = np.clip(taper * (1.0 + 0.04 * cap_phase), 0.48, 1.08)
-        tapered_distance = self._profile_signed_distance(
-            (section_x / taper).reshape(-1),
-            (section_z / taper).reshape(-1),
-            profile,
-        ).reshape(section_x.shape) * taper
-        cap_distance = np.maximum(tapered_distance, np.abs(along) - cap_length)
+        radial_distance = self._profile_signed_distance(
+            section_x.reshape(-1), section_z.reshape(-1), profile,
+        ).reshape(section_x.shape)
+        cap_distance = np.hypot(
+            np.maximum(radial_distance + profile_radius, 0.0),
+            along * profile_radius / cap_length,
+        ) - profile_radius
         density_values = -cap_distance / max(voxel_size, 1e-6)
         density_values += self._wall_roughness(
             x_grid,
@@ -1591,7 +1742,10 @@ class GeometryGenerator:
         origin: np.ndarray,
         stamp: _JunctionStamp,
     ) -> None:
-        radius = max(stamp.radius_long, stamp.radius_short, stamp.radius_z)
+        radius = (
+            1.22 * max(stamp.radius_long, stamp.radius_short, stamp.radius_z)
+            + self.config.voxel_size
+        )
         voxel_size = self.config.voxel_size
         lower = np.maximum(
             np.floor((stamp.center - radius - origin) / voxel_size).astype(int),
@@ -1804,50 +1958,61 @@ class GeometryGenerator:
             ),
             allow_degenerate=False,
         )
-        chunk_origin = np.array(voxel_grid.origin, dtype=float) + np.array(
-            (x_start, y_start, z_start),
-            dtype=float,
-        ) * voxel_grid.voxel_size
+        chunk_origin = (
+            np.array(voxel_grid.origin, dtype=float)
+            + np.array(
+                (x_start, y_start, z_start),
+                dtype=float,
+            )
+            * voxel_grid.voxel_size
+        )
         world_vertices = local_vertices + chunk_origin
 
         return GeometryChunkMesh(
             chunk_id=chunk_id,
             grid_bounds=bounds,
             vertices=tuple(
-                (float(vertex[0]), float(vertex[1]), float(vertex[2]))
-                for vertex in world_vertices
+                (float(vertex[0]), float(vertex[1]), float(vertex[2])) for vertex in world_vertices
             ),
-            faces=tuple(
-                (int(face[0]), int(face[1]), int(face[2]))
-                for face in faces
-            ),
+            faces=tuple((int(face[0]), int(face[1]), int(face[2])) for face in faces),
         )
 
     def _assemble_chunks(
         self,
         chunk_meshes: list[GeometryChunkMesh],
     ) -> tuple[tuple[tuple[float, float, float], ...], tuple[tuple[int, int, int], ...]]:
-        vertices: list[tuple[float, float, float]] = []
+        if not chunk_meshes:
+            return (), ()
+        # A rounded coordinate is a bucket, not a distance tolerance: adjacent
+        # buckets can contain two copies of the same marching-cubes vertex.
+        # Merge by actual distance before any smoothing, UVs or displacement.
+        positions = np.concatenate([np.asarray(mesh.vertices) for mesh in chunk_meshes])
+        parent = np.arange(len(positions))
+
+        def root(index: int) -> int:
+            while parent[index] != index:
+                parent[index] = parent[parent[index]]
+                index = int(parent[index])
+            return index
+
+        pairs = cKDTree(positions).query_pairs(
+            max(self.config.weld_tolerance, 1e-12), output_type="ndarray"
+        )
+        for a, b in pairs:
+            ra, rb = root(int(a)), root(int(b))
+            parent[max(ra, rb)] = min(ra, rb)
+        roots = np.asarray([root(index) for index in range(len(positions))])
+        representatives, inverse = np.unique(roots, return_inverse=True)
+        vertices = positions[representatives]
         faces: list[tuple[int, int, int]] = []
-        vertex_lookup: dict[tuple[int, int, int], int] = {}
-        quantize = max(int(round(1.0 / max(self.config.weld_tolerance, 1e-12))), 1)
+        offset = 0
         for mesh in chunk_meshes:
-            index_map: dict[int, int] = {}
-            for local_index, vertex in enumerate(mesh.vertices):
-                key = (
-                    int(round(vertex[0] * quantize)),
-                    int(round(vertex[1] * quantize)),
-                    int(round(vertex[2] * quantize)),
-                )
-                if key not in vertex_lookup:
-                    vertex_lookup[key] = len(vertices)
-                    vertices.append(vertex)
-                index_map[local_index] = vertex_lookup[key]
             for a, b, c in mesh.faces:
-                face = (index_map[a], index_map[b], index_map[c])
+                face = tuple(int(inverse[offset + index]) for index in (a, b, c))
                 if len(set(face)) == 3:
                     faces.append(face)
-        return tuple(vertices), tuple(faces)
+            offset += len(mesh.vertices)
+        return tuple(tuple(float(value) for value in vertex) for vertex in vertices), tuple(faces)
 
     @staticmethod
     def _count_components(faces: tuple[tuple[int, int, int], ...]) -> int:

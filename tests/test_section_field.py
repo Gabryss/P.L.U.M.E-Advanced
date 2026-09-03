@@ -173,8 +173,15 @@ class SectionFieldTests(unittest.TestCase):
                 flat = flat_lookup[segment.segment_id].samples
                 midpoint = len(physical) // 2
                 separations.append(abs(physical[midpoint].z - flat[midpoint].z))
-                self.assertAlmostEqual(physical[0].z, flat[0].z, places=6)
-                self.assertAlmostEqual(physical[-1].z, flat[-1].z, places=6)
+                # The shared attachment is now the physical floor. Reframing
+                # a graded tube can slightly change its center's height while
+                # preserving that exact floor connection.
+                for endpoint in (0, -1):
+                    self.assertAlmostEqual(
+                        SectionFieldGenerator._sample_floor(physical[endpoint]),
+                        SectionFieldGenerator._sample_floor(flat[endpoint]),
+                        places=6,
+                    )
             self.assertGreater(
                 max(separations),
                 project_config.section_field.minimum_vertical_clearance,

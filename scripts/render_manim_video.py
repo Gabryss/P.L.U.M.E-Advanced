@@ -18,10 +18,13 @@ from plume_advanced.media.manim_data import load_manim_prototype_data
 ROOT = Path(__file__).resolve().parents[1]
 VIDEO_ROOT = ROOT / "paper" / "media" / "video"
 STAGE_SCENES = (
+    "PipelineOverview",
     "StageAHostField",
     "StageBSemanticFlow",
     "StageCAdaptiveSections",
     "StageDMarchingCubes",
+    "StageEGeologicalEvents",
+    "StageFSurfacePreparation",
 )
 AVAILABLE_SCENES = (*STAGE_SCENES, "GraphToGeometryPrototype")
 
@@ -43,7 +46,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--all-stages",
         action="store_true",
-        help="Render Stage A, B, C, and D as separate video assets.",
+        help="Render the pipeline overview followed by Stage A through F assets.",
     )
     parser.add_argument("--hero-segment", type=int, default=None)
     parser.add_argument(

@@ -12,6 +12,7 @@ from manim import (
     RIGHT,
     UP,
     AnimationGroup,
+    Arrow,
     Create,
     DashedLine,
     Dot,
@@ -26,7 +27,6 @@ from manim import (
     RoundedRectangle,
     Scene,
     Succession,
-    Text,
     ValueTracker,
     VGroup,
     VMobject,
@@ -43,6 +43,7 @@ from plume_advanced.media.manim_data import (
     load_manim_host_data,
     load_manim_prototype_data,
 )
+from plume_advanced.media.manim_typography import PresentationText as Text
 
 BACKGROUND = "#08131d"
 TEXT = "#e7edf3"
@@ -64,6 +65,124 @@ SEGMENT_TYPE_COLORS = {
 }
 
 
+class PipelineOverview(Scene):
+    """Introduce the four artifact-backed stages before the detailed assets."""
+
+    def construct(self) -> None:
+        host = load_manim_host_data(_artifact_path("PLUME_VIDEO_HOST_ARTIFACT"))
+        data = _prototype_data()
+        title = _title("From host fields to continuous cave geometry")
+        subtitle = Text(
+            "Six stages · explicit artifacts · one reproducible pipeline",
+            color=MUTED,
+            font_size=20,
+            font=ANNOTATION_FONT,
+        ).next_to(title, DOWN, buff=0.15)
+        self.play(FadeIn(title), FadeIn(subtitle), run_time=1.0)
+
+        colors = ("#38bdf8", NETWORK, SECTIONS, "#94a3b8", "#fb923c", "#4ade80")
+        specifications = (
+            (
+                "A",
+                "Host field",
+                (
+                    "Generate terrain and geological fields.",
+                    "They define where cave growth is favored.",
+                ),
+                "routing-cost substrate",
+            ),
+            (
+                "B",
+                "Semantic network",
+                (
+                    "Propagate typed segments through the substrate.",
+                    "Lava age controls the downstream flow.",
+                ),
+                "semantic centerline network",
+            ),
+            (
+                "C",
+                "Adaptive sections",
+                (
+                    "Sample local shape along every branch.",
+                    "Sampling increases near bends and junctions.",
+                ),
+                "closed cross-section profiles",
+            ),
+            (
+                "D",
+                "Density and geometry",
+                (
+                    "Interpolate profile SDFs into voxel density.",
+                    "Extract the connected, welded cave surface.",
+                ),
+                "connected welded cave mesh",
+            ),
+            (
+                "E",
+                "Rock placement",
+                (
+                    "Sample usable contacts on the cave floor.",
+                    "Ground rock and boulder prop meshes.",
+                ),
+                "editable rock and boulder meshes",
+            ),
+            (
+                "F",
+                "Surface preparation",
+                (
+                    "Smooth, unwrap, and package the visual mesh.",
+                    "Export one portable scene to target tools.",
+                ),
+                "render-ready portable scene",
+            ),
+        )
+        rail, pills = _overview_progress(specifications, colors)
+        active = RoundedRectangle(
+            width=pills[0].width + 0.14,
+            height=pills[0].height + 0.12,
+            corner_radius=0.12,
+            color=HIGHLIGHT,
+            stroke_width=2.2,
+            fill_opacity=0.0,
+        ).move_to(pills[0])
+        self.play(FadeIn(rail), FadeIn(active), run_time=0.8)
+        self.wait(1.0)
+
+        visuals = _overview_visuals(host, data)
+        current = None
+        for index, ((letter, name, lines, output), color, visual) in enumerate(
+            zip(specifications, colors, visuals, strict=True)
+        ):
+            shell = _overview_focus_shell(letter, name, lines, output, color)
+            incoming = Group(shell, visual)
+            animations = [active.animate.move_to(pills[index]), FadeIn(shell)]
+            if current is not None:
+                animations.insert(0, FadeOut(current))
+            self.play(*animations, run_time=0.8)
+            self.play(FadeIn(visual, scale=0.94), run_time=1.0)
+            self.wait(3.4)
+            current = incoming
+
+        recap = _overview_recap(specifications, colors, visuals)
+        takeaway = Text(
+            "Same cave, progressively enriched · each arrow passes a saved artifact",
+            color=TEXT,
+            font_size=19,
+            font=ANNOTATION_FONT,
+        ).to_edge(DOWN, buff=0.28)
+        self.play(
+            FadeOut(current),
+            FadeOut(active),
+            FadeOut(rail),
+            LaggedStart(*[FadeIn(card, shift=UP * 0.12) for card in recap[0]], lag_ratio=0.14),
+            FadeIn(recap[1]),
+            FadeIn(takeaway),
+            run_time=1.6,
+        )
+        self.wait(5.5)
+
+
 class StageAHostField(Scene):
     """Reveal the interpretable host layers consumed by network routing."""
 
@@ -79,17 +198,28 @@ class StageAHostField(Scene):
         title.set_z_index(10)
         subtitle.set_z_index(10)
         self.add(title, subtitle)
+        self.add_foreground_mobjects(title, subtitle)
 
         elevation = host.fields["elevation"]
         mesh_data = _prepare_elevation_mesh(elevation)
         yaw = ValueTracker(0.0)
+        orbit = ValueTracker(0.0)
         tilt = ValueTracker(0.0)
         relief = ValueTracker(0.0)
         layout = ValueTracker(0.0)
         surface = always_redraw(
             lambda: _elevation_surface(
                 mesh_data,
-                yaw=yaw.get_value(),
+                yaw=yaw.get_value() + np.deg2rad(18.0) * np.sin(orbit.get_value()),
+                tilt=tilt.get_value(),
+                relief=relief.get_value(),
+                layout=layout.get_value(),
+            )
+        )
+        surface_marker = always_redraw(
+            lambda: _elevation_sample_marker(
+                mesh_data,
+                yaw=yaw.get_value() + np.deg2rad(18.0) * np.sin(orbit.get_value()),
                 tilt=tilt.get_value(),
                 relief=relief.get_value(),
                 layout=layout.get_value(),
@@ -105,7 +235,10 @@ class StageAHostField(Scene):
             stroke_width=1.1,
         ).move_to(elevation_image)
         elevation_map = Group(elevation_image, elevation_border)
-        elevation_info = VGroup(
+        map_context = _map_context(host, elevation_image)
+        map_marker = _map_sample_marker(elevation_image)
+        wireframe = _map_wireframe(mesh_data, elevation_image)
+        elevation_info = Group(
             Text("Elevation", color=TEXT, font_size=29, font=ANNOTATION_FONT),
             VGroup(
                 Text(
@@ -127,103 +260,194 @@ class StageAHostField(Scene):
                 font_size=17,
                 font=ANNOTATION_FONT,
             ),
+            _field_colorbar(elevation, "terrain", "elevation (m)", width=3.25),
+            Text(
+                "marker identifies one shared XY location",
+                color=SAMPLE_MARKER,
+                font_size=15,
+                font=ANNOTATION_FONT,
+            ),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.18)
         elevation_info.to_edge(RIGHT, buff=0.42).shift(DOWN * 0.05)
-        self.play(FadeIn(elevation_map), FadeIn(elevation_info), run_time=1.2)
-        self.wait(3.8)
+        self.play(
+            FadeIn(elevation_map),
+            FadeIn(map_context),
+            FadeIn(map_marker),
+            FadeIn(elevation_info),
+            run_time=1.4,
+        )
+        self.wait(5.2)
 
         transition_note = Text(
-            "The same 2D samples, lifted by their elevation values",
+            "First expose the sampling grid; then lift every sample by elevation",
             color=TEXT,
             font_size=20,
             font=ANNOTATION_FONT,
         ).to_edge(DOWN, buff=0.30)
+        self.play(FadeIn(wireframe), FadeIn(transition_note), run_time=1.2)
+        self.add_foreground_mobject(transition_note)
+        self.wait(3.0)
         self.play(
             FadeOut(elevation_map),
             FadeIn(surface),
+            FadeOut(map_context),
+            FadeOut(map_marker),
             FadeOut(elevation_info),
-            FadeIn(transition_note),
-            run_time=0.8,
+            run_time=1.0,
         )
         self.play(
             tilt.animate.set_value(np.deg2rad(58.0)),
             relief.animate.set_value(1.0),
             yaw.animate.set_value(np.deg2rad(28.0)),
             layout.animate.set_value(0.45),
-            run_time=4.2,
+            FadeOut(wireframe),
+            run_time=5.0,
         )
-        self.wait(2.2)
-        yaw.add_updater(
-            lambda tracker, dt: tracker.increment_value(np.deg2rad(8.0) * dt)
-        )
+        vertical_scale = Text(
+            "vertical relief exaggerated for readability",
+            color=MUTED,
+            font_size=16,
+            font=ANNOTATION_FONT,
+        ).to_edge(DOWN, buff=0.34)
+        self.play(FadeOut(transition_note), FadeIn(vertical_scale), run_time=0.7)
+        self.wait(3.0)
+        self.add(orbit)
+        orbit.add_updater(lambda tracker, dt: tracker.increment_value(0.45 * dt))
 
-        specifications = (
-            ("cover_thickness", "Cover thickness", "available roof cover above the tube", "cover"),
-            ("fracture_intensity", "Fracture intensity", "structural weakness and preferred corridors", "fracture"),
-            ("roof_stability", "Roof stability", "gravity- and material-aware stability proxy", "stability"),
-            ("routing_cost", "Routing cost", "named terms combined exactly once", "cost"),
+        input_specifications = (
+            (
+                "cover_thickness",
+                "Cover thickness",
+                "available roof cover above the tube",
+                "cover",
+                "metres",
+            ),
+            (
+                "fracture_intensity",
+                "Fracture intensity",
+                "structural weakness and preferred corridors",
+                "fracture",
+                "0–1 index",
+            ),
+            (
+                "roof_stability",
+                "Roof stability",
+                "gravity- and material-aware stability proxy",
+                "stability",
+                "0–1 index",
+            ),
         )
         focus_cards = [
-            _host_field_focus(host, field, label, description, palette)
-            for field, label, description, palette in specifications
+            _host_field_focus(host, field, label, description, palette, unit)
+            for field, label, description, palette, unit in input_specifications
         ]
         relief_label = Text(
-            "rotating elevation relief",
+            "bounded terrain orbit · same-location marker",
             color=MUTED,
             font_size=16,
             font=ANNOTATION_FONT,
         ).move_to((-3.55, 1.75, 0.0))
         self.play(
-            FadeOut(transition_note),
+            FadeOut(vertical_scale),
             FadeIn(relief_label),
+            FadeIn(surface_marker),
             layout.animate.set_value(1.0),
-            run_time=1.2,
+            run_time=1.5,
         )
         current = focus_cards[0]
-        self.play(FadeIn(current), run_time=0.8)
-        self.wait(3.5)
+        self.play(FadeIn(current), run_time=0.9)
+        self.wait(4.5)
         for next_card in focus_cards[1:]:
             self.play(FadeOut(current), FadeIn(next_card), run_time=0.9)
             current = next_card
-            self.wait(3.5)
+            self.wait(4.5)
 
+        derivation_parts = _routing_derivation(host)
+        derivation = Group(*derivation_parts)
+        derivation_heading, derivation_terms, derivation_combine, derivation_result, derivation_scale = (
+            derivation_parts
+        )
+        self.play(
+            FadeOut(current),
+            FadeIn(derivation_heading),
+            FadeIn(derivation_terms),
+            run_time=1.2,
+        )
+        self.wait(2.0)
+        self.play(FadeIn(derivation_combine), run_time=0.8)
+        self.wait(1.4)
+        self.play(FadeIn(derivation_result), FadeIn(derivation_scale), run_time=1.2)
+        self.wait(4.2)
+
+        specifications = (*input_specifications, (
+            "routing_cost",
+            "Routing cost",
+            "derived weighted penalty",
+            "cost",
+            "0–1 cost",
+        ))
         grid = _host_field_grid(host, specifications)
         takeaway = Text(
-            "Host field: shared spatial context for the Stage B routing process",
+            "Shared marker across every map · saved routing cost passes to Stage B",
             color=TEXT,
             font_size=19,
             font=ANNOTATION_FONT,
         ).to_edge(DOWN, buff=0.28)
-        self.play(FadeOut(current), FadeIn(grid), FadeIn(takeaway), run_time=1.2)
-        self.wait(6.0)
-        yaw.clear_updaters()
+        self.play(FadeOut(derivation), FadeIn(grid), FadeIn(takeaway), run_time=1.3)
+        self.wait(7.0)
+        orbit.clear_updaters()
 
 
 class StageBSemanticFlow(Scene):
     """Reveal the semantic network in propagated lava-flow order."""
 
     def construct(self) -> None:
+        host = load_manim_host_data(_artifact_path("PLUME_VIDEO_HOST_ARTIFACT"))
         data = _prototype_data()
         projector = PlanProjector(tuple(data.segments), rotation_radians=-0.5 * np.pi)
         title = _title("Stage B · semantic cave network")
-        subtitle = Text(
+        handoff_subtitle = Text(
+            "Stage A supplies the host-conditioned routing substrate",
+            color=MUTED,
+            font_size=20,
+            font=ANNOTATION_FONT,
+        ).next_to(title, DOWN, buff=0.15)
+        flow_subtitle = Text(
             "Propagation follows lava age; color denotes each segment's semantic role",
             color=MUTED,
             font_size=20,
             font=ANNOTATION_FONT,
         ).next_to(title, DOWN, buff=0.15)
-        self.add(title, subtitle)
+        self.add(title, handoff_subtitle)
 
+        host_handoff = _stage_b_host_handoff(host)
+        handoff_note = Text(
+            "The network inherits this terrain- and geology-aware cost field.",
+            color=TEXT,
+            font_size=18,
+            font=ANNOTATION_FONT,
+        ).to_edge(DOWN, buff=0.30)
+        self.play(FadeIn(host_handoff), FadeIn(handoff_note), run_time=1.2)
+        self.wait(3.8)
+        self.play(
+            FadeOut(host_handoff),
+            FadeOut(handoff_note),
+            FadeOut(handoff_subtitle),
+            FadeIn(flow_subtitle),
+            run_time=1.0,
+        )
+
+        substrate = _routing_cost_overlay(host, projector)
         ghost = VGroup(
             *[_segment_path(segment, projector, "#334155", 1.5) for segment in data.segments]
-        ).set_stroke(opacity=0.48)
-        self.play(FadeIn(ghost), run_time=0.8)
+        ).set_stroke(opacity=0.58).set_z_index(1)
+        self.play(FadeIn(substrate), FadeIn(ghost), run_time=1.0)
         flow_paths = VGroup(
             *[
                 _segment_path(segment, projector, _segment_type_color(segment.kind), 3.2)
                 for segment in data.segments
             ]
-        )
+        ).set_z_index(2)
         type_legend = _segment_type_legend(data.segments)
         self.play(FadeIn(type_legend), run_time=0.5)
         scheduled = _flow_animations(data.segments, tuple(flow_paths), total_time=8.0)
@@ -243,7 +467,7 @@ class StageCAdaptiveSections(Scene):
 
     def construct(self) -> None:
         data = _prototype_data()
-        projector = PlanProjector(tuple(data.segments))
+        projector = PlanProjector(tuple(data.segments), rotation_radians=-0.5 * np.pi)
         section_segment_id = data.longest_section_segment_id
         section_segment = next(
             segment for segment in data.segments if segment.segment_id == section_segment_id
@@ -294,13 +518,36 @@ class StageCAdaptiveSections(Scene):
         tracker = Dot(hero.get_start(), radius=0.085, color=SAMPLE_MARKER)
         tracker.set_stroke(color=TEXT, width=1.5, opacity=0.95)
         self.play(FadeIn(panel), FadeIn(tracker), run_time=0.8)
+        current_connector = None
+        current_progress = None
         for index, profile in enumerate(profiles):
             alpha = index / max(len(profiles) - 1, 1)
-            self.play(
+            connector = always_redraw(
+                lambda profile=profile: DashedLine(
+                    tracker.get_center(),
+                    profile.get_top() + UP * 0.04,
+                    color=SAMPLE_MARKER,
+                    stroke_width=1.5,
+                    stroke_opacity=0.72,
+                    dash_length=0.10,
+                    dashed_ratio=0.55,
+                ).set_z_index(2)
+            )
+            if current_connector is not None:
+                self.remove(current_connector)
+            self.add(connector)
+            progress = _section_progress_badge(alpha)
+            progress.next_to(panel, UP, buff=0.10).align_to(panel, LEFT)
+            animations = [
                 tracker.animate.move_to(hero.point_from_proportion(alpha)),
                 Create(profile),
-                run_time=1.0,
-            )
+                FadeIn(progress),
+            ]
+            if current_progress is not None:
+                animations.append(FadeOut(current_progress))
+            self.play(*animations, run_time=1.0)
+            current_connector = connector
+            current_progress = progress
         reading_note = Text(
             "Closed local profiles become the input to Stage D volume construction.",
             color=TEXT,
@@ -329,6 +576,16 @@ class StageDMarchingCubes(Scene):
             font=ANNOTATION_FONT,
         ).next_to(title, DOWN, buff=0.15)
         self.add(title, subtitle)
+        progress, progress_nodes = _stage_d_progress()
+        progress_active = RoundedRectangle(
+            width=progress_nodes[0].width + 0.10,
+            height=progress_nodes[0].height + 0.08,
+            corner_radius=0.10,
+            color=HIGHLIGHT,
+            stroke_width=1.8,
+            fill_opacity=0.0,
+        ).move_to(progress_nodes[0])
+        self.play(FadeIn(progress), FadeIn(progress_active), run_time=0.7)
 
         step_one = _stage_d_step(
             "1 · interpolate neighboring profile SDFs into voxel density"
@@ -337,6 +594,7 @@ class StageDMarchingCubes(Scene):
         density_key = _density_key()
         self.play(FadeIn(step_one), run_time=0.5)
         self.play(
+            progress_active.animate.move_to(progress_nodes[1]),
             LaggedStart(*[FadeIn(dot) for dot in density_slice[0]], lag_ratio=0.008),
             Create(density_slice[1]),
             FadeIn(density_key),
@@ -355,6 +613,7 @@ class StageDMarchingCubes(Scene):
             triangles,
         ) = _marching_cube_case()
         self.play(
+            progress_active.animate.move_to(progress_nodes[2]),
             FadeOut(step_one),
             FadeOut(density_slice),
             FadeOut(density_key),
@@ -373,20 +632,14 @@ class StageDMarchingCubes(Scene):
             FadeIn(corner_labels),
             run_time=1.4,
         )
-        sign_key = Text(
-            "positive density = carved void   ·   negative density = rock",
-            color=MUTED,
-            font_size=17,
-            font=ANNOTATION_FONT,
-        ).to_corner(DOWN + RIGHT, buff=0.42)
+        sign_key = _stage_d_side_note(
+            ("positive density = carved void", "negative density = rock"), MUTED
+        )
         self.play(FadeIn(sign_key), run_time=0.5)
         self.wait(1.5)
-        mixed_note = Text(
-            "Only edges with opposite signs can cross the d = 0 surface",
-            color=HIGHLIGHT,
-            font_size=17,
-            font=ANNOTATION_FONT,
-        ).to_corner(DOWN + RIGHT, buff=0.42)
+        mixed_note = _stage_d_side_note(
+            ("Only opposite-sign edges", "can cross the d = 0 surface"), HIGHLIGHT
+        )
         self.play(
             FadeOut(sign_key),
             FadeIn(mixed_note),
@@ -415,13 +668,11 @@ class StageDMarchingCubes(Scene):
         triangulation_step = _stage_d_step(
             "3b · connect crossings using the Lewiner case topology"
         )
-        patch_note = Text(
-            "two triangles form this cube's local isosurface patch",
-            color=NETWORK,
-            font_size=17,
-            font=ANNOTATION_FONT,
-        ).to_corner(DOWN + RIGHT, buff=0.42)
+        patch_note = _stage_d_side_note(
+            ("Two triangles form", "this cube's surface patch"), NETWORK
+        )
         self.play(
+            progress_active.animate.move_to(progress_nodes[3]),
             FadeOut(step_three),
             FadeIn(triangulation_step),
             FadeOut(interpolation),
@@ -445,6 +696,7 @@ class StageDMarchingCubes(Scene):
             depth_key,
         )
         self.play(
+            progress_active.animate.move_to(progress_nodes[4]),
             FadeOut(triangulation_step),
             FadeOut(patch_note),
             FadeOut(cube_case),
@@ -473,6 +725,195 @@ class StageDMarchingCubes(Scene):
         ).to_edge(DOWN, buff=0.28)
         self.play(FadeIn(note), run_time=0.6)
         self.wait(2.4)
+
+
+class StageEGeologicalEvents(Scene):
+    """Explain how rock and boulder prop meshes are grounded on the cave floor."""
+
+    def construct(self) -> None:
+        data = _prototype_data()
+        section_id = data.longest_section_segment_id
+        sections = tuple(
+            section for section in data.sections if section.segment_id == section_id
+        )
+        selected = evenly_spaced_sections(sections, 6)
+        representative = selected[len(selected) // 2]
+        title = _title("Stage E · grounded cave rocks")
+        subtitle = Text(
+            "Surface-aware placement grounds separately editable rocks and boulders",
+            color=MUTED,
+            font_size=20,
+            font=ANNOTATION_FONT,
+        ).next_to(title, DOWN, buff=0.15)
+        self.add(title, subtitle)
+
+        flow, flow_nodes = _event_interleave_flow()
+        active = RoundedRectangle(
+            width=flow_nodes[0].width + 0.13,
+            height=flow_nodes[0].height + 0.11,
+            corner_radius=0.11,
+            color=HIGHLIGHT,
+            stroke_width=2.0,
+            fill_opacity=0.0,
+        ).move_to(flow_nodes[0])
+        self.play(FadeIn(flow), FadeIn(active), run_time=0.8)
+
+        before, _before_props = _event_cross_section_parts(
+            representative,
+            center_x=-3.25,
+            maximum_width=4.25,
+        )
+        after, props = _event_cross_section_parts(
+            representative,
+            center_x=3.25,
+            maximum_width=4.25,
+        )
+        before_label = VGroup(
+            Text("BEFORE", color=MUTED, font_size=14, font=ANNOTATION_FONT),
+            Text("Stage D cave surface", color=TEXT, font_size=21, font=ANNOTATION_FONT),
+        ).arrange(DOWN, buff=0.05)
+        before_label.move_to((-3.25, 1.13, 0.0))
+        after_label = VGroup(
+            Text("AFTER", color="#fb923c", font_size=14, font=ANNOTATION_FONT),
+            Text("grounded rock props", color=TEXT, font_size=21, font=ANNOTATION_FONT),
+        ).arrange(DOWN, buff=0.05)
+        after_label.move_to((3.25, 1.13, 0.0))
+        comparison_arrow = VGroup(
+            Text("→", color=HIGHLIGHT, font_size=31, font=ANNOTATION_FONT),
+            Text("ground", color=MUTED, font_size=13, font=ANNOTATION_FONT),
+        ).arrange(DOWN, buff=0.01).move_to((0.0, -0.30, 0.0))
+        self.play(FadeIn(before), FadeIn(before_label), run_time=1.0)
+        self.wait(2.4)
+        self.play(
+            active.animate.move_to(flow_nodes[1]),
+            FadeIn(after),
+            FadeIn(after_label),
+            FadeIn(comparison_arrow),
+            run_time=0.8,
+        )
+        for dot, target in props:
+            self.add(dot)
+            self.play(dot.animate.move_to(target), run_time=0.7)
+        grounding_note = Text(
+            "Floor contact provides position and normal; each prop is aligned and slightly embedded.",
+            color=MUTED,
+            font_size=17,
+            font=ANNOTATION_FONT,
+        ).to_edge(DOWN, buff=0.62)
+        self.play(FadeIn(grounding_note), run_time=0.7)
+        self.wait(2.8)
+        self.play(
+            active.animate.move_to(flow_nodes[2]),
+            run_time=0.8,
+        )
+        takeaway = Text(
+            "Cave topology is preserved; rock and boulder meshes remain separately editable.",
+            color=TEXT,
+            font_size=18,
+            font=ANNOTATION_FONT,
+        ).to_edge(DOWN, buff=0.25)
+        self.play(FadeOut(grounding_note), FadeIn(takeaway), run_time=0.7)
+        self.wait(3.5)
+
+
+class StageFSurfacePreparation(Scene):
+    """Explain the implemented visual-surface and portable export path."""
+
+    def construct(self) -> None:
+        data = _prototype_data()
+        section_id = data.longest_section_segment_id
+        section_samples = tuple(
+            section for section in data.sections if section.segment_id == section_id
+        )
+        selected = evenly_spaced_sections(section_samples, 7)
+        title = _title("Stage F · surface preparation and export")
+        subtitle = Text(
+            "The welded topology becomes a portable, render-ready visual asset",
+            color=MUTED,
+            font_size=20,
+            font=ANNOTATION_FONT,
+        ).next_to(title, DOWN, buff=0.15)
+        self.add(title, subtitle)
+
+        cards, arrows, targets = _surface_preparation_parts(compact=False)
+        scope = Text(
+            "Implemented path: smoothing · displacement baking · UVs · tangents · embedded PBR maps",
+            color=MUTED,
+            font_size=16,
+            font=ANNOTATION_FONT,
+        ).move_to((0.0, 2.05, 0.0))
+        self.play(FadeIn(scope), run_time=0.7)
+        self.play(FadeIn(cards[0], shift=RIGHT * 0.15), run_time=1.0)
+        self.wait(2.5)
+        for index in range(1, len(cards)):
+            self.play(
+                FadeIn(arrows[index - 1]),
+                FadeIn(cards[index], shift=RIGHT * 0.15),
+                run_time=1.0,
+            )
+            self.wait(2.7)
+
+        self.play(LaggedStart(*[FadeIn(target) for target in targets], lag_ratio=0.10), run_time=1.0)
+        self.wait(2.4)
+        boundary = Text(
+            "Not claimed here: geology-conditioned synthesis or explicit visual LOD generation",
+            color="#fbbf24",
+            font_size=16,
+            font=ANNOTATION_FONT,
+        ).to_edge(DOWN, buff=0.28)
+        self.play(FadeIn(boundary), run_time=0.7)
+        self.wait(4.0)
+
+        asset_subtitle = Text(
+            "Profile-backed schematic · rotating geometry with illustrative surface styles",
+            color=MUTED,
+            font_size=20,
+            font=ANNOTATION_FONT,
+        ).next_to(title, DOWN, buff=0.15)
+        self.play(
+            FadeOut(Group(*cards, arrows, targets, scope, boundary)),
+            FadeOut(subtitle),
+            FadeIn(asset_subtitle),
+            run_time=1.0,
+        )
+        channel_names = ("geometry", "displacement", "normals + PBR", "packaged scene")
+        channel_row, channel_nodes = _surface_channel_progress(channel_names)
+        channel_active = RoundedRectangle(
+            width=channel_nodes[0].width + 0.10,
+            height=channel_nodes[0].height + 0.08,
+            corner_radius=0.10,
+            color=HIGHLIGHT,
+            stroke_width=1.8,
+            fill_opacity=0.0,
+        ).move_to(channel_nodes[0])
+        orbit = ValueTracker(-0.55)
+        view = always_redraw(
+            lambda: _prepared_surface_view(selected, orbit.get_value(), channel_names[0])
+        )
+        asset_note = Text(
+            "Schematic styles, not exported texture channels · geometry from frozen Stage-C profiles",
+            color=MUTED,
+            font_size=15,
+            font=ANNOTATION_FONT,
+        ).to_edge(DOWN, buff=0.28)
+        self.add(view)
+        self.play(FadeIn(channel_row), FadeIn(channel_active), FadeIn(asset_note), run_time=0.8)
+        self.add(orbit)
+        orbit.add_updater(lambda tracker, dt: tracker.increment_value(0.12 * dt))
+        self.wait(2.5)
+        for index, channel_name in enumerate(channel_names[1:], start=1):
+            self.remove(view)
+            view = always_redraw(
+                lambda channel_name=channel_name: _prepared_surface_view(
+                    selected,
+                    orbit.get_value(),
+                    channel_name,
+                )
+            )
+            self.add(view)
+            self.play(channel_active.animate.move_to(channel_nodes[index]), run_time=0.65)
+            self.wait(2.5)
+        orbit.clear_updaters()
 
 
 class GraphToGeometryPrototype(Scene):
@@ -556,6 +997,664 @@ class GraphToGeometryPrototype(Scene):
         self.wait(1.5)
 
 
+def _overview_progress(
+    specifications: tuple[tuple[str, str, tuple[str, str], str], ...],
+    colors: tuple[str, ...],
+) -> tuple[VGroup, tuple[VGroup, ...]]:
+    """Build the persistent A-to-D progress rail."""
+
+    pills = []
+    compact = len(specifications) > 4
+    pill_width = 1.72 if compact else 2.45
+    short_names = {
+        "Host field": "Host",
+        "Semantic network": "Network",
+        "Adaptive sections": "Sections",
+        "Density and geometry": "Geometry",
+        "Rock placement": "Rocks",
+        "Surface preparation": "Surface",
+    }
+    for (letter, name, _lines, _output), color in zip(
+        specifications, colors, strict=True
+    ):
+        box = RoundedRectangle(
+            width=pill_width,
+            height=0.54,
+            corner_radius=0.10,
+            color="#334155",
+            fill_color="#10202e",
+            fill_opacity=0.96,
+            stroke_width=1.0,
+        )
+        label = Text(
+            f"{letter} · {short_names.get(name, name)}",
+            color=color,
+            font_size=13 if compact else 15,
+            font=ANNOTATION_FONT,
+        )
+        pills.append(VGroup(box, label))
+    pill_row = VGroup(*pills).arrange(RIGHT, buff=0.40 if compact else 0.58)
+    pill_row.move_to((0.0, 2.02, 0.0))
+    arrows = VGroup(
+        *[
+            Arrow(
+                pills[index].get_right() + RIGHT * 0.06,
+                pills[index + 1].get_left() + LEFT * 0.06,
+                color=MUTED,
+                stroke_width=1.4,
+                max_tip_length_to_length_ratio=0.30,
+            )
+            for index in range(len(pills) - 1)
+        ]
+    )
+    return VGroup(arrows, pill_row), tuple(pills)
+
+
+def _overview_focus_shell(
+    letter: str,
+    name: str,
+    lines: tuple[str, str],
+    output: str,
+    color: str,
+) -> VGroup:
+    """Create the common explanatory frame for one overview stage."""
+
+    frame = RoundedRectangle(
+        width=12.55,
+        height=4.15,
+        corner_radius=0.18,
+        color="#334155",
+        fill_color="#0b1925",
+        fill_opacity=0.88,
+        stroke_width=1.1,
+    ).move_to((0.0, -0.48, 0.0))
+    divider = Line(
+        np.asarray((0.0, 1.20, 0.0)),
+        np.asarray((0.0, -2.15, 0.0)),
+        color="#334155",
+        stroke_width=1.0,
+    )
+    heading = VGroup(
+        Text(f"STAGE {letter}", color=color, font_size=17, font=ANNOTATION_FONT),
+        Text(name, color=TEXT, font_size=30, font=ANNOTATION_FONT),
+    ).arrange(DOWN, aligned_edge=LEFT, buff=0.10)
+    description = VGroup(
+        *[
+            Text(line, color=MUTED, font_size=18, font=ANNOTATION_FONT)
+            for line in lines
+        ]
+    ).arrange(DOWN, aligned_edge=LEFT, buff=0.09)
+    output_group = VGroup(
+        Text("OUTPUT", color=color, font_size=13, font=ANNOTATION_FONT),
+        Text(output, color=TEXT, font_size=19, font=ANNOTATION_FONT),
+    ).arrange(DOWN, aligned_edge=LEFT, buff=0.06)
+    text = VGroup(heading, description, output_group).arrange(
+        DOWN, aligned_edge=LEFT, buff=0.30
+    )
+    text.move_to((3.25, -0.45, 0.0))
+    return VGroup(frame, divider, text)
+
+
+def _overview_visuals(
+    host: ManimHostData,
+    data: ManimPrototypeData,
+) -> tuple[Group | VGroup, ...]:
+    """Build compact visuals from the same artifacts as the detailed stages."""
+
+    elevation = ImageMobject(_field_rgba(host.fields["elevation"], "terrain"))
+    elevation.width = 2.20
+    cost = ImageMobject(_field_rgba(host.fields["routing_cost"], "cost"))
+    cost.width = 2.20
+    elevation_card = Group(
+        Text("host fields", color="#38bdf8", font_size=16, font=ANNOTATION_FONT),
+        Group(
+            elevation,
+            Rectangle(
+                width=elevation.width + 0.05,
+                height=elevation.height + 0.05,
+                color="#475569",
+                stroke_width=0.9,
+            ).move_to(elevation),
+        ),
+    ).arrange(DOWN, buff=0.10)
+    cost_card = Group(
+        Text("routing cost", color=HIGHLIGHT, font_size=16, font=ANNOTATION_FONT),
+        Group(
+            cost,
+            Rectangle(
+                width=cost.width + 0.05,
+                height=cost.height + 0.05,
+                color=HIGHLIGHT,
+                stroke_width=1.1,
+            ).move_to(cost),
+        ),
+    ).arrange(DOWN, buff=0.10)
+    stage_a = Group(
+        elevation_card,
+        Text("→", color=MUTED, font_size=26, font=ANNOTATION_FONT),
+        cost_card,
+    ).arrange(RIGHT, buff=0.18)
+    stage_a.move_to((-3.25, -0.48, 0.0))
+
+    projector = PlanProjector(tuple(data.segments), rotation_radians=-0.5 * np.pi)
+    stage_b = VGroup(
+        *[
+            _segment_path(segment, projector, _segment_type_color(segment.kind), 3.0)
+            for segment in data.segments
+        ]
+    )
+    stage_b.set_width(4.65)
+    if stage_b.height > 3.10:
+        stage_b.set_height(3.10)
+    stage_b.move_to((-3.25, -0.48, 0.0))
+
+    section_id = data.longest_section_segment_id
+    sections = tuple(
+        section for section in data.sections if section.segment_id == section_id
+    )
+    selected = evenly_spaced_sections(sections, 6)
+    section_panel, profiles = _section_panel(
+        selected,
+        width=5.2,
+        height=2.1,
+        caption="adaptive profiles along one branch",
+    )
+    stage_c = Group(section_panel, *profiles)
+    stage_c.set_width(4.85)
+    stage_c.move_to((-3.25, -0.48, 0.0))
+
+    cube_faces, cube_edges, _corner_dots, _corner_labels, _sign_edges, crossings, triangles = (
+        _marching_cube_case()
+    )
+    stage_d = VGroup(cube_faces, cube_edges, crossings, triangles)
+    stage_d.set_height(3.05)
+    stage_d.move_to((-3.25, -0.48, 0.0))
+    stage_e = _geological_event_cross_section(selected[len(selected) // 2], compact=True)
+    stage_e.move_to((-3.25, -0.48, 0.0))
+    stage_f = _surface_preparation_strip(compact=True)
+    stage_f.move_to((-3.25, -0.48, 0.0))
+    return stage_a, stage_b, stage_c, stage_d, stage_e, stage_f
+
+
+def _overview_recap(
+    specifications: tuple[tuple[str, str, tuple[str, str], str], ...],
+    colors: tuple[str, ...],
+    visuals: tuple[Group | VGroup, ...],
+) -> tuple[Group, VGroup]:
+    """Create a same-cave recap with one artifact thumbnail per stage."""
+
+    cards = []
+    compact = len(specifications) > 4
+    card_width = 1.95 if compact else 2.82
+    short_outputs = {
+        "routing-cost substrate": "routing cost",
+        "semantic centerline network": "network",
+        "closed cross-section profiles": "profiles",
+        "connected welded cave mesh": "cave mesh",
+        "editable rock and boulder meshes": "rock props",
+        "render-ready portable scene": "portable scene",
+    }
+    for (letter, name, _lines, output), color, source_visual in zip(
+        specifications, colors, visuals, strict=True
+    ):
+        box = RoundedRectangle(
+            width=card_width,
+            height=3.05,
+            corner_radius=0.16,
+            color=color,
+            fill_color="#0d1c29",
+            fill_opacity=0.94,
+            stroke_width=1.4,
+        )
+        stage = Text(letter, color=color, font_size=36, font=ANNOTATION_FONT)
+        display_name = {
+            "Semantic network": "Network",
+            "Adaptive sections": "Sections",
+            "Density and geometry": "Geometry",
+            "Rock placement": "Rocks",
+            "Surface preparation": "Surface",
+        }.get(name, name)
+        title = Text(
+            display_name,
+            color=TEXT,
+            font_size=16 if compact else 19,
+            font=ANNOTATION_FONT,
+        )
+        thumbnail = source_visual.copy()
+        if thumbnail.width > 1.48:
+            thumbnail.set_width(1.48)
+        if thumbnail.height > 0.72:
+            thumbnail.set_height(0.72)
+        output_label = Text("OUTPUT", color=MUTED, font_size=12, font=ANNOTATION_FONT)
+        display_output = short_outputs.get(output, output) if compact else output
+        output_parts = {
+            "semantic centerline network": ("semantic centerline", "network"),
+            "closed cross-section profiles": ("closed cross-section", "profiles"),
+            "connected, welded triangle mesh": ("connected, welded", "triangle mesh"),
+        }.get(display_output, (display_output,))
+        output_text = VGroup(
+            *[
+                Text(
+                    part,
+                    color=TEXT,
+                    font_size=13 if compact else 15,
+                    font=ANNOTATION_FONT,
+                )
+                for part in output_parts
+            ]
+        ).arrange(DOWN, buff=0.04)
+        # Fixed rows keep all six thumbnails and labels aligned despite
+        # their different aspect ratios.
+        stage.move_to(box.get_center() + UP * 0.91)
+        title.move_to(box.get_center() + UP * 0.52)
+        thumbnail.move_to(box.get_center() + UP * 0.03)
+        output_label.move_to(box.get_center() + DOWN * 0.49)
+        output_text.move_to(box.get_center() + DOWN * 0.80)
+        contents = Group(stage, title, thumbnail, output_label, output_text)
+        cards.append(Group(box, contents))
+    card_row = Group(*cards).arrange(RIGHT, buff=0.25 if compact else 0.34)
+    card_row.move_to((0.0, -0.42, 0.0))
+    arrows = VGroup(
+        *[
+            Text("→", color=HIGHLIGHT, font_size=22, font=ANNOTATION_FONT).move_to(
+                0.5 * (cards[index].get_right() + cards[index + 1].get_left())
+            )
+            for index in range(len(cards) - 1)
+        ]
+    )
+    return card_row, arrows
+
+
+def _event_interleave_flow() -> tuple[VGroup, tuple[VGroup, ...]]:
+    """Show the implemented cave-surface-to-grounded-prop handoff."""
+
+    specifications = (
+        ("D", "cave surface", "#94a3b8"),
+        ("E", "ground rocks", "#fb923c"),
+        ("OUT", "cave + props", NETWORK),
+    )
+    nodes = []
+    for stage, label, color in specifications:
+        box = RoundedRectangle(
+            width=2.35,
+            height=0.52,
+            corner_radius=0.10,
+            color="#334155",
+            fill_color="#10202e",
+            fill_opacity=0.96,
+            stroke_width=1.0,
+        )
+        text = Text(
+            f"{stage} · {label}",
+            color=color,
+            font_size=15,
+            font=ANNOTATION_FONT,
+        )
+        nodes.append(VGroup(box, text))
+    row = VGroup(*nodes).arrange(RIGHT, buff=0.58)
+    row.move_to((0.0, 2.08, 0.0))
+    arrows = VGroup(
+        *[
+            Arrow(
+                nodes[index].get_right() + RIGHT * 0.06,
+                nodes[index + 1].get_left() + LEFT * 0.06,
+                color=MUTED,
+                stroke_width=1.4,
+                max_tip_length_to_length_ratio=0.28,
+            )
+            for index in range(2)
+        ]
+    )
+    return VGroup(row, arrows), tuple(nodes)
+
+
+def _event_cross_section_parts(
+    section: ManimSection,
+    *,
+    center_x: float = -3.15,
+    maximum_width: float = 4.65,
+) -> tuple[VGroup, tuple[tuple[Dot, np.ndarray], ...]]:
+    """Build a profile-backed section with grounded rock and boulder props."""
+
+    profile = np.asarray(section.profile_points_m, dtype=float)
+    centered = profile - 0.5 * (np.min(profile, axis=0) + np.max(profile, axis=0))
+    span = np.maximum(np.ptp(centered, axis=0), 1e-9)
+    scale = min(maximum_width / span[0], 2.65 / span[1])
+    center = np.asarray((center_x, -0.55, 0.0))
+    points = np.column_stack(
+        (
+            centered[:, 0] * scale + center[0],
+            centered[:, 1] * scale + center[1],
+            np.zeros(len(centered)),
+        )
+    )
+    outline = Polygon(
+        *points,
+        color=SECTIONS,
+        fill_color="#10202e",
+        fill_opacity=0.92,
+        stroke_width=2.0,
+    )
+    left = float(np.min(points[:, 0]))
+    right = float(np.max(points[:, 0]))
+    bottom = float(np.min(points[:, 1]))
+    floor_y = bottom + 0.34
+    floor = Line(
+        np.asarray((left + 0.42, floor_y, 0.0)),
+        np.asarray((right - 0.42, floor_y, 0.0)),
+        color="#94a3b8",
+        stroke_width=2.0,
+    )
+    base_label = Text(
+        "profile-derived cave section",
+        color=MUTED,
+        font_size=15,
+        font=ANNOTATION_FONT,
+    ).next_to(outline, DOWN, buff=0.12)
+    base = VGroup(outline, floor, base_label)
+
+    prop_specs = (
+        (left + 1.05, 0.10, "#a16207"),
+        (center[0] - 0.15, 0.16, "#92400e"),
+        (right - 0.95, 0.12, "#b45309"),
+    )
+    props = []
+    for x_value, radius, color in prop_specs:
+        target = np.asarray((x_value, floor_y + radius, 0.0))
+        start = target + UP * (1.20 + 0.30 * radius)
+        dot = Dot(start, radius=radius, color=color)
+        dot.set_stroke(color="#fed7aa", width=0.8, opacity=0.8)
+        props.append((dot, target))
+
+    return base, tuple(props)
+
+
+def _geological_event_cross_section(
+    section: ManimSection,
+    *,
+    compact: bool,
+) -> VGroup:
+    """Assemble the final Stage-E cross-section for overview use."""
+
+    base, props = _event_cross_section_parts(section)
+    for dot, target in props:
+        dot.move_to(target)
+    visual = VGroup(base, *[dot for dot, _target in props])
+    if compact:
+        visual.set_width(4.75)
+    return visual
+
+
+def _surface_preparation_parts(
+    *,
+    compact: bool,
+) -> tuple[tuple[Group, ...], VGroup, VGroup]:
+    """Build the implemented raw-mesh-to-portable-scene visual pipeline."""
+
+    colors = ("#94a3b8", NETWORK, SECTIONS, "#4ade80")
+    specifications = (
+        ("Welded mesh", "shared topology", _mesh_patch_icon(rough=True)),
+        ("Surface finish", "smooth + displacement", _mesh_patch_icon(rough=False)),
+        ("Surface data", "UVs + tangents + PBR", _uv_pbr_icon()),
+        ("Portable scene", "GLB · OBJ · USD", _portable_scene_icon()),
+    )
+    cards = []
+    for (title, caption, icon), color in zip(specifications, colors, strict=True):
+        box = RoundedRectangle(
+            width=2.78,
+            height=3.25,
+            corner_radius=0.15,
+            color=color,
+            fill_color="#0d1c29",
+            fill_opacity=0.95,
+            stroke_width=1.3,
+        )
+        heading = Text(title, color=TEXT, font_size=19, font=ANNOTATION_FONT)
+        caption_text = Text(caption, color=MUTED, font_size=14, font=ANNOTATION_FONT)
+        contents = Group(heading, icon, caption_text).arrange(DOWN, buff=0.18)
+        contents.move_to(box)
+        cards.append(Group(box, contents))
+    card_row = Group(*cards).arrange(RIGHT, buff=0.42)
+    card_row.move_to((0.0, -0.25, 0.0))
+    arrows = VGroup(
+        *[
+            Text("→", color=HIGHLIGHT, font_size=24, font=ANNOTATION_FONT).move_to(
+                0.5 * (cards[index].get_right() + cards[index + 1].get_left())
+            )
+            for index in range(len(cards) - 1)
+        ]
+    )
+    target_names = ("Blender", "UE5", "Unity", "Gazebo", "Omniverse")
+    targets = VGroup(
+        *[
+            VGroup(
+                RoundedRectangle(
+                    width=1.55,
+                    height=0.42,
+                    corner_radius=0.08,
+                    color="#334155",
+                    fill_color="#10202e",
+                    fill_opacity=0.95,
+                    stroke_width=0.8,
+                ),
+                Text(name, color=TEXT, font_size=13, font=ANNOTATION_FONT),
+            )
+            for name in target_names
+        ]
+    ).arrange(RIGHT, buff=0.16)
+    targets.move_to((0.0, -2.32, 0.0))
+    if compact:
+        combined = Group(card_row, arrows)
+        combined.set_width(4.75)
+        combined.move_to((0.0, 0.0, 0.0))
+    return tuple(cards), arrows, targets
+
+
+def _surface_preparation_strip(*, compact: bool) -> Group:
+    cards, arrows, _targets = _surface_preparation_parts(compact=compact)
+    strip = Group(*cards, arrows)
+    if compact:
+        strip.set_width(4.75)
+    return strip
+
+
+def _surface_channel_progress(
+    channel_names: tuple[str, ...],
+) -> tuple[VGroup, tuple[VGroup, ...]]:
+    """Build the persistent channel-toggle rail for the Stage-F asset view."""
+
+    colors = ("#94a3b8", NETWORK, SECTIONS, "#4ade80")
+    nodes = []
+    for name, color in zip(channel_names, colors, strict=True):
+        box = RoundedRectangle(
+            width=2.45,
+            height=0.48,
+            corner_radius=0.09,
+            color="#334155",
+            fill_color="#10202e",
+            fill_opacity=0.96,
+            stroke_width=0.9,
+        )
+        label = Text(name, color=color, font_size=14, font=ANNOTATION_FONT)
+        nodes.append(VGroup(box, label))
+    row = VGroup(*nodes).arrange(RIGHT, buff=0.42)
+    row.move_to((0.0, 2.28, 0.0))
+    arrows = VGroup(
+        *[
+            Text("→", color=MUTED, font_size=16, font=ANNOTATION_FONT).move_to(
+                0.5 * (nodes[index].get_right() + nodes[index + 1].get_left())
+            )
+            for index in range(len(nodes) - 1)
+        ]
+    )
+    return VGroup(row, arrows), tuple(nodes)
+
+
+def _prepared_surface_view(
+    sections: tuple[ManimSection, ...],
+    yaw: float,
+    channel: str,
+) -> VGroup:
+    """Project a rotating profile-backed tube with channel-specific styling."""
+
+    ring_count = 14
+    profiles = [
+        _resample_closed_profile(section.profile_points_m, ring_count)
+        for section in sections
+    ]
+    maximum = max(float(np.max(np.abs(profile))) for profile in profiles)
+    profile_scale = 1.55 / max(maximum, 1e-9)
+    axial_positions = np.linspace(-3.9, 3.9, len(profiles))
+    cosine = float(np.cos(yaw))
+    sine = float(np.sin(yaw))
+    rings = []
+    depths = []
+    for ring_index, (axial, profile) in enumerate(
+        zip(axial_positions, profiles, strict=True)
+    ):
+        lateral = profile[:, 0] * profile_scale
+        vertical = profile[:, 1] * profile_scale
+        if channel != "geometry":
+            phase = np.linspace(0.0, 2.0 * np.pi, ring_count, endpoint=False)
+            relief = 1.0 + 0.055 * np.sin(2.3 * axial + 3.0 * phase)
+            lateral = lateral * relief
+            vertical = vertical * relief
+        rotated_x = cosine * axial - sine * lateral
+        rotated_depth = sine * axial + cosine * lateral
+        screen = np.column_stack(
+            (
+                1.08 * rotated_x,
+                0.90 * vertical + 0.18 * rotated_depth - 0.35,
+                np.zeros(ring_count),
+            )
+        )
+        rings.append(screen)
+        depths.append(rotated_depth)
+
+    palettes = {
+        "geometry": ("#64748b", "#94a3b8"),
+        "displacement": ("#0891b2", "#22d3ee"),
+        "normals + PBR": ("#7c3aed", "#60a5fa"),
+        "packaged scene": ("#6b4f34", "#4ade80"),
+    }
+    dark, light = palettes[channel]
+    cells = []
+    for ring_index in range(len(rings) - 1):
+        for point_index in range(ring_count):
+            next_index = (point_index + 1) % ring_count
+            points = (
+                rings[ring_index][point_index],
+                rings[ring_index + 1][point_index],
+                rings[ring_index + 1][next_index],
+                rings[ring_index][next_index],
+            )
+            depth = float(
+                np.mean(
+                    (
+                        depths[ring_index][point_index],
+                        depths[ring_index + 1][point_index],
+                        depths[ring_index + 1][next_index],
+                        depths[ring_index][next_index],
+                    )
+                )
+            )
+            color = light if (ring_index + point_index) % 2 else dark
+            cells.append((depth, points, color))
+    cells.sort(key=lambda item: item[0])
+    fill_opacity = 0.18 if channel == "geometry" else 0.52
+    faces = VGroup(
+        *[
+            Polygon(
+                *points,
+                color=color,
+                fill_color=color,
+                fill_opacity=fill_opacity,
+                stroke_color="#0f172a",
+                stroke_width=0.45,
+                stroke_opacity=0.45,
+            )
+            for _depth, points, color in cells
+        ]
+    )
+    wire = VGroup()
+    for ring in rings:
+        path = VMobject().set_points_as_corners(np.vstack((ring, ring[:1])))
+        path.set_stroke(color=light, width=0.9, opacity=0.72)
+        wire.add(path)
+    for point_index in range(0, ring_count, 2):
+        path = VMobject().set_points_as_corners(
+            np.asarray([ring[point_index] for ring in rings])
+        )
+        path.set_stroke(color=light, width=0.75, opacity=0.58)
+        wire.add(path)
+    view = VGroup(faces, wire)
+    if view.width > 9.25:
+        view.set_width(9.25)
+    if view.height > 4.25:
+        view.set_height(4.25)
+    view.move_to((0.0, -0.35, 0.0))
+    return view
+
+
+def _mesh_patch_icon(*, rough: bool) -> VGroup:
+    """Create a small wire patch representing raw or prepared topology."""
+
+    lines = []
+    offsets = (0.14, -0.10, 0.08, -0.05) if rough else (0.04, -0.02, 0.02, -0.01)
+    for row in range(4):
+        y = 0.52 - row * 0.34
+        points = []
+        for column in range(5):
+            x = -0.92 + column * 0.46
+            points.append(np.asarray((x, y + offsets[(row + column) % 4], 0.0)))
+        path = VMobject().set_points_as_corners(points)
+        path.set_stroke(color="#94a3b8" if rough else NETWORK, width=1.5)
+        lines.append(path)
+    for column in range(5):
+        points = []
+        for row in range(4):
+            y = 0.52 - row * 0.34
+            x = -0.92 + column * 0.46
+            points.append(np.asarray((x, y + offsets[(row + column) % 4], 0.0)))
+        path = VMobject().set_points_as_corners(points)
+        path.set_stroke(color="#64748b" if rough else "#22d3ee", width=1.1)
+        lines.append(path)
+    return VGroup(*lines)
+
+
+def _uv_pbr_icon() -> VGroup:
+    frame = Rectangle(width=1.90, height=1.25, color="#475569", stroke_width=1.0)
+    islands = VGroup(
+        Polygon(LEFT * 0.72 + UP * 0.36, LEFT * 0.15 + UP * 0.48, LEFT * 0.28, LEFT * 0.76, color=SECTIONS, fill_color=SECTIONS, fill_opacity=0.50),
+        Polygon(RIGHT * 0.05 + DOWN * 0.46, RIGHT * 0.78 + DOWN * 0.30, RIGHT * 0.62 + UP * 0.12, RIGHT * 0.16, color=NETWORK, fill_color=NETWORK, fill_opacity=0.48),
+    )
+    swatches = VGroup(
+        Rectangle(width=0.48, height=0.10, color="#92400e", fill_color="#92400e", fill_opacity=1.0),
+        Rectangle(width=0.48, height=0.10, color="#60a5fa", fill_color="#60a5fa", fill_opacity=1.0),
+        Rectangle(width=0.48, height=0.10, color="#9ca3af", fill_color="#9ca3af", fill_opacity=1.0),
+    ).arrange(RIGHT, buff=0.08)
+    swatches.next_to(frame, DOWN, buff=0.10)
+    return VGroup(frame, islands, swatches)
+
+
+def _portable_scene_icon() -> VGroup:
+    document = Polygon(
+        np.asarray((-0.72, -0.68, 0.0)),
+        np.asarray((0.48, -0.68, 0.0)),
+        np.asarray((0.72, -0.44, 0.0)),
+        np.asarray((0.72, 0.68, 0.0)),
+        np.asarray((-0.72, 0.68, 0.0)),
+        color="#4ade80",
+        fill_color="#123426",
+        fill_opacity=0.92,
+        stroke_width=1.4,
+    )
+    label = Text("GLB", color="#86efac", font_size=27, font=ANNOTATION_FONT)
+    package = Text("mesh + maps", color=MUTED, font_size=12, font=ANNOTATION_FONT)
+    package.next_to(label, DOWN, buff=0.08)
+    return VGroup(document, label, package)
+
+
 def _title(content: str) -> Text:
     title = Text(content, color=TEXT, font_size=34)
     title.to_edge(UP, buff=0.28)
@@ -570,24 +1669,159 @@ def _prototype_data() -> ManimPrototypeData:
     )
 
 
+def _stage_b_host_handoff(host: ManimHostData) -> Group:
+    """Summarize the Stage-A substrate before Stage-B propagation begins."""
+
+    cards = []
+    for field_name, label, palette, color, unit in (
+        ("elevation", "Terrain elevation", "terrain", "#38bdf8", "elevation (m)"),
+        ("routing_cost", "Derived routing cost", "cost", HIGHLIGHT, "0–1 cost"),
+    ):
+        values = host.fields[field_name]
+        image = ImageMobject(_field_rgba(values, palette))
+        image.width = 4.15
+        border = Rectangle(
+            width=image.width + 0.07,
+            height=image.height + 0.07,
+            color=color,
+            stroke_width=1.4,
+        ).move_to(image)
+        heading = VGroup(
+            Text(label, color=TEXT, font_size=21, font=ANNOTATION_FONT),
+            Text(
+                "HOST FIELD" if field_name == "elevation" else "STAGE A OUTPUT",
+                color=color,
+                font_size=12,
+                font=ANNOTATION_FONT,
+            ),
+        ).arrange(DOWN, buff=0.05)
+        card = Group(
+            heading,
+            Group(image, border),
+            _field_colorbar(values, palette, unit, width=3.85, compact=True),
+        ).arrange(DOWN, buff=0.11)
+        card.add(_map_sample_marker(image, compact=True))
+        cards.append(card)
+
+    arrow = VGroup(
+        Text("→", color=HIGHLIGHT, font_size=34, font=ANNOTATION_FONT),
+        Text("derive", color=MUTED, font_size=13, font=ANNOTATION_FONT),
+    ).arrange(DOWN, buff=0.01)
+    maps = Group(cards[0], arrow, cards[1]).arrange(RIGHT, buff=0.34)
+    context = Text(
+        "same spatial footprint · low cost indicates preferred propagation corridors",
+        color=MUTED,
+        font_size=16,
+        font=ANNOTATION_FONT,
+    )
+    handoff = Group(maps, context).arrange(DOWN, buff=0.18)
+    handoff.move_to((0.0, -0.38, 0.0))
+    return handoff
+
+
+def _routing_cost_overlay(host: ManimHostData, projector: PlanProjector) -> Group:
+    """Resample Stage A routing cost into Stage B's exact rotated world frame."""
+
+    pixel_width = 420
+    pixel_height = 210
+    screen_x = np.linspace(-5.65, 5.65, pixel_width)
+    screen_y = np.linspace(2.825, -2.825, pixel_height)
+    screen_grid_x, screen_grid_y = np.meshgrid(screen_x, screen_y)
+    rotated = np.column_stack(
+        (
+            screen_grid_x.ravel() / projector.scale + projector.center[0],
+            screen_grid_y.ravel() / projector.scale + projector.center[1],
+        )
+    )
+    world = rotated @ projector.rotation
+    world_x = world[:, 0].reshape((pixel_height, pixel_width))
+    world_y = world[:, 1].reshape((pixel_height, pixel_width))
+
+    x_axis = np.asarray(host.x_coords_m, dtype=float)
+    y_axis = np.asarray(host.y_coords_m, dtype=float)
+    values = np.asarray(host.fields["routing_cost"], dtype=float)
+    if x_axis[0] > x_axis[-1]:
+        x_axis = x_axis[::-1]
+        values = values[:, ::-1]
+    if y_axis[0] > y_axis[-1]:
+        y_axis = y_axis[::-1]
+        values = values[::-1, :]
+    inside = (
+        (world_x >= x_axis[0])
+        & (world_x <= x_axis[-1])
+        & (world_y >= y_axis[0])
+        & (world_y <= y_axis[-1])
+    )
+    x_index = np.interp(world_x, x_axis, np.arange(len(x_axis), dtype=float))
+    y_index = np.interp(world_y, y_axis, np.arange(len(y_axis), dtype=float))
+    x0 = np.floor(x_index).astype(int)
+    y0 = np.floor(y_index).astype(int)
+    x1 = np.minimum(x0 + 1, len(x_axis) - 1)
+    y1 = np.minimum(y0 + 1, len(y_axis) - 1)
+    tx = x_index - x0
+    ty = y_index - y0
+    sampled = (
+        (1.0 - tx) * (1.0 - ty) * values[y0, x0]
+        + tx * (1.0 - ty) * values[y0, x1]
+        + (1.0 - tx) * ty * values[y1, x0]
+        + tx * ty * values[y1, x1]
+    )
+    rgba = _field_rgba(sampled, "cost")
+    rgba[..., 3] = np.where(inside, 255, 0).astype(np.uint8)
+    image = ImageMobject(rgba)
+    image.stretch_to_fit_width(11.30)
+    image.stretch_to_fit_height(5.65)
+    image.move_to((0.0, -0.35, 0.0))
+    image.set_opacity(0.24).set_z_index(-5)
+    border = Rectangle(
+        width=11.30,
+        height=5.65,
+        color="#475569",
+        stroke_width=0.8,
+        stroke_opacity=0.50,
+    ).move_to(image).set_z_index(-4)
+    label_box = RoundedRectangle(
+        width=3.35,
+        height=0.46,
+        corner_radius=0.09,
+        color=HIGHLIGHT,
+        fill_color=BACKGROUND,
+        fill_opacity=0.88,
+        stroke_width=1.0,
+    )
+    label = Text(
+        "Stage A routing cost · shared world coordinates",
+        color=TEXT,
+        font_size=13,
+        font=ANNOTATION_FONT,
+    )
+    label_box.width = label.width + 0.30
+    badge = VGroup(label_box, label).set_z_index(4)
+    badge.move_to(
+        image.get_corner(UP + LEFT)
+        + RIGHT * (0.10 + 0.5 * badge.width)
+        + DOWN * 0.25
+    )
+    return Group(image, border, badge)
+
+
 def _host_field_focus(
     host: ManimHostData,
     field_name: str,
     label: str,
     description: str,
     palette: str,
+    unit: str,
 ) -> Group:
     values = host.fields[field_name]
     image = ImageMobject(_field_rgba(values, palette))
-    image.width = 4.55
+    image.width = 4.40
     border = Rectangle(
         width=image.width + 0.08,
         height=image.height + 0.08,
         color="#475569",
         stroke_width=1.1,
     ).move_to(image)
-    minimum = float(np.min(values))
-    maximum = float(np.max(values))
     card = Group(
         VGroup(
             Text(label, color=TEXT, font_size=25, font=ANNOTATION_FONT),
@@ -595,43 +1829,277 @@ def _host_field_focus(
         ).arrange(DOWN, buff=0.10),
         Group(image, border),
         Text(
-            f"range  {minimum:.3g}  to  {maximum:.3g}",
-            color=TEXT,
-            font_size=16,
+            "same 1.8 × 1.5 km footprint",
+            color=MUTED,
+            font_size=15,
             font=ANNOTATION_FONT,
         ),
+        _field_colorbar(values, palette, unit, width=3.70),
     ).arrange(DOWN, buff=0.16)
     card.move_to((3.35, -0.25, 0.0))
+    marker = _map_sample_marker(image, compact=True)
+    card.add(marker)
     return card
 
 
 def _host_field_grid(
     host: ManimHostData,
-    specifications: tuple[tuple[str, str, str, str], ...],
+    specifications: tuple[tuple[str, str, str, str, str], ...],
 ) -> Group:
     cards = []
-    for field_name, label, _description, palette in specifications:
+    for field_name, label, _description, palette, unit in specifications:
         image = ImageMobject(_field_rgba(host.fields[field_name], palette))
-        image.width = 2.18
+        image.width = 2.12
         border = Rectangle(
             width=image.width + 0.05,
             height=image.height + 0.05,
-            color="#475569",
-            stroke_width=0.9,
+            color=HIGHLIGHT if field_name == "routing_cost" else "#475569",
+            stroke_width=1.5 if field_name == "routing_cost" else 0.9,
         ).move_to(image)
+        heading = VGroup(
+            Text(label, color=TEXT, font_size=16, font=ANNOTATION_FONT),
+            Text(
+                "SAVED OUTPUT" if field_name == "routing_cost" else "INPUT",
+                color=HIGHLIGHT if field_name == "routing_cost" else MUTED,
+                font_size=10,
+                font=ANNOTATION_FONT,
+            ),
+        ).arrange(RIGHT, buff=0.10)
+        scale = _field_colorbar(host.fields[field_name], palette, unit, width=1.95, compact=True)
         card = Group(
-            Text(label, color=TEXT, font_size=15, font=ANNOTATION_FONT),
+            heading,
             Group(image, border),
-        ).arrange(DOWN, buff=0.08)
+            scale,
+        ).arrange(DOWN, buff=0.07)
+        card.add(_map_sample_marker(image, compact=True))
         cards.append(card)
     rows = Group(
         Group(*cards[:2]).arrange(RIGHT, buff=0.20),
         Group(*cards[2:]).arrange(RIGHT, buff=0.20),
     ).arrange(DOWN, buff=0.18)
-    heading = Text("Host field layers", color=TEXT, font_size=22, font=ANNOTATION_FONT)
+    heading = Text(
+        "Host-field dashboard · one shared footprint",
+        color=TEXT,
+        font_size=21,
+        font=ANNOTATION_FONT,
+    )
     grid = Group(heading, rows).arrange(DOWN, buff=0.15)
     grid.move_to((3.35, -0.20, 0.0))
     return grid
+
+
+def _routing_derivation(
+    host: ManimHostData,
+) -> tuple[Text, VGroup, VGroup, Group, Group]:
+    """Explain the exact categories used to derive the saved routing cost."""
+
+    terms = []
+    for label in ("slope", "cover", "fracture", "capacity", "stability"):
+        box = RoundedRectangle(
+            width=1.28,
+            height=0.48,
+            corner_radius=0.10,
+            color="#475569",
+            fill_color="#132333",
+            fill_opacity=0.95,
+            stroke_width=1.0,
+        )
+        text = Text(label, color=TEXT, font_size=14, font=ANNOTATION_FONT)
+        terms.append(VGroup(box, text))
+    term_rows = VGroup(
+        VGroup(*terms[:3]).arrange(RIGHT, buff=0.13),
+        VGroup(*terms[3:]).arrange(RIGHT, buff=0.13),
+    ).arrange(DOWN, buff=0.13)
+    arrow = Text(
+        "↓",
+        color=HIGHLIGHT,
+        font_size=25,
+        font=ANNOTATION_FONT,
+    )
+    equation = Text(
+        "weighted penalties are summed once",
+        color=MUTED,
+        font_size=15,
+        font=ANNOTATION_FONT,
+    )
+    values = host.fields["routing_cost"]
+    image = ImageMobject(_field_rgba(values, "cost"))
+    image.width = 3.35
+    border = Rectangle(
+        width=image.width + 0.08,
+        height=image.height + 0.08,
+        color=HIGHLIGHT,
+        stroke_width=1.6,
+    ).move_to(image)
+    result = Group(image, border)
+    marker = _map_sample_marker(image, compact=True)
+    result.add(marker)
+    heading = Text(
+        "Routing cost is derived",
+        color=TEXT,
+        font_size=25,
+        font=ANNOTATION_FONT,
+    )
+    combine = VGroup(arrow, equation).arrange(DOWN, buff=0.01)
+    scale = _field_colorbar(values, "cost", "0–1 cost", width=3.20)
+    card = Group(
+        heading,
+        term_rows,
+        combine,
+        result,
+        scale,
+    ).arrange(DOWN, buff=0.14)
+    card.move_to((3.35, -0.30, 0.0))
+    return heading, term_rows, combine, result, scale
+
+
+def _field_colorbar(
+    values: np.ndarray,
+    palette: str,
+    unit: str,
+    *,
+    width: float,
+    compact: bool = False,
+) -> Group:
+    """Build a projector-readable scalar legend with real artifact limits."""
+
+    minimum = float(np.min(values))
+    maximum = float(np.max(values))
+    gradient = np.linspace(minimum, maximum, 256, dtype=float)[None, :]
+    gradient = np.repeat(gradient, 10, axis=0)
+    image = ImageMobject(_field_rgba(gradient, palette))
+    image.stretch_to_fit_width(width)
+    image.stretch_to_fit_height(0.10 if compact else 0.15)
+    border = Rectangle(
+        width=width + 0.03,
+        height=image.height + 0.03,
+        color="#64748b",
+        stroke_width=0.6,
+    ).move_to(image)
+    font_size = 10 if compact else 13
+    decimals = 0 if unit in {"metres", "elevation (m)"} else 2
+    low = Text(
+        f"{minimum:.{decimals}f}",
+        color=MUTED,
+        font_size=font_size,
+        font=ANNOTATION_FONT,
+    )
+    high = Text(
+        f"{maximum:.{decimals}f}",
+        color=MUTED,
+        font_size=font_size,
+        font=ANNOTATION_FONT,
+    )
+    unit_label = Text(
+        unit,
+        color=TEXT,
+        font_size=font_size,
+        font=ANNOTATION_FONT,
+    )
+    for label in (low, unit_label, high):
+        label.next_to(image, DOWN, buff=0.04)
+    low.align_to(image, LEFT)
+    unit_label.set_x(image.get_center()[0])
+    high.align_to(image, RIGHT)
+    return Group(image, border, low, unit_label, high)
+
+
+def _map_sample_marker(image: ImageMobject, *, compact: bool = False) -> VGroup:
+    """Mark one stable normalized XY location on any Stage-A map."""
+
+    u, v = 0.68, 0.38
+    point = np.asarray(
+        (
+            image.get_left()[0] + u * image.width,
+            image.get_bottom()[1] + v * image.height,
+            0.0,
+        )
+    )
+    arm = 0.09 if compact else 0.14
+    return VGroup(
+        Line(point + LEFT * arm, point + RIGHT * arm, color=SAMPLE_MARKER, stroke_width=2.0),
+        Line(point + DOWN * arm, point + UP * arm, color=SAMPLE_MARKER, stroke_width=2.0),
+        Dot(point, radius=0.025 if compact else 0.035, color=SAMPLE_MARKER),
+    ).set_z_index(6)
+
+
+def _map_context(host: ManimHostData, image: ImageMobject) -> VGroup:
+    """Add scale, north, and footprint cues to the introductory plan map."""
+
+    x_span = float(np.ptp(host.x_coords_m))
+    y_span = float(np.ptp(host.y_coords_m))
+    scale_length_m = 500.0
+    scale_width = image.width * scale_length_m / max(x_span, 1e-9)
+    scale_y = image.get_bottom()[1] + 0.22
+    scale_x = image.get_left()[0] + 0.24
+    bar = Line(
+        np.asarray((scale_x, scale_y, 0.0)),
+        np.asarray((scale_x + scale_width, scale_y, 0.0)),
+        color=TEXT,
+        stroke_width=4.0,
+    )
+    ticks = VGroup(
+        Line(bar.get_start() + DOWN * 0.07, bar.get_start() + UP * 0.07, color=TEXT),
+        Line(bar.get_end() + DOWN * 0.07, bar.get_end() + UP * 0.07, color=TEXT),
+    )
+    scale_label = Text(
+        "500 m",
+        color=TEXT,
+        font_size=13,
+        font=ANNOTATION_FONT,
+    ).next_to(bar, UP, buff=0.04)
+    north = Arrow(
+        DOWN * 0.18,
+        UP * 0.22,
+        color=TEXT,
+        stroke_width=2.0,
+        max_tip_length_to_length_ratio=0.28,
+    )
+    north.move_to(image.get_corner(UP + LEFT) + RIGHT * 0.28 + DOWN * 0.34)
+    north_label = Text("N", color=TEXT, font_size=14, font=ANNOTATION_FONT).next_to(
+        north, UP, buff=0.02
+    )
+    footprint = Text(
+        f"same footprint · {x_span / 1000:.1f} × {y_span / 1000:.1f} km",
+        color=TEXT,
+        font_size=13,
+        font=ANNOTATION_FONT,
+    )
+    footprint.move_to(image.get_corner(DOWN + RIGHT) + LEFT * 1.25 + UP * 0.18)
+    return VGroup(bar, ticks, scale_label, north, north_label, footprint).set_z_index(5)
+
+
+def _map_wireframe(
+    mesh_data: tuple[np.ndarray, np.ndarray, np.ndarray, tuple[tuple[str, ...], ...]],
+    image: ImageMobject,
+) -> VGroup:
+    """Overlay the exact downsampled mesh that will be lifted into relief."""
+
+    x_nodes, y_nodes, _z_nodes, _colors = mesh_data
+    lines = []
+    for x_value in x_nodes:
+        x = image.get_center()[0] + image.width * x_value / (2.0 * np.max(np.abs(x_nodes)))
+        lines.append(
+            Line(
+                np.asarray((x, image.get_bottom()[1], 0.0)),
+                np.asarray((x, image.get_top()[1], 0.0)),
+                color=TEXT,
+                stroke_width=0.65,
+                stroke_opacity=0.48,
+            )
+        )
+    for y_value in y_nodes:
+        y = image.get_center()[1] + 0.5 * image.height * y_value
+        lines.append(
+            Line(
+                np.asarray((image.get_left()[0], y, 0.0)),
+                np.asarray((image.get_right()[0], y, 0.0)),
+                color=TEXT,
+                stroke_width=0.65,
+                stroke_opacity=0.48,
+            )
+        )
+    return VGroup(*lines).set_z_index(4)
 
 
 def _prepare_elevation_mesh(
@@ -639,8 +2107,8 @@ def _prepare_elevation_mesh(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, tuple[tuple[str, ...], ...]]:
     """Downsample elevation and its cividis colors for responsive animation."""
 
-    row_indices = np.linspace(0, values.shape[0] - 1, 11).round().astype(int)
-    column_indices = np.linspace(0, values.shape[1] - 1, 17).round().astype(int)
+    row_indices = np.linspace(0, values.shape[0] - 1, 13).round().astype(int)
+    column_indices = np.linspace(0, values.shape[1] - 1, 21).round().astype(int)
     sampled = values[np.ix_(row_indices, column_indices)]
     lower, upper = np.percentile(values, (2.0, 98.0))
     normalized = np.clip((sampled - lower) / max(float(upper - lower), 1e-12), 0.0, 1.0)
@@ -733,6 +2201,46 @@ def _elevation_surface(
     )
 
 
+def _elevation_sample_marker(
+    mesh_data: tuple[np.ndarray, np.ndarray, np.ndarray, tuple[tuple[str, ...], ...]],
+    *,
+    yaw: float,
+    tilt: float,
+    relief: float,
+    layout: float,
+) -> Dot:
+    """Project the map marker onto the animated terrain surface."""
+
+    x_nodes, y_nodes, z_nodes, _colors = mesh_data
+    u, v = 0.68, 0.38
+    x_value = float(np.min(x_nodes) + u * np.ptp(x_nodes))
+    y_value = float(np.min(y_nodes) + v * np.ptp(y_nodes))
+    x_index = int(np.argmin(np.abs(x_nodes - x_value)))
+    y_index = int(np.argmin(np.abs(y_nodes - y_value)))
+    z_value = float(z_nodes[y_index, x_index])
+    aspect = max(float(np.max(np.abs(x_nodes))), 1e-9)
+    width = (1.0 - layout) * 6.20 + layout * 4.8
+    center_x = (1.0 - layout) * -2.00 + layout * -3.55
+    cosine_yaw = float(np.cos(yaw))
+    sine_yaw = float(np.sin(yaw))
+    cosine_tilt = float(np.cos(tilt))
+    sine_tilt = float(np.sin(tilt))
+    projected_half_width = abs(cosine_yaw) * aspect + abs(sine_yaw)
+    scale = width / (2.0 * max(projected_half_width, 1e-9))
+    rotated_x = cosine_yaw * x_value - sine_yaw * y_value
+    rotated_y = sine_yaw * x_value + cosine_yaw * y_value
+    point = np.asarray(
+        (
+            center_x + scale * rotated_x,
+            -0.28
+            - 0.70 * relief
+            + scale * (cosine_tilt * rotated_y + 1.35 * relief * sine_tilt * z_value),
+            0.0,
+        )
+    )
+    return Dot(point, radius=0.075, color=SAMPLE_MARKER).set_z_index(7)
+
+
 def _field_rgba(values: np.ndarray, palette: str) -> np.ndarray:
     from matplotlib import colormaps
 
@@ -818,8 +2326,54 @@ def _segment_type_legend(segments: tuple[ManimSegment, ...]) -> VGroup:
 
 def _stage_d_step(label: str) -> Text:
     step = Text(label, color=TEXT, font_size=22, font=ANNOTATION_FONT)
-    step.move_to((0.0, 2.28, 0.0))
+    step.move_to((0.0, 1.92, 0.0))
     return step
+
+
+def _stage_d_side_note(lines: tuple[str, ...], color: str) -> VGroup:
+    note = VGroup(
+        *[Text(line, color=color, font_size=15, font=ANNOTATION_FONT) for line in lines]
+    ).arrange(DOWN, aligned_edge=LEFT, buff=0.12)
+    note.to_edge(RIGHT, buff=0.42).set_y(-2.15)
+    return note
+
+
+def _stage_d_progress() -> tuple[VGroup, tuple[VGroup, ...]]:
+    """Keep the complete profiles-to-welded-mesh sequence visible."""
+
+    specifications = (
+        ("profiles", SECTIONS, "○"),
+        ("density", SAMPLE_MARKER, "·"),
+        ("signs", HIGHLIGHT, "±"),
+        ("surface", NETWORK, "△"),
+        ("welded", "#f472b6", "#"),
+    )
+    nodes = []
+    for label, color, glyph in specifications:
+        box = RoundedRectangle(
+            width=1.86,
+            height=0.48,
+            corner_radius=0.09,
+            color="#334155",
+            fill_color="#10202e",
+            fill_opacity=0.96,
+            stroke_width=0.9,
+        )
+        icon = Text(glyph, color=color, font_size=18, font=ANNOTATION_FONT)
+        text = Text(label, color=TEXT, font_size=13, font=ANNOTATION_FONT)
+        contents = VGroup(icon, text).arrange(RIGHT, buff=0.10)
+        nodes.append(VGroup(box, contents))
+    row = VGroup(*nodes).arrange(RIGHT, buff=0.36)
+    row.move_to((0.0, 2.43, 0.0))
+    arrows = VGroup(
+        *[
+            Text("→", color=MUTED, font_size=16, font=ANNOTATION_FONT).move_to(
+                0.5 * (nodes[index].get_right() + nodes[index + 1].get_left())
+            )
+            for index in range(len(nodes) - 1)
+        ]
+    )
+    return VGroup(row, arrows), tuple(nodes)
 
 
 def _profile_density_slice(section: ManimSection) -> VGroup:
@@ -1280,6 +2834,27 @@ def _section_panel(
         ]
     )
     return VGroup(frame, label, ticks), tuple(profiles)
+
+
+def _section_progress_badge(alpha: float) -> VGroup:
+    """Label the current normalized position along the selected branch."""
+
+    box = RoundedRectangle(
+        width=1.38,
+        height=0.42,
+        corner_radius=0.09,
+        color=SAMPLE_MARKER,
+        fill_color="#12231f",
+        fill_opacity=0.96,
+        stroke_width=1.1,
+    )
+    label = Text(
+        f"s / L = {alpha:.2f}",
+        color=SAMPLE_MARKER,
+        font_size=15,
+        font=ANNOTATION_FONT,
+    )
+    return VGroup(box, label)
 
 
 def _artifact_path(variable: str) -> Path:

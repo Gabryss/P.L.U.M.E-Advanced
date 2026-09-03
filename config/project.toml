@@ -1,5 +1,5 @@
 schema_version = 3
-procedural_seed = 3
+procedural_seed = 1
 
 [world]
 # Supported presets: "earth", "mars", "moon".

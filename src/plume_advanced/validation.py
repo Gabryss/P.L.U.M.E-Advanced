@@ -335,9 +335,24 @@ class PortableAssetValidator:
         scene = loaded if isinstance(loaded, trimesh.Scene) else trimesh.Scene(loaded)
         cave_key = next(key for key in scene.geometry if "cave_wall" in key)
         cave_mesh = scene.geometry[cave_key]
-        collision_path = self.asset_path.with_name(
-            f"{self.asset_path.stem}_collision.obj"
+        # UV chart seams duplicate positions legitimately. Check geometric
+        # topology after exact positional welding, without hiding real cracks.
+        _, geometric_indices = np.unique(positions, axis=0, return_inverse=True)
+        geometric_faces = geometric_indices[faces]
+        edges = np.sort(
+            np.concatenate(
+                [
+                    geometric_faces[:, [0, 1]],
+                    geometric_faces[:, [1, 2]],
+                    geometric_faces[:, [2, 0]],
+                ]
+            ),
+            axis=1,
         )
+        _, edge_counts = np.unique(edges, axis=0, return_counts=True)
+        boundary_edges = int(np.count_nonzero(edge_counts == 1))
+        nonmanifold_edges = int(np.count_nonzero(edge_counts > 2))
+        collision_path = self.asset_path.with_name(f"{self.asset_path.stem}_collision.obj")
         collision_valid = False
         collision_detail = f"missing={collision_path}"
         if collision_path.is_file():
@@ -346,14 +361,22 @@ class PortableAssetValidator:
                 len(collision.faces) > 0
                 and np.isfinite(collision.vertices).all()
                 and collision.is_winding_consistent
+                and collision.is_watertight
             )
             collision_detail = (
                 f"vertices={len(collision.vertices)}, faces={len(collision.faces)}, "
-                f"winding_consistent={collision.is_winding_consistent}"
+                f"winding_consistent={collision.is_winding_consistent}, "
+                f"watertight={collision.is_watertight}"
             )
         summary = self.manifest.get("summary", {})
         voxel_components = int(summary.get("voxel_component_count", 0))
         return [
+            self._check(
+                "geometry",
+                "Closed manifold cave wall",
+                boundary_edges == 0 and nonmanifold_edges == 0,
+                f"boundary_edges={boundary_edges}, nonmanifold_edges={nonmanifold_edges}",
+            ),
             self._check(
                 "geometry",
                 "Finite vertex positions",

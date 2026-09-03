@@ -17,6 +17,35 @@ path includes xatlas UVs, normals/tangents, PBR packaging, smoothing, and
 displacement baking; geology-conditioned material synthesis, visual LODs, and
 finite wall shells remain deferred.
 
+## Watch the complete pipeline
+
+[![Watch the PLUME pipeline animation: overview and stages A–F](docs/media/full_pipeline_preview.jpg)](docs/media/FullPipeline.mp4)
+
+[Open or download the full pipeline video](docs/media/FullPipeline.mp4)
+— **3 min 36 s · 1080p · 30 fps · seven chapters**. Click the preview above
+to follow the host fields through network growth, adaptive sections, meshing,
+rock placement, and surface preparation.
+
+| Start | Chapter |
+|---|---|
+| 0:00 | Pipeline overview |
+| 0:41 | A · Host field: elevation map to rotating 3D terrain |
+| 1:38 | B · Semantic network: lava-age flow and colored segment roles |
+| 1:57 | C · Adaptive sections: branch sampling and profile shapes |
+| 2:13 | D · Geometry: density, edge crossings, and marching cubes |
+| 2:43 | E · Grounded rocks and boulders |
+| 2:59 | F · Surface preparation and export |
+
+The animation uses frozen stage artifacts for explanation, not a physical
+lava-flow simulation. Stage E demonstrates rock and boulder placement only.
+Stage F's rotating surface uses illustrative styles, not exported texture
+channels or a final textured-cave fly-through.
+
+The overview and each stage also remain separate video assets. See the
+[Manim video project](paper/media/video/README.md) for individual animations,
+setup, rendering, and lossless assembly instructions. The README video and
+preview live in `docs/media/`; working renders and caches remain Git-ignored.
+
 ## Pipeline
 
 | Stage | Status | Purpose | Current Output |

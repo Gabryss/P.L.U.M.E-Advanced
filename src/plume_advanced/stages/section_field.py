@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 
@@ -225,10 +225,142 @@ class SectionFieldGenerator:
                     samples=segment_fields_by_id[segment.segment_id].samples,
                 )
             )
+        segment_fields = self._harmonize_connections(cave_network, segment_fields)
         return SectionField(
             config=self.config,
             segment_fields=tuple(segment_fields),
             dominant_route_segment_ids=dominant_route_segment_ids,
+        )
+
+    def _harmonize_connections(
+        self, network: CaveNetwork, fields: list[SegmentSectionField]
+    ) -> list[SegmentSectionField]:
+        """Share floor elevation and ease branch directions at graph nodes.
+
+        Morphology remains independent away from a connection. Only endpoints
+        sharing a graph node participate, so an underpass keeps its clearance.
+        """
+        by_id = {field.segment_id: field for field in fields}
+        connections: dict[int, list[tuple[int, int]]] = {}
+        for segment in network.segments:
+            if not by_id[segment.segment_id].samples:
+                continue
+            for node, index in ((segment.start_node_id, 0), (segment.end_node_id, -1)):
+                connections.setdefault(node, []).append((segment.segment_id, index))
+        targets: dict[tuple[int, int], tuple[float, np.ndarray, SectionSample]] = {}
+        for incident in connections.values():
+            if len(incident) < 2:
+                continue
+            endpoints = [by_id[sid].samples[index] for sid, index in incident]
+            floor = min(self._sample_floor(sample) for sample in endpoints)
+            reference = max(endpoints, key=lambda sample: sample.tube_width)
+            direction = np.asarray(reference.tangent, dtype=float)
+            for (sid, index), endpoint in zip(incident, endpoints):
+                oriented = direction if np.dot(direction, endpoint.tangent) >= 0.0 else -direction
+                targets[(sid, index)] = (floor, oriented, reference)
+
+        result = []
+        for field in fields:
+            samples = field.samples
+            if len(samples) < 2 or not any(
+                (field.segment_id, index) in targets for index in (0, -1)
+            ):
+                result.append(field)
+                continue
+            length = samples[-1].segment_arc_length
+            updated = []
+            for sample in samples:
+                xy = np.asarray((sample.x, sample.y))
+                tangent = np.asarray(sample.tangent)
+                profile = np.asarray(sample.profile_points)
+                width, height = sample.tube_width, sample.tube_height
+                floor_delta = 0.0
+                for index in (0, -1):
+                    target = targets.get((field.segment_id, index))
+                    if target is None:
+                        continue
+                    endpoint = samples[index]
+                    reach = min(2.0 * endpoint.tube_width, 0.45 * length)
+                    along = sample.segment_arc_length - endpoint.segment_arc_length
+                    u = max(0.0, 1.0 - abs(along) / max(reach, 1e-9))
+                    weight = u * u * (3.0 - 2.0 * u)
+                    target_floor, direction, reference = target
+                    desired_xy = np.asarray((endpoint.x, endpoint.y)) + along * direction[:2]
+                    correction = desired_xy - np.asarray((sample.x, sample.y))
+                    correction *= min(
+                        1.0, 0.4 * endpoint.tube_width / max(np.linalg.norm(correction), 1e-9)
+                    )
+                    xy = xy + weight * correction
+                    tangent = (1.0 - weight) * tangent + weight * direction
+                    floor_delta += weight * (target_floor - self._sample_floor(endpoint))
+                    target_profile = np.asarray(reference.profile_points).copy()
+                    if target_profile.shape == profile.shape:
+                        profile = (1.0 - weight) * profile + weight * target_profile
+                    width += weight * (reference.tube_width - sample.tube_width)
+                    height += weight * (reference.tube_height - sample.tube_height)
+                width_cap = self.config.maximum_tube_width + max((
+                    influence.weight ** 1.8
+                    * (self.config.chamber_max_tube_width - self.config.maximum_tube_width)
+                    for influence in sample.junction_influences if influence.kind == "chamber"
+                ), default=0.0)
+                limited_width = min(width, width_cap)
+                limited_height = min(height, width_cap * self.config.maximum_height_ratio)
+                profile = profile * np.asarray((limited_width / width, limited_height / height))
+                width, height = limited_width, limited_height
+                tangent /= max(float(np.linalg.norm(tangent)), 1e-9)
+                normal, binormal = self._build_frame(tuple(tangent), sample.normal)
+                new_floor_offset = float(
+                    np.min(profile[:, 0] * normal[2] + profile[:, 1] * binormal[2])
+                )
+                z = self._sample_floor(sample) + floor_delta - new_floor_offset
+                updated.append(
+                    replace(
+                        sample,
+                        x=float(xy[0]),
+                        y=float(xy[1]),
+                        z=z,
+                        tube_width=width,
+                        tube_height=height,
+                        profile_points=tuple(tuple(float(value) for value in point) for point in profile),
+                        tangent=tuple(float(value) for value in tangent),
+                        normal=normal,
+                        binormal=binormal,
+                        centerline_depth=sample.surface_z - z,
+                        roof_thickness=sample.surface_z - z - 0.5 * height,
+                    )
+                )
+            # Recompute frames from the shaped centerline. Blending old frames
+            # alone can point a section backwards on a short, curved branch.
+            desired_floors = [self._sample_floor(sample) for sample in updated]
+            for _ in range(2):
+                centers = np.asarray([(sample.x, sample.y, sample.z) for sample in updated])
+                steps = np.diff(centers, axis=0)
+                steps /= np.maximum(np.linalg.norm(steps, axis=1, keepdims=True), 1e-9)
+                tangents = np.vstack((steps[0], steps[:-1] + steps[1:], steps[-1]))
+                tangents /= np.maximum(np.linalg.norm(tangents, axis=1, keepdims=True), 1e-9)
+                previous_normal = updated[0].normal
+                reframed = []
+                for sample, tangent, floor in zip(updated, tangents, desired_floors):
+                    normal, binormal = self._build_frame(tuple(tangent), previous_normal)
+                    previous_normal = normal
+                    profile = np.asarray(sample.profile_points)
+                    offset = float(np.min(profile[:, 0] * normal[2] + profile[:, 1] * binormal[2]))
+                    z = floor - offset
+                    reframed.append(replace(
+                        sample, z=z, tangent=tuple(float(value) for value in tangent),
+                        normal=normal, binormal=binormal,
+                        centerline_depth=sample.surface_z - z,
+                        roof_thickness=sample.surface_z - z - 0.5 * sample.tube_height,
+                    ))
+                updated = reframed
+            result.append(replace(field, samples=tuple(updated)))
+        return result
+
+    @staticmethod
+    def _sample_floor(sample: SectionSample) -> float:
+        profile = np.asarray(sample.profile_points)
+        return sample.z + float(
+            np.min(profile[:, 0] * sample.normal[2] + profile[:, 1] * sample.binormal[2])
         )
 
     def _build_arc_positions(

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+import trimesh
 
 from plume_advanced.stages.geometry_export import (
     CavePrimitivePayload,
@@ -111,7 +112,13 @@ def simplified_collision_arrays(
         simplified_faces.append(triangle)
     if not simplified_faces:
         return vertices, faces
-    return clustered, np.asarray(simplified_faces, dtype=np.int64)
+    candidate_faces = np.asarray(simplified_faces, dtype=np.int64)
+    candidate = trimesh.Trimesh(vertices=clustered, faces=candidate_faces, process=False)
+    # Spatial clustering can join opposite walls or delete a narrow passage's
+    # triangles. Preserve the canonical collider when that opens the surface.
+    if not candidate.is_watertight or not candidate.is_winding_consistent:
+        return vertices, faces
+    return clustered, candidate_faces
 
 
 __all__ = [

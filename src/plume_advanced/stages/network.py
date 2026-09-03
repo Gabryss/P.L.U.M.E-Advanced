@@ -10,6 +10,8 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
+from scipy.interpolate import CubicHermiteSpline, CubicSpline
+from scipy.ndimage import gaussian_filter1d
 
 from plume_advanced.stages.host_field import HostField
 
@@ -567,6 +569,7 @@ class CaveNetworkGenerator:
             selected_paths=tuple(selected_paths),
             total_flux=selected_flux,
         )
+        segments = self._smooth_graph_routes(host_field, segments)
         segments = self._assign_conserved_flow(nodes, segments)
         dominant_route_node_ids = self._dominant_route(nodes, segments, selected_flux)
         junctions = self._build_junctions(nodes, segments)
@@ -1327,6 +1330,113 @@ class CaveNetworkGenerator:
                 family_flux[family_label][cell] += 1.0
         return mask, flux, family_flux
 
+    @staticmethod
+    def _restore_attachment_cells(paths: tuple[_SelectedPath, ...]) -> tuple[_SelectedPath, ...]:
+        """Restore junctions removed independently from simplified polylines.
+
+        A feeder endpoint on a straight trunk must split the trunk even if
+        that cell was discarded as collinear. Interior grade-separated paths
+        remain unsplit; only their explicit endpoints attach to other routes.
+        """
+        candidates = sorted({cell for path in paths for cell in path.path})
+        result = []
+        for path in paths:
+            if not path.merge_shared_cells:
+                result.append(path)
+                continue
+            restored = [path.path[0]]
+            for first, last in zip(path.path, path.path[1:]):
+                dy, dx = last[0] - first[0], last[1] - first[1]
+                length_squared = dy * dy + dx * dx
+                attachments = []
+                for cell in candidates:
+                    cy, cx = cell[0] - first[0], cell[1] - first[1]
+                    along = cy * dy + cx * dx
+                    if cy * dx == cx * dy and 0 < along < length_squared:
+                        attachments.append((along, cell))
+                restored.extend(cell for _, cell in sorted(attachments))
+                restored.append(last)
+            result.append(replace(path, path=tuple(restored)))
+        return tuple(result)
+
+    @staticmethod
+    def _smooth_graph_routes(
+        host: HostField, segments: list[CaveSegment]
+    ) -> list[CaveSegment]:
+        """Fit flowing routes after graph extraction, retaining exact nodes.
+
+        Smoothing operates in metres and is bounded by passage width. Cubic
+        connection regions share a parent direction instead of leaving the
+        40--140 degree corners produced by snapped host-grid paths.
+        """
+        incident: dict[int, list[tuple[CaveSegment, np.ndarray]]] = defaultdict(list)
+        for segment in segments:
+            xy = np.asarray([(point.x, point.y) for point in segment.points])
+            for node, direction in (
+                (segment.start_node_id, xy[1] - xy[0]),
+                (segment.end_node_id, xy[-1] - xy[-2]),
+            ):
+                direction = direction / max(float(np.linalg.norm(direction)), 1e-9)
+                incident[node].append((segment, direction))
+        node_directions = {
+            node: max(values, key=lambda item: (
+                item[0].kind == "backbone", item[0].mean_width, item[0].total_length
+            ))[1]
+            for node, values in incident.items()
+        }
+        result = []
+        for segment in segments:
+            raw = np.asarray([(point.x, point.y) for point in segment.points])
+            arc = np.asarray([point.arc_length for point in segment.points])
+            length = float(arc[-1])
+            if length <= 1e-6:
+                result.append(segment)
+                continue
+            spacing = max(0.5, min(3.0, 0.3 * segment.mean_width))
+            distances = np.linspace(0.0, length, max(5, int(math.ceil(length / spacing)) + 1))
+            linear = np.column_stack([np.interp(distances, arc, raw[:, axis]) for axis in range(2)])
+            sigma_m = min(2.0 * segment.mean_width, 0.15 * length)
+            smooth = gaussian_filter1d(linear, sigma_m / (distances[1] - distances[0]), axis=0, mode="nearest")
+            delta = smooth - linear
+            delta *= np.minimum(1.0, segment.mean_width / np.maximum(np.linalg.norm(delta, axis=1), 1e-9))[:, None]
+            smooth = linear + delta
+            smooth[0], smooth[-1] = raw[0], raw[-1]
+            curve = CubicSpline(distances, smooth, axis=0)
+            coords = curve(distances)
+            reach = min(4.0 * segment.mean_width, 0.45 * length)
+            for index, node in ((0, segment.start_node_id), (-1, segment.end_node_id)):
+                direction = node_directions[node].copy()
+                original = raw[1] - raw[0] if index == 0 else raw[-1] - raw[-2]
+                if np.dot(direction, original) < 0:
+                    direction = -direction
+                if index == 0:
+                    transition = CubicHermiteSpline(
+                        [0.0, reach], [raw[0], curve(reach)], [direction, curve(reach, 1)], axis=0
+                    )
+                    mask = distances <= reach
+                else:
+                    transition = CubicHermiteSpline(
+                        [length - reach, length], [curve(length - reach), raw[-1]],
+                        [curve(length - reach, 1), direction], axis=0
+                    )
+                    mask = distances >= length - reach
+                coords[mask] = transition(distances[mask])
+            coords[0], coords[-1] = raw[0], raw[-1]
+            new_arc = np.r_[0.0, np.cumsum(np.linalg.norm(np.diff(coords, axis=0), axis=1))]
+            widths = np.interp(distances, arc, [point.width for point in segment.points])
+            points = []
+            for index, (xy, distance, width) in enumerate(zip(coords, new_arc, widths)):
+                substrate = host.sample(float(xy[0]), float(xy[1]))
+                points.append(CavePoint(
+                    index=index, x=float(xy[0]), y=float(xy[1]),
+                    elevation=substrate.elevation, slope_degrees=substrate.slope_degrees,
+                    cover_thickness=substrate.cover_thickness,
+                    roof_competence=substrate.roof_competence, growth_cost=substrate.growth_cost,
+                    arc_length=float(distance), width=float(width),
+                ))
+            result.append(replace(segment, points=tuple(points)))
+        return result
+
     def _extract_graph_from_paths(
         self,
         *,
@@ -1337,6 +1447,8 @@ class CaveNetworkGenerator:
     ) -> tuple[list[CaveNode], list[CaveSegment], tuple[int, ...]]:
         if not selected_paths:
             return [], [], ()
+
+        selected_paths = self._restore_attachment_cells(selected_paths)
 
         path_use_counts: defaultdict[tuple[int, int], int] = defaultdict(int)
         all_path_cells: set[tuple[int, int]] = set()
@@ -1589,8 +1701,9 @@ class CaveNetworkGenerator:
         node_lookup = {node.node_id: node for node in nodes}
         visited: set[int] = set()
         clusters: list[set[int]] = []
-        max_along_gap = 110.0
-        max_distance = 140.0
+        passage_width = float(np.median([segment.mean_width for segment in segments]))
+        max_along_gap = 3.0 * passage_width
+        max_distance = 4.0 * passage_width
         for node_id in sorted(candidate_node_ids, key=lambda item: node_lookup[item].along_position):
             if node_id in visited:
                 continue
@@ -1611,7 +1724,11 @@ class CaveNetworkGenerator:
                         and segment.end_node_id in {current_id, neighbor_id}
                         for segment in segments
                     )
-                    if along_gap <= max_along_gap and (
+                    cluster_span = max(
+                        math.hypot(neighbor.x - node_lookup[member].x, neighbor.y - node_lookup[member].y)
+                        for member in cluster
+                    )
+                    if cluster_span <= max_distance and along_gap <= max_along_gap and (
                         distance <= max_distance or shared_segment
                     ):
                         visited.add(neighbor_id)
@@ -1659,7 +1776,7 @@ class CaveNetworkGenerator:
                 if segment.points
             ]
             mean_width = float(np.mean(segment_widths)) if segment_widths else 24.0
-            blend_length = float(np.clip(2.35 * mean_width, 70.0, 210.0))
+            blend_length = 3.0 * mean_width
             junctions.append(
                 CaveJunction(
                     junction_id=len(junctions),
