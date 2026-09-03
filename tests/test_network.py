@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -13,6 +14,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 
 from plume_advanced.config import load_project_config
+from plume_advanced.evaluation.metrics.network import network_metrics
 from plume_advanced.stages.host_field import HostFieldConfig, HostFieldGenerator
 from plume_advanced.stages.network import (
     CaveNetworkConfig,
@@ -168,6 +170,84 @@ class CaveNetworkTests(unittest.TestCase):
 
         self.assertAlmostEqual(resolved[0].mean_width, 4.0)
 
+    def test_spur_direction_is_authoritative_when_it_bends_upstream(self) -> None:
+        config = CaveNetworkConfig(source_flux=9.0)
+        nodes = [
+            CaveNode(0, 0.0, 0.0, 0.0, 0.0, "entry"),
+            CaveNode(1, 10.0, 0.0, 10.0, 0.0, "junction"),
+            CaveNode(2, 5.0, 5.0, 5.0, 5.0, "spur_terminal"),
+            CaveNode(3, 20.0, 0.0, 20.0, 0.0, "exit"),
+        ]
+
+        def segment(segment_id: int, start: int, end: int, kind: str) -> CaveSegment:
+            start_node = nodes[start]
+            end_node = nodes[end]
+            points = tuple(
+                CavePoint(
+                    index=index,
+                    x=node.x,
+                    y=node.y,
+                    elevation=0.0,
+                    slope_degrees=0.0,
+                    cover_thickness=10.0,
+                    roof_competence=1.0,
+                    growth_cost=0.0,
+                    arc_length=float(index * 10),
+                    width=4.0,
+                )
+                for index, node in enumerate((start_node, end_node))
+            )
+            return CaveSegment(segment_id, start, end, kind, 0, points, {})
+
+        resolved = CaveNetworkGenerator(config)._assign_conserved_flow(
+            nodes,
+            [
+                segment(0, 0, 1, "backbone"),
+                segment(1, 1, 2, "spur"),
+                segment(2, 1, 3, "backbone"),
+            ],
+        )
+
+        by_id = {item.segment_id: item for item in resolved}
+        self.assertGreater(by_id[1].mean_flux, 0.0)
+        self.assertGreater(by_id[2].mean_flux, 0.0)
+        self.assertAlmostEqual(
+            by_id[1].mean_flux + by_id[2].mean_flux,
+            by_id[0].mean_flux,
+        )
+
+    def test_regression_seeds_produce_connected_positive_flow_graphs(self) -> None:
+        project_config = load_project_config(ROOT / "config" / "project.toml")
+        host_field = HostFieldGenerator(project_config.host_field).generate()
+
+        for seed in (3, 5, 7, 9):
+            with self.subTest(seed=seed):
+                config = replace(project_config.network, random_seed=seed)
+                cave_network = CaveNetworkGenerator(config).generate(host_field)
+                metrics = network_metrics(cave_network)
+                self.assertEqual(metrics["connected_component_count"], 1)
+                self.assertEqual(metrics["source_unreachable_node_count"], 0)
+                self.assertEqual(metrics["entries_without_exit_path_count"], 0)
+                self.assertEqual(metrics["zero_flux_segment_count"], 0)
+                self.assertLess(cave_network.max_flow_conservation_error(), 1e-8)
+
+                counts = np.asarray(cave_network.slice_channel_counts)
+                occupied_slices = np.flatnonzero(counts > 0)
+                self.assertGreater(occupied_slices.size, 0)
+                first, last = occupied_slices[[0, -1]]
+                self.assertTrue(np.all(counts[first : last + 1] > 0))
+
+        # Seed 12 previously selected a non-connectable underpass interior as
+        # a spur anchor under the generic/default configuration.
+        generic_host = HostFieldGenerator().generate()
+        generic_network = CaveNetworkGenerator(
+            replace(CaveNetworkConfig(), random_seed=12)
+        ).generate(generic_host)
+        generic_metrics = network_metrics(generic_network)
+        self.assertEqual(generic_metrics["connected_component_count"], 1)
+        self.assertEqual(generic_metrics["source_unreachable_node_count"], 0)
+        self.assertEqual(generic_metrics["zero_flux_segment_count"], 0)
+
     def test_default_config_generates_host_driven_braided_network(self) -> None:
         project_config = load_project_config(ROOT / "config" / "project.toml")
         self.assertIsInstance(project_config.procedural_seed, int)
@@ -232,6 +312,11 @@ class CaveNetworkTests(unittest.TestCase):
         self.assertGreater(summary["maximum_flux"], 0.0)
         self.assertGreater(summary["mean_temperature_k"], 273.15)
         self.assertLess(summary["max_flow_conservation_error"], 1e-8)
+        metrics = network_metrics(cave_network)
+        self.assertEqual(metrics["connected_component_count"], 1)
+        self.assertEqual(metrics["source_unreachable_node_count"], 0)
+        self.assertEqual(metrics["entries_without_exit_path_count"], 0)
+        self.assertEqual(metrics["zero_flux_segment_count"], 0)
         self.assertTrue(
             all(
                 point.flux >= 0.0

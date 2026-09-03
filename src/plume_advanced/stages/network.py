@@ -246,24 +246,14 @@ class CaveNetwork:
     def max_flow_conservation_error(self) -> float:
         """Return the largest normalized split/merge flux imbalance."""
 
-        node_lookup = {node.node_id: node for node in self.nodes}
         incoming: defaultdict[int, float] = defaultdict(float)
         outgoing: defaultdict[int, float] = defaultdict(float)
         for segment in self.segments:
             if not segment.points:
                 continue
-            start = node_lookup[segment.start_node_id]
-            end = node_lookup[segment.end_node_id]
             flux = max(segment.mean_flux, 0.0)
-            if (start.along_position, start.node_id) <= (
-                end.along_position,
-                end.node_id,
-            ):
-                outgoing[start.node_id] += flux
-                incoming[end.node_id] += flux
-            else:
-                outgoing[end.node_id] += flux
-                incoming[start.node_id] += flux
+            outgoing[segment.start_node_id] += flux
+            incoming[segment.end_node_id] += flux
         errors: list[float] = []
         for node in self.nodes:
             if node.kind in {"entry", "exit", "terminal", "spur_terminal"}:
@@ -280,13 +270,20 @@ class CaveNetwork:
     def dominant_route_length(self) -> float:
         if len(self.dominant_route_node_ids) < 2:
             return 0.0
-        node_pairs = set(zip(self.dominant_route_node_ids, self.dominant_route_node_ids[1:]))
-        return sum(
-            segment.total_length
-            for segment in self.segments
-            if (segment.start_node_id, segment.end_node_id) in node_pairs
-            or (segment.end_node_id, segment.start_node_id) in node_pairs
-        )
+        total = 0.0
+        for start_node_id, end_node_id in zip(
+            self.dominant_route_node_ids,
+            self.dominant_route_node_ids[1:],
+        ):
+            candidates = [
+                segment
+                for segment in self.segments
+                if segment.start_node_id == start_node_id
+                and segment.end_node_id == end_node_id
+            ]
+            if candidates:
+                total += max(candidates, key=lambda segment: segment.mean_flux).total_length
+        return total
 
     def _degrees(self) -> dict[int, int]:
         degrees = {node.node_id: 0 for node in self.nodes}
@@ -436,7 +433,11 @@ class CaveNetworkGenerator:
 
     def generate(self, host_field: HostField) -> CaveNetwork:
         geometry = self._build_flow_geometry(host_field)
-        rng = np.random.default_rng(self.config.random_seed)
+        # Match Stage A's baseline semantics: an unspecified seed produces a
+        # stable canonical network, while configured seeds select variations.
+        rng = np.random.default_rng(
+            0 if self.config.random_seed is None else self.config.random_seed
+        )
         source_cells = self._select_source_cells(host_field, geometry)
         support_field = self._build_support_field(host_field, geometry)
         downstream_potential = self._build_downstream_potential(
@@ -538,7 +539,15 @@ class CaveNetworkGenerator:
             selected_paths=tuple(selected_paths),
         )
 
-        spur_starts = self._select_spur_start_cells(total_flux, geometry)
+        _, connectable_flux, _ = self._build_representative_fields(
+            shape=host_field.growth_cost.shape,
+            selected_paths=tuple(
+                selected_path
+                for selected_path in selected_paths
+                if selected_path.merge_shared_cells
+            ),
+        )
+        spur_starts = self._select_spur_start_cells(connectable_flux, geometry)
         for spur_index, start_cell in enumerate(spur_starts):
             path = self._trace_spur(
                 host_field=host_field,
@@ -554,6 +563,7 @@ class CaveNetworkGenerator:
                     _SelectedPath(
                         kind="spur",
                         path=tuple(self._simplify_path(path)),
+                        merge_shared_cells=False,
                         metadata=self._build_segment_metadata(kind="spur"),
                     )
                 )
@@ -563,15 +573,18 @@ class CaveNetworkGenerator:
             selected_paths=tuple(selected_paths),
         )
 
-        nodes, segments, dominant_route_node_ids = self._extract_graph_from_paths(
+        nodes, segments, _dominant_route_node_ids = self._extract_graph_from_paths(
             host_field=host_field,
             geometry=geometry,
             selected_paths=tuple(selected_paths),
             total_flux=selected_flux,
         )
         segments = self._smooth_graph_routes(host_field, segments)
+        segments = self._orient_segments_for_flow(nodes, segments)
+        segments = self._repair_source_reachability(nodes, segments)
         segments = self._assign_conserved_flow(nodes, segments)
-        dominant_route_node_ids = self._dominant_route(nodes, segments, selected_flux)
+        dominant_route_node_ids = self._dominant_route(nodes, segments)
+        self._validate_generated_graph(nodes, segments, dominant_route_node_ids)
         junctions = self._build_junctions(nodes, segments)
 
         occupancy = np.zeros_like(host_field.growth_cost, dtype=bool)
@@ -588,14 +601,14 @@ class CaveNetworkGenerator:
         occupancy |= skeleton_mask
 
         slice_along_positions, slice_channel_counts = self._measure_parallel_channels(
-            host_field=host_field,
             geometry=geometry,
-            mask=skeleton_mask,
+            segments=segments,
+            include_passage_width=False,
         )
         _, slice_visible_channel_counts = self._measure_parallel_channels(
-            host_field=host_field,
             geometry=geometry,
-            mask=occupancy,
+            segments=segments,
+            include_passage_width=True,
         )
 
         return CaveNetwork(
@@ -622,7 +635,8 @@ class CaveNetworkGenerator:
         x_grid, y_grid = np.meshgrid(host_field.x_coords, host_field.y_coords)
         along_grid = (x_grid - seed_x) * flow_x + (y_grid - seed_y) * flow_y
         cross_grid = (x_grid - seed_x) * cross_x + (y_grid - seed_y) * cross_y
-        along_extent = float(np.max(along_grid)) - self.config.sink_margin
+        available_extent = float(np.max(along_grid)) - self.config.sink_margin
+        along_extent = min(available_extent, self.config.target_route_length_m)
         cell_scale = math.hypot(
             float(host_field.x_coords[1] - host_field.x_coords[0]),
             float(host_field.y_coords[1] - host_field.y_coords[0]),
@@ -733,6 +747,7 @@ class CaveNetworkGenerator:
         current_world = self._cell_to_world(host_field, start_cell)
         side_target_x = geometry.cross_x * lateral_sign
         side_target_y = geometry.cross_y * lateral_sign
+        has_left_existing_network = False
 
         for _ in range(self.config.spur_max_steps):
             current = path[-1]
@@ -741,6 +756,11 @@ class CaveNetworkGenerator:
             candidates: list[tuple[tuple[int, int], float]] = []
             for next_cell in self._neighbor_cells(host_field, current):
                 if next_cell in path[-3:]:
+                    continue
+                # Spurs are terminal distributaries. Once one leaves the
+                # existing network, do not let it reconnect downstream and
+                # silently become a cyclic bypass.
+                if next_cell != start_cell and float(total_flux[next_cell]) > 0.0:
                     continue
                 next_world = self._cell_to_world(host_field, next_cell)
                 step_x = next_world[0] - current_world[0]
@@ -765,7 +785,9 @@ class CaveNetworkGenerator:
 
             next_cell = self._sample_candidate(candidates, 0.45, rng)
             path.append(next_cell)
-            if float(total_flux[next_cell]) <= 0.0 and len(path) > 8:
+            if float(total_flux[next_cell]) <= 0.0:
+                has_left_existing_network = True
+            if has_left_existing_network and len(path) > 8:
                 break
 
         return path if len(path) > 4 else []
@@ -1020,6 +1042,7 @@ class CaveNetworkGenerator:
                     kind=branch.kind,
                     zone_index=zone_index,
                     z_level=branch.z_level,
+                    chamber_radius_scale=zone.chamber_radius_scale,
                 ),
             )
             zone_paths.append(selected)
@@ -1035,6 +1058,7 @@ class CaveNetworkGenerator:
                 branches=built_branch_paths,
                 rungs=zone.ladder_rungs,
                 zone_index=zone_index,
+                chamber_radius_scale=zone.chamber_radius_scale,
             )
             zone_paths.extend(ladder_paths)
         return tuple(zone_paths)
@@ -1130,11 +1154,16 @@ class CaveNetworkGenerator:
         branches: list[tuple[_ZoneBranch, tuple[tuple[int, int], ...]]],
         rungs: tuple[float, ...],
         zone_index: int,
+        chamber_radius_scale: float,
     ) -> tuple[_SelectedPath, ...]:
-        if len(branches) < 2:
+        # Grade-separated branches deliberately do not form graph junctions at
+        # interior XY crossings. Attaching a ladder to one would therefore
+        # create a floating two-node component rather than a physical passage.
+        connectable_branches = [item for item in branches if item[0].merge_shared_cells]
+        if len(connectable_branches) < 2:
             return ()
         ordered = sorted(
-            branches,
+            connectable_branches,
             key=lambda item: np.mean([float(geometry.cross_grid[cell]) for cell in item[1]]),
         )
         ladders: list[_SelectedPath] = []
@@ -1162,6 +1191,7 @@ class CaveNetworkGenerator:
                     metadata=self._build_segment_metadata(
                         kind="ladder",
                         zone_index=zone_index,
+                        chamber_radius_scale=chamber_radius_scale,
                     ),
                 )
             )
@@ -1288,6 +1318,7 @@ class CaveNetworkGenerator:
         kind: str,
         zone_index: int | None = None,
         z_level: int = 0,
+        chamber_radius_scale: float = 1.0,
     ) -> dict[str, SegmentMetadataValue]:
         crossing_group_id: str | None = None
         merge_behavior = "merge"
@@ -1307,6 +1338,7 @@ class CaveNetworkGenerator:
             "merge_behavior": merge_behavior,
             "island_id": island_id,
             "chamber_id": chamber_id,
+            "chamber_radius_scale": chamber_radius_scale,
             "formation_origin": kind,
         }
 
@@ -1455,6 +1487,9 @@ class CaveNetworkGenerator:
         for selected_path in selected_paths:
             all_path_cells.update(selected_path.path)
             if not selected_path.merge_shared_cells:
+                if selected_path.path:
+                    path_use_counts[selected_path.path[0]] += 1
+                    path_use_counts[selected_path.path[-1]] += 1
                 continue
             for cell in selected_path.path:
                 path_use_counts[cell] += 1
@@ -1555,8 +1590,156 @@ class CaveNetworkGenerator:
                             seen_signatures.add(signature)
                 current_cells = [cell]
 
-        dominant_route_node_ids = self._dominant_route(nodes, segments, total_flux)
-        return nodes, segments, dominant_route_node_ids
+        return nodes, segments, ()
+
+    @staticmethod
+    def _reverse_segment(segment: CaveSegment) -> CaveSegment:
+        total_length = segment.total_length
+        reversed_points = tuple(
+            replace(
+                point,
+                index=index,
+                arc_length=total_length - point.arc_length,
+            )
+            for index, point in enumerate(reversed(segment.points))
+        )
+        return replace(
+            segment,
+            start_node_id=segment.end_node_id,
+            end_node_id=segment.start_node_id,
+            points=reversed_points,
+        )
+
+    @staticmethod
+    def _orient_segments_for_flow(
+        nodes: list[CaveNode],
+        segments: list[CaveSegment],
+    ) -> list[CaveSegment]:
+        """Make stored start/end and point order agree with physical flow.
+
+        Segments leaving an entry and segments entering a terminal retain
+        their semantic construction direction, even when they bend slightly
+        upstream. Every interior edge follows a strict global flow ordering.
+        The only exceptions therefore leave graph roots or enter graph leaves,
+        which preserves physical feeder/spur meaning while guaranteeing that
+        cross-family intersections cannot create directed cycles.
+        """
+
+        node_lookup = {node.node_id: node for node in nodes}
+        undirected_degree = {node.node_id: 0 for node in nodes}
+        for segment in segments:
+            undirected_degree[segment.start_node_id] += 1
+            undirected_degree[segment.end_node_id] += 1
+        oriented: list[CaveSegment] = []
+        for segment in segments:
+            start = node_lookup[segment.start_node_id]
+            end = node_lookup[segment.end_node_id]
+            starts_at_entry = start.kind == "entry"
+            ends_at_terminal = (
+                end.kind in {"terminal", "spur_terminal"}
+                and undirected_degree[end.node_id] == 1
+            )
+            if starts_at_entry or ends_at_terminal:
+                oriented.append(segment)
+                continue
+            if (start.along_position, start.node_id) <= (end.along_position, end.node_id):
+                oriented.append(segment)
+                continue
+            oriented.append(CaveNetworkGenerator._reverse_segment(segment))
+        return oriented
+
+    @classmethod
+    def _repair_source_reachability(
+        cls,
+        nodes: list[CaveNode],
+        segments: list[CaveSegment],
+    ) -> list[CaveSegment]:
+        """Orient local extrema into the source-reachable directed graph.
+
+        Intersections between independently sampled path families can produce
+        a tiny along-flow local minimum: all of its incident edges point away
+        even though the undirected graph is connected. Reverse one acyclic cut
+        edge at a time so every emitted node receives source flow.
+        """
+
+        entries = {node.node_id for node in nodes if node.kind == "entry"}
+        if not entries:
+            return segments
+
+        repaired = list(segments)
+        for _ in range(len(nodes)):
+            outgoing: defaultdict[int, list[int]] = defaultdict(list)
+            for segment in repaired:
+                outgoing[segment.start_node_id].append(segment.end_node_id)
+            reachable = set(entries)
+            pending = list(entries)
+            while pending:
+                for downstream in outgoing.get(pending.pop(), []):
+                    if downstream not in reachable:
+                        reachable.add(downstream)
+                        pending.append(downstream)
+            if len(reachable) == len(nodes):
+                return repaired
+
+            candidates = sorted(
+                (
+                    (index, segment)
+                    for index, segment in enumerate(repaired)
+                    if segment.start_node_id not in reachable
+                    and segment.end_node_id in reachable
+                ),
+                key=lambda item: (item[1].total_length, item[1].segment_id),
+            )
+            for index, segment in candidates:
+                candidate = list(repaired)
+                candidate[index] = cls._reverse_segment(segment)
+                try:
+                    cls._topological_node_ids(nodes, candidate)
+                except ValueError:
+                    continue
+                repaired = candidate
+                break
+            else:
+                return repaired
+        return repaired
+
+    @staticmethod
+    def _topological_node_ids(
+        nodes: list[CaveNode],
+        segments: list[CaveSegment],
+    ) -> tuple[int, ...]:
+        """Return deterministic directed-graph order, rejecting flow cycles."""
+
+        node_lookup = {node.node_id: node for node in nodes}
+        indegree = {node.node_id: 0 for node in nodes}
+        outgoing: defaultdict[int, list[int]] = defaultdict(list)
+        for segment in segments:
+            if segment.start_node_id not in indegree or segment.end_node_id not in indegree:
+                raise ValueError(f"Segment {segment.segment_id} references an unknown node")
+            indegree[segment.end_node_id] += 1
+            outgoing[segment.start_node_id].append(segment.end_node_id)
+
+        heap = [
+            (node_lookup[node_id].along_position, node_id)
+            for node_id, degree in indegree.items()
+            if degree == 0
+        ]
+        heapq.heapify(heap)
+        ordered: list[int] = []
+        while heap:
+            _along, node_id = heapq.heappop(heap)
+            ordered.append(node_id)
+            for downstream in outgoing.get(node_id, []):
+                indegree[downstream] -= 1
+                if indegree[downstream] == 0:
+                    heapq.heappush(
+                        heap,
+                        (node_lookup[downstream].along_position, downstream),
+                    )
+        if len(ordered) != len(nodes):
+            cyclic = sorted(node_id for node_id, degree in indegree.items() if degree > 0)
+            raise ValueError(f"Cave network contains a directed flow cycle at nodes {cyclic}")
+        return tuple(ordered)
 
     def _assign_conserved_flow(
         self,
@@ -1567,22 +1750,10 @@ class CaveNetworkGenerator:
 
         if not nodes or not segments:
             return segments
-        node_lookup = {node.node_id: node for node in nodes}
         outgoing: defaultdict[int, list[int]] = defaultdict(list)
-        downstream_node: dict[int, int] = {}
         segment_lookup = {segment.segment_id: segment for segment in segments}
         for segment in segments:
-            start = node_lookup[segment.start_node_id]
-            end = node_lookup[segment.end_node_id]
-            if (start.along_position, start.node_id) <= (
-                end.along_position,
-                end.node_id,
-            ):
-                upstream, downstream = start.node_id, end.node_id
-            else:
-                upstream, downstream = end.node_id, start.node_id
-            downstream_node[segment.segment_id] = downstream
-            outgoing[upstream].append(segment.segment_id)
+            outgoing[segment.start_node_id].append(segment.segment_id)
 
         available_flux: defaultdict[int, float] = defaultdict(float)
         temperature_energy: defaultdict[int, float] = defaultdict(float)
@@ -1597,9 +1768,11 @@ class CaveNetworkGenerator:
         flux_by_segment: dict[int, float] = {}
         temperature_by_segment: dict[int, float] = {}
         age_by_segment: dict[int, float] = {}
-        for node in sorted(nodes, key=lambda item: (item.along_position, item.node_id)):
-            segment_ids = outgoing.get(node.node_id, [])
-            node_flux = available_flux[node.node_id]
+        node_lookup = {node.node_id: node for node in nodes}
+        for node_id in self._topological_node_ids(nodes, segments):
+            node = node_lookup[node_id]
+            segment_ids = outgoing.get(node_id, [])
+            node_flux = available_flux[node_id]
             if not segment_ids or node_flux <= 0.0:
                 continue
             node_temperature = temperature_energy[node.node_id] / node_flux
@@ -1624,7 +1797,7 @@ class CaveNetworkGenerator:
                     node_temperature
                     - self.config.cooling_k_per_m * segment.total_length,
                 )
-                downstream = downstream_node[segment_id]
+                downstream = segment.end_node_id
                 flux_by_segment[segment_id] = segment_flux
                 temperature_by_segment[segment_id] = node_temperature
                 age_by_segment[segment_id] = node_age
@@ -1852,7 +2025,6 @@ class CaveNetworkGenerator:
         self,
         nodes: list[CaveNode],
         segments: list[CaveSegment],
-        total_flux: np.ndarray,
     ) -> tuple[int, ...]:
         if not nodes or not segments:
             return ()
@@ -1860,40 +2032,32 @@ class CaveNetworkGenerator:
         entries = [node for node in nodes if node.kind == "entry"]
         if not entries:
             entries = [min(nodes, key=lambda node: node.along_position)]
-        exit_node = max(nodes, key=lambda node: node.along_position)
-        adjacency: dict[int, list[tuple[int, float]]] = defaultdict(list)
+        exits = [node for node in nodes if node.kind == "exit"]
+        exit_node = max(exits or nodes, key=lambda node: node.along_position)
+        outgoing: defaultdict[int, list[CaveSegment]] = defaultdict(list)
         for segment in segments:
-            mean_flux = np.mean([point.width for point in segment.points]) if segment.points else 1.0
-            cost = segment.total_length / max(mean_flux, 1.0)
-            adjacency[segment.start_node_id].append(
-                (segment.end_node_id, float(cost))
-            )
-            adjacency[segment.end_node_id].append(
-                (segment.start_node_id, float(cost))
-            )
+            outgoing[segment.start_node_id].append(segment)
 
-        distances = {node.node_id: math.inf for node in nodes}
+        scores = {node.node_id: -math.inf for node in nodes}
         predecessor: dict[int, int] = {}
         entry_ids = {entry.node_id for entry in entries}
-        heap: list[tuple[float, int]] = []
         for entry in entries:
-            distances[entry.node_id] = 0.0
-            heapq.heappush(heap, (0.0, entry.node_id))
-        while heap:
-            current_distance, node_id = heapq.heappop(heap)
-            if current_distance > distances[node_id]:
+            scores[entry.node_id] = 0.0
+        for node_id in self._topological_node_ids(nodes, segments):
+            if not math.isfinite(scores[node_id]):
                 continue
-            if node_id == exit_node.node_id:
-                break
-            for neighbor_id, edge_cost in adjacency[node_id]:
-                next_distance = current_distance + edge_cost
-                if next_distance >= distances[neighbor_id]:
+            for segment in outgoing.get(node_id, []):
+                # Integrated transported flux rewards both sustained flow and
+                # route persistence without allowing a short late feeder to
+                # masquerade as the main tube.
+                next_score = scores[node_id] + segment.mean_flux * segment.total_length
+                neighbor_id = segment.end_node_id
+                if next_score <= scores[neighbor_id]:
                     continue
-                distances[neighbor_id] = next_distance
+                scores[neighbor_id] = next_score
                 predecessor[neighbor_id] = node_id
-                heapq.heappush(heap, (next_distance, neighbor_id))
 
-        if math.isinf(distances[exit_node.node_id]):
+        if not math.isfinite(scores[exit_node.node_id]):
             return ()
 
         route = [exit_node.node_id]
@@ -1903,6 +2067,106 @@ class CaveNetworkGenerator:
             route.append(current)
         route.reverse()
         return tuple(route)
+
+    def _validate_generated_graph(
+        self,
+        nodes: list[CaveNode],
+        segments: list[CaveSegment],
+        dominant_route_node_ids: tuple[int, ...],
+    ) -> None:
+        """Reject graph/state defects before Stage B can be consumed."""
+
+        node_ids = {node.node_id for node in nodes}
+        entries = {node.node_id for node in nodes if node.kind == "entry"}
+        exits = {node.node_id for node in nodes if node.kind == "exit"}
+        if not entries:
+            raise ValueError("Cave network has no entry nodes")
+        if len(exits) != 1:
+            raise ValueError(f"Cave network must have exactly one exit node, found {len(exits)}")
+
+        outgoing: defaultdict[int, list[CaveSegment]] = defaultdict(list)
+        reverse: defaultdict[int, set[int]] = defaultdict(set)
+        for segment in segments:
+            if segment.start_node_id not in node_ids or segment.end_node_id not in node_ids:
+                raise ValueError(f"Segment {segment.segment_id} references an unknown node")
+            if segment.start_node_id == segment.end_node_id:
+                raise ValueError(f"Segment {segment.segment_id} is a self-loop")
+            if len(segment.points) < 2:
+                raise ValueError(f"Segment {segment.segment_id} has fewer than two points")
+            arcs = np.asarray([point.arc_length for point in segment.points], dtype=float)
+            if not np.isfinite(arcs).all() or np.any(np.diff(arcs) <= 0.0):
+                raise ValueError(f"Segment {segment.segment_id} has invalid arc-length ordering")
+            if not math.isclose(float(arcs[0]), 0.0, abs_tol=1e-8):
+                raise ValueError(f"Segment {segment.segment_id} does not start at zero arc length")
+            if segment.mean_flux <= 0.0:
+                raise ValueError(f"Segment {segment.segment_id} has no source-reachable lava flux")
+            temperatures = np.asarray(
+                [point.temperature_k for point in segment.points],
+                dtype=float,
+            )
+            ages = np.asarray([point.age_s for point in segment.points], dtype=float)
+            if (
+                not np.isfinite(temperatures).all()
+                or not np.isfinite(ages).all()
+                or np.any(np.diff(temperatures) > 1e-8)
+                or np.any(np.diff(ages) < -1e-8)
+            ):
+                raise ValueError(f"Segment {segment.segment_id} has inconsistent thermal state")
+            outgoing[segment.start_node_id].append(segment)
+            reverse[segment.end_node_id].add(segment.start_node_id)
+
+        reachable = set(entries)
+        pending = list(entries)
+        while pending:
+            for segment in outgoing.get(pending.pop(), []):
+                if segment.end_node_id not in reachable:
+                    reachable.add(segment.end_node_id)
+                    pending.append(segment.end_node_id)
+        if reachable != node_ids:
+            missing = sorted(node_ids - reachable)
+            raise ValueError(f"Cave network contains source-unreachable nodes {missing}")
+
+        exit_id = next(iter(exits))
+        can_reach_exit = {exit_id}
+        pending = [exit_id]
+        while pending:
+            for upstream in reverse.get(pending.pop(), set()):
+                if upstream not in can_reach_exit:
+                    can_reach_exit.add(upstream)
+                    pending.append(upstream)
+        blocked_entries = sorted(entries - can_reach_exit)
+        if blocked_entries:
+            raise ValueError(f"Cave network entries cannot reach the exit: {blocked_entries}")
+
+        if (
+            len(dominant_route_node_ids) < 2
+            or dominant_route_node_ids[0] not in entries
+            or dominant_route_node_ids[-1] != exit_id
+        ):
+            raise ValueError("Cave network has no valid directed dominant route")
+        route_edges = {
+            (segment.start_node_id, segment.end_node_id) for segment in segments
+        }
+        if any(
+            pair not in route_edges
+            for pair in zip(dominant_route_node_ids, dominant_route_node_ids[1:])
+        ):
+            raise ValueError("Dominant route references a missing directed segment")
+
+        network = CaveNetwork(
+            config=self.config,
+            nodes=tuple(nodes),
+            segments=tuple(segments),
+            junctions=(),
+            occupancy=np.empty((0, 0), dtype=bool),
+            width_field=np.empty((0, 0), dtype=float),
+            dominant_route_node_ids=dominant_route_node_ids,
+            slice_along_positions=(),
+            slice_channel_counts=(),
+            slice_visible_channel_counts=(),
+        )
+        if network.max_flow_conservation_error() > 1e-8:
+            raise ValueError("Cave network violates split/merge flux conservation")
 
     def _select_spur_start_cells(
         self,
@@ -1938,9 +2202,9 @@ class CaveNetworkGenerator:
     def _measure_parallel_channels(
         self,
         *,
-        host_field: HostField,
         geometry: _FlowGeometry,
-        mask: np.ndarray,
+        segments: list[CaveSegment],
+        include_passage_width: bool,
     ) -> tuple[tuple[float, ...], tuple[int, ...]]:
         along_positions = np.linspace(
             0.0,
@@ -1948,21 +2212,58 @@ class CaveNetworkGenerator:
             self.config.channel_count_samples,
             dtype=float,
         )
-        band_half_width = 0.7 * geometry.cell_scale
         counts: list[int] = []
         for along_position in along_positions:
-            band_cells = np.argwhere(
-                mask
-                & (np.abs(geometry.along_grid - along_position) <= band_half_width)
-            )
-            if band_cells.size == 0:
+            crossings: list[tuple[float, float]] = []
+            for segment in segments:
+                for first, second in zip(segment.points, segment.points[1:]):
+                    first_along = self._project_along(geometry, first.x, first.y)
+                    second_along = self._project_along(geometry, second.x, second.y)
+                    along_delta = second_along - first_along
+                    if math.isclose(along_delta, 0.0, abs_tol=1e-9):
+                        if not math.isclose(
+                            along_position,
+                            first_along,
+                            abs_tol=0.25 * geometry.cell_scale,
+                        ):
+                            continue
+                        interpolation = 0.5
+                    else:
+                        interpolation = (along_position - first_along) / along_delta
+                        if interpolation < 0.0 or interpolation > 1.0:
+                            continue
+                    x_coord = first.x + interpolation * (second.x - first.x)
+                    y_coord = first.y + interpolation * (second.y - first.y)
+                    cross = self._project_cross(geometry, x_coord, y_coord)
+                    width = first.width + interpolation * (second.width - first.width)
+                    crossings.append((cross, max(width, 0.0)))
+
+            if not crossings:
                 counts.append(0)
                 continue
-            lateral_positions = sorted(float(geometry.cross_grid[y_index, x_index]) for y_index, x_index in band_cells)
-            channel_count = 1
-            for previous, current in zip(lateral_positions, lateral_positions[1:]):
-                if current - previous > 1.8 * geometry.cell_scale:
-                    channel_count += 1
+
+            if include_passage_width:
+                intervals = sorted(
+                    (cross - 0.5 * width, cross + 0.5 * width)
+                    for cross, width in crossings
+                )
+                channel_count = 0
+                current_end = -math.inf
+                for start, end in intervals:
+                    if start > current_end + 1e-6:
+                        channel_count += 1
+                        current_end = end
+                    else:
+                        current_end = max(current_end, end)
+            else:
+                lateral_positions = sorted(cross for cross, _width in crossings)
+                separation = max(0.25 * geometry.cell_scale, 1e-6)
+                channel_count = 1
+                previous = lateral_positions[0]
+                for current in lateral_positions[1:]:
+                    if current - previous > separation:
+                        channel_count += 1
+                    previous = current
             counts.append(channel_count)
         return tuple(float(value) for value in along_positions), tuple(int(value) for value in counts)
 
@@ -2065,21 +2366,33 @@ class CaveNetworkGenerator:
         for node in nodes:
             if node.kind != "chamber":
                 continue
+            incident_scales: list[float] = []
+            for segment in segments:
+                if node.node_id not in {
+                    segment.start_node_id,
+                    segment.end_node_id,
+                }:
+                    continue
+                scale_value = segment.metadata.get("chamber_radius_scale", 1.0)
+                if isinstance(scale_value, (int, float)):
+                    incident_scales.append(float(scale_value))
             self._paint_disk(
                 host_field=host_field,
                 occupancy=occupancy,
                 width_field=width_field,
                 x_coord=node.x,
                 y_coord=node.y,
-                radius=representative_radius,
+                radius=representative_radius * max(incident_scales, default=1.0),
             )
         for segment in segments:
             if segment.kind not in {"chamber_braid", "ladder"} or len(segment.points) < 3:
                 continue
             midpoint = segment.points[len(segment.points) // 2]
+            scale_value = segment.metadata.get("chamber_radius_scale", 1.0)
+            chamber_scale = float(scale_value) if isinstance(scale_value, (int, float)) else 1.0
             radius = representative_radius * (
                 0.90 if segment.kind == "chamber_braid" else 0.62
-            )
+            ) * chamber_scale
             self._paint_disk(
                 host_field=host_field,
                 occupancy=occupancy,
@@ -2339,6 +2652,13 @@ class CaveNetworkGenerator:
     def _cell_to_world(host_field: HostField, cell: tuple[int, int]) -> tuple[float, float]:
         y_index, x_index = cell
         return float(host_field.x_coords[x_index]), float(host_field.y_coords[y_index])
+
+    @staticmethod
+    def _project_along(geometry: _FlowGeometry, x_coord: float, y_coord: float) -> float:
+        return (
+            (x_coord - geometry.seed_x) * geometry.flow_x
+            + (y_coord - geometry.seed_y) * geometry.flow_y
+        )
 
     @staticmethod
     def _project_cross(geometry: _FlowGeometry, x_coord: float, y_coord: float) -> float:

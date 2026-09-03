@@ -854,9 +854,18 @@ class GeologicalEventTests(unittest.TestCase):
         self.assertEqual(int(summary["event_mesh_count"]), len(event_field.meshes))
         self.assertGreater(int(summary["event_vertex_count"]), 0)
         self.assertGreater(int(summary["event_face_count"]), 0)
-        self.assertEqual(
+        structural_modifier_ids = {
+            event.event_id
+            for event in event_field.events
+            if event.kind in {"collapse", "choke", "infill"}
+        }
+        self.assertGreater(int(summary["structural_event_count"]), 0)
+        self.assertLessEqual(
             int(summary["structural_event_count"]),
             int(event_field.summary()["structural_modifier_count"]),
+        )
+        self.assertTrue(
+            set(cave_geometry.structural_event_ids) <= structural_modifier_ids
         )
         self.assertLess(
             summary["carved_voxel_count"],

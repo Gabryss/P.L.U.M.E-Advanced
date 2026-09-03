@@ -2008,11 +2008,21 @@ class GeometryGenerator:
         offset = 0
         for mesh in chunk_meshes:
             for a, b, c in mesh.faces:
-                face = tuple(int(inverse[offset + index]) for index in (a, b, c))
+                face = (
+                    int(inverse[offset + a]),
+                    int(inverse[offset + b]),
+                    int(inverse[offset + c]),
+                )
                 if len(set(face)) == 3:
                     faces.append(face)
             offset += len(mesh.vertices)
-        return tuple(tuple(float(value) for value in vertex) for vertex in vertices), tuple(faces)
+        return (
+            tuple(
+                (float(vertex[0]), float(vertex[1]), float(vertex[2]))
+                for vertex in vertices
+            ),
+            tuple(faces),
+        )
 
     @staticmethod
     def _count_components(faces: tuple[tuple[int, int, int], ...]) -> int:

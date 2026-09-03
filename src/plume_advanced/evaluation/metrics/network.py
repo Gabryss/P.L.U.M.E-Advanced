@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections import Counter, defaultdict
 from typing import Any
 
@@ -23,18 +24,11 @@ def network_metrics(
     degrees = {node.node_id: 0 for node in network.nodes}
     incoming: defaultdict[int, list[CaveSegment]] = defaultdict(list)
     outgoing: defaultdict[int, list[CaveSegment]] = defaultdict(list)
-    node_lookup = {node.node_id: node for node in network.nodes}
     for segment in network.segments:
         degrees[segment.start_node_id] += 1
         degrees[segment.end_node_id] += 1
-        start = node_lookup[segment.start_node_id]
-        end = node_lookup[segment.end_node_id]
-        if (start.along_position, start.node_id) <= (end.along_position, end.node_id):
-            outgoing[start.node_id].append(segment)
-            incoming[end.node_id].append(segment)
-        else:
-            outgoing[end.node_id].append(segment)
-            incoming[start.node_id].append(segment)
+        outgoing[segment.start_node_id].append(segment)
+        incoming[segment.end_node_id].append(segment)
     components = _component_count(network)
     persistence = [
         segment.total_length / max(segment.mean_width, 1e-9)
@@ -46,6 +40,23 @@ def network_metrics(
     state = _state_consistency(network, incoming, outgoing, conservation_tolerance)
     split_nodes = [node_id for node_id in degrees if len(outgoing[node_id]) > 1]
     merge_nodes = [node_id for node_id in degrees if len(incoming[node_id]) > 1]
+    entry_ids = {node.node_id for node in network.nodes if node.kind == "entry"}
+    exit_ids = {node.node_id for node in network.nodes if node.kind == "exit"}
+    source_reachable = set(entry_ids)
+    pending = list(entry_ids)
+    while pending:
+        for segment in outgoing[pending.pop()]:
+            if segment.end_node_id not in source_reachable:
+                source_reachable.add(segment.end_node_id)
+                pending.append(segment.end_node_id)
+    can_reach_exit = set(exit_ids)
+    pending = list(exit_ids)
+    while pending:
+        node_id = pending.pop()
+        for segment in incoming[node_id]:
+            if segment.start_node_id not in can_reach_exit:
+                can_reach_exit.add(segment.start_node_id)
+                pending.append(segment.start_node_id)
     island_ids = {
         str(segment.metadata.get("island_id"))
         for segment in network.segments
@@ -60,6 +71,9 @@ def network_metrics(
         "terminal_count": sum(degree == 1 for degree in degrees.values()),
         "chamber_count": sum(junction.kind == "chamber" for junction in network.junctions),
         "connected_component_count": components,
+        "source_unreachable_node_count": len(set(degrees) - source_reachable),
+        "entries_without_exit_path_count": len(entry_ids - can_reach_exit),
+        "zero_flux_segment_count": sum(segment.mean_flux <= 0.0 for segment in network.segments),
         "cyclomatic_number": max(0, len(network.segments) - len(network.nodes) + components),
         "split_junction_count": len(split_nodes),
         "merge_junction_count": len(merge_nodes),
@@ -185,6 +199,8 @@ def _state_consistency(
     relative: list[float] = []
     exceeded = 0
     for node in network.nodes:
+        if node.kind in {"entry", "exit", "terminal", "spur_terminal"}:
+            continue
         if not incoming[node.node_id] or not outgoing[node.node_id]:
             continue
         in_flux = sum(max(segment.mean_flux, 0.0) for segment in incoming[node.node_id])
@@ -232,12 +248,9 @@ def _sinuosity(segment: CaveSegment) -> float:
     if len(segment.points) < 2:
         return 1.0
     first, last = segment.points[0], segment.points[-1]
-    chord = float(
-        np.linalg.norm(
-            np.asarray((last.x, last.y, last.elevation))
-            - np.asarray((first.x, first.y, first.elevation))
-        )
-    )
+    # Stage-B arc length is planar; use the matching planar endpoint chord.
+    # Mixing it with surface elevation could produce an impossible value < 1.
+    chord = math.hypot(last.x - first.x, last.y - first.y)
     return segment.total_length / max(chord, 1e-9)
 
 

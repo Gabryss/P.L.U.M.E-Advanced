@@ -938,6 +938,7 @@ def _apply_dev_mode(
     network = replace(
         network,
         braid_grammar=grammar,
+        target_route_length_m=min(network.target_route_length_m, target_height),
         trace_max_steps=max(48, target_grid.ny),
         spur_count=min(network.spur_count, max(1, zone_cap)),
         channel_count_samples=max(
@@ -987,8 +988,30 @@ def _validate_pipeline_configs(
         )
     if network.minimum_branch_offset_widths <= 0.0:
         raise ValueError("network.minimum_branch_offset_widths must be positive")
+    if network.target_route_length_m <= 0.0:
+        raise ValueError("network.target_route_length_m must be positive")
     if network.source_count <= 0:
         raise ValueError("network.source_count must be positive")
+    if network.source_band_length <= 0.0 or network.source_band_half_width <= 0.0:
+        raise ValueError("network source-band dimensions must be positive")
+    if network.sink_margin < 0.0:
+        raise ValueError("network.sink_margin cannot be negative")
+    if network.trace_max_steps <= 0 or network.spur_max_steps <= 0:
+        raise ValueError("network trace step limits must be positive")
+    if network.spur_count < 0 or network.occupancy_smoothing_passes < 0:
+        raise ValueError("network spur and smoothing counts cannot be negative")
+    if network.channel_count_samples < 2:
+        raise ValueError("network.channel_count_samples must be at least 2")
+    if network.max_uphill_step < 0.0:
+        raise ValueError("network.max_uphill_step cannot be negative")
+    if network.growth_cost_weight < 0.0 or network.corridor_weight < 0.0:
+        raise ValueError("network routing support weights cannot be negative")
+    if network.growth_cost_weight + network.corridor_weight <= 0.0:
+        raise ValueError("at least one network routing support weight must be positive")
+    if not 0.0 <= network.chamber_flux_quantile <= 1.0:
+        raise ValueError("network.chamber_flux_quantile must be in [0, 1]")
+    if network.chamber_radius <= 0.0:
+        raise ValueError("network.chamber_radius must be positive")
     if (
         min(
             network.source_flux,
@@ -1002,6 +1025,33 @@ def _validate_pipeline_configs(
         raise ValueError("network.cooling_k_per_m cannot be negative")
     if not 0.0 < network.chamber_radius_fraction <= 1.0:
         raise ValueError("network.chamber_radius_fraction must be in (0, 1]")
+    grammar = network.braid_grammar
+    for name, value_range in (
+        ("zone_count", grammar.zone_count),
+        ("half_length_fraction", grammar.half_length_fraction),
+        ("branches_per_zone", grammar.branches_per_zone),
+        ("lateral_offset_scale", grammar.lateral_offset_scale),
+        ("start_shift_fraction", grammar.start_shift_fraction),
+        ("end_shift_fraction", grammar.end_shift_fraction),
+        ("skew", grammar.skew),
+        ("wobble", grammar.wobble),
+        ("ladder_rung_count", grammar.ladder_rung_count),
+        ("chamber_radius_scale", grammar.chamber_radius_scale),
+    ):
+        if value_range[0] > value_range[1]:
+            raise ValueError(f"network.braid_grammar.{name} must have min <= max")
+    if grammar.zone_count[0] < 0 or grammar.branches_per_zone[0] < 2:
+        raise ValueError("network braid counts must be non-negative with at least two branches")
+    if grammar.ladder_rung_count[0] < 0:
+        raise ValueError("network.braid_grammar.ladder_rung_count cannot be negative")
+    if not 0.0 <= grammar.min_center_spacing <= 1.0:
+        raise ValueError("network.braid_grammar.min_center_spacing must be in [0, 1]")
+    for name, probability in (
+        ("underpass_probability", grammar.underpass_probability),
+        ("ladder_probability", grammar.ladder_probability),
+    ):
+        if not 0.0 <= probability <= 1.0:
+            raise ValueError(f"network.braid_grammar.{name} must be in [0, 1]")
     if not 0.0 < section_field.minimum_tube_width <= section_field.maximum_tube_width:
         raise ValueError(
             "section_field widths must satisfy 0 < minimum_tube_width <= maximum_tube_width"

@@ -321,8 +321,10 @@ class SectionFieldGenerator:
                         z=z,
                         tube_width=width,
                         tube_height=height,
-                        profile_points=tuple(tuple(float(value) for value in point) for point in profile),
-                        tangent=tuple(float(value) for value in tangent),
+                        profile_points=tuple(
+                            (float(point[0]), float(point[1])) for point in profile
+                        ),
+                        tangent=(float(tangent[0]), float(tangent[1]), float(tangent[2])),
                         normal=normal,
                         binormal=binormal,
                         centerline_depth=sample.surface_z - z,
@@ -347,7 +349,9 @@ class SectionFieldGenerator:
                     offset = float(np.min(profile[:, 0] * normal[2] + profile[:, 1] * binormal[2]))
                     z = floor - offset
                     reframed.append(replace(
-                        sample, z=z, tangent=tuple(float(value) for value in tangent),
+                        sample,
+                        z=z,
+                        tangent=(float(tangent[0]), float(tangent[1]), float(tangent[2])),
                         normal=normal, binormal=binormal,
                         centerline_depth=sample.surface_z - z,
                         roof_thickness=sample.surface_z - z - 0.5 * sample.tube_height,
@@ -405,16 +409,16 @@ class SectionFieldGenerator:
         )
         route_segment_ids: list[int] = []
         for start_node_id, end_node_id in dominant_pairs:
-            for segment in segment_lookup.values():
-                if (
-                    segment.start_node_id,
-                    segment.end_node_id,
-                ) == (start_node_id, end_node_id) or (
-                    segment.start_node_id,
-                    segment.end_node_id,
-                ) == (end_node_id, start_node_id):
-                    route_segment_ids.append(segment.segment_id)
-                    break
+            candidates = [
+                segment
+                for segment in segment_lookup.values()
+                if (segment.start_node_id, segment.end_node_id)
+                == (start_node_id, end_node_id)
+            ]
+            if candidates:
+                route_segment_ids.append(
+                    max(candidates, key=lambda segment: segment.mean_flux).segment_id
+                )
         return tuple(route_segment_ids)
 
     def _build_generation_order(
