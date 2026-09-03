@@ -22,6 +22,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(config.section_field.chamber_max_tube_width, 20.0)
         self.assertEqual(config.network.maximum_passage_radius, 5.0)
         self.assertEqual(config.network.growth_model, "hybrid_lobe")
+        self.assertEqual(config.network.network_density, 1.0)
         self.assertEqual(config.network.lobe_growth.path_count, (6, 6))
         self.assertGreater(
             config.network.lobe_growth.retirement_temperature_k,
@@ -389,6 +390,21 @@ class ProjectConfigurationTests(unittest.TestCase):
                 body = "venus"
                 """
             )
+
+    def test_network_density_is_bounded(self) -> None:
+        for value in (-0.1, 3.1):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    r"network\.network_density must be in \[0, 3\]",
+                ):
+                    self._load_minimal(
+                        f"""
+                        schema_version = 2
+                        [network]
+                        network_density = {value}
+                        """
+                    )
 
     def test_unknown_top_level_section_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "Unknown top-level"):

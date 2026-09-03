@@ -68,6 +68,7 @@ class CaveNetworkConfig:
 
     random_seed: int | None = None
     growth_model: str = "hybrid_lobe"
+    network_density: float = 1.0
     braid_grammar: BraidGrammarConfig = BraidGrammarConfig()
     lobe_growth: LobeGrowthConfig = LobeGrowthConfig()
     body_spatial_scale: float = 1.0
@@ -225,6 +226,11 @@ class CaveNetwork:
                 if segment.kind in {"spur", "abandoned_lobe", "stalled_lobe"}
             )
         )
+        lobe_path_ids = {
+            str(segment.metadata["lobe_path_id"])
+            for segment in self.segments
+            if segment.metadata.get("lobe_path_id") is not None
+        }
         primary_branch_kinds = {
             "anastomosis",
             "chamber_braid",
@@ -245,6 +251,17 @@ class CaveNetwork:
             "entry_count": float(sum(node.kind == "entry" for node in self.nodes)),
             "junction_count": float(len(self.junctions)),
             "loop_count": loop_count,
+            "network_density": self.config.network_density,
+            "lobe_path_count": float(len(lobe_path_ids)),
+            "anastomosis_count": float(
+                sum(segment.kind == "anastomosis" for segment in self.segments)
+            ),
+            "retired_lobe_count": float(
+                sum(
+                    segment.kind in {"abandoned_lobe", "stalled_lobe"}
+                    for segment in self.segments
+                )
+            ),
             "terminal_count": terminal_count,
             "spur_count": spur_count,
             "occupied_cell_count": occupied_area,
@@ -819,7 +836,12 @@ class CaveNetworkGenerator:
 
         controls = self.config.lobe_growth
         rng = procedural_rng(self.config.random_seed, "lobe-growth")
-        path_count = self._sample_int_range(rng, controls.path_count)
+        path_count = int(
+            round(
+                self._sample_int_range(rng, controls.path_count)
+                * self.config.network_density
+            )
+        )
         anchors = self._select_lobe_anchors(
             host_field=host_field,
             geometry=geometry,
@@ -945,9 +967,11 @@ class CaveNetworkGenerator:
         lower = int(round(0.10 * (len(backbone_path) - 1)))
         upper = int(round(0.90 * (len(backbone_path) - 1)))
         candidates = list(dict.fromkeys(backbone_path[lower : upper + 1]))
+        density_scale = math.sqrt(max(self.config.network_density, 0.05))
         minimum_spacing = (
             self.config.lobe_growth.minimum_anchor_spacing_fraction
             * geometry.along_extent
+            / density_scale
         )
         anchors: list[tuple[int, int]] = []
         while candidates and len(anchors) < count:

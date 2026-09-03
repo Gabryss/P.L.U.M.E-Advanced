@@ -78,6 +78,9 @@ phase = [-3.14159, 3.14159]
 
 [network]
 growth_model = "hybrid_lobe"
+# Global loop/lobe density: 0 disables lobe branches, 1 preserves the calibrated
+# default, and values up to 3 launch progressively denser anastomosing networks.
+network_density = 1.0
 source_count = 8
 source_band_length = 90.0
 source_band_half_width = 180.0

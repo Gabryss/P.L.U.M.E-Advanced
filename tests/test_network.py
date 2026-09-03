@@ -332,7 +332,29 @@ class CaveNetworkTests(unittest.TestCase):
         self.assertEqual(generic_metrics["source_unreachable_node_count"], 0)
         self.assertEqual(generic_metrics["zero_flux_segment_count"], 0)
 
-    def test_default_config_generates_host_driven_braided_network(self) -> None:
+    def test_network_density_controls_lobes_anastomoses_and_loops(self) -> None:
+        project_config = load_project_config(ROOT / "config" / "project.toml")
+        host_field = HostFieldGenerator(project_config.host_field).generate()
+        sparse = CaveNetworkGenerator(
+            replace(project_config.network, network_density=0.5)
+        ).generate(host_field)
+        dense = CaveNetworkGenerator(
+            replace(project_config.network, network_density=1.5)
+        ).generate(host_field)
+
+        sparse_summary = sparse.summary()
+        dense_summary = dense.summary()
+        self.assertLess(
+            sparse_summary["lobe_path_count"],
+            dense_summary["lobe_path_count"],
+        )
+        self.assertLess(
+            sparse_summary["anastomosis_count"],
+            dense_summary["anastomosis_count"],
+        )
+        self.assertLess(sparse_summary["loop_count"], dense_summary["loop_count"])
+
+    def test_default_config_generates_host_driven_lobe_network(self) -> None:
         project_config = load_project_config(ROOT / "config" / "project.toml")
         self.assertIsInstance(project_config.procedural_seed, int)
         self.assertIsInstance(project_config.host_field.seed_point, tuple)

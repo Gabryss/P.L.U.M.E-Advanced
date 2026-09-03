@@ -1058,6 +1058,8 @@ def _validate_pipeline_configs(
         raise ValueError("network.chamber_radius_fraction must be in (0, 1]")
     if network.growth_model not in {"hybrid_lobe", "legacy_braid"}:
         raise ValueError("network.growth_model must be hybrid_lobe or legacy_braid")
+    if not 0.0 <= network.network_density <= 3.0:
+        raise ValueError("network.network_density must be in [0, 3]")
     lobe = network.lobe_growth
     for name, value_range in (
         ("path_count", lobe.path_count),

@@ -77,6 +77,15 @@ def network_metrics(
     report: dict[str, Any] = {
         "node_count": len(network.nodes),
         "edge_count": len(network.segments),
+        "network_density": network.config.network_density,
+        "lobe_path_count": len(lobe_path_ids),
+        "anastomosis_count": sum(
+            segment.kind == "anastomosis" for segment in network.segments
+        ),
+        "retired_lobe_count": sum(
+            segment.kind in {"abandoned_lobe", "stalled_lobe"}
+            for segment in network.segments
+        ),
         "total_centerline_length_m": float(np.sum(lengths)),
         "main_route_length_m": float(network.dominant_route_length),
         "source_count": sum(node.kind == "entry" for node in network.nodes),

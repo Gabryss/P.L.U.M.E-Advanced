@@ -79,9 +79,12 @@ class CaveNetworkPlotter:
 
         summary = cave_network.summary()
         summary_line = (
+            f"Density: {summary['network_density']:.2f} | "
             f"Nodes: {int(summary['node_count'])} | "
             f"Segments: {int(summary['segment_count'])} | "
             f"Loops: {int(summary['loop_count'])} | "
+            f"Lobes/anastomoses: {int(summary['lobe_path_count'])}/"
+            f"{int(summary['anastomosis_count'])} | "
             f"Skeleton/visible channels: "
             f"{int(summary['max_parallel_channels'])}/"
             f"{int(summary['max_visible_parallel_channels'])} | "

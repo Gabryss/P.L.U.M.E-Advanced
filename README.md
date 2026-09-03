@@ -217,7 +217,8 @@ prevalidated floor contacts. Each run writes:
 Implemented in `src/plume_advanced/stages/network.py`.
 
 Stage B builds the cave skeleton through a hybrid process model configured by
-`growth_model = "hybrid_lobe"` and `[network.lobe_growth]`. It combines an
+`growth_model = "hybrid_lobe"`, `network_density`, and
+`[network.lobe_growth]`. It combines an
 active-lobe routing model, a DOWNFLOW-style spatially correlated terrain
 perturbation, and a lightweight thermal/flux budget. The generator:
 
@@ -235,6 +236,13 @@ perturbation, and a lightweight thermal/flux budget. The generator:
 
 `growth_model = "legacy_braid"` remains available for reproduction of older
 assets; only that compatibility mode reads `[network.braid_grammar]`.
+
+`network_density` is the high-level artistic control for natural topology.
+`0.0` disables lobe branches, `0.5` produces a sparse network, `1.0` preserves
+the calibrated default, and values up to `3.0` progressively increase lobe
+launches and the resulting opportunities for loops and anastomoses. The value
+also adjusts anchor spacing so additional paths can form without collapsing
+into regularly spaced split zones.
 
 The Stage B visualization includes a longitudinal diagnostics panel. It reads
 left to right along the main flow direction: the filled step trace shows how
@@ -392,6 +400,7 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `minimum_branch_offset_widths` | keep parallel centrelines visibly separate after their physical widths are applied |
 | `chamber_*`, `base_passage_radius`, `paint_flux_chambers` | control explicit junction rooms and optionally enable legacy flux-blob painting |
 | `growth_model` | select the default `hybrid_lobe` process or the reproducibility-only `legacy_braid` grammar |
+| `network_density` | high-level `[0, 3]` multiplier for natural lobe, loop, and anastomosis abundance; `1` is the calibrated default |
 | `channel_count_samples` | control longitudinal network diagnostics sampling |
 | `[network.lobe_growth]` | control active-lobe population, persistence, correlated terrain uncertainty, routing forces, branch flux, cooling, retirement, and coalescence |
 | `[network.braid_grammar]` | legacy-only ranges and probabilities used when `growth_model = "legacy_braid"` |
