@@ -248,7 +248,9 @@ launches and the resulting opportunities for loops and anastomoses. The value
 also adjusts anchor spacing so additional paths can form without collapsing
 into regularly spaced split zones.
 
-The Stage B visualization includes a longitudinal diagnostics panel. It reads
+The Stage B visualization includes longitudinal channel/width diagnostics, a
+seeded lobe-lifetime diagram, and a persistence-versus-sinuosity morphospace.
+The longitudinal panel reads
 left to right along the main flow direction: the filled step trace shows how
 many skeleton channels are present at each slice, the red dashed trace shows
 how many remain visibly separate after passage widths are applied, the green
@@ -266,15 +268,19 @@ The generator:
 - resamples each segment adaptively based on curvature, width gradient, and junction proximity
 - moves the section centerline below the host surface using cover thickness and roof-thickness heuristics
 - builds geometry-ready local frames (`tangent`, `normal`, `binormal`)
-- turns underpass levels into smooth, clearance-constrained vertical grades
+- turns early upper-level routes into shelf-like, clearance-constrained profiles that descend into younger tubes without symmetric cable-shaped sags
 - derives smooth section controls such as width, height, floor relief, roof arch, and lateral skew
-- samples fixed-draw segment morphology latents for broader but deterministic size and aspect-ratio variation
+- evaluates seeded node-anchored morphology fields so width, height ratio, arch, floor, skew, and roughness drift continuously without shape jumps at junctions
 - interpolates Stage-B flux, temperature, and lava age into every section and derives a normalized flow-maturity field
 - lets progressive cooling and age subtly lower the profile, flatten the floor, and change bounded wall relief
 - adds bounded multi-harmonic wall/floor relief while keeping every local profile finite, simple, and closed
 - uses explicit Stage-B junction regions to blend split/merge morphology without hard jumps at nodes
 - records per-sample junction influences for later split/merge volume construction
 - stores closed local 2D section contours and scalar profile controls for the voxel geometry stage
+
+The Stage C diagnostic contains plan and longitudinal vertical views, a
+dominant-route size/elevation trace, ten actual-scale cross sections sampled
+through the route, morphology controls, and a width/aspect/floor morphospace.
 
 ### Stage D: Geometry
 
@@ -421,7 +427,9 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `width_scale_*`, `width_longitudinal_variation` | broaden passage sizes smoothly within resolved world limits |
 | `height_ratio_*`, `minimum_tube_height` | control aspect-ratio diversity without under-resolved vertical pinches |
 | `floor_flatness_*`, `floor_relief_*`, `wall_roughness_*`, `roof_arch_*`, `lateral_skew_amplitude` | shape deterministic irregular wall, roof, and floor profiles |
+| `morphology_gradient_strength`, `morphology_correlation_length` | control continuous node-anchored section drift and its physical wavelength |
 | `centerline_wobble_*` | add bounded centerline meander to avoid unnaturally straight tube runs |
+| `vertical_level_spacing`, `maximum_uphill_grade`, `level_transition_fraction` | control stacked-route separation and physically bounded capture profiles |
 | `junction_*_gain` | control how strongly junction regions widen or stay tight through splits/merges |
 
 ### Floor Map Config

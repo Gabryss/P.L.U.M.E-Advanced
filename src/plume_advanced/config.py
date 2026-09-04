@@ -742,6 +742,7 @@ def _build_section_field_config(
         "reference_sample_spacing",
         "centerline_wobble_amplitude",
         "centerline_wobble_wavelength",
+        "morphology_correlation_length",
     ):
         config_data[key] = (
             float(config_data.get(key, getattr(SectionFieldConfig, key))) * spatial_scale
@@ -1197,12 +1198,19 @@ def _validate_pipeline_configs(
         "floor_relief_variation": section_field.floor_relief_variation,
         "wall_roughness_base": section_field.wall_roughness_base,
         "wall_roughness_variation": section_field.wall_roughness_variation,
+        "morphology_gradient_strength": section_field.morphology_gradient_strength,
     }
     if any(value < 0.0 for value in nonnegative_morphology_values.values()):
         names = ", ".join(
             name for name, value in nonnegative_morphology_values.items() if value < 0.0
         )
         raise ValueError(f"section_field morphology amplitudes cannot be negative: {names}")
+    if section_field.morphology_correlation_length <= 0.0:
+        raise ValueError("section_field.morphology_correlation_length must be positive")
+    if section_field.maximum_uphill_grade < 0.0:
+        raise ValueError("section_field.maximum_uphill_grade cannot be negative")
+    if not 0.0 < section_field.level_transition_fraction < 0.5:
+        raise ValueError("section_field.level_transition_fraction must be in (0, 0.5)")
     if section_field.chamber_max_tube_width < section_field.maximum_tube_width:
         raise ValueError(
             "section_field.chamber_max_tube_width cannot be smaller than maximum_tube_width"

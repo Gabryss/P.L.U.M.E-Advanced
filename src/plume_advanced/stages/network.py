@@ -929,14 +929,17 @@ class CaveNetworkGenerator:
                 replace=False,
             )
         )
+        stacked_candidates = tuple(
+            range(max(1, int(math.ceil(0.65 * len(anchors)))))
+        )
         stacked_count = min(
-            len(anchors),
+            len(stacked_candidates),
             int(round(len(anchors) * self.config.emplacement_history.stacked_lobe_fraction)),
         )
         stacked_indices = set(
             int(index)
             for index in rng.choice(
-                len(anchors),
+                stacked_candidates,
                 size=stacked_count,
                 replace=False,
             )
@@ -979,7 +982,6 @@ class CaveNetworkGenerator:
             )
             death_phase = min(phase_count - 1, birth_phase + active_span - 1)
             z_level = self._emplacement_z_level(
-                branch_index=branch_index,
                 birth_phase=birth_phase,
                 phase_count=phase_count,
                 stacked=branch_index in stacked_indices,
@@ -1107,29 +1109,22 @@ class CaveNetworkGenerator:
     def _emplacement_z_level(
         self,
         *,
-        branch_index: int,
         birth_phase: int,
         phase_count: int,
         stacked: bool,
         rng: np.random.Generator,
     ) -> int:
-        """Place older preserved routes above younger recapture routes."""
+        """Place earlier preserved routes above the younger arterial tube."""
 
         maximum_level = self.config.emplacement_history.maximum_absolute_level
         if not stacked or maximum_level <= 0:
             return 0
         midpoint = 0.5 * max(phase_count - 1, 1)
-        if birth_phase < midpoint:
-            sign = 1
-        elif birth_phase > midpoint:
-            sign = -1
-        else:
-            sign = -1 if (branch_index + int(rng.integers(0, 2))) % 2 else 1
         distance_from_middle = abs(birth_phase - midpoint) / max(midpoint, 1.0)
         magnitude = 1
         if maximum_level >= 2 and distance_from_middle > 0.70 and rng.random() < 0.35:
             magnitude = min(2, maximum_level)
-        return sign * magnitude
+        return magnitude
 
     @staticmethod
     def _local_emplacement_regime(

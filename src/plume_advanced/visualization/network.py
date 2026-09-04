@@ -16,7 +16,7 @@ from plume_advanced.stages.network import CaveNetwork
 class CaveNetworkPlotConfig:
     """Figure settings for the cave-network visualization."""
 
-    figure_size: tuple[float, float] = (15.0, 11.0)
+    figure_size: tuple[float, float] = (16.0, 14.0)
     dpi: int = 180
 
 
@@ -38,7 +38,7 @@ class CaveNetworkPlotter:
         output.parent.mkdir(parents=True, exist_ok=True)
 
         fig, axes = plt.subplots(
-            2,
+            3,
             2,
             figsize=self.config.figure_size,
             constrained_layout=False,
@@ -76,6 +76,8 @@ class CaveNetworkPlotter:
             overlay_mode="width",
         )
         self._draw_profile_panel(ax=axes[1, 1], cave_network=cave_network)
+        self._draw_emplacement_timeline(ax=axes[2, 0], cave_network=cave_network)
+        self._draw_topology_scatter(ax=axes[2, 1], cave_network=cave_network)
 
         summary = cave_network.summary()
         summary_line = (
@@ -93,7 +95,7 @@ class CaveNetworkPlotter:
             f"Dominant route: {summary['dominant_route_length']:.1f}"
         )
         fig.text(0.5, 0.01, summary_line, ha="center", fontsize=10)
-        fig.tight_layout(rect=(0.0, 0.055, 1.0, 0.955))
+        fig.tight_layout(rect=(0.0, 0.045, 1.0, 0.965))
 
         fig.savefig(output, dpi=self.config.dpi, bbox_inches="tight")
         plt.close(fig)
@@ -320,6 +322,101 @@ class CaveNetworkPlotter:
             fontsize=8,
         )
         ax.grid(True, axis="x", alpha=0.18)
+
+    @staticmethod
+    def _draw_emplacement_timeline(*, ax, cave_network: CaveNetwork) -> None:
+        paths: dict[str, dict[str, object]] = {}
+        for segment in cave_network.segments:
+            path_id = segment.metadata.get("lobe_path_id")
+            if path_id is None:
+                continue
+            key = str(path_id)
+            record = paths.setdefault(
+                key,
+                {
+                    "birth": segment.metadata.get("birth_phase", 0),
+                    "death": segment.metadata.get("death_phase", 0),
+                    "state": segment.metadata.get("formation_state", "unknown"),
+                    "level": segment.z_level,
+                    "chamber": False,
+                },
+            )
+            record["chamber"] = bool(record["chamber"]) or bool(
+                segment.metadata.get("chamber_forming", False)
+            )
+        if not paths:
+            ax.set_title("Emplacement History")
+            ax.axis("off")
+            return
+
+        def path_number(item: tuple[str, dict[str, object]]) -> int:
+            suffix = item[0].rsplit("_", maxsplit=1)[-1]
+            return int(suffix) if suffix.isdigit() else 0
+
+        ordered = sorted(paths.items(), key=path_number)
+        colors = {"coalesced": "#38bdf8", "vertically_captured": "#a855f7",
+                  "thermally_abandoned": "#f97316", "stranded": "#f59e0b"}
+        for row, (path_id, record) in enumerate(ordered):
+            birth_value = record["birth"]
+            death_value = record["death"]
+            level_value = record["level"]
+            birth = int(birth_value) if isinstance(birth_value, (int, float)) else 0
+            death = int(death_value) if isinstance(death_value, (int, float)) else birth
+            state = str(record["state"])
+            ax.barh(
+                row,
+                death - birth + 1,
+                left=birth - 0.45,
+                height=0.62,
+                color=colors.get(state, "#64748b"),
+                alpha=0.82,
+            )
+            level = int(level_value) if isinstance(level_value, (int, float)) else 0
+            ax.text(death + 0.58, row, f"L{level:+d}", va="center", fontsize=7)
+            if bool(record["chamber"]):
+                ax.scatter([death], [row], marker="*", s=44, color="#e11d48", zorder=3)
+        ax.set_yticks(range(len(ordered)), [path_id.replace("lobe_", "") for path_id, _ in ordered])
+        ax.set_xlabel("Emplacement phase")
+        ax.set_ylabel("Lobe path")
+        ax.set_title("Seeded Route Lifetimes (★ chamber-forming)")
+        ax.grid(True, axis="x", alpha=0.2)
+        ax.invert_yaxis()
+
+    @staticmethod
+    def _draw_topology_scatter(*, ax, cave_network: CaveNetwork) -> None:
+        palette = {
+            "backbone": "#0891b2",
+            "source_feeder": "#22c55e",
+            "anastomosis": "#2563eb",
+            "abandoned_lobe": "#f97316",
+            "stalled_lobe": "#f59e0b",
+        }
+        seen: set[str] = set()
+        for segment in cave_network.segments:
+            if len(segment.points) < 2 or segment.total_length <= 0.0:
+                continue
+            start = segment.points[0]
+            end = segment.points[-1]
+            direct = max(float(np.hypot(end.x - start.x, end.y - start.y)), 1e-9)
+            sinuosity = segment.total_length / direct
+            label = segment.kind if segment.kind not in seen else "_nolegend_"
+            seen.add(segment.kind)
+            marker = "D" if segment.z_level != 0 else "o"
+            ax.scatter(
+                [segment.total_length],
+                [sinuosity],
+                color=palette.get(segment.kind, "#64748b"),
+                marker=marker,
+                s=22 + 4 * abs(segment.z_level),
+                alpha=0.78,
+                label=label,
+            )
+        ax.axhline(1.0, color="#475569", linewidth=0.8, linestyle="--")
+        ax.set_xlabel("Segment length (m)")
+        ax.set_ylabel("Sinuosity")
+        ax.set_title("Persistence–Sinuosity Morphospace (◆ stacked)")
+        ax.grid(True, alpha=0.18)
+        ax.legend(loc="best", fontsize=7)
 
     @staticmethod
     def _build_width_profile(

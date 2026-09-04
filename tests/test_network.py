@@ -403,6 +403,13 @@ class CaveNetworkTests(unittest.TestCase):
         self.assertGreater(summary["vertical_level_count"], 1.0)
         self.assertGreater(summary["stacked_segment_count"], 0.0)
         self.assertGreater(summary["vertical_capture_count"], 0.0)
+        self.assertTrue(
+            all(
+                segment.z_level >= 0
+                for segment in cave_network.segments
+            ),
+            "Preserved stacked lobes should sit above the younger arterial tube",
+        )
 
         with tempfile.TemporaryDirectory() as temp_dir:
             report_path = export_network_report(

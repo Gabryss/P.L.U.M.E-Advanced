@@ -29,6 +29,9 @@ class ProjectConfigurationTests(unittest.TestCase):
             config.network.emplacement_history.stacked_lobe_fraction,
             0.0,
         )
+        self.assertGreater(config.section_field.morphology_gradient_strength, 0.0)
+        self.assertGreater(config.section_field.morphology_correlation_length, 0.0)
+        self.assertGreaterEqual(config.section_field.maximum_uphill_grade, 0.0)
         self.assertGreater(
             config.network.lobe_growth.retirement_temperature_k,
             0.0,

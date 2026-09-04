@@ -133,6 +133,9 @@ class SectionFieldTests(unittest.TestCase):
         self.assertGreater(summary["mean_lava_flux"], 0.0)
         self.assertGreater(summary["mean_lava_temperature_k"], 273.15)
         self.assertGreater(summary["max_lava_age_s"], 0.0)
+        self.assertGreater(summary["width_coefficient_of_variation"], 0.08)
+        self.assertGreater(summary["height_ratio_standard_deviation"], 0.025)
+        self.assertGreater(summary["mean_shape_change_per_100m"], 0.10)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             npz_path, _ = export_section_artifact(
@@ -169,17 +172,30 @@ class SectionFieldTests(unittest.TestCase):
         if continuity_angles:
             self.assertLess(float(np.median(continuity_angles)), 95.0)
 
-        underpasses = [
+        endpoint_size_jumps = []
+        for current_field, next_field in zip(route_fields, route_fields[1:]):
+            current_sample = current_field.samples[-1]
+            next_sample = next_field.samples[0]
+            endpoint_size_jumps.append(
+                max(
+                    abs(current_sample.tube_width - next_sample.tube_width),
+                    abs(current_sample.tube_height - next_sample.tube_height),
+                )
+            )
+        if endpoint_size_jumps:
+            self.assertLess(max(endpoint_size_jumps), 1e-6)
+
+        stacked_segments = [
             segment
             for segment in cave_network.segments
-            if segment.kind == "underpass" and segment.z_level != 0
+            if segment.z_level != 0
         ]
-        if underpasses:
+        if stacked_segments:
             flat_network = replace(
                 cave_network,
                 segments=tuple(
                     replace(segment, z_level=0)
-                    if segment.kind == "underpass"
+                    if segment.z_level != 0
                     else segment
                     for segment in cave_network.segments
                 ),
@@ -196,24 +212,21 @@ class SectionFieldTests(unittest.TestCase):
                 for field in section_field.segment_fields
             }
             separations = []
-            for segment in underpasses:
+            endpoint_offsets = []
+            for segment in stacked_segments:
                 physical = physical_lookup[segment.segment_id].samples
                 flat = flat_lookup[segment.segment_id].samples
                 midpoint = len(physical) // 2
                 separations.append(abs(physical[midpoint].z - flat[midpoint].z))
-                # The shared attachment is now the physical floor. Reframing
-                # a graded tube can slightly change its center's height while
-                # preserving that exact floor connection.
                 for endpoint in (0, -1):
-                    self.assertAlmostEqual(
-                        SectionFieldGenerator._sample_floor(physical[endpoint]),
-                        SectionFieldGenerator._sample_floor(flat[endpoint]),
-                        places=6,
+                    endpoint_offsets.append(
+                        abs(physical[endpoint].z - flat[endpoint].z)
                     )
             self.assertGreater(
                 max(separations),
                 project_config.section_field.minimum_vertical_clearance,
             )
+            self.assertLess(max(endpoint_offsets), 0.5)
 
     def test_frame_cannot_be_inverted_by_previous_segment_orientation(self) -> None:
         generator = SectionFieldGenerator()

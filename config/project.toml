@@ -176,6 +176,8 @@ roof_arch_base = 1.08
 roof_arch_roof_weight = 0.18
 wall_roughness_base = 0.14
 wall_roughness_variation = 0.045
+morphology_gradient_strength = 0.32
+morphology_correlation_length = 140.0
 lateral_skew_amplitude = 0.16
 centerline_wobble_amplitude = 2.8
 centerline_wobble_wavelength = 105.0
@@ -185,6 +187,8 @@ chamber_widen_gain = 0.45
 minimum_roof_thickness = 6.5
 maximum_centerline_depth = 26.0
 preferred_cover_fraction = 0.34
+maximum_uphill_grade = 0.015
+level_transition_fraction = 0.18
 
 [floor_map]
 # The topology-aware atlas is also used as the candidate surface for props.
