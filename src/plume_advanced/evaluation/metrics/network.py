@@ -306,7 +306,15 @@ def _sinuosity(segment: CaveSegment) -> float:
     # Stage-B arc length is planar; use the matching planar endpoint chord.
     # Mixing it with surface elevation could produce an impossible value < 1.
     chord = math.hypot(last.x - first.x, last.y - first.y)
-    return segment.total_length / max(chord, 1e-9)
+    length = float(segment.total_length)
+    if length <= 0.0:
+        length = float(
+            sum(
+                math.hypot(second.x - first.x, second.y - first.y)
+                for first, second in zip(segment.points, segment.points[1:])
+            )
+        )
+    return length / max(chord, 1e-9)
 
 
 def _distribution(values: list[float]) -> dict[str, float | int | None]:
@@ -336,6 +344,8 @@ def _sinuosity_by_kind(network: CaveNetwork) -> dict[str, dict[str, float | int 
 def _segment_uphill(segment: CaveSegment) -> dict[str, float | int]:
     points = segment.points
     total = max(float(segment.total_length), 0.0)
+    if total <= 0.0 and len(points) > 1:
+        total = sum(max(float(second.arc_length - first.arc_length), 0.0) for first, second in zip(points, points[1:]))
     runs: list[float] = []
     run = 0.0
     uphill_length = 0.0
