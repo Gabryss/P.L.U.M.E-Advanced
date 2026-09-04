@@ -1075,6 +1075,16 @@ def _validate_pipeline_configs(
         raise ValueError("network.growth_model must be hybrid_lobe or legacy_braid")
     if not 0.0 <= network.network_density <= 3.0:
         raise ValueError("network.network_density must be in [0, 3]")
+    if network.lobe_launch_rate < 0.0:
+        raise ValueError("network.lobe_launch_rate cannot be negative")
+    for name, value in (
+        ("loop_probability", network.loop_probability),
+        ("capture_probability", network.capture_probability),
+    ):
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(f"network.{name} must be in [0, 1]")
+    if network.chamber_gain < 0.0:
+        raise ValueError("network.chamber_gain cannot be negative")
     lobe = network.lobe_growth
     for name, value_range in (
         ("path_count", lobe.path_count),
@@ -1102,6 +1112,18 @@ def _validate_pipeline_configs(
         raise ValueError("network.lobe_growth positive controls must be greater than zero")
     if lobe.terrain_perturbation_m < 0.0:
         raise ValueError("network.lobe_growth.terrain_perturbation_m cannot be negative")
+    if not 0.0 <= lobe.backbone_curvature_fraction <= 1.0:
+        raise ValueError(
+            "network.lobe_growth.backbone_curvature_fraction must be in [0, 1]"
+        )
+    if lobe.backbone_curvature_wavelength_fraction <= 0.0:
+        raise ValueError(
+            "network.lobe_growth.backbone_curvature_wavelength_fraction must be positive"
+        )
+    if not 0.0 <= lobe.backbone_curvature_secondary_fraction <= 1.0:
+        raise ValueError(
+            "network.lobe_growth.backbone_curvature_secondary_fraction must be in [0, 1]"
+        )
     if min(
         lobe.inertia_weight,
         lobe.perturbed_slope_weight,

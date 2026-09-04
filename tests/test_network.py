@@ -354,6 +354,46 @@ class CaveNetworkTests(unittest.TestCase):
         )
         self.assertLess(sparse_summary["loop_count"], dense_summary["loop_count"])
 
+    def test_density_zero_is_single_backbone_endmember(self) -> None:
+        project_config = load_project_config(ROOT / "config" / "project.toml")
+        host_field = HostFieldGenerator(project_config.host_field).generate()
+        network = CaveNetworkGenerator(
+            replace(project_config.network, network_density=0.0, random_seed=17)
+        ).generate(host_field)
+        self.assertTrue(network.segments)
+        self.assertEqual({segment.kind for segment in network.segments}, {"backbone"})
+        self.assertEqual(sum(node.kind == "entry" for node in network.nodes), 1)
+        self.assertEqual(network.summary()["loop_count"], 0.0)
+        self.assertLess(network.max_flow_conservation_error(), 1e-8)
+
+    def test_backbone_curvature_controls_are_seeded(self) -> None:
+        project_config = load_project_config(ROOT / "config" / "project.toml")
+        host_field = HostFieldGenerator(project_config.host_field).generate()
+        config = replace(
+            project_config.network,
+            network_density=0.0,
+            random_seed=23,
+            lobe_growth=replace(
+                project_config.network.lobe_growth,
+                backbone_curvature_fraction=0.42,
+            ),
+        )
+        first = CaveNetworkGenerator(config).generate(host_field)
+        repeated = CaveNetworkGenerator(config).generate(host_field)
+        first_xy = [
+            [(point.x, point.y) for point in segment.points]
+            for segment in first.segments
+        ]
+        repeated_xy = [
+            [(point.x, point.y) for point in segment.points]
+            for segment in repeated.segments
+        ]
+        self.assertEqual(first_xy, repeated_xy)
+        self.assertGreater(
+            network_metrics(first)["length_weighted_mean_sinuosity"],
+            1.01,
+        )
+
     def test_default_config_generates_host_driven_lobe_network(self) -> None:
         project_config = load_project_config(ROOT / "config" / "project.toml")
         self.assertIsInstance(project_config.procedural_seed, int)

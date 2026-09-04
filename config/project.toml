@@ -81,6 +81,12 @@ growth_model = "hybrid_lobe"
 # Global loop/lobe density: 0 disables lobe branches, 1 preserves the calibrated
 # default, and values up to 3 launch progressively denser anastomosing networks.
 network_density = 3.0
+# Independent process opportunities; density selects the endmember while
+# these controls tune launches, anastomoses, captures, and chamber gain.
+lobe_launch_rate = 1.0
+loop_probability = 1.0
+capture_probability = 1.0
+chamber_gain = 1.0
 source_count = 8
 source_band_length = 90.0
 source_band_half_width = 180.0
@@ -122,6 +128,9 @@ exposed_cooling_multiplier = 5.0
 retirement_temperature_k = 1060.0
 branch_flux_fraction = [0.18, 0.58]
 retired_path_fraction = 0.24
+backbone_curvature_fraction = 0.30
+backbone_curvature_wavelength_fraction = 0.38
+backbone_curvature_secondary_fraction = 0.35
 
 # Seeded emplacement history. Successive lava pulses can abandon older routes,
 # establish vertically stacked tubes, recapture lower passages, and preserve

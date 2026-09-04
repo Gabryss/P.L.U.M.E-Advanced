@@ -60,6 +60,12 @@ class LobeGrowthConfig:
     retirement_temperature_k: float = 1_060.0
     branch_flux_fraction: tuple[float, float] = (0.18, 0.58)
     retired_path_fraction: float = 0.24
+    # Low-frequency planform controls for the arterial route.  These are
+    # explicit heuristic controls (rather than hidden density effects) so a
+    # seeded network can be made sinuous while retaining host-field steering.
+    backbone_curvature_fraction: float = 0.30
+    backbone_curvature_wavelength_fraction: float = 0.38
+    backbone_curvature_secondary_fraction: float = 0.35
 
 
 @dataclass(frozen=True)
@@ -82,6 +88,12 @@ class CaveNetworkConfig:
     random_seed: int | None = None
     growth_model: str = "hybrid_lobe"
     network_density: float = 1.0
+    # Independent opportunity controls; ``network_density`` remains the
+    # monotonic endmember selector while these knobs describe process rates.
+    lobe_launch_rate: float = 1.0
+    loop_probability: float = 1.0
+    capture_probability: float = 1.0
+    chamber_gain: float = 1.0
     braid_grammar: BraidGrammarConfig = BraidGrammarConfig()
     lobe_growth: LobeGrowthConfig = LobeGrowthConfig()
     emplacement_history: EmplacementHistoryConfig = EmplacementHistoryConfig()
@@ -258,6 +270,29 @@ class CaveNetwork:
             for segment in self.segments
             if segment.kind in primary_branch_kinds and segment.points
         ]
+        weighted_sinuosity_numerator = 0.0
+        uphill_distance = 0.0
+        sustained_uphill_steps = 0
+        for segment in self.segments:
+            if len(segment.points) < 2:
+                continue
+            first, last = segment.points[0], segment.points[-1]
+            chord = math.hypot(last.x - first.x, last.y - first.y)
+            weighted_sinuosity_numerator += segment.total_length * (
+                segment.total_length / max(chord, 1e-9)
+            )
+            previous_uphill = False
+            for current, following in zip(segment.points, segment.points[1:]):
+                step_length = math.hypot(
+                    following.x - current.x,
+                    following.y - current.y,
+                )
+                uphill = following.elevation > current.elevation
+                if uphill:
+                    uphill_distance += step_length
+                if uphill and previous_uphill:
+                    sustained_uphill_steps += 1
+                previous_uphill = uphill
         z_levels = {segment.z_level for segment in self.segments}
         emplacement_phases = []
         for segment in self.segments:
@@ -336,6 +371,13 @@ class CaveNetwork:
                 if branch_persistence
                 else 0.0
             ),
+            "length_weighted_mean_sinuosity": float(
+                weighted_sinuosity_numerator / max(sum(segment_lengths), 1e-9)
+            )
+            if segment_lengths
+            else 1.0,
+            "uphill_distance_m": float(uphill_distance),
+            "sustained_uphill_step_count": float(sustained_uphill_steps),
         }
 
     def max_flow_conservation_error(self) -> float:
@@ -552,6 +594,11 @@ class CaveNetworkGenerator:
             source_cells,
             key=lambda cell: abs(float(geometry.cross_grid[cell])),
         )
+        # Density zero is a deliberately coherent low-complexity endmember:
+        # retain only the arterial route (rather than silently retaining the
+        # configured multi-vent feeder fan).
+        if self.config.network_density <= 0.0:
+            source_cells = (backbone_source,)
         backbone_perturbation = None
         if self.config.growth_model == "hybrid_lobe":
             backbone_perturbation = self._correlated_terrain_perturbation(
@@ -903,6 +950,7 @@ class CaveNetworkGenerator:
             round(
                 self._sample_int_range(rng, controls.path_count)
                 * self.config.network_density
+                * self.config.lobe_launch_rate
             )
         )
         anchors = self._select_lobe_anchors(
@@ -987,7 +1035,10 @@ class CaveNetworkGenerator:
                 stacked=branch_index in stacked_indices,
                 rng=phase_rng,
             )
-            permit_merge = branch_index not in retired_indices
+            permit_merge = (
+                branch_index not in retired_indices
+                and float(branch_rng.random()) <= self.config.loop_probability
+            )
             trace = self._trace_lobe_front(
                 host_field=host_field,
                 geometry=geometry,
@@ -1033,7 +1084,11 @@ class CaveNetworkGenerator:
                 kind = "stalled_lobe"
             else:
                 kind = "abandoned_lobe"
-            vertical_capture = trace.merged and z_level != 0
+            vertical_capture = (
+                trace.merged
+                and z_level != 0
+                and float(phase_rng.random()) <= self.config.capture_probability
+            )
             chamber_probability = (
                 self.config.emplacement_history.vertical_capture_chamber_probability
                 if vertical_capture
@@ -1047,7 +1102,9 @@ class CaveNetworkGenerator:
                     1.0,
                 )
             )
-            chamber_probability *= 0.65 + 0.55 * normalized_flux
+            chamber_probability *= (
+                0.65 + 0.55 * normalized_flux
+            ) * max(self.config.chamber_gain, 0.0)
             chamber_forming = bool(
                 trace.merged and phase_rng.random() < min(chamber_probability, 1.0)
             )
@@ -1297,6 +1354,7 @@ class CaveNetworkGenerator:
         )
         maximum_separation = 0.0
         merged = False
+        uphill_streak = 0
 
         for step_index in range(maximum_steps):
             current = path[-1]
@@ -1350,6 +1408,8 @@ class CaveNetworkGenerator:
                     * (initial_flux / max(self.config.source_flux, 1e-9)) ** 0.25
                 )
                 if actual_uphill > hydraulic_head:
+                    continue
+                if actual_uphill > 0.0 and uphill_streak >= 1 and not eligible_merge:
                     continue
                 perturbed_drop = float(
                     perturbed_elevation[current] - perturbed_elevation[next_cell]
@@ -1424,6 +1484,10 @@ class CaveNetworkGenerator:
             step_length = float(np.linalg.norm(step_vector))
             previous_step = step_vector / max(step_length, 1e-9)
             path.append(next_cell)
+            selected_uphill = float(host_field.elevation[next_cell]) - float(
+                host_field.elevation[current]
+            )
+            uphill_streak = uphill_streak + 1 if selected_uphill > 0.0 else 0
 
             next_along = float(geometry.along_grid[next_cell])
             reference_cross = float(
@@ -1493,6 +1557,7 @@ class CaveNetworkGenerator:
         side_target_x = geometry.cross_x * lateral_sign
         side_target_y = geometry.cross_y * lateral_sign
         has_left_existing_network = False
+        uphill_streak = 0
 
         for _ in range(self.config.spur_max_steps):
             current = path[-1]
@@ -1517,6 +1582,8 @@ class CaveNetworkGenerator:
                 uphill = next_elevation - current_elevation
                 if uphill > self.config.max_uphill_step:
                     continue
+                if uphill > 0.0 and uphill_streak >= 1:
+                    continue
                 step_unit_x = step_x / step_length
                 step_unit_y = step_y / step_length
                 side_alignment = step_unit_x * side_target_x + step_unit_y * side_target_y
@@ -1530,6 +1597,8 @@ class CaveNetworkGenerator:
 
             next_cell = self._sample_candidate(candidates, 0.45, rng)
             path.append(next_cell)
+            selected_uphill = float(host_field.elevation[next_cell]) - current_elevation
+            uphill_streak = uphill_streak + 1 if selected_uphill > 0.0 else 0
             if float(total_flux[next_cell]) <= 0.0:
                 has_left_existing_network = True
             if has_left_existing_network and len(path) > 8:
@@ -1571,7 +1640,12 @@ class CaveNetworkGenerator:
     ) -> list[tuple[int, int]]:
         path = [start_cell]
         previous_step: tuple[float, float] | None = None
+        uphill_streak = 0
         max_cross = max(0.55 * host_field.config.corridor_width, 90.0)
+        curvature = self.config.lobe_growth
+        curvature_rng = procedural_rng(self.config.random_seed, "backbone-curvature")
+        curvature_phase = float(curvature_rng.uniform(0.0, 2.0 * math.pi))
+        secondary_phase = float(curvature_rng.uniform(0.0, 2.0 * math.pi))
 
         for _ in range(self.config.trace_max_steps + 240):
             current = path[-1]
@@ -1619,6 +1693,12 @@ class CaveNetworkGenerator:
                 uphill = next_elevation - current_elevation
                 if uphill > self.config.max_uphill_step:
                     continue
+                # A single-cell reversal is a natural bend-scale feature, but
+                # repeated positive grades produce an implausible climbing
+                # arterial.  Permit one local reversal and then require a
+                # downhill step (unless the route has reached its sink).
+                if uphill > 0.0 and uphill_streak >= 1:
+                    continue
                 next_perturbed_elevation = next_elevation + (
                     float(terrain_perturbation[next_cell])
                     if terrain_perturbation is not None
@@ -1631,6 +1711,29 @@ class CaveNetworkGenerator:
                 score += 4.0 * (current_potential - next_potential) / max(geometry.cell_scale, 1.0)
                 score += 0.6 * next_along / max(geometry.along_extent, 1.0)
                 score -= 0.85 * abs(next_cross) / max(max_cross, geometry.cell_scale)
+                progress = next_along / max(geometry.along_extent, 1.0)
+                wavelength = max(
+                    curvature.backbone_curvature_wavelength_fraction,
+                    0.08,
+                )
+                target_cross = (
+                    curvature.backbone_curvature_fraction
+                    * max_cross
+                    * math.sin(2.0 * math.pi * progress / wavelength + curvature_phase)
+                )
+                target_cross += (
+                    curvature.backbone_curvature_fraction
+                    * max_cross
+                    * curvature.backbone_curvature_secondary_fraction
+                    * math.sin(math.pi * progress / max(1.4 * wavelength, 0.12) + secondary_phase)
+                )
+                target_cross = float(np.clip(target_cross, -0.88 * max_cross, 0.88 * max_cross))
+                # Steer toward a smooth, seeded lateral target while keeping
+                # the host downhill and support terms authoritative.
+                score += 1.75 * (
+                    abs(target_cross - float(geometry.cross_grid[current]))
+                    - abs(target_cross - next_cross)
+                ) / max(geometry.cell_scale, 1.0)
                 score += 1.35 * np.clip(
                     (current_perturbed_elevation - next_perturbed_elevation)
                     / max(0.25 * geometry.cell_scale, 1.0),
@@ -1655,6 +1758,8 @@ class CaveNetworkGenerator:
                 next_world[0] - current_world[0],
                 next_world[1] - current_world[1],
             )
+            selected_uphill = float(host_field.elevation[next_cell]) - current_elevation
+            uphill_streak = uphill_streak + 1 if selected_uphill > 0.0 else 0
             path.append(next_cell)
 
         if path and float(geometry.along_grid[path[-1]]) < geometry.along_extent:
@@ -2062,6 +2167,30 @@ class CaveNetworkGenerator:
                 target_y=y_coord,
                 target_cross=target_cross,
             )
+            # Connector paths are short cross-flow transitions, but they must
+            # not acquire a persistent climb while snapping to the host grid.
+            # If the nearest snap is uphill, choose a downhill/equal-elevation
+            # neighbour that remains closest to the interpolation target.
+            previous = path[-1]
+            if (
+                snapped != end_cell
+                and float(host_field.elevation[snapped])
+                > float(host_field.elevation[previous])
+            ):
+                safe = [
+                    candidate
+                    for candidate in self._neighbor_cells(host_field, previous)
+                    if float(host_field.elevation[candidate])
+                    <= float(host_field.elevation[previous])
+                ]
+                if safe:
+                    snapped = min(
+                        safe,
+                        key=lambda candidate: math.hypot(
+                            self._cell_to_world(host_field, candidate)[0] - x_coord,
+                            self._cell_to_world(host_field, candidate)[1] - y_coord,
+                        ),
+                    )
             if snapped != path[-1]:
                 path.append(snapped)
         if path[-1] != end_cell:
@@ -2769,6 +2898,24 @@ class CaveNetworkGenerator:
             active_count = max(death_phase - birth_phase + 1, 1)
             duty_cycle = active_count / phase_count
             peak_flux = segment.mean_flux * (1.0 + 0.22 * (1.0 - duty_cycle))
+            uphill_distance = 0.0
+            sustained_uphill_steps = 0
+            previous_uphill = False
+            for first, second in zip(segment.points, segment.points[1:]):
+                step_length = math.hypot(second.x - first.x, second.y - first.y)
+                uphill = second.elevation > first.elevation
+                if uphill:
+                    uphill_distance += step_length
+                if uphill and previous_uphill:
+                    sustained_uphill_steps += 1
+                previous_uphill = uphill
+            grade_profile = (
+                f"process_uphill_{metadata.get('formation_origin', segment.kind)}"
+                if sustained_uphill_steps > 0
+                else "downhill_with_local_reversals"
+                if uphill_distance > 0.0
+                else "downhill"
+            )
             metadata.update(
                 {
                     "active_phase_count": active_count,
@@ -2776,6 +2923,9 @@ class CaveNetworkGenerator:
                     "phase_weighted_flux": segment.mean_flux * duty_cycle,
                     "peak_formation_flux": peak_flux,
                     "peak_flux_phase": birth_phase,
+                    "uphill_distance_m": uphill_distance,
+                    "sustained_uphill_step_count": sustained_uphill_steps,
+                    "grade_profile": grade_profile,
                 }
             )
             resolved.append(replace(segment, metadata=metadata))
