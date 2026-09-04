@@ -10,7 +10,9 @@ from plume_advanced.evaluation.metrics.sections import (
     generated_section_records,
     pdc_comparable_section_summary,
     section_longitudinal_continuity,
+    section_field_diagnostics,
 )
+from plume_advanced.evaluation.metrics.continuity import longitudinal_continuity
 
 __all__ = [
     "contour_morphometry",
@@ -20,4 +22,6 @@ __all__ = [
     "generated_section_records",
     "pdc_comparable_section_summary",
     "section_longitudinal_continuity",
+    "section_field_diagnostics",
+    "longitudinal_continuity",
 ]
