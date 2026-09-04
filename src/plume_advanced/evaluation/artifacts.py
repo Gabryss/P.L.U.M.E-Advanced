@@ -10,6 +10,7 @@ from typing import Any
 import numpy as np
 
 from plume_advanced.evaluation.metrics.network import network_metrics
+from plume_advanced.evaluation.metrics.sections import section_field_diagnostics
 from plume_advanced.evaluation.provenance import quantized_array, semantic_hash, sha256_file
 from plume_advanced.stages.events import GeologicalEventField
 from plume_advanced.stages.geometry_types import CaveGeometry
@@ -222,6 +223,7 @@ def export_section_artifact(
         "junction_influences": [
             [asdict(influence) for influence in sample.junction_influences] for sample in samples
         ],
+        "diagnostics": section_field_diagnostics(section_field),
     }
     json_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return npz_path, json_path

@@ -156,6 +156,21 @@ def section_longitudinal_continuity(section_field: SectionField) -> dict[str, An
     return {"schema_version": "1.0", "segments": per_segment}
 
 
+def section_field_diagnostics(section_field: SectionField) -> dict[str, Any]:
+    """Build the report payload consumed by the section artifact exporter."""
+
+    records: list[dict[str, Any]] = []
+    for segment_field in section_field.segment_fields:
+        for sample in segment_field.samples:
+            metrics = contour_morphometry(sample.profile_points)
+            records.append({"segment_id": segment_field.segment_id, "arc_length": sample.segment_arc_length, **metrics})
+    return {
+        "schema_version": "1.0",
+        "morphometry": pdc_comparable_section_summary(records),
+        "longitudinal_continuity": section_longitudinal_continuity(section_field),
+    }
+
+
 section_morphometry_summary = pdc_comparable_section_summary
 section_feature_summary = pdc_comparable_section_summary
 section_diagnostics = pdc_comparable_section_summary
@@ -170,4 +185,5 @@ __all__ = [
     "section_morphometry_summary",
     "section_feature_summary",
     "section_diagnostics",
+    "section_field_diagnostics",
 ]
