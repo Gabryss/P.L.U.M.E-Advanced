@@ -14,6 +14,7 @@ from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.artifacts import export_section_artifact
 from plume_advanced.evaluation.artifacts import section_semantic_hash
 from plume_advanced.evaluation.metrics.contours import self_intersection_count
+from plume_advanced.evaluation.metrics.morphometry import contour_morphometry
 from plume_advanced.stages.host_field import HostFieldGenerator
 from plume_advanced.stages.network import CaveNetworkGenerator
 from plume_advanced.stages.section_field import SectionFieldGenerator
@@ -35,10 +36,34 @@ class SectionFieldTests(unittest.TestCase):
             sum(sample.parent_morphology_segment_id is not None for sample in samples),
             0,
         )
+        segment_lookup = {segment.segment_id: segment for segment in cave_network.segments}
+        for field in first.segment_fields:
+            parent_ids = {
+                sample.parent_morphology_segment_id
+                for sample in field.samples
+                if sample.parent_morphology_segment_id is not None
+            }
+            for parent_id in parent_ids:
+                self.assertEqual(segment_lookup[parent_id].end_node_id, segment_lookup[field.segment_id].start_node_id)
         self.assertGreater(first.summary()["morphology_family_score_standard_deviation"], 0.05)
+        aspect_ratios = []
+        compactness = []
         self.assertTrue(
-            all(self_intersection_count(sample.profile_points) == 0 for sample in samples)
+            all(
+                self_intersection_count(sample.profile_points) == 0
+                and np.ptp(np.asarray(sample.profile_points), axis=0)[0]
+                <= sample.tube_width + 1e-6
+                and np.ptp(np.asarray(sample.profile_points), axis=0)[1]
+                <= sample.tube_height + 1e-6
+                for sample in samples
+            )
         )
+        for sample in samples:
+            metrics = contour_morphometry(sample.profile_points)
+            aspect_ratios.append(metrics["aspect_ratio"])
+            compactness.append(metrics["compactness"])
+        self.assertGreater(np.percentile(aspect_ratios, 75) - np.percentile(aspect_ratios, 25), 0.20)
+        self.assertGreater(np.percentile(compactness, 75) - np.percentile(compactness, 25), 0.02)
         self.assertTrue(all(sample.junction_blend_length_m >= 0.0 for sample in samples))
 
     def test_section_field_is_geometry_ready_and_junction_aware(self) -> None:
