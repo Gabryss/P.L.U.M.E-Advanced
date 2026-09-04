@@ -63,6 +63,19 @@ class LobeGrowthConfig:
 
 
 @dataclass(frozen=True)
+class EmplacementHistoryConfig:
+    """Controls for the staged construction and preservation of tube routes."""
+
+    phase_count: tuple[int, int] = (3, 5)
+    active_phase_span: tuple[int, int] = (1, 3)
+    stacked_lobe_fraction: float = 0.34
+    maximum_absolute_level: int = 2
+    chamber_formation_probability: float = 0.28
+    vertical_capture_chamber_probability: float = 0.62
+    roof_failure_probability: float = 0.16
+
+
+@dataclass(frozen=True)
 class CaveNetworkConfig:
     """Parameters controlling the host-driven lava-tube network generator."""
 
@@ -71,6 +84,7 @@ class CaveNetworkConfig:
     network_density: float = 1.0
     braid_grammar: BraidGrammarConfig = BraidGrammarConfig()
     lobe_growth: LobeGrowthConfig = LobeGrowthConfig()
+    emplacement_history: EmplacementHistoryConfig = EmplacementHistoryConfig()
     body_spatial_scale: float = 1.0
     target_route_length_m: float = 5_000.0
     source_count: int = 8
@@ -244,6 +258,13 @@ class CaveNetwork:
             for segment in self.segments
             if segment.kind in primary_branch_kinds and segment.points
         ]
+        z_levels = {segment.z_level for segment in self.segments}
+        emplacement_phases = []
+        for segment in self.segments:
+            phase_value = segment.metadata.get("emplacement_phase_count", 1)
+            emplacement_phases.append(
+                int(phase_value) if isinstance(phase_value, (int, float)) else 1
+            )
 
         return {
             "node_count": float(len(self.nodes)),
@@ -255,6 +276,29 @@ class CaveNetwork:
             "lobe_path_count": float(len(lobe_path_ids)),
             "anastomosis_count": float(
                 sum(segment.kind == "anastomosis" for segment in self.segments)
+            ),
+            "emplacement_phase_count": float(max(emplacement_phases, default=1)),
+            "vertical_level_count": float(len(z_levels)),
+            "stacked_segment_count": float(
+                sum(segment.z_level != 0 for segment in self.segments)
+            ),
+            "vertical_capture_count": float(
+                sum(
+                    bool(segment.metadata.get("vertical_capture", False))
+                    for segment in self.segments
+                )
+            ),
+            "process_chamber_count": float(
+                sum(
+                    bool(segment.metadata.get("chamber_forming", False))
+                    for segment in self.segments
+                )
+            ),
+            "skylight_prone_segment_count": float(
+                sum(
+                    segment.metadata.get("roof_state") == "skylight_prone"
+                    for segment in self.segments
+                )
             ),
             "retired_lobe_count": float(
                 sum(
@@ -538,11 +582,21 @@ class CaveNetworkGenerator:
                 slice_visible_channel_counts=(),
             )
 
+        emplacement_phase_count = self._sample_int_range(
+            procedural_rng(self.config.random_seed, "emplacement-phase-count"),
+            self.config.emplacement_history.phase_count,
+        )
         selected_paths: list[_SelectedPath] = [
             _SelectedPath(
                 kind="backbone",
                 path=tuple(self._simplify_path(backbone_path)),
-                metadata=self._build_segment_metadata(kind="backbone"),
+                metadata=self._build_emplacement_metadata(
+                    kind="backbone",
+                    phase_count=emplacement_phase_count,
+                    birth_phase=0,
+                    death_phase=emplacement_phase_count - 1,
+                    formation_state="persistent_arterial",
+                ),
             )
         ]
         occupied_cells = set(backbone_path)
@@ -580,7 +634,13 @@ class CaveNetworkGenerator:
                 _SelectedPath(
                     kind="source_feeder",
                     path=tuple(feeder),
-                    metadata=self._build_segment_metadata(kind="source_feeder"),
+                    metadata=self._build_emplacement_metadata(
+                        kind="source_feeder",
+                        phase_count=emplacement_phase_count,
+                        birth_phase=0,
+                        death_phase=emplacement_phase_count - 1,
+                        formation_state="persistent_feeder",
+                    ),
                 )
             )
             occupied_cells.update(feeder[:-1])
@@ -595,6 +655,7 @@ class CaveNetworkGenerator:
                     backbone_alongs=backbone_alongs,
                     backbone_crosses=backbone_crosses,
                     initial_paths=tuple(selected_paths),
+                    phase_count=emplacement_phase_count,
                 )
             )
         else:
@@ -664,6 +725,7 @@ class CaveNetworkGenerator:
         segments = self._orient_segments_for_flow(nodes, segments)
         segments = self._repair_source_reachability(nodes, segments)
         segments = self._assign_conserved_flow(nodes, segments)
+        segments = self._annotate_emplacement_flux_history(segments)
         dominant_route_node_ids = self._dominant_route(nodes, segments)
         self._validate_generated_graph(nodes, segments, dominant_route_node_ids)
         junctions = self._build_junctions(nodes, segments)
@@ -824,6 +886,7 @@ class CaveNetworkGenerator:
         backbone_alongs: np.ndarray,
         backbone_crosses: np.ndarray,
         initial_paths: tuple[_SelectedPath, ...],
+        phase_count: int,
     ) -> tuple[_SelectedPath, ...]:
         """Grow persistent distributaries from seeded, terrain-led lava lobes.
 
@@ -866,6 +929,18 @@ class CaveNetworkGenerator:
                 replace=False,
             )
         )
+        stacked_count = min(
+            len(anchors),
+            int(round(len(anchors) * self.config.emplacement_history.stacked_lobe_fraction)),
+        )
+        stacked_indices = set(
+            int(index)
+            for index in rng.choice(
+                len(anchors),
+                size=stacked_count,
+                replace=False,
+            )
+        )
         side_counts = {-1: 0, 1: 0}
         result: list[_SelectedPath] = []
         for branch_index, anchor in enumerate(anchors):
@@ -881,6 +956,35 @@ class CaveNetworkGenerator:
             else:
                 lateral_sign = min(side_counts, key=lambda sign: side_counts[sign])
             side_counts[lateral_sign] += 1
+            phase_rng = procedural_rng(
+                self.config.random_seed,
+                "lobe-emplacement-history",
+                branch_index,
+            )
+            if len(anchors) <= 1:
+                birth_phase = 0
+            else:
+                phase_position = branch_index / (len(anchors) - 1)
+                birth_phase = int(round(phase_position * (phase_count - 1)))
+                birth_phase = int(
+                    np.clip(
+                        birth_phase + int(phase_rng.choice((-1, 0, 1), p=(0.16, 0.68, 0.16))),
+                        0,
+                        phase_count - 1,
+                    )
+                )
+            active_span = self._sample_int_range(
+                phase_rng,
+                self.config.emplacement_history.active_phase_span,
+            )
+            death_phase = min(phase_count - 1, birth_phase + active_span - 1)
+            z_level = self._emplacement_z_level(
+                branch_index=branch_index,
+                birth_phase=birth_phase,
+                phase_count=phase_count,
+                stacked=branch_index in stacked_indices,
+                rng=phase_rng,
+            )
             permit_merge = branch_index not in retired_indices
             trace = self._trace_lobe_front(
                 host_field=host_field,
@@ -927,9 +1031,53 @@ class CaveNetworkGenerator:
                 kind = "stalled_lobe"
             else:
                 kind = "abandoned_lobe"
-            metadata = self._build_segment_metadata(
+            vertical_capture = trace.merged and z_level != 0
+            chamber_probability = (
+                self.config.emplacement_history.vertical_capture_chamber_probability
+                if vertical_capture
+                else self.config.emplacement_history.chamber_formation_probability
+            )
+            normalized_flux = float(
+                np.clip(
+                    trace.initial_flux
+                    / max(self.config.source_flux, 1e-9),
+                    0.0,
+                    1.0,
+                )
+            )
+            chamber_probability *= 0.65 + 0.55 * normalized_flux
+            chamber_forming = bool(
+                trace.merged and phase_rng.random() < min(chamber_probability, 1.0)
+            )
+            formation_state = (
+                "vertically_captured"
+                if vertical_capture
+                else "coalesced"
+                if trace.merged
+                else "thermally_abandoned"
+                if not permit_merge
+                else "stranded"
+            )
+            regime = self._local_emplacement_regime(
+                host_field=host_field,
+                geometry=geometry,
+                cell=anchor,
+            )
+            roof_state = self._sample_roof_state(
+                host_field=host_field,
+                path=trace.path,
+                rng=phase_rng,
+            )
+            metadata = self._build_emplacement_metadata(
                 kind=kind,
+                phase_count=phase_count,
+                birth_phase=birth_phase,
+                death_phase=death_phase,
+                formation_state=formation_state,
                 zone_index=branch_index,
+                z_level=z_level,
+                chamber_forming=chamber_forming,
+                chamber_radius_scale=0.88 + 0.30 * normalized_flux,
             )
             metadata.update(
                 {
@@ -939,16 +1087,99 @@ class CaveNetworkGenerator:
                     "initial_flux": trace.initial_flux,
                     "final_temperature_k": trace.final_temperature_k,
                     "maximum_lateral_separation_m": trace.maximum_lateral_separation,
+                    "vertical_capture": vertical_capture,
+                    "emplacement_regime": regime,
+                    "roof_state": roof_state,
                 }
             )
+            if vertical_capture:
+                metadata["merge_behavior"] = "vertical_capture"
             selected = _SelectedPath(
                 kind=kind,
                 path=tuple(simplified),
+                z_level=z_level,
                 metadata=metadata,
             )
             result.append(selected)
             existing_cells.update(trace.path)
         return tuple(result)
+
+    def _emplacement_z_level(
+        self,
+        *,
+        branch_index: int,
+        birth_phase: int,
+        phase_count: int,
+        stacked: bool,
+        rng: np.random.Generator,
+    ) -> int:
+        """Place older preserved routes above younger recapture routes."""
+
+        maximum_level = self.config.emplacement_history.maximum_absolute_level
+        if not stacked or maximum_level <= 0:
+            return 0
+        midpoint = 0.5 * max(phase_count - 1, 1)
+        if birth_phase < midpoint:
+            sign = 1
+        elif birth_phase > midpoint:
+            sign = -1
+        else:
+            sign = -1 if (branch_index + int(rng.integers(0, 2))) % 2 else 1
+        distance_from_middle = abs(birth_phase - midpoint) / max(midpoint, 1.0)
+        magnitude = 1
+        if maximum_level >= 2 and distance_from_middle > 0.70 and rng.random() < 0.35:
+            magnitude = min(2, maximum_level)
+        return sign * magnitude
+
+    @staticmethod
+    def _local_emplacement_regime(
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        cell: tuple[int, int],
+    ) -> str:
+        """Classify the terrain process responsible for a local breakout."""
+
+        slope = float(host_field.slope_degrees[cell])
+        capacity = float(host_field.flow_capacity[cell])
+        lateral_fraction = abs(float(geometry.cross_grid[cell])) / max(
+            host_field.config.corridor_width,
+            1.0,
+        )
+        if slope >= 12.0:
+            return "erosional_steep"
+        if slope <= 4.5 and capacity >= 0.55:
+            return "inflating_distal"
+        if lateral_fraction >= 0.55:
+            return "unconfined_margin"
+        return "confined_arterial"
+
+    def _sample_roof_state(
+        self,
+        *,
+        host_field: HostField,
+        path: tuple[tuple[int, int], ...],
+        rng: np.random.Generator,
+    ) -> str:
+        """Preserve whether a route roofed over, partly failed, or stayed open."""
+
+        if not path:
+            return "intact_tube"
+        competence = float(np.mean([host_field.roof_competence[cell] for cell in path]))
+        cover = float(np.mean([host_field.cover_thickness[cell] for cell in path]))
+        cover_scale = max(host_field.config.volcanic_layer_thickness, 1.0)
+        weakness = float(
+            np.clip(0.62 * (1.0 - competence) + 0.38 * (1.0 - cover / cover_scale), 0.0, 1.0)
+        )
+        failure_probability = self.config.emplacement_history.roof_failure_probability
+        draw = float(rng.random())
+        if draw < 0.35 * failure_probability * weakness:
+            return "open_channel"
+        if draw < failure_probability * (0.45 + weakness):
+            return "skylight_prone"
+        if draw < failure_probability * (0.90 + 1.35 * weakness):
+            return "partial_roof"
+        return "intact_tube"
 
     def _select_lobe_anchors(
         self,
@@ -978,8 +1209,20 @@ class CaveNetworkGenerator:
             scores = np.asarray(
                 [
                     1.25 * float(host_field.flow_capacity[cell])
-                    + 0.55 * (1.0 - float(host_field.slope_degrees[cell]) / 90.0)
+                    + 1.15
+                    * (
+                        1.0
+                        - float(
+                            np.clip(host_field.slope_degrees[cell] / 18.0, 0.0, 1.0)
+                        )
+                    )
                     + 0.25 * float(support_field[cell])
+                    + 0.30
+                    * min(
+                        abs(float(geometry.cross_grid[cell]))
+                        / max(host_field.config.corridor_width, 1.0),
+                        1.0,
+                    )
                     for cell in candidates
                 ],
                 dtype=float,
@@ -1911,8 +2154,6 @@ class CaveNetworkGenerator:
             island_id = f"lobe_path_{zone_index}"
         if kind in {"chamber_braid", "ladder"} and zone_index is not None:
             chamber_id = f"chamber_zone_{zone_index}"
-        if kind == "anastomosis" and zone_index is not None:
-            chamber_id = f"coalescence_lobe_{zone_index}"
         if kind == "underpass" and zone_index is not None:
             crossing_group_id = f"crossing_zone_{zone_index}"
             merge_behavior = "cross_under" if z_level < 0 else "cross_over"
@@ -1925,6 +2166,43 @@ class CaveNetworkGenerator:
             "chamber_radius_scale": chamber_radius_scale,
             "formation_origin": kind,
         }
+
+    @classmethod
+    def _build_emplacement_metadata(
+        cls,
+        *,
+        kind: str,
+        phase_count: int,
+        birth_phase: int,
+        death_phase: int,
+        formation_state: str,
+        zone_index: int | None = None,
+        z_level: int = 0,
+        chamber_forming: bool = False,
+        chamber_radius_scale: float = 1.0,
+    ) -> dict[str, SegmentMetadataValue]:
+        metadata = cls._build_segment_metadata(
+            kind=kind,
+            zone_index=zone_index,
+            z_level=z_level,
+            chamber_radius_scale=chamber_radius_scale,
+        )
+        if chamber_forming and zone_index is not None:
+            metadata["chamber_id"] = f"coalescence_lobe_{zone_index}"
+        metadata.update(
+            {
+                "emplacement_phase_count": phase_count,
+                "birth_phase": birth_phase,
+                "death_phase": death_phase,
+                "active_phase_count": death_phase - birth_phase + 1,
+                "formation_state": formation_state,
+                "chamber_forming": chamber_forming,
+                "vertical_capture": False,
+                "emplacement_regime": "confined_arterial",
+                "roof_state": "intact_tube",
+            }
+        )
+        return metadata
 
     def _build_representative_fields(
         self,
@@ -2100,7 +2378,9 @@ class CaveNetworkGenerator:
         for selected_path in selected_paths:
             node_cell_set.add(selected_path.path[0])
             node_cell_set.add(selected_path.path[-1])
-            if selected_path.kind in {"chamber_braid", "ladder", "anastomosis"}:
+            if selected_path.kind in {"chamber_braid", "ladder"} or bool(
+                (selected_path.metadata or {}).get("chamber_forming", False)
+            ):
                 chamber_cells.update(selected_path.path)
         for cell, count in path_use_counts.items():
             if count > 1:
@@ -2462,6 +2742,50 @@ class CaveNetworkGenerator:
             resolved.append(replace(segment, points=points))
         return resolved
 
+    @staticmethod
+    def _annotate_emplacement_flux_history(
+        segments: list[CaveSegment],
+    ) -> list[CaveSegment]:
+        """Summarize staged activity without corrupting final graph conservation.
+
+        Point flux remains the conserved reference discharge used by downstream
+        geometry. These scalar history fields describe how concentrated that
+        discharge was while each route was active during construction.
+        """
+
+        resolved: list[CaveSegment] = []
+        for segment in segments:
+            metadata = dict(segment.metadata)
+            phase_value = metadata.get("emplacement_phase_count", 1)
+            birth_value = metadata.get("birth_phase", 0)
+            death_value = metadata.get("death_phase", 0)
+            phase_count = max(
+                int(phase_value) if isinstance(phase_value, (int, float)) else 1,
+                1,
+            )
+            birth_phase = (
+                int(birth_value) if isinstance(birth_value, (int, float)) else 0
+            )
+            death_phase = (
+                int(death_value)
+                if isinstance(death_value, (int, float))
+                else phase_count - 1
+            )
+            active_count = max(death_phase - birth_phase + 1, 1)
+            duty_cycle = active_count / phase_count
+            peak_flux = segment.mean_flux * (1.0 + 0.22 * (1.0 - duty_cycle))
+            metadata.update(
+                {
+                    "active_phase_count": active_count,
+                    "emplacement_duty_cycle": duty_cycle,
+                    "phase_weighted_flux": segment.mean_flux * duty_cycle,
+                    "peak_formation_flux": peak_flux,
+                    "peak_flux_phase": birth_phase,
+                }
+            )
+            resolved.append(replace(segment, metadata=metadata))
+        return resolved
+
     def _build_junctions(
         self,
         nodes: list[CaveNode],
@@ -2539,7 +2863,8 @@ class CaveNetworkGenerator:
                 merge_style = "constant_envelope_then_divide"
                 capacity_bias = 0.92
             elif any(node.kind == "chamber" for node in cluster_nodes) or any(
-                segment.kind in {"chamber_braid", "anastomosis"}
+                segment.kind == "chamber_braid"
+                or bool(segment.metadata.get("chamber_forming", False))
                 for segment in cluster_segments
             ):
                 kind = "chamber"
@@ -2547,7 +2872,7 @@ class CaveNetworkGenerator:
                 merge_style = "pre_widen_then_split"
                 capacity_bias = 1.18
             elif any(
-                segment.kind in {"island_bypass", "distributary"}
+                segment.kind in {"island_bypass", "distributary", "anastomosis"}
                 for segment in cluster_segments
             ):
                 kind = "split_merge"
@@ -3002,13 +3327,17 @@ class CaveNetworkGenerator:
                 radius=representative_radius * max(incident_scales, default=1.0),
             )
         for segment in segments:
-            if segment.kind not in {"chamber_braid", "ladder", "anastomosis"} or len(segment.points) < 3:
+            is_process_chamber = bool(segment.metadata.get("chamber_forming", False))
+            if (
+                segment.kind not in {"chamber_braid", "ladder"}
+                and not is_process_chamber
+            ) or len(segment.points) < 3:
                 continue
             midpoint = segment.points[len(segment.points) // 2]
             scale_value = segment.metadata.get("chamber_radius_scale", 1.0)
             chamber_scale = float(scale_value) if isinstance(scale_value, (int, float)) else 1.0
             radius = representative_radius * (
-                0.90 if segment.kind in {"chamber_braid", "anastomosis"} else 0.62
+                0.90 if segment.kind == "chamber_braid" or is_process_chamber else 0.62
             ) * chamber_scale
             self._paint_disk(
                 host_field=host_field,

@@ -226,6 +226,7 @@ class SectionFieldGenerator:
                     segment.segment_id,
                 )
             )
+            morphology = self._apply_emplacement_morphology(segment, morphology)
             samples = self._build_segment_samples(
                 segment=segment,
                 connected_junctions=connected_junctions,
@@ -824,6 +825,48 @@ class SectionFieldGenerator:
             primary_phase=float(rng.uniform(-math.pi, math.pi)),
             secondary_phase=float(rng.uniform(-math.pi, math.pi)),
             floor_phase=float(rng.uniform(-math.pi, math.pi)),
+        )
+
+    @staticmethod
+    def _apply_emplacement_morphology(
+        segment: CaveSegment,
+        morphology: _SegmentMorphologyState,
+    ) -> _SegmentMorphologyState:
+        """Translate preserved emplacement history into section character."""
+
+        phase_value = segment.metadata.get("emplacement_phase_count", 1)
+        birth_value = segment.metadata.get("birth_phase", 0)
+        phase_count = max(
+            int(phase_value) if isinstance(phase_value, (int, float)) else 1,
+            1,
+        )
+        birth_phase = (
+            int(birth_value) if isinstance(birth_value, (int, float)) else 0
+        )
+        relative_age = 1.0 - birth_phase / max(phase_count - 1, 1)
+        width_scale = morphology.width_scale * (0.94 + 0.12 * relative_age)
+        floor_relief = morphology.floor_relief * (0.82 + 0.36 * relative_age)
+        wall_roughness = morphology.wall_roughness * (0.84 + 0.32 * relative_age)
+
+        roof_state = segment.metadata.get("roof_state", "intact_tube")
+        if roof_state == "open_channel":
+            width_scale *= 1.12
+            floor_relief *= 1.12
+        elif roof_state == "partial_roof":
+            width_scale *= 1.05
+            wall_roughness *= 1.12
+        elif roof_state == "skylight_prone":
+            wall_roughness *= 1.18
+
+        if bool(segment.metadata.get("vertical_capture", False)):
+            width_scale *= 0.94
+            floor_relief *= 0.88
+
+        return replace(
+            morphology,
+            width_scale=float(np.clip(width_scale, 0.30, 2.75)),
+            floor_relief=float(np.clip(floor_relief, 0.0, 0.18)),
+            wall_roughness=float(np.clip(wall_roughness, 0.0, 0.20)),
         )
 
     def _section_width(

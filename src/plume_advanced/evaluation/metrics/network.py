@@ -74,6 +74,18 @@ def network_metrics(
         for segment in network.segments
         if segment.metadata.get("lobe_path_id") is not None
     }
+    roof_states = Counter(
+        str(segment.metadata.get("roof_state", "unspecified"))
+        for segment in network.segments
+    )
+    phase_counts = [
+        int(value)
+        for segment in network.segments
+        if isinstance(
+            (value := segment.metadata.get("emplacement_phase_count")),
+            (int, float),
+        )
+    ]
     report: dict[str, Any] = {
         "node_count": len(network.nodes),
         "edge_count": len(network.segments),
@@ -82,6 +94,19 @@ def network_metrics(
         "anastomosis_count": sum(
             segment.kind == "anastomosis" for segment in network.segments
         ),
+        "emplacement_phase_count": max(phase_counts, default=1),
+        "stacked_segment_count": sum(
+            segment.z_level != 0 for segment in network.segments
+        ),
+        "vertical_capture_count": sum(
+            bool(segment.metadata.get("vertical_capture", False))
+            for segment in network.segments
+        ),
+        "process_chamber_segment_count": sum(
+            bool(segment.metadata.get("chamber_forming", False))
+            for segment in network.segments
+        ),
+        "roof_state_histogram": dict(sorted(roof_states.items())),
         "retired_lobe_count": sum(
             segment.kind in {"abandoned_lobe", "stalled_lobe"}
             for segment in network.segments

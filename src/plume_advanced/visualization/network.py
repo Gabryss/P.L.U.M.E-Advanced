@@ -80,11 +80,13 @@ class CaveNetworkPlotter:
         summary = cave_network.summary()
         summary_line = (
             f"Density: {summary['network_density']:.2f} | "
+            f"Phases/levels: {int(summary['emplacement_phase_count'])}/"
+            f"{int(summary['vertical_level_count'])} | "
             f"Nodes: {int(summary['node_count'])} | "
             f"Segments: {int(summary['segment_count'])} | "
             f"Loops: {int(summary['loop_count'])} | "
-            f"Lobes/anastomoses: {int(summary['lobe_path_count'])}/"
-            f"{int(summary['anastomosis_count'])} | "
+            f"Captures/chambers: {int(summary['vertical_capture_count'])}/"
+            f"{int(summary['process_chamber_count'])} | "
             f"Skeleton/visible channels: "
             f"{int(summary['max_parallel_channels'])}/"
             f"{int(summary['max_visible_parallel_channels'])} | "
@@ -152,6 +154,13 @@ class CaveNetworkPlotter:
             elif segment.kind == "chamber_braid":
                 color = "#fb7185"
                 linewidth = 0.8 if dense_graph else 1.0
+            elif bool(segment.metadata.get("chamber_forming", False)):
+                color = "#fb7185"
+                linewidth = 1.1 if dense_graph else 1.45
+            elif bool(segment.metadata.get("vertical_capture", False)):
+                color = "#c084fc"
+                linewidth = 0.85 if dense_graph else 1.15
+                linestyle = (0, (4, 2))
             elif segment.kind == "anastomosis":
                 color = "#38bdff"
                 linewidth = 0.75 if dense_graph else 1.0

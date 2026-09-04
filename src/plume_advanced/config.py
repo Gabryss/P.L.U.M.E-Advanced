@@ -24,6 +24,7 @@ from plume_advanced.stages.host_field import (
 from plume_advanced.stages.network import (
     BraidGrammarConfig,
     CaveNetworkConfig,
+    EmplacementHistoryConfig,
     LobeGrowthConfig,
 )
 from plume_advanced.stages.section_field import SectionFieldConfig
@@ -683,6 +684,19 @@ def _build_network_config(
         for key, value in lobe_growth_data.items()
     }
     config_data["lobe_growth"] = LobeGrowthConfig(**lobe_growth_values)
+    emplacement_history_data = dict(config_data.pop("emplacement_history", {}))
+    _reject_unknown_keys(
+        "network.emplacement_history",
+        emplacement_history_data,
+        EmplacementHistoryConfig,
+    )
+    emplacement_history_values: Any = {
+        key: _to_range_tuple(value) if isinstance(value, list) else value
+        for key, value in emplacement_history_data.items()
+    }
+    config_data["emplacement_history"] = EmplacementHistoryConfig(
+        **emplacement_history_values
+    )
     return CaveNetworkConfig(**config_data)
 
 
@@ -1099,6 +1113,36 @@ def _validate_pipeline_configs(
         raise ValueError("network.lobe_growth weights and flux fractions cannot be negative")
     if not 0.0 <= lobe.retired_path_fraction <= 1.0:
         raise ValueError("network.lobe_growth.retired_path_fraction must be in [0, 1]")
+    history = network.emplacement_history
+    for name, value_range in (
+        ("phase_count", history.phase_count),
+        ("active_phase_span", history.active_phase_span),
+    ):
+        if value_range[0] > value_range[1]:
+            raise ValueError(
+                f"network.emplacement_history.{name} must have min <= max"
+            )
+        if value_range[0] <= 0:
+            raise ValueError(
+                f"network.emplacement_history.{name} values must be positive"
+            )
+    if history.maximum_absolute_level < 0:
+        raise ValueError(
+            "network.emplacement_history.maximum_absolute_level cannot be negative"
+        )
+    for name, value in (
+        ("stacked_lobe_fraction", history.stacked_lobe_fraction),
+        ("chamber_formation_probability", history.chamber_formation_probability),
+        (
+            "vertical_capture_chamber_probability",
+            history.vertical_capture_chamber_probability,
+        ),
+        ("roof_failure_probability", history.roof_failure_probability),
+    ):
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(
+                f"network.emplacement_history.{name} must be in [0, 1]"
+            )
     grammar = network.braid_grammar
     for name, value_range in (
         ("zone_count", grammar.zone_count),

@@ -218,7 +218,7 @@ Implemented in `src/plume_advanced/stages/network.py`.
 
 Stage B builds the cave skeleton through a hybrid process model configured by
 `growth_model = "hybrid_lobe"`, `network_density`, and
-`[network.lobe_growth]`. It combines an
+`[network.lobe_growth]`, and `[network.emplacement_history]`. It combines an
 active-lobe routing model, a DOWNFLOW-style spatially correlated terrain
 perturbation, and a lightweight thermal/flux budget. The generator:
 
@@ -228,6 +228,10 @@ perturbation, and a lightweight thermal/flux budget. The generator:
 - balances momentum, perturbed slope, downstream potential, early channel avoidance, and later channel reuse at every growth step
 - retires exposed lobes when their thermal budget falls below the configured threshold
 - emits `anastomosis` segments when lobes coalesce and `abandoned_lobe` or `stalled_lobe` segments when they terminate
+- constructs the preserved network over seeded emplacement phases, recording route birth, retirement, duty cycle, and peak formation flux
+- places a controlled fraction of old and young lobes on upper and lower levels, with smooth vertical capture at their attachments
+- distinguishes ordinary confluences from the subset of energetic coalescences that enlarge into chambers
+- classifies local breakout regime and preserved roof state (`intact_tube`, `partial_roof`, `skylight_prone`, or `open_channel`)
 - records each lobe's path id, termination reason, initial flux, final temperature, and lateral separation
 - clusters morphologically meaningful split/merge regions into explicit junction objects
 - solves the completed directed graph for exactly conserved flow and monotonic cooling/age
@@ -238,8 +242,8 @@ perturbation, and a lightweight thermal/flux budget. The generator:
 assets; only that compatibility mode reads `[network.braid_grammar]`.
 
 `network_density` is the high-level artistic control for natural topology.
-`0.0` disables lobe branches, `0.5` produces a sparse network, `1.0` preserves
-the calibrated default, and values up to `3.0` progressively increase lobe
+`0.0` disables lobe branches, `0.5` produces a sparse network, `1.0` is the
+calibrated baseline, and values up to `3.0` progressively increase lobe
 launches and the resulting opportunities for loops and anastomoses. The value
 also adjusts anchor spacing so additional paths can form without collapsing
 into regularly spaced split zones.
@@ -403,6 +407,7 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `network_density` | high-level `[0, 3]` multiplier for natural lobe, loop, and anastomosis abundance; `1` is the calibrated default |
 | `channel_count_samples` | control longitudinal network diagnostics sampling |
 | `[network.lobe_growth]` | control active-lobe population, persistence, correlated terrain uncertainty, routing forces, branch flux, cooling, retirement, and coalescence |
+| `[network.emplacement_history]` | control seeded emplacement phases, route lifetimes, stacked-level abundance, vertical-capture chamber formation, and roof preservation |
 | `[network.braid_grammar]` | legacy-only ranges and probabilities used when `growth_model = "legacy_braid"` |
 
 ### Section Field Config

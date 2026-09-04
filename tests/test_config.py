@@ -22,8 +22,13 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(config.section_field.chamber_max_tube_width, 20.0)
         self.assertEqual(config.network.maximum_passage_radius, 5.0)
         self.assertEqual(config.network.growth_model, "hybrid_lobe")
-        self.assertEqual(config.network.network_density, 1.0)
+        self.assertEqual(config.network.network_density, 3.0)
         self.assertEqual(config.network.lobe_growth.path_count, (6, 6))
+        self.assertEqual(config.network.emplacement_history.phase_count, (3, 5))
+        self.assertGreater(
+            config.network.emplacement_history.stacked_lobe_fraction,
+            0.0,
+        )
         self.assertGreater(
             config.network.lobe_growth.retirement_temperature_k,
             0.0,
@@ -441,6 +446,18 @@ class ProjectConfigurationTests(unittest.TestCase):
                 schema_version = 2
                 [network.lobe_growth]
                 path_cout = [6, 8]
+                """
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"network\.emplacement_history\.phase_cout",
+        ):
+            self._load_minimal(
+                """
+                schema_version = 2
+                [network.emplacement_history]
+                phase_cout = [3, 5]
                 """
             )
 

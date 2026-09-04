@@ -399,6 +399,10 @@ class CaveNetworkTests(unittest.TestCase):
         self.assertGreaterEqual(summary["max_visible_parallel_channels"], 2)
         self.assertGreater(summary["primary_branch_count"], 0)
         self.assertGreater(summary["mean_branch_persistence_widths"], 3.0)
+        self.assertGreaterEqual(summary["emplacement_phase_count"], 3.0)
+        self.assertGreater(summary["vertical_level_count"], 1.0)
+        self.assertGreater(summary["stacked_segment_count"], 0.0)
+        self.assertGreater(summary["vertical_capture_count"], 0.0)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             report_path = export_network_report(
@@ -470,6 +474,16 @@ class CaveNetworkTests(unittest.TestCase):
             self.assertIn("chamber_id", segment.metadata)
             self.assertIn("formation_origin", segment.metadata)
             self.assertEqual(segment.metadata["formation_origin"], segment.kind)
+            self.assertIn("birth_phase", segment.metadata)
+            self.assertIn("death_phase", segment.metadata)
+            self.assertIn("formation_state", segment.metadata)
+            self.assertIn("emplacement_regime", segment.metadata)
+            self.assertIn("roof_state", segment.metadata)
+            self.assertIn("peak_formation_flux", segment.metadata)
+            self.assertLessEqual(
+                int(segment.metadata["birth_phase"]),
+                int(segment.metadata["death_phase"]),
+            )
 
         underpasses = [segment for segment in cave_network.segments if segment.kind == "underpass"]
         if underpasses:
@@ -490,7 +504,15 @@ class CaveNetworkTests(unittest.TestCase):
             if segment.kind == "anastomosis"
         ]
         self.assertTrue(chamber_segments)
-        self.assertTrue(all(segment.metadata["chamber_id"] is not None for segment in chamber_segments))
+        self.assertTrue(any(segment.metadata["chamber_id"] is not None for segment in chamber_segments))
+        self.assertTrue(any(segment.metadata["chamber_id"] is None for segment in chamber_segments))
+        self.assertTrue(
+            all(
+                (segment.metadata["chamber_id"] is not None)
+                == bool(segment.metadata["chamber_forming"])
+                for segment in chamber_segments
+            )
+        )
         self.assertTrue(
             all(segment.metadata.get("growth_model") == "hybrid_lobe" for segment in chamber_segments)
         )
