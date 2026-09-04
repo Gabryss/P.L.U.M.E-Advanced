@@ -128,7 +128,7 @@ exposed_cooling_multiplier = 5.0
 retirement_temperature_k = 1060.0
 branch_flux_fraction = [0.18, 0.58]
 retired_path_fraction = 0.24
-backbone_curvature_fraction = 0.30
+backbone_curvature_fraction = 0.20
 backbone_curvature_wavelength_fraction = 0.38
 backbone_curvature_secondary_fraction = 0.35
 

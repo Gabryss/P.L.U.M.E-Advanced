@@ -375,7 +375,7 @@ class CaveNetworkTests(unittest.TestCase):
             random_seed=23,
             lobe_growth=replace(
                 project_config.network.lobe_growth,
-                backbone_curvature_fraction=0.42,
+                backbone_curvature_fraction=0.20,
             ),
         )
         first = CaveNetworkGenerator(config).generate(host_field)
@@ -393,6 +393,38 @@ class CaveNetworkTests(unittest.TestCase):
             network_metrics(first)["length_weighted_mean_sinuosity"],
             1.01,
         )
+
+    def test_capture_probability_blocks_cross_level_merges(self) -> None:
+        project_config = load_project_config(ROOT / "config" / "project.toml")
+        host_field = HostFieldGenerator(project_config.host_field).generate()
+        network = CaveNetworkGenerator(
+            replace(project_config.network, network_density=3.0, capture_probability=0.0)
+        ).generate(host_field)
+        self.assertFalse(
+            any(
+                segment.z_level != 0
+                and (
+                    segment.kind == "anastomosis"
+                    or bool(segment.metadata.get("vertical_capture", False))
+                )
+                for segment in network.segments
+            )
+        )
+
+    def test_sustained_uphill_labels_are_process_scoped(self) -> None:
+        project_config = load_project_config(ROOT / "config" / "project.toml")
+        host_field = HostFieldGenerator(project_config.host_field).generate()
+        network = CaveNetworkGenerator(project_config.network).generate(host_field)
+        recognized = {"anastomosis", "underpass", "chamber_braid", "ladder"}
+        for segment in network.segments:
+            label = str(segment.metadata.get("grade_profile", ""))
+            if label.startswith("process_uphill_"):
+                self.assertIn(
+                    segment.metadata.get("formation_origin", segment.kind),
+                    recognized,
+                )
+            if segment.kind in {"abandoned_lobe", "stalled_lobe"}:
+                self.assertFalse(label.startswith("process_uphill_"))
 
     def test_default_config_generates_host_driven_lobe_network(self) -> None:
         project_config = load_project_config(ROOT / "config" / "project.toml")

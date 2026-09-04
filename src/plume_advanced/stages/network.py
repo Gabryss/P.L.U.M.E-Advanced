@@ -63,7 +63,7 @@ class LobeGrowthConfig:
     # Low-frequency planform controls for the arterial route.  These are
     # explicit heuristic controls (rather than hidden density effects) so a
     # seeded network can be made sinuous while retaining host-field steering.
-    backbone_curvature_fraction: float = 0.30
+    backbone_curvature_fraction: float = 0.20
     backbone_curvature_wavelength_fraction: float = 0.38
     backbone_curvature_secondary_fraction: float = 0.35
 
@@ -1035,9 +1035,18 @@ class CaveNetworkGenerator:
                 stacked=branch_index in stacked_indices,
                 rng=phase_rng,
             )
+            allow_capture = True
+            if z_level != 0 and self.config.capture_probability < 1.0:
+                allow_capture = (
+                    float(phase_rng.random()) <= self.config.capture_probability
+                )
+            allow_loop = True
+            if self.config.loop_probability < 1.0:
+                allow_loop = float(branch_rng.random()) <= self.config.loop_probability
             permit_merge = (
                 branch_index not in retired_indices
-                and float(branch_rng.random()) <= self.config.loop_probability
+                and allow_loop
+                and (z_level == 0 or allow_capture)
             )
             trace = self._trace_lobe_front(
                 host_field=host_field,
@@ -1087,7 +1096,6 @@ class CaveNetworkGenerator:
             vertical_capture = (
                 trace.merged
                 and z_level != 0
-                and float(phase_rng.random()) <= self.config.capture_probability
             )
             chamber_probability = (
                 self.config.emplacement_history.vertical_capture_chamber_probability
@@ -2167,30 +2175,6 @@ class CaveNetworkGenerator:
                 target_y=y_coord,
                 target_cross=target_cross,
             )
-            # Connector paths are short cross-flow transitions, but they must
-            # not acquire a persistent climb while snapping to the host grid.
-            # If the nearest snap is uphill, choose a downhill/equal-elevation
-            # neighbour that remains closest to the interpolation target.
-            previous = path[-1]
-            if (
-                snapped != end_cell
-                and float(host_field.elevation[snapped])
-                > float(host_field.elevation[previous])
-            ):
-                safe = [
-                    candidate
-                    for candidate in self._neighbor_cells(host_field, previous)
-                    if float(host_field.elevation[candidate])
-                    <= float(host_field.elevation[previous])
-                ]
-                if safe:
-                    snapped = min(
-                        safe,
-                        key=lambda candidate: math.hypot(
-                            self._cell_to_world(host_field, candidate)[0] - x_coord,
-                            self._cell_to_world(host_field, candidate)[1] - y_coord,
-                        ),
-                    )
             if snapped != path[-1]:
                 path.append(snapped)
         if path[-1] != end_cell:
@@ -2524,7 +2508,7 @@ class CaveNetworkGenerator:
                 node_kind = "chamber"
             elif path_use_counts.get(cell, 0) == 1:
                 node_kind = "spur_terminal" if any(
-                    selected_path.kind in {"spur", "abandoned_lobe", "stalled_lobe"}
+                    selected_path.kind in {"spur", "abandoned_lobe"}
                     and cell in {selected_path.path[0], selected_path.path[-1]}
                     for selected_path in selected_paths
                 ) else "terminal"
@@ -2909,8 +2893,14 @@ class CaveNetworkGenerator:
                 if uphill and previous_uphill:
                     sustained_uphill_steps += 1
                 previous_uphill = uphill
+            process_grade = bool(metadata.get("vertical_capture", False)) or (
+                metadata.get("formation_origin", segment.kind)
+                in {"anastomosis", "underpass", "chamber_braid", "ladder"}
+            )
             grade_profile = (
                 f"process_uphill_{metadata.get('formation_origin', segment.kind)}"
+                if sustained_uphill_steps > 0 and process_grade
+                else "uphill_unresolved"
                 if sustained_uphill_steps > 0
                 else "downhill_with_local_reversals"
                 if uphill_distance > 0.0
