@@ -44,6 +44,8 @@ def network_metrics(
     ]
     sinuosities = np.asarray([_sinuosity(segment) for segment in network.segments], dtype=float)
     lengths = np.asarray([segment.total_length for segment in network.segments], dtype=float)
+    sinuosity_by_kind = _sinuosity_by_kind(network)
+    uphill_by_kind = _uphill_by_kind(network)
     state = _state_consistency(network, incoming, outgoing, conservation_tolerance)
     split_nodes = [node_id for node_id in degrees if len(outgoing[node_id]) > 1]
     merge_nodes = [node_id for node_id in degrees if len(incoming[node_id]) > 1]
@@ -143,6 +145,13 @@ def network_metrics(
         if lengths.size and float(np.sum(lengths)) > 0.0
         else 1.0,
         "sinuosity_p95": float(np.percentile(sinuosities, 95.0)) if sinuosities.size else 1.0,
+        # Descriptive per-kind distributions make sinuosity failures visible
+        # without conflating a long backbone with short side passages.
+        "sinuosity_by_kind": sinuosity_by_kind,
+        "sinuosity_statistics": sinuosity_by_kind,
+        "sustained_uphill_by_kind": uphill_by_kind,
+        "uphill_diagnostics": uphill_by_kind,
+        "normalized_topology": _normalized_topology(network, degrees, components),
         "branch_persistence_length_median_m": float(
             np.median(
                 [
@@ -300,6 +309,104 @@ def _sinuosity(segment: CaveSegment) -> float:
     return segment.total_length / max(chord, 1e-9)
 
 
+def _distribution(values: list[float]) -> dict[str, float | int | None]:
+    """Stable Q1/median/Q3/IQR summary used by machine-readable reports."""
+
+    finite = sorted(float(value) for value in values if math.isfinite(float(value)))
+    if not finite:
+        return {"count": 0, "q1": None, "median": None, "q3": None, "iqr": None, "mean": None}
+    q1, median, q3 = np.percentile(np.asarray(finite, dtype=float), [25.0, 50.0, 75.0])
+    return {
+        "count": len(finite),
+        "q1": float(q1),
+        "median": float(median),
+        "q3": float(q3),
+        "iqr": float(q3 - q1),
+        "mean": float(np.mean(finite)),
+    }
+
+
+def _sinuosity_by_kind(network: CaveNetwork) -> dict[str, dict[str, float | int | None]]:
+    grouped: defaultdict[str, list[float]] = defaultdict(list)
+    for segment in network.segments:
+        grouped[str(segment.kind)].append(_sinuosity(segment))
+    return {kind: _distribution(grouped[kind]) for kind in sorted(grouped)}
+
+
+def _segment_uphill(segment: CaveSegment) -> dict[str, float | int]:
+    points = segment.points
+    total = max(float(segment.total_length), 0.0)
+    runs: list[float] = []
+    run = 0.0
+    uphill_length = 0.0
+    uphill_rise = 0.0
+    max_grade = 0.0
+    for first, second in zip(points, points[1:]):
+        spacing = max(float(second.arc_length - first.arc_length), 0.0)
+        rise = float(second.elevation - first.elevation)
+        if spacing <= 0.0:
+            continue
+        if rise > 1.0e-9:
+            uphill_length += spacing
+            uphill_rise += rise
+            run += spacing
+            max_grade = max(max_grade, rise / spacing)
+        elif run > 0.0:
+            runs.append(run)
+            run = 0.0
+    if run > 0.0:
+        runs.append(run)
+    return {
+        "uphill_length": uphill_length,
+        "uphill_fraction": uphill_length / total if total > 0 else 0.0,
+        "uphill_rise": uphill_rise,
+        "max_uphill_grade": max_grade,
+        "sustained_run_count": len(runs),
+        "max_sustained_uphill_length": max(runs, default=0.0),
+    }
+
+
+def _uphill_by_kind(network: CaveNetwork) -> dict[str, dict[str, Any]]:
+    grouped: defaultdict[str, list[dict[str, float | int]]] = defaultdict(list)
+    for segment in network.segments:
+        grouped[str(segment.kind)].append(_segment_uphill(segment))
+    fields = (
+        "uphill_length",
+        "uphill_fraction",
+        "uphill_rise",
+        "max_uphill_grade",
+        "max_sustained_uphill_length",
+    )
+    return {
+        kind: {
+            field: _distribution([float(item[field]) for item in grouped[kind]])
+            for field in fields
+        }
+        | {"sustained_run_count_total": sum(int(item["sustained_run_count"]) for item in grouped[kind])}
+        for kind in sorted(grouped)
+    }
+
+
+def _normalized_topology(
+    network: CaveNetwork,
+    degrees: dict[int, int],
+    components: int,
+) -> dict[str, float | int]:
+    node_count = len(network.nodes)
+    segment_count = len(network.segments)
+    branch_segments = sum(
+        segment.kind not in {"backbone", "source_feeder"} for segment in network.segments
+    )
+    return {
+        "node_density_per_1000m": 1000.0 * node_count / max(float(network.dominant_route_length), 1e-9),
+        "edge_density_per_1000m": 1000.0 * segment_count / max(float(network.dominant_route_length), 1e-9),
+        "edge_to_node_ratio": segment_count / node_count if node_count else 0.0,
+        "branch_segment_fraction": branch_segments / segment_count if segment_count else 0.0,
+        "junction_node_fraction": sum(degree > 2 for degree in degrees.values()) / node_count if node_count else 0.0,
+        "cycle_rank_per_node": max(0, segment_count - node_count + components) / node_count if node_count else 0.0,
+    }
+
+
 def _vertical_overlap_count(network: CaveNetwork) -> int:
     count = 0
     for index, first in enumerate(network.segments):
@@ -351,4 +458,22 @@ def _sample_centerlines(network: CaveNetwork, spacing_m: float) -> np.ndarray:
     return np.asarray(sampled, dtype=float)
 
 
-__all__ = ["host_exposure", "network_metrics", "symmetric_centerline_distance"]
+def network_sinuosity_statistics(network: CaveNetwork) -> dict[str, dict[str, float | int | None]]:
+    """Public per-kind sinuosity distribution helper."""
+
+    return _sinuosity_by_kind(network)
+
+
+def sustained_uphill_diagnostics(network: CaveNetwork) -> dict[str, Any]:
+    """Public per-kind sustained-uphill helper used by report writers."""
+
+    return _uphill_by_kind(network)
+
+
+__all__ = [
+    "host_exposure",
+    "network_metrics",
+    "network_sinuosity_statistics",
+    "sustained_uphill_diagnostics",
+    "symmetric_centerline_distance",
+]
