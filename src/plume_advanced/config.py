@@ -1199,6 +1199,13 @@ def _validate_pipeline_configs(
         "wall_roughness_base": section_field.wall_roughness_base,
         "wall_roughness_variation": section_field.wall_roughness_variation,
         "morphology_gradient_strength": section_field.morphology_gradient_strength,
+        "morphology_regime_strength": section_field.morphology_regime_strength,
+        "morphology_family_spread": section_field.morphology_family_spread,
+        "morphology_flux_width_gain": section_field.morphology_flux_width_gain,
+        "morphology_age_width_gain": section_field.morphology_age_width_gain,
+        "morphology_floor_relief_max": section_field.morphology_floor_relief_max,
+        "morphology_wall_roughness_max": section_field.morphology_wall_roughness_max,
+        "profile_shape_variation": section_field.profile_shape_variation,
     }
     if any(value < 0.0 for value in nonnegative_morphology_values.values()):
         names = ", ".join(
@@ -1207,6 +1214,14 @@ def _validate_pipeline_configs(
         raise ValueError(f"section_field morphology amplitudes cannot be negative: {names}")
     if section_field.morphology_correlation_length <= 0.0:
         raise ValueError("section_field.morphology_correlation_length must be positive")
+    if section_field.morphology_floor_relief_max < section_field.floor_relief_base:
+        raise ValueError(
+            "section_field.morphology_floor_relief_max must be >= floor_relief_base"
+        )
+    if section_field.morphology_wall_roughness_max < section_field.wall_roughness_base:
+        raise ValueError(
+            "section_field.morphology_wall_roughness_max must be >= wall_roughness_base"
+        )
     if section_field.maximum_uphill_grade < 0.0:
         raise ValueError("section_field.maximum_uphill_grade cannot be negative")
     if not 0.0 < section_field.level_transition_fraction < 0.5:

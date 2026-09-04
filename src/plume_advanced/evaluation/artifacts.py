@@ -118,6 +118,12 @@ def section_semantic_payload(section_field: SectionField, *, tolerance: float = 
                             ),
                             tolerance,
                         ),
+                        "morphology": {
+                            "regime": sample.morphology_regime,
+                            "family_score": round(sample.morphology_family_score / tolerance),
+                            "parent_segment_id": sample.parent_morphology_segment_id,
+                            "junction_blend_length_m": round(sample.junction_blend_length_m / tolerance),
+                        },
                         "flow_state": quantized_array(
                             (
                                 sample.lava_flux,
@@ -186,6 +192,20 @@ def export_section_artifact(
         lava_temperature_k=np.asarray([sample.lava_temperature_k for sample in samples]),
         lava_age_s=np.asarray([sample.lava_age_s for sample in samples]),
         flow_maturity=np.asarray([sample.flow_maturity for sample in samples]),
+        morphology_family_score=np.asarray(
+            [sample.morphology_family_score for sample in samples], dtype=float
+        ),
+        junction_blend_length_m=np.asarray(
+            [sample.junction_blend_length_m for sample in samples], dtype=float
+        ),
+        morphology_regime=np.asarray([sample.morphology_regime for sample in samples]),
+        parent_morphology_segment_id=np.asarray(
+            [
+                -1 if sample.parent_morphology_segment_id is None else sample.parent_morphology_segment_id
+                for sample in samples
+            ],
+            dtype=np.int64,
+        ),
         floor_location_xyz_m=floor_locations,
         profile_offsets=offsets,
         profile_points=profile_points,

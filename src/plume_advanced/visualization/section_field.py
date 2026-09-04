@@ -275,22 +275,27 @@ class SectionFieldPlotter:
             [sample.tube_height / max(sample.tube_width, 1e-9) for sample in samples],
             dtype=float,
         )
-        flatness = np.asarray([sample.floor_flatness for sample in samples], dtype=float)
+        family_score = np.asarray(
+            [sample.morphology_family_score for sample in samples], dtype=float
+        )
+        floor_relief = np.asarray(
+            [1.0 - sample.floor_flatness for sample in samples], dtype=float
+        )
         sizes = 10.0 + 22.0 * np.asarray(
             [abs(sample.lateral_skew) for sample in samples], dtype=float
         )
         scatter = ax.scatter(
             widths,
             ratios,
-            c=flatness,
-            s=sizes,
-            cmap="viridis",
+            c=family_score,
+            s=sizes + 26.0 * floor_relief,
+            cmap="coolwarm",
             alpha=0.58,
             linewidths=0.0,
         )
         colorbar = plt.colorbar(scatter, ax=ax, shrink=0.82)
-        colorbar.set_label("Floor flatness")
-        ax.set_title("Continuous Section Morphospace")
+        colorbar.set_label("Morphology family score")
+        ax.set_title("Continuous Section Morphospace (family / floor relief)")
         ax.set_xlabel("Tube width (m)")
         ax.set_ylabel("Height / width")
         ax.grid(True, alpha=0.16)

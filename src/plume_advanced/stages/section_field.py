@@ -47,6 +47,13 @@ class SectionFieldConfig:
     wall_roughness_variation: float = 0.045
     morphology_gradient_strength: float = 0.32
     morphology_correlation_length: float = 140.0
+    morphology_regime_strength: float = 0.72
+    morphology_family_spread: float = 0.82
+    morphology_flux_width_gain: float = 0.16
+    morphology_age_width_gain: float = 0.10
+    morphology_floor_relief_max: float = 0.42
+    morphology_wall_roughness_max: float = 0.30
+    profile_shape_variation: float = 0.92
     lateral_skew_amplitude: float = 0.16
     centerline_wobble_amplitude: float = 2.4
     centerline_wobble_wavelength: float = 95.0
@@ -72,6 +79,7 @@ class SectionJunctionInfluence:
     split_style: str
     merge_style: str
     capacity_bias: float
+    blend_length_m: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -86,6 +94,24 @@ class _SegmentMorphologyState:
     primary_phase: float
     secondary_phase: float
     floor_phase: float
+    shape_bias: float
+    roof_bias: float
+    floor_bias: float
+    asymmetry_bias: float
+    parent_segment_id: int | None = None
+    regime: str = "balanced"
+
+
+@dataclass(frozen=True)
+class _WorldMorphologyRegime:
+    """Continuous world-level morphology controls shared by all segments."""
+
+    width_bias: float
+    height_bias: float
+    floor_bias: float
+    roof_bias: float
+    shape_bias: float
+    asymmetry_bias: float
 
 
 @dataclass(frozen=True)
@@ -117,6 +143,10 @@ class SectionSample:
     lava_temperature_k: float = 0.0
     lava_age_s: float = 0.0
     flow_maturity: float = 0.0
+    morphology_regime: str = "balanced"
+    morphology_family_score: float = 0.0
+    parent_morphology_segment_id: int | None = None
+    junction_blend_length_m: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -156,6 +186,8 @@ class SectionField:
                 "width_coefficient_of_variation": 0.0,
                 "height_ratio_standard_deviation": 0.0,
                 "mean_shape_change_per_100m": 0.0,
+                "morphology_regime_count": 0.0,
+                "morphology_family_score_standard_deviation": 0.0,
             }
 
         all_samples = [
@@ -206,6 +238,12 @@ class SectionField:
             "mean_shape_change_per_100m": float(
                 np.mean(shape_change_rates) if shape_change_rates else 0.0
             ),
+            "morphology_regime_count": float(
+                len({sample.morphology_regime for sample in all_samples})
+            ),
+            "morphology_family_score_standard_deviation": float(
+                np.std([sample.morphology_family_score for sample in all_samples])
+            ),
         }
 
 
@@ -214,6 +252,7 @@ class SectionFieldGenerator:
 
     def __init__(self, config: SectionFieldConfig | None = None) -> None:
         self.config = config or SectionFieldConfig()
+        self._world_regime = self._sample_world_regime()
 
     def generate(self, cave_network: CaveNetwork) -> SectionField:
         segment_lookup = {segment.segment_id: segment for segment in cave_network.segments}
@@ -241,6 +280,7 @@ class SectionFieldGenerator:
             dominant_route_segment_ids=dominant_route_segment_ids,
         )
         node_normal_preferences: dict[int, tuple[float, float, float]] = {}
+        node_morphology_preferences: dict[int, tuple[_SegmentMorphologyState, int]] = {}
         segment_fields_by_id: dict[int, SegmentSectionField] = {}
         segment_fields: list[SegmentSectionField] = []
         for segment_id in generation_order:
@@ -251,12 +291,18 @@ class SectionFieldGenerator:
                 if segment.segment_id in junction.segment_ids
             )
             arc_positions = self._build_arc_positions(segment, connected_junctions)
+            parent_record = (
+                node_morphology_preferences.get(segment.start_node_id)
+                or node_morphology_preferences.get(segment.end_node_id)
+            )
             morphology = self._sample_segment_morphology(
                 procedural_rng(
                     self.config.random_seed,
                     "segment-morphology",
                     segment.segment_id,
-                )
+                ),
+                parent=parent_record[0] if parent_record else None,
+                parent_segment_id=parent_record[1] if parent_record else None,
             )
             samples = self._build_segment_samples(
                 segment=segment,
@@ -274,6 +320,12 @@ class SectionFieldGenerator:
             if samples:
                 node_normal_preferences.setdefault(segment.start_node_id, samples[0].normal)
                 node_normal_preferences.setdefault(segment.end_node_id, samples[-1].normal)
+                node_morphology_preferences.setdefault(
+                    segment.start_node_id, (morphology, segment.segment_id)
+                )
+                node_morphology_preferences.setdefault(
+                    segment.end_node_id, (morphology, segment.segment_id)
+                )
             segment_field = SegmentSectionField(
                 segment_id=segment.segment_id,
                 connected_junction_ids=tuple(
@@ -681,6 +733,10 @@ class SectionFieldGenerator:
                 roof_arch=roof_arch,
                 lateral_skew=lateral_skew,
             )
+            junction_blend_length = max(
+                (influence.blend_length_m for influence in junction_influences),
+                default=0.0,
+            )
             z_coord, roof_thickness, centerline_depth = self._build_centerline_elevation(
                 segment=segment,
                 arc_length=arc_length,
@@ -710,10 +766,14 @@ class SectionFieldGenerator:
                         local_morphology.wall_roughness
                         * (0.85 + 0.30 * flow_maturity),
                         0.0,
-                        0.20,
+                        self.config.morphology_wall_roughness_max,
                     )
                 ),
                 floor_relief=local_morphology.floor_relief,
+                shape_bias=local_morphology.shape_bias,
+                roof_bias=local_morphology.roof_bias,
+                floor_bias=local_morphology.floor_bias,
+                asymmetry_bias=local_morphology.asymmetry_bias,
                 roughness_phase=self._morphology_phase(
                     segment,
                     arc_length,
@@ -754,6 +814,10 @@ class SectionFieldGenerator:
                     lava_temperature_k=lava_temperature_k,
                     lava_age_s=lava_age_s,
                     flow_maturity=flow_maturity,
+                    morphology_regime=local_morphology.regime,
+                    morphology_family_score=float(local_morphology.shape_bias),
+                    parent_morphology_segment_id=local_morphology.parent_segment_id,
+                    junction_blend_length_m=junction_blend_length,
                 )
             )
         return self._apply_vertical_level_profile(segment, samples)
@@ -881,41 +945,116 @@ class SectionFieldGenerator:
         )
         return float(lateral), float(vertical)
 
-    def _sample_segment_morphology(self, rng: np.random.Generator) -> _SegmentMorphologyState:
-        width_deviate = float(np.clip(rng.normal(), -2.25, 2.25))
-        height_deviate = float(np.clip(rng.normal(), -2.25, 2.25))
-        floor_deviate = float(np.clip(rng.normal(), -2.0, 2.0))
-        roughness_deviate = float(np.clip(rng.normal(), -2.0, 2.0))
-        skew_deviate = float(np.clip(rng.normal(), -2.0, 2.0))
-        return _SegmentMorphologyState(
-            width_scale=float(
+    def _sample_world_regime(self) -> _WorldMorphologyRegime:
+        rng = procedural_rng(self.config.random_seed, "world-morphology-regime")
+        spread = max(self.config.morphology_regime_strength, 0.0)
+        return _WorldMorphologyRegime(
+            width_bias=float(rng.normal(0.0, 0.34 * spread)),
+            height_bias=float(rng.normal(0.0, 0.18 * spread)),
+            floor_bias=float(rng.normal(0.0, 0.28 * spread)),
+            roof_bias=float(rng.normal(0.0, 0.26 * spread)),
+            shape_bias=float(rng.normal(0.0, 0.62 * spread)),
+            asymmetry_bias=float(rng.normal(0.0, 0.38 * spread)),
+        )
+
+    def _sample_segment_morphology(
+        self,
+        rng: np.random.Generator,
+        *,
+        parent: _SegmentMorphologyState | None = None,
+        parent_segment_id: int | None = None,
+    ) -> _SegmentMorphologyState:
+        world = self._world_regime
+        width_deviate = float(np.clip(rng.normal() + world.width_bias, -2.75, 2.75))
+        height_deviate = float(np.clip(rng.normal() + world.height_bias, -2.5, 2.5))
+        floor_deviate = float(np.clip(rng.normal() + world.floor_bias, -2.5, 2.5))
+        roughness_deviate = float(np.clip(rng.normal(), -2.4, 2.4))
+        skew_deviate = float(np.clip(rng.normal() + world.asymmetry_bias, -2.5, 2.5))
+        shape_deviate = float(
+            np.clip(
+                rng.normal() * self.config.morphology_family_spread + world.shape_bias,
+                -2.5,
+                2.5,
+            )
+        )
+        roof_deviate = float(np.clip(rng.normal() + world.roof_bias, -2.5, 2.5))
+        floor_shape_deviate = float(np.clip(rng.normal() + world.floor_bias, -2.5, 2.5))
+        width_scale = float(
+            np.exp(
+                math.log(self.config.width_scale_median)
+                + self.config.width_scale_log_sigma * width_deviate
+            )
+        )
+        height_offset = self.config.height_ratio_variation * height_deviate
+        shape_bias = self.config.profile_shape_variation * shape_deviate
+        roof_bias = 0.42 * roof_deviate
+        floor_bias = 0.40 * floor_shape_deviate
+        skew_bias = 0.62 * self.config.lateral_skew_amplitude * skew_deviate
+        if parent is not None:
+            # Daughters inherit the parent family and scale at a junction; only
+            # a bounded fraction of the latent state diverges downstream.
+            inheritance = 0.68
+            width_scale = float(
                 np.exp(
-                    math.log(self.config.width_scale_median)
-                    + self.config.width_scale_log_sigma * width_deviate
+                    inheritance * math.log(max(parent.width_scale, 1e-9))
+                    + (1.0 - inheritance) * math.log(max(width_scale, 1e-9))
                 )
-            ),
-            height_ratio_offset=self.config.height_ratio_variation * height_deviate,
-            floor_relief=float(
-                np.clip(
-                    self.config.floor_relief_base
-                    + self.config.floor_relief_variation * floor_deviate,
-                    0.0,
-                    0.18,
-                )
-            ),
-            wall_roughness=float(
-                np.clip(
-                    self.config.wall_roughness_base
-                    + self.config.wall_roughness_variation * roughness_deviate,
-                    0.0,
-                    0.20,
-                )
-            ),
-            skew_bias=0.55 * self.config.lateral_skew_amplitude * skew_deviate,
+            )
+            height_offset = inheritance * parent.height_ratio_offset + (1.0 - inheritance) * height_offset
+            shape_bias = inheritance * parent.shape_bias + (1.0 - inheritance) * shape_bias
+            roof_bias = inheritance * parent.roof_bias + (1.0 - inheritance) * roof_bias
+            floor_bias = inheritance * parent.floor_bias + (1.0 - inheritance) * floor_bias
+            skew_bias = inheritance * parent.skew_bias + (1.0 - inheritance) * skew_bias
+        floor_relief = float(
+            np.clip(
+                self.config.floor_relief_base
+                + self.config.floor_relief_variation * floor_deviate
+                + 0.045 * floor_bias,
+                0.0,
+                self.config.morphology_floor_relief_max,
+            )
+        )
+        wall_roughness = float(
+            np.clip(
+                self.config.wall_roughness_base
+                + self.config.wall_roughness_variation * roughness_deviate
+                + 0.018 * abs(shape_bias),
+                0.0,
+                self.config.morphology_wall_roughness_max,
+            )
+        )
+        regime = self._classify_morphology_regime(shape_bias, floor_bias, roof_bias)
+        return _SegmentMorphologyState(
+            width_scale=float(np.clip(width_scale, 0.28, 2.85)),
+            height_ratio_offset=float(height_offset),
+            floor_relief=floor_relief,
+            wall_roughness=wall_roughness,
+            skew_bias=float(skew_bias),
             primary_phase=float(rng.uniform(-math.pi, math.pi)),
             secondary_phase=float(rng.uniform(-math.pi, math.pi)),
             floor_phase=float(rng.uniform(-math.pi, math.pi)),
+            shape_bias=float(np.clip(shape_bias, -2.0, 2.0)),
+            roof_bias=float(np.clip(roof_bias, -1.2, 1.2)),
+            floor_bias=float(np.clip(floor_bias, -1.2, 1.2)),
+            asymmetry_bias=float(np.clip(world.asymmetry_bias + 0.20 * skew_deviate, -1.2, 1.2)),
+            parent_segment_id=parent_segment_id,
+            regime=regime,
         )
+
+    @staticmethod
+    def _classify_morphology_regime(shape_bias: float, floor_bias: float, roof_bias: float) -> str:
+        score = shape_bias + 0.35 * roof_bias
+        if score > 0.72:
+            return "keyhole"
+        if score < -0.72:
+            return "triangular"
+        if floor_bias > 0.55:
+            return "benched"
+        if roof_bias < -0.55:
+            return "rectangular"
+        if shape_bias > 0.28:
+            return "arched"
+        return "balanced"
 
     def _morphology_at(
         self,
@@ -984,6 +1123,9 @@ class SectionFieldGenerator:
         floor_gradient = gradient("floor")
         roughness_gradient = gradient("roughness")
         skew_gradient = gradient("skew")
+        shape_gradient = gradient("shape")
+        roof_shape_gradient = gradient("roof-shape")
+        floor_shape_gradient = gradient("floor-shape")
         base_width_log = math.log(
             max(base.width_scale, 1e-9) / max(self.config.width_scale_median, 1e-9)
         )
@@ -1033,7 +1175,7 @@ class SectionFieldGenerator:
                     * self.config.floor_relief_variation
                     * floor_gradient,
                     0.0,
-                    0.18,
+                    self.config.morphology_floor_relief_max,
                 )
             ),
             wall_roughness=float(
@@ -1047,20 +1189,44 @@ class SectionFieldGenerator:
                     * self.config.wall_roughness_variation
                     * roughness_gradient,
                     0.0,
-                    0.20,
+                    self.config.morphology_wall_roughness_max,
                 )
             ),
             skew_bias=float(
                 0.30 * interior_envelope * base.skew_bias
                 + 0.72 * strength * self.config.lateral_skew_amplitude * skew_gradient
             ),
+            shape_bias=float(
+                np.clip(
+                    0.68 * interior_envelope * base.shape_bias
+                    + 1.15 * strength * self.config.profile_shape_variation * shape_gradient,
+                    -2.0,
+                    2.0,
+                )
+            ),
+            roof_bias=float(
+                np.clip(
+                    0.60 * interior_envelope * base.roof_bias
+                    + 0.68 * strength * roof_shape_gradient,
+                    -1.2,
+                    1.2,
+                )
+            ),
+            floor_bias=float(
+                np.clip(
+                    0.60 * interior_envelope * base.floor_bias
+                    + 0.68 * strength * floor_shape_gradient,
+                    -1.2,
+                    1.2,
+                )
+            ),
             primary_phase=blended_phase("primary", base.primary_phase),
             secondary_phase=blended_phase("secondary", base.secondary_phase),
             floor_phase=blended_phase("floor", base.floor_phase),
         )
 
-    @staticmethod
     def _apply_emplacement_morphology(
+        self,
         segment: CaveSegment,
         morphology: _SegmentMorphologyState,
     ) -> _SegmentMorphologyState:
@@ -1094,11 +1260,25 @@ class SectionFieldGenerator:
             width_scale *= 0.94
             floor_relief *= 0.88
 
+        formation_state = str(segment.metadata.get("formation_state", ""))
+        if formation_state in {"coalesced", "vertically_captured"}:
+            morphology = replace(
+                morphology,
+                shape_bias=morphology.shape_bias + 0.18,
+                floor_bias=morphology.floor_bias + 0.16,
+            )
+        elif formation_state in {"thermally_abandoned", "stranded"}:
+            morphology = replace(
+                morphology,
+                shape_bias=morphology.shape_bias - 0.14,
+                floor_bias=morphology.floor_bias + 0.22,
+            )
+
         return replace(
             morphology,
-            width_scale=float(np.clip(width_scale, 0.30, 2.75)),
-            floor_relief=float(np.clip(floor_relief, 0.0, 0.18)),
-            wall_roughness=float(np.clip(wall_roughness, 0.0, 0.20)),
+            width_scale=float(np.clip(width_scale, 0.30, 2.85)),
+            floor_relief=float(np.clip(floor_relief, 0.0, self.config.morphology_floor_relief_max)),
+            wall_roughness=float(np.clip(wall_roughness, 0.0, self.config.morphology_wall_roughness_max)),
         )
 
     def _section_width(
@@ -1118,9 +1298,21 @@ class SectionFieldGenerator:
             self.config.width_longitudinal_variation
             * (0.72 * math.sin(phase) + 0.28 * math.sin(2.17 * phase + 0.6))
         )
+        flux = self._interpolate_attr(segment, arc_length, "flux")
+        flux_reference = max(segment.mean_flux, 1e-9)
+        flux_scale = float(np.clip(flux / flux_reference, 0.55, 1.65))
+        phase_value = segment.metadata.get("emplacement_phase_count", 1)
+        try:
+            phase_count = float(phase_value)
+        except (TypeError, ValueError):
+            phase_count = 1.0
+        age_scale = 1.0 + self.config.morphology_age_width_gain * float(
+            np.clip(phase_count, 1.0, 8.0) - 1.0
+        ) / 7.0
+        process_scale = 1.0 + self.config.morphology_flux_width_gain * (flux_scale - 1.0)
         return float(
             np.clip(
-                base * morphology.width_scale * modulation,
+                base * morphology.width_scale * modulation * process_scale * age_scale,
                 self.config.minimum_tube_width,
                 self.config.maximum_tube_width,
             )
@@ -1141,6 +1333,8 @@ class SectionFieldGenerator:
             + 0.08 * (roof_competence - 0.5)
             - 0.06 * np.clip((width - 9.5) / 7.5, 0.0, 1.0)
             - 0.055 * flow_maturity
+            + 0.10 * morphology.roof_bias
+            + 0.08 * morphology.shape_bias
             + interior_envelope * morphology.height_ratio_offset
             + self.config.height_ratio_longitudinal_variation
             * interior_envelope
@@ -1184,6 +1378,7 @@ class SectionFieldGenerator:
             + 0.06 * growth_cost
             + 0.045 * flow_maturity
             + 0.85 * relief_delta
+            + 0.045 * morphology.floor_bias
         )
         return float(np.clip(flatness, 0.28, 0.92))
 
@@ -1201,6 +1396,8 @@ class SectionFieldGenerator:
             - 0.08 * growth_cost
             - 0.55 * (morphology.wall_roughness - self.config.wall_roughness_base)
             + 0.10 * morphology.height_ratio_offset
+            + 0.10 * morphology.roof_bias
+            - 0.06 * morphology.shape_bias
         )
         return float(np.clip(arch, 0.92, 1.36))
 
@@ -1219,6 +1416,7 @@ class SectionFieldGenerator:
             bias
             + self.config.lateral_skew_amplitude
             * interior_envelope
+            * (1.0 + 0.55 * np.clip(abs(bias), 0.0, 1.0))
             * math.sin((2.0 * math.pi * arc_length / wavelength) + phase)
         )
 
@@ -1263,6 +1461,7 @@ class SectionFieldGenerator:
                     split_style=junction.split_style,
                     merge_style=junction.merge_style,
                     capacity_bias=junction.capacity_bias,
+                    blend_length_m=float(junction.blend_length),
                 )
             )
             if (
@@ -1397,6 +1596,10 @@ class SectionFieldGenerator:
         lateral_skew: float,
         wall_roughness: float,
         floor_relief: float,
+        shape_bias: float,
+        roof_bias: float,
+        floor_bias: float,
+        asymmetry_bias: float,
         roughness_phase: float,
         floor_phase: float,
     ) -> tuple[tuple[float, float], ...]:
@@ -1405,10 +1608,27 @@ class SectionFieldGenerator:
         resolution = max(self.config.profile_resolution // 2, 8)
         x_values = np.linspace(-half_width, half_width, resolution, dtype=float)
         normalized = np.clip(np.abs(x_values) / max(half_width, 1.0), 0.0, 1.0)
-        top_exp = float(np.clip(1.78 - 0.24 * (roof_arch - 1.0), 1.35, 2.05))
-        bottom_exp = float(np.clip(3.0 + 2.4 * floor_flatness, 2.6, 5.5))
-        floor_depth_factor = float(np.clip(0.74 - 0.22 * floor_flatness, 0.45, 0.78))
-        skew_offset = lateral_skew * half_width
+        top_exp = float(
+            np.clip(
+                1.78
+                - 0.24 * (roof_arch - 1.0)
+                - 0.48 * roof_bias
+                - 0.42 * shape_bias,
+                0.98,
+                2.80,
+            )
+        )
+        bottom_exp = float(
+            np.clip(3.0 + 2.4 * floor_flatness - 1.05 * floor_bias - 0.52 * shape_bias, 1.8, 6.8)
+        )
+        floor_depth_factor = float(
+            np.clip(0.74 - 0.22 * floor_flatness + 0.07 * floor_bias, 0.44, 0.86)
+        )
+        roof_scale = float(np.clip(1.0 + 0.14 * roof_bias + 0.10 * shape_bias, 0.78, 1.28))
+        floor_scale = float(np.clip(1.0 + 0.22 * floor_bias - 0.08 * shape_bias, 0.70, 1.36))
+        skew_offset = (lateral_skew + 0.12 * asymmetry_bias) * half_width
+        roof_skew_offset = skew_offset * (1.0 + 0.85 * np.clip(asymmetry_bias, -0.8, 0.8))
+        floor_skew_offset = skew_offset * (1.0 - 0.35 * np.clip(asymmetry_bias, -0.8, 0.8))
 
         def envelope(value: float) -> float:
             return max(0.0, 1.0 - value * value) ** 0.72
@@ -1425,9 +1645,11 @@ class SectionFieldGenerator:
 
         roof_profile = [
             (
-                float(x_coord + skew_offset * (1.0 - normalized_value**2)),
+                float(x_coord + roof_skew_offset * (1.0 - normalized_value**2)),
                 float(
-                    half_height * max(0.0, 1.0 - normalized_value**top_exp) ** (1.0 / top_exp)
+                    roof_scale
+                    * half_height
+                    * max(0.0, 1.0 - normalized_value**top_exp) ** (1.0 / top_exp)
                     + wall_relief(float(x_coord / max(half_width, 1e-9)))
                 ),
             )
@@ -1435,13 +1657,14 @@ class SectionFieldGenerator:
         ]
         floor_profile = [
             (
-                float(x_coord + 0.55 * skew_offset * (1.0 - normalized_value**2)),
+                float(x_coord + 0.55 * floor_skew_offset * (1.0 - normalized_value**2)),
                 float(
-                    -half_height
+                    -floor_scale
+                    * half_height
                     * floor_depth_factor
                     * max(0.0, 1.0 - normalized_value**bottom_exp) ** (1.0 / bottom_exp)
-                    + 0.45 * wall_relief(float(x_coord / max(half_width, 1e-9)))
-                    + floor_relief_offset(float(x_coord / max(half_width, 1e-9)))
+                    + 0.55 * wall_relief(float(x_coord / max(half_width, 1e-9)))
+                    + 2.20 * floor_relief_offset(float(x_coord / max(half_width, 1e-9)))
                 ),
             )
             for x_coord, normalized_value in zip(

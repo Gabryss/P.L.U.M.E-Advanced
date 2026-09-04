@@ -12,12 +12,35 @@ ROOT = Path(__file__).resolve().parents[1]
 
 from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.artifacts import export_section_artifact
+from plume_advanced.evaluation.artifacts import section_semantic_hash
+from plume_advanced.evaluation.metrics.contours import self_intersection_count
 from plume_advanced.stages.host_field import HostFieldGenerator
 from plume_advanced.stages.network import CaveNetworkGenerator
 from plume_advanced.stages.section_field import SectionFieldGenerator
 
 
 class SectionFieldTests(unittest.TestCase):
+    def test_morphology_regimes_are_seeded_inherited_and_simple(self) -> None:
+        project_config = load_project_config(ROOT / "config" / "project.toml")
+        host_field = HostFieldGenerator(project_config.host_field).generate()
+        cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
+        generator = SectionFieldGenerator(project_config.section_field)
+        first = generator.generate(cave_network)
+        second = SectionFieldGenerator(project_config.section_field).generate(cave_network)
+
+        self.assertEqual(section_semantic_hash(first), section_semantic_hash(second))
+        samples = [sample for field in first.segment_fields for sample in field.samples]
+        self.assertGreaterEqual(first.summary()["morphology_regime_count"], 2.0)
+        self.assertGreater(
+            sum(sample.parent_morphology_segment_id is not None for sample in samples),
+            0,
+        )
+        self.assertGreater(first.summary()["morphology_family_score_standard_deviation"], 0.05)
+        self.assertTrue(
+            all(self_intersection_count(sample.profile_points) == 0 for sample in samples)
+        )
+        self.assertTrue(all(sample.junction_blend_length_m >= 0.0 for sample in samples))
+
     def test_section_field_is_geometry_ready_and_junction_aware(self) -> None:
         project_config = load_project_config(ROOT / "config" / "project.toml")
         host_field = HostFieldGenerator(project_config.host_field).generate()
