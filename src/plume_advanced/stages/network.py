@@ -2657,7 +2657,45 @@ class CaveNetworkGenerator:
                         reachable.add(downstream)
                         pending.append(downstream)
             if len(reachable) == len(nodes):
-                return repaired
+                # Source reachability alone is insufficient when a local
+                # equal-along tie points an entry into a dead-end branch.
+                # Repair a boundary edge from the exit-reachable region into
+                # the blocked component, preserving an acyclic orientation.
+                exits = {node.node_id for node in nodes if node.kind == "exit"}
+                can_reach_exit = set(exits)
+                reverse_adjacency: defaultdict[int, list[int]] = defaultdict(list)
+                for segment in repaired:
+                    reverse_adjacency[segment.end_node_id].append(segment.start_node_id)
+                pending_exit = list(exits)
+                while pending_exit:
+                    for upstream in reverse_adjacency[pending_exit.pop()]:
+                        if upstream not in can_reach_exit:
+                            can_reach_exit.add(upstream)
+                            pending_exit.append(upstream)
+                blocked_entries = entries - can_reach_exit
+                if not blocked_entries:
+                    return repaired
+                candidates = sorted(
+                    (
+                        (index, segment)
+                        for index, segment in enumerate(repaired)
+                        if segment.start_node_id in can_reach_exit
+                        and segment.end_node_id not in can_reach_exit
+                    ),
+                    key=lambda item: (item[1].total_length, item[1].segment_id),
+                )
+                for index, segment in candidates:
+                    candidate = list(repaired)
+                    candidate[index] = cls._reverse_segment(segment)
+                    try:
+                        cls._topological_node_ids(nodes, candidate)
+                    except ValueError:
+                        continue
+                    repaired = candidate
+                    break
+                else:
+                    return repaired
+                continue
 
             candidates = sorted(
                 (

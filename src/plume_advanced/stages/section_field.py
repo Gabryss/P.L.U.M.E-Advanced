@@ -368,7 +368,10 @@ class SectionFieldGenerator:
                 continue
             endpoints = [by_id[sid].samples[index] for sid, index in incident]
             floor = min(self._sample_floor(sample) for sample in endpoints)
-            reference = max(endpoints, key=lambda sample: sample.tube_width)
+            # Use the narrowest incident envelope as the shared node target.
+            # This preserves exact continuity even when one incident branch is
+            # chamber-expanded but another is constrained by passage caps.
+            reference = min(endpoints, key=lambda sample: sample.tube_width)
             direction = np.asarray(reference.tangent, dtype=float)
             for (sid, index), endpoint in zip(incident, endpoints):
                 oriented = direction if np.dot(direction, endpoint.tangent) >= 0.0 else -direction
@@ -1061,7 +1064,7 @@ class SectionFieldGenerator:
             shape_bias=float(np.clip(shape_bias, -2.0, 2.0)),
             roof_bias=float(np.clip(roof_bias, -1.2, 1.2)),
             floor_bias=float(np.clip(floor_bias, -1.2, 1.2)),
-            asymmetry_bias=float(np.clip(world.asymmetry_bias + 0.20 * skew_deviate, -1.2, 1.2)),
+            asymmetry_bias=float(np.clip(world.asymmetry_bias + 0.45 * skew_deviate, -1.5, 1.5)),
             parent_segment_id=parent_segment_id,
             regime=regime,
         )
@@ -1652,7 +1655,7 @@ class SectionFieldGenerator:
         roof_scale = float(np.clip(1.0 + 0.14 * roof_bias + 0.10 * shape_bias, 0.78, 1.28))
         floor_scale = float(np.clip(1.0 + 0.22 * floor_bias - 0.08 * shape_bias, 0.70, 1.36))
         skew_offset = (lateral_skew + 0.12 * asymmetry_bias) * half_width
-        roof_skew_offset = skew_offset * (1.0 + 0.85 * np.clip(asymmetry_bias, -0.8, 0.8))
+        roof_skew_offset = skew_offset * (1.0 + 2.0 * np.clip(asymmetry_bias, -0.8, 0.8))
         floor_skew_offset = skew_offset * (1.0 - 0.35 * np.clip(asymmetry_bias, -0.8, 0.8))
 
         def envelope(value: float) -> float:
@@ -1676,7 +1679,7 @@ class SectionFieldGenerator:
                     * half_height
                     * max(0.0, 1.0 - normalized_value**top_exp) ** (1.0 / top_exp)
                     + wall_relief(float(x_coord / max(half_width, 1e-9)))
-                    + 0.20
+                    + 0.34
                     * half_height
                     * asymmetry_bias
                     * envelope(float(normalized_value))

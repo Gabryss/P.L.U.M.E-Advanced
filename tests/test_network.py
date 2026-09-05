@@ -29,6 +29,15 @@ from plume_advanced.stages.network import (
 
 
 class CaveNetworkTests(unittest.TestCase):
+    def test_no_argument_generators_preserve_entry_to_exit_reachability(self) -> None:
+        host_field = HostFieldGenerator().generate()
+        network = CaveNetworkGenerator().generate(host_field)
+        metrics = network_metrics(network)
+        self.assertEqual(metrics["connected_component_count"], 1)
+        self.assertEqual(metrics["source_unreachable_node_count"], 0)
+        self.assertEqual(metrics["entries_without_exit_path_count"], 0)
+        self.assertEqual(metrics["zero_flux_segment_count"], 0)
+
     def test_downflow_perturbation_is_seeded_and_spatially_correlated(self) -> None:
         first = CaveNetworkGenerator._correlated_terrain_perturbation(
             (64, 64),
