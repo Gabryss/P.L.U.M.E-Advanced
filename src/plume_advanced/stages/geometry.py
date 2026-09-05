@@ -2297,6 +2297,12 @@ class GeometryGenerator:
         # buckets can contain two copies of the same marching-cubes vertex.
         # Merge by actual distance before any smoothing, UVs or displacement.
         positions = np.concatenate([np.asarray(mesh.vertices) for mesh in chunk_meshes])
+        mesh_ids = np.concatenate(
+            [
+                np.full(len(mesh.vertices), mesh_index, dtype=np.int64)
+                for mesh_index, mesh in enumerate(chunk_meshes)
+            ]
+        )
         parent = np.arange(len(positions))
 
         def root(index: int) -> int:
@@ -2305,10 +2311,24 @@ class GeometryGenerator:
                 index = int(parent[index])
             return index
 
-        pairs = cKDTree(positions).query_pairs(
-            max(self.config.weld_tolerance, 1e-12), output_type="ndarray"
+        # Independent chunk marches can place the same interface vertex a few
+        # percent of a voxel apart when the scalar field is nearly tangent to
+        # an event surface.  Such offsets are below the grid's resolvable
+        # feature size, so use a small resolution-relative tolerance only for
+        # cross-chunk reconciliation.
+        seam_tolerance = max(
+            self.config.weld_tolerance,
+            0.05 * self.config.voxel_size,
+            1e-12,
         )
+        pairs = cKDTree(positions).query_pairs(seam_tolerance, output_type="ndarray")
         for a, b in pairs:
+            # Marching cubes may emit distinct, extremely close vertices for a
+            # thin but valid feature.  Collapsing those vertices deletes its
+            # triangles and opens a hole.  Welding is only required to join
+            # duplicate vertices emitted by adjacent chunks.
+            if mesh_ids[int(a)] == mesh_ids[int(b)]:
+                continue
             ra, rb = root(int(a)), root(int(b))
             parent[max(ra, rb)] = min(ra, rb)
         roots = np.asarray([root(index) for index in range(len(positions))])

@@ -81,6 +81,20 @@ def test_welding_joins_near_vertices_across_rounding_buckets():
     assert len(set(faces[0]) & set(faces[1])) == 2
 
 
+def test_welding_preserves_close_vertices_within_one_chunk():
+    chunk = GeometryChunkMesh(
+        0,
+        (0, 1, 0, 1, 0, 1),
+        ((0.0, 0.0, 0.0), (5e-6, 0.0, 0.0), (0.0, 1.0, 0.0)),
+        ((0, 1, 2),),
+    )
+    vertices, faces = GeometryGenerator(
+        GeometryConfig(weld_tolerance=1e-5)
+    )._assemble_chunks([chunk])
+    assert len(vertices) == 3
+    assert faces == ((0, 1, 2),)
+
+
 @pytest.mark.parametrize("voxel", [0.5, 0.6])
 @pytest.mark.parametrize("chunk_size", [8, 13])
 def test_translated_nonbinary_chunks_are_closed_after_smoothing(voxel, chunk_size):
