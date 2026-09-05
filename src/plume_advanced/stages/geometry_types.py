@@ -396,6 +396,12 @@ class CaveGeometry:
     surface_texture_frames: tuple[SurfaceTextureFrame, ...] = ()
     event_meshes: tuple[GeologicalEventMesh, ...] = ()
     structural_event_ids: tuple[int, ...] = ()
+    # Additive Stage-D junction quality report.  A tuple keeps the public
+    # dataclass immutable while allowing future metrics without schema breaks.
+    junction_report: tuple[tuple[str, float], ...] = ()
+    # Per-junction immutable records (key/value tuples) preserve local
+    # outliers while keeping the existing summary API backwards compatible.
+    junction_records: tuple[tuple[tuple[str, object], ...], ...] = ()
 
     @property
     def meshes(self) -> tuple[GeometryChunkMesh, ...]:
@@ -404,11 +410,12 @@ class CaveGeometry:
         return self.chunk_meshes
 
     def summary(self) -> dict[str, float]:
-        return {
+        summary = {
             "mesh_count": float(len(self.chunk_meshes)),
             "chunk_mesh_count": float(len(self.chunk_meshes)),
             "event_mesh_count": float(len(self.event_meshes)),
             "structural_event_count": float(len(self.structural_event_ids)),
+            "junction_record_count": float(len(self.junction_records)),
             "stamped_segment_count": float(len(self.stamped_segment_ids)),
             "stamped_sample_count": float(self.stamped_sample_count),
             "voxel_size_m": float(self.voxel_grid.voxel_size),
@@ -447,6 +454,8 @@ class CaveGeometry:
                 + sum(mesh.face_count for mesh in self.event_meshes)
             ),
         }
+        summary.update({str(key): float(value) for key, value in self.junction_report})
+        return summary
 
 
 def _count_voxel_components(voxel_grid: VoxelGrid) -> int:

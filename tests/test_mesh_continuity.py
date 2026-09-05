@@ -224,3 +224,83 @@ def test_junction_blending_has_identical_surface_on_dense_and_tiled_grids(chunk_
         np.testing.assert_allclose(tile[near_surface], region[near_surface], atol=2e-5)
     vertices, faces = generator._assemble_chunks(generator._march_chunks(tiled, None))
     assert trimesh.Trimesh(vertices=vertices, faces=faces, process=False).is_watertight
+
+
+def test_connected_split_merge_get_finite_transition_stamp_and_report():
+    from types import SimpleNamespace
+
+    from plume_advanced.stages.section_field import SectionJunctionInfluence
+
+    influence = SectionJunctionInfluence(7, "split_merge", 1.0, "gradual", "gradual", 1.0, 18.0)
+    parent = tuple(replace(sample(float(x)), junction_influences=(influence,)) for x in np.linspace(-18, 0, 7))
+    daughter = tuple(
+        replace(sample(float(x), y=0.8 * x), segment_id=1, junction_influences=(influence,))
+        for x in np.linspace(0, 18, 7)
+    )
+    network = SimpleNamespace(
+        junctions=(SimpleNamespace(
+            junction_id=7,
+            kind="split_merge",
+            node_ids=(1, 2),
+            center_x=0.0,
+            center_y=0.0,
+            blend_length=18.0,
+        ),)
+    )
+    generator = GeometryGenerator(GeometryConfig(voxel_size=0.6, wall_roughness_amplitude=0.0))
+    stamps = generator._junction_stamp_points({0: parent, 1: daughter}, network)
+    assert len(stamps) == 1
+    stamp = stamps[0]
+    assert stamp.kind == "split_merge"
+    assert stamp.blend_length_m >= 2.0 * np.median(stamp.incident_widths)
+    assert stamp.radius_short * 2.0 / np.median(stamp.incident_widths) <= 2.5
+    report = dict(generator._junction_report(network, {0: parent, 1: daughter}, junction_stamp_points=stamps))
+    assert report["junction_max_width_m"] >= report["junction_median_incident_width_m"]
+    assert report["junction_refinement_sample_count"] == 9.0
+
+
+def test_stage_c_blend_metadata_controls_transition_length():
+    from types import SimpleNamespace
+
+    from plume_advanced.stages.section_field import SectionJunctionInfluence
+
+    def stamps(length):
+        influence = SectionJunctionInfluence(8, "junction", 1.0, "gradual", "gradual", 1.0, 4.0)
+        samples = tuple(
+            replace(sample(float(x)), junction_blend_length_m=length, junction_influences=(influence,))
+            for x in np.linspace(-8, 8, 9)
+        )
+        network = SimpleNamespace(junctions=(SimpleNamespace(junction_id=8, kind="junction", node_ids=(1,), center_x=0.0, center_y=0.0, blend_length=4.0),))
+        return GeometryGenerator(GeometryConfig(voxel_size=0.6))._junction_stamp_points({0: samples}, network)[0]
+
+    assert stamps(12.0).blend_length_m > stamps(4.0).blend_length_m
+
+
+def test_grade_separated_crossing_does_not_receive_union_stamp_or_fuse():
+    from types import SimpleNamespace
+
+    from plume_advanced.stages.section_field import SectionJunctionInfluence
+
+    influence = SectionJunctionInfluence(3, "crossing", 1.0, "constant_envelope_then_divide", "constant_envelope_then_divide", 0.92, 18.0)
+    upper = tuple(replace(sample(float(x)), junction_influences=(influence,)) for x in np.linspace(-18, 18, 15))
+    lower = tuple(replace(sample(float(x), z=10.0), segment_id=1, junction_influences=(influence,)) for x in np.linspace(-18, 18, 15))
+    network = SimpleNamespace(junctions=(SimpleNamespace(junction_id=3, kind="crossing", node_ids=(1,), center_x=0.0, center_y=0.0, blend_length=18.0),))
+    generator = GeometryGenerator(GeometryConfig(voxel_size=0.6, wall_roughness_amplitude=0.0))
+    stamps = generator._junction_stamp_points({0: upper, 1: lower}, network)
+    assert stamps == []
+    grid = generator._build_voxel_grid({0: upper, 1: lower}, network, None)
+    assert grid.component_count == 2
+
+
+def test_junction_refinement_is_seed_deterministic():
+    from types import SimpleNamespace
+
+    from plume_advanced.stages.section_field import SectionJunctionInfluence
+
+    influence = SectionJunctionInfluence(4, "junction", 1.0, "gradual", "gradual", 1.0, 18.0)
+    chains = {0: tuple(replace(sample(float(x)), junction_influences=(influence,)) for x in np.linspace(-18, 18, 15))}
+    network = SimpleNamespace(junctions=(SimpleNamespace(junction_id=4, kind="junction", node_ids=(1,), center_x=0.0, center_y=0.0, blend_length=18.0),))
+    config = GeometryConfig(voxel_size=0.6, wall_roughness_amplitude=0.0, random_seed=19)
+    first = GeometryGenerator(config)._build_voxel_grid(chains, network, None)
+    second = GeometryGenerator(config)._build_voxel_grid(chains, network, None)
+    np.testing.assert_array_equal(first.density, second.density)

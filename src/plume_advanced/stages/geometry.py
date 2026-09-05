@@ -42,6 +42,13 @@ class _JunctionStamp:
     angle: float
     phase: tuple[float, float, float]
     kind: str
+    junction_id: int = -1
+    blend_length_m: float = 0.0
+    incident_widths: tuple[float, ...] = ()
+    incident_heights: tuple[float, ...] = ()
+    incident_segment_ids: tuple[int, ...] = ()
+    floor_span_m: float = 0.0
+    refinement_factor: int = 1
 
 
 class GeometryGenerator:
@@ -119,10 +126,12 @@ class GeometryGenerator:
                 stamped_segment_ids=(),
             )
 
+        junction_stamp_points = self._junction_stamp_points(samples_by_segment, cave_network)
         voxel_grid = self._build_voxel_grid(
             samples_by_segment,
             cave_network,
             progress,
+            junction_stamps=junction_stamp_points,
         )
         self._remove_small_solid_pockets(voxel_grid)
         return CaveGeometry(
@@ -150,6 +159,17 @@ class GeometryGenerator:
             surface_texture_frames=self._surface_texture_frames(
                 cave_network,
                 section_field,
+            ),
+            junction_report=self._junction_report(
+                cave_network,
+                samples_by_segment,
+                junction_stamp_points=junction_stamp_points,
+                voxel_grid=voxel_grid,
+            ),
+            junction_records=self._junction_records(
+                cave_network,
+                junction_stamp_points=junction_stamp_points,
+                voxel_grid=voxel_grid,
             ),
         )
 
@@ -194,6 +214,8 @@ class GeometryGenerator:
                 surface_texture_frames=base_geometry.surface_texture_frames,
                 event_meshes=event_meshes,
                 structural_event_ids=(),
+                junction_report=base_geometry.junction_report,
+                junction_records=base_geometry.junction_records,
             )
 
         chunk_meshes = self._march_chunks(voxel_grid, progress)
@@ -246,6 +268,8 @@ class GeometryGenerator:
             surface_texture_frames=base_geometry.surface_texture_frames,
             event_meshes=event_meshes,
             structural_event_ids=structural_event_ids,
+            junction_report=base_geometry.junction_report,
+            junction_records=base_geometry.junction_records,
         )
 
     @staticmethod
@@ -835,10 +859,15 @@ class GeometryGenerator:
         samples_by_segment: dict[int, tuple[SectionSample, ...]],
         cave_network: CaveNetwork,
         progress: GeometryProgressCallback | None,
+        junction_stamps: list[_JunctionStamp] | None = None,
     ) -> VoxelGrid | TiledVoxelGrid:
         self._emit_progress(progress, "voxel", 0, 4, "building stamp bounds")
         stamp_points = self._stamp_bounds_points(samples_by_segment)
-        junction_stamp_points = self._junction_stamp_points(samples_by_segment, cave_network)
+        junction_stamp_points = (
+            junction_stamps
+            if junction_stamps is not None
+            else self._junction_stamp_points(samples_by_segment, cave_network)
+        )
         stamp_points.extend(
             (
                 stamp.center,
@@ -1129,54 +1158,293 @@ class GeometryGenerator:
         samples_by_segment: dict[int, tuple[SectionSample, ...]],
         cave_network: CaveNetwork,
     ) -> list[_JunctionStamp]:
-        samples_by_junction: dict[int, list[SectionSample]] = defaultdict(list)
-        for samples in samples_by_segment.values():
+        # Keep one representative section per incident segment.  Using all
+        # exponentially weighted samples makes the room dimensions depend on
+        # sampling density and can pull a junction centre down a long branch.
+        samples_by_junction: dict[int, dict[int, tuple[float, SectionSample]]] = defaultdict(dict)
+        blend_lengths_by_junction: dict[int, list[float]] = defaultdict(list)
+        for segment_id, samples in samples_by_segment.items():
             for sample in samples:
                 for influence in sample.junction_influences:
-                    samples_by_junction[influence.junction_id].append(sample)
+                    if influence.kind == "crossing":
+                        # XY-overlapping grade-separated passages must remain
+                        # separate volumes; no shared transition stamp.
+                        continue
+                    previous = samples_by_junction[influence.junction_id].get(segment_id)
+                    if previous is None or influence.weight > previous[0]:
+                        samples_by_junction[influence.junction_id][segment_id] = (
+                            float(influence.weight), sample,
+                        )
+                    # Stage-C's per-sample metadata is the primary finite
+                    # transition contract; influence metadata is a fallback
+                    # for legacy fixtures that predate the field.
+                    metadata_length = float(sample.junction_blend_length_m)
+                    if metadata_length <= 0.0:
+                        metadata_length = float(influence.blend_length_m)
+                    if metadata_length > 0.0:
+                        blend_lengths_by_junction[influence.junction_id].append(
+                            metadata_length
+                        )
 
         stamp_points: list[_JunctionStamp] = []
         for junction in cave_network.junctions:
-            # Ordinary confluences are made by the incident sweeps. A generic
-            # room at every split obscures the divider and creates swollen hubs.
-            if junction.kind != "chamber":
+            # Crossing junctions intentionally have no finite union volume.
+            if junction.kind == "crossing":
                 continue
-            influenced_samples = samples_by_junction.get(junction.junction_id, [])
-            if not influenced_samples:
+            incident = samples_by_junction.get(junction.junction_id, {})
+            if not incident:
                 continue
-            mean_z = float(np.mean([sample.z for sample in influenced_samples]))
-            mean_height = float(np.mean([sample.tube_height for sample in influenced_samples]))
-            sample_radius = max(self._radius_xy(sample) for sample in influenced_samples)
-            blend_radius = max(junction.blend_length * 0.28, sample_radius)
+            anchors = [item[1] for item in incident.values()]
+            widths = tuple(float(max(sample.tube_width, 0.0)) for sample in anchors)
+            heights = tuple(float(max(sample.tube_height, 0.0)) for sample in anchors)
+            if not widths:
+                continue
+            median_width = float(np.median(widths))
+            median_height = float(np.median(heights))
+            # The network contract supplies a 1–3 diameter blend length. Clamp
+            # malformed/legacy values to that local scale before constructing
+            # a finite transition volume.
+            diameter = max(median_width, 2.0 * self.config.minimum_radius)
+            metadata_lengths = blend_lengths_by_junction.get(junction.junction_id, [])
+            requested_blend = (
+                float(np.median(metadata_lengths))
+                if metadata_lengths
+                else float(junction.blend_length)
+            )
+            blend_length = float(max(requested_blend, diameter, 1e-6))
+            blend_length = min(blend_length, 3.0 * diameter)
             if junction.kind == "chamber":
-                blend_radius *= self.config.chamber_radius_scale
+                # Chambers are broad but still bounded by the incident tube
+                # scale; this avoids a Boolean-looking spherical room.
+                radius_long = max(0.5 * blend_length, median_width * 0.95)
+                radius_long *= min(max(self.config.chamber_radius_scale, 1.0), 1.7)
+                short_scale = 0.70
+            else:
+                # A split/merge needs a finite saddle spanning the transition,
+                # not a tiny point union.  Keep transverse growth modest so
+                # natural profile asymmetry remains visible.
+                radius_long = max(0.5 * blend_length, median_width * 1.05)
+                radius_long *= min(max(self.config.junction_radius_scale, 1.0), 1.35)
+                short_scale = 0.72
+            radius_long = max(radius_long, self.config.minimum_radius)
+            radius_short = max(
+                median_width * 0.58,
+                # Non-chamber generated diameter must stay within 2.5x the
+                # median incident diameter (the scientific morphology bound).
+                min(radius_long * short_scale, median_width * 1.22),
+                self.config.minimum_radius,
+            )
+            radius_z = max(median_height * 0.58, self.config.minimum_radius)
+            floor_values = np.asarray(
+                [self._sample_floor(sample) for sample in anchors],
+                dtype=float,
+            )
+            mean_z = float(np.mean([sample.z for sample in anchors]))
             position = np.array((junction.center_x, junction.center_y, mean_z), dtype=float)
-            angle = self._junction_orientation(position, influenced_samples)
-            radius_long = max(blend_radius, self.config.minimum_radius)
-            short_scale = 0.68 if junction.kind == "chamber" else 0.58
-            radius_short = max(radius_long * short_scale, sample_radius, self.config.minimum_radius)
+            angle = self._junction_orientation(position, anchors)
             phase_values = procedural_rng(
                 self.config.random_seed,
                 "junction",
                 junction.junction_id,
             ).uniform(0.0, 2.0 * math.pi, size=3)
-            phase = (
-                float(phase_values[0]),
-                float(phase_values[1]),
-                float(phase_values[2]),
-            )
+            phase = tuple(float(value) for value in phase_values)
             stamp_points.append(
                 _JunctionStamp(
                     center=position,
                     radius_long=radius_long,
                     radius_short=radius_short,
-                    radius_z=max(mean_height * 0.70, self.config.minimum_radius),
+                    radius_z=radius_z,
                     angle=angle,
                     phase=phase,
                     kind=junction.kind,
+                    junction_id=int(junction.junction_id),
+                    blend_length_m=blend_length,
+                    incident_widths=widths,
+                    incident_heights=heights,
+                    incident_segment_ids=tuple(sorted(incident)),
+                    floor_span_m=(
+                        float(np.ptp(floor_values)) if floor_values.size else 0.0
+                    ),
+                    # Eight deterministic sub-voxel evaluations provide real
+                    # local refinement even when global voxel size is coarse.
+                    refinement_factor=9,
                 )
             )
         return stamp_points
+
+    def _junction_report(
+        self,
+        cave_network: CaveNetwork,
+        samples_by_segment: dict[int, tuple[SectionSample, ...]],
+        *,
+        junction_stamp_points: list[_JunctionStamp],
+        voxel_grid: VoxelGrid | TiledVoxelGrid | None = None,
+    ) -> tuple[tuple[str, float], ...]:
+        """Summarize local junction geometry for QA and scientific reports."""
+
+        _ = samples_by_segment
+        connected = [stamp for stamp in junction_stamp_points if stamp.incident_widths]
+        widths = [width for stamp in connected for width in stamp.incident_widths]
+        heights = [height for stamp in connected for height in stamp.incident_heights]
+        if not widths:
+            return (
+                ("junction_count", 0.0),
+                ("junction_max_width_m", 0.0),
+                ("junction_incident_max_width_m", 0.0),
+                ("junction_median_incident_width_m", 0.0),
+                ("junction_daughter_parent_area_ratio", 0.0),
+                ("junction_floor_continuity_m", 0.0),
+                ("minimum_throat_clearance_m", 0.0),
+                ("unresolved_sub_two_voxel_features", 0.0),
+                ("junction_refinement_sample_count", 0.0),
+            )
+        area_ratios: list[float] = []
+        generated_widths: list[float] = []
+        segment_lookup = {
+            segment.segment_id: segment
+            for segment in getattr(cave_network, "segments", ())
+        }
+        for stamp in connected:
+            generated_widths.append(2.0 * float(stamp.radius_short))
+            areas = np.pi * (
+                np.asarray(stamp.incident_widths, dtype=float) * 0.5
+            ) * (
+                np.asarray(stamp.incident_heights, dtype=float) * 0.5
+            )
+            if areas.size >= 2:
+                incoming = []
+                outgoing = []
+                junction = next(
+                    (
+                        item
+                        for item in getattr(cave_network, "junctions", ())
+                        if item.junction_id == stamp.junction_id
+                    ),
+                    None,
+                )
+                node_ids = set(junction.node_ids) if junction is not None else set()
+                for index, segment_id in enumerate(stamp.incident_segment_ids):
+                    segment = segment_lookup.get(segment_id)
+                    if segment is None:
+                        continue
+                    if segment.end_node_id in node_ids:
+                        incoming.append(index)
+                    if segment.start_node_id in node_ids:
+                        outgoing.append(index)
+                # A directed ratio is only meaningful when incidence is
+                # unambiguous; otherwise expose it as unavailable in records.
+                if incoming and outgoing and set(incoming).isdisjoint(outgoing):
+                    parent_area = float(np.sum(areas[incoming]))
+                    daughter_area = float(np.sum(areas[outgoing]))
+                    area_ratios.append(daughter_area / max(parent_area, 1e-9))
+        clearance_values: list[float] = []
+        if voxel_grid is not None:
+            for stamp in connected:
+                theta = np.asarray((-math.sin(stamp.angle), math.cos(stamp.angle), 0.0))
+                hit_plus = voxel_grid.raycast_isosurface(
+                    stamp.center,
+                    theta,
+                    max(2.5 * stamp.radius_short, self.config.voxel_size),
+                )
+                hit_minus = voxel_grid.raycast_isosurface(
+                    stamp.center,
+                    -theta,
+                    max(2.5 * stamp.radius_short, self.config.voxel_size),
+                )
+                if hit_plus is not None and hit_minus is not None:
+                    clearance_values.append(float(hit_plus.distance + hit_minus.distance))
+        clearance = min(clearance_values) if clearance_values else 0.0
+        unresolved = sum(
+            1
+            for width, height in zip(widths, heights or widths, strict=False)
+            if min(width, height) / max(self.config.voxel_size, 1e-9) < 2.0
+        )
+        return (
+            ("junction_count", float(len(connected))),
+            ("junction_max_width_m", float(max(generated_widths))),
+            ("junction_incident_max_width_m", float(max(widths))),
+            ("junction_median_incident_width_m", float(np.median(widths))),
+            (
+                "junction_daughter_parent_area_ratio",
+                float(np.mean(area_ratios)) if area_ratios else 0.0,
+            ),
+            (
+                "junction_floor_continuity_m",
+                float(max(stamp.floor_span_m for stamp in connected)),
+            ),
+            ("minimum_throat_clearance_m", float(max(clearance, 0.0))),
+            ("unresolved_sub_two_voxel_features", float(unresolved)),
+            (
+                "junction_refinement_sample_count",
+                float(sum(stamp.refinement_factor for stamp in connected)),
+            ),
+        )
+
+    def _junction_records(
+        self,
+        cave_network: CaveNetwork,
+        *,
+        junction_stamp_points: list[_JunctionStamp],
+        voxel_grid: VoxelGrid | TiledVoxelGrid | None = None,
+    ) -> tuple[tuple[tuple[str, object], ...], ...]:
+        """Return immutable per-junction records, including unresolved flags."""
+
+        segment_lookup = {
+            segment.segment_id: segment
+            for segment in getattr(cave_network, "segments", ())
+        }
+        records: list[tuple[tuple[str, object], ...]] = []
+        for stamp in junction_stamp_points:
+            junction = next(
+                (
+                    item
+                    for item in getattr(cave_network, "junctions", ())
+                    if item.junction_id == stamp.junction_id
+                ),
+                None,
+            )
+            node_ids = set(junction.node_ids) if junction is not None else set()
+            incoming: list[int] = []
+            outgoing: list[int] = []
+            for index, segment_id in enumerate(stamp.incident_segment_ids):
+                segment = segment_lookup.get(segment_id)
+                if segment is None:
+                    continue
+                if segment.end_node_id in node_ids:
+                    incoming.append(index)
+                if segment.start_node_id in node_ids:
+                    outgoing.append(index)
+            ratio: object = None
+            if incoming and outgoing and set(incoming).isdisjoint(outgoing):
+                widths = np.asarray(stamp.incident_widths, dtype=float)
+                heights = np.asarray(stamp.incident_heights, dtype=float)
+                areas = np.pi * (0.5 * widths) * (0.5 * heights)
+                ratio = float(np.sum(areas[outgoing]) / max(np.sum(areas[incoming]), 1e-9))
+            throat = 0.0
+            if voxel_grid is not None:
+                direction = np.asarray((-math.sin(stamp.angle), math.cos(stamp.angle), 0.0))
+                plus = voxel_grid.raycast_isosurface(stamp.center, direction, 2.5 * stamp.radius_short)
+                minus = voxel_grid.raycast_isosurface(stamp.center, -direction, 2.5 * stamp.radius_short)
+                if plus is not None and minus is not None:
+                    throat = float(plus.distance + minus.distance)
+            unresolved = min(
+                stamp.incident_widths or (0.0,)
+            ) / max(self.config.voxel_size, 1e-9) < 2.0
+            records.append(
+                (
+                    ("junction_id", int(stamp.junction_id)),
+                    ("kind", str(stamp.kind)),
+                    ("generated_width_m", float(2.0 * stamp.radius_short)),
+                    ("incident_widths_m", tuple(float(value) for value in stamp.incident_widths)),
+                    ("daughter_parent_area_ratio", ratio),
+                    ("floor_span_m", float(stamp.floor_span_m)),
+                    ("blend_length_m", float(stamp.blend_length_m)),
+                    ("refinement_sample_count", int(stamp.refinement_factor)),
+                    ("minimum_throat_clearance_m", throat),
+                    ("resolved", not unresolved),
+                )
+            )
+        return tuple(records)
 
     @staticmethod
     def _junction_orientation(
@@ -1214,6 +1482,18 @@ class GeometryGenerator:
         return max(
             sample.tube_height * 0.5 * self.config.tunnel_radius_scale, self.config.minimum_radius
         )
+
+    def _sample_floor(self, sample: SectionSample) -> float:
+        """Return the lowest point of a geometry-ready profile in world Z."""
+
+        profile = np.asarray(sample.profile_points, dtype=float)
+        if profile.size == 0:
+            return float(sample.z - 0.5 * sample.tube_height)
+        profile = profile * self._profile_scale(sample)
+        normal = np.asarray(sample.normal, dtype=float)
+        binormal = np.asarray(sample.binormal, dtype=float)
+        vertical = profile[:, 0] * normal[2] + profile[:, 1] * binormal[2]
+        return float(sample.z + np.min(vertical))
 
     def _stamp_network_chain(
         self,
@@ -1776,49 +2056,71 @@ class GeometryGenerator:
         dz = z_grid - stamp.center[2]
         cos_angle = math.cos(stamp.angle)
         sin_angle = math.sin(stamp.angle)
-        local_long = dx * cos_angle + dy * sin_angle
-        local_short = -dx * sin_angle + dy * cos_angle
-
+        # Evaluate a small deterministic sub-voxel stencil.  Taking the
+        # maximum preserves the carved-volume convention while resolving
+        # junction saddles/chokes that would otherwise alias at coarse grids.
+        stencil = [(0.0, 0.0, 0.0)]
+        if stamp.refinement_factor > 1:
+            quarter = 0.25 * voxel_size
+            stencil.extend(
+                (sx * quarter, sy * quarter, sz * quarter)
+                for sx in (-1.0, 1.0)
+                for sy in (-1.0, 1.0)
+                for sz in (-1.0, 1.0)
+            )
         amplitude = max(self.config.junction_irregularity_amplitude, 0.0)
         frequency = max(self.config.junction_irregularity_frequency, 1e-6)
         phase_a, phase_b, phase_c = stamp.phase
-        theta = np.arctan2(
-            local_short / max(stamp.radius_short, 1e-6),
-            local_long / max(stamp.radius_long, 1e-6),
-        )
-        radius_variation = 1.0 + amplitude * (
-            0.38 * np.sin(3.0 * theta + phase_a)
-            + 0.26 * np.sin(5.0 * theta + phase_b)
-            + 0.18 * np.cos(frequency * (local_long - 0.6 * local_short) + phase_c)
-        )
-        radius_variation = np.clip(radius_variation, 0.72, 1.22)
-
-        scaled_long = local_long / np.maximum(stamp.radius_long * radius_variation, 1e-6)
-        scaled_short = local_short / np.maximum(stamp.radius_short * radius_variation, 1e-6)
-        scaled_z = dz / max(stamp.radius_z, 1e-6)
-        normalized_distance = np.sqrt(
-            scaled_long * scaled_long
-            + scaled_short * scaled_short
-            + scaled_z * scaled_z
-        )
-        signed_distance = (normalized_distance - 1.0) * min(
-            stamp.radius_long,
-            stamp.radius_short,
-            stamp.radius_z,
-        )
-        density_values = -signed_distance / max(voxel_size, 1e-6)
-        density_values += self._wall_roughness(
-            x_grid,
-            y_grid,
-            z_grid,
-            signed_distance,
-            local_vertical=dz,
-        )
-        if stamp.kind == "chamber":
-            density_values += 0.35 * amplitude * np.sin(
-                frequency * 0.7 * (local_long + local_short + dz)
-                + phase_b
+        density_values = np.full(dx.shape, -np.inf, dtype=float)
+        for offset_x, offset_y, offset_z in stencil:
+            sample_dx = dx + offset_x
+            sample_dy = dy + offset_y
+            sample_dz = dz + offset_z
+            local_long = sample_dx * cos_angle + sample_dy * sin_angle
+            local_short = -sample_dx * sin_angle + sample_dy * cos_angle
+            theta = np.arctan2(
+                local_short / max(stamp.radius_short, 1e-6),
+                local_long / max(stamp.radius_long, 1e-6),
             )
+            radius_variation = 1.0 + amplitude * (
+                0.38 * np.sin(3.0 * theta + phase_a)
+                + 0.26 * np.sin(5.0 * theta + phase_b)
+                + 0.18 * np.cos(
+                    frequency * (local_long - 0.6 * local_short) + phase_c
+                )
+            )
+            radius_variation = np.clip(radius_variation, 0.72, 1.22)
+            scaled_long = local_long / np.maximum(
+                stamp.radius_long * radius_variation, 1e-6
+            )
+            scaled_short = local_short / np.maximum(
+                stamp.radius_short * radius_variation, 1e-6
+            )
+            scaled_z = sample_dz / max(stamp.radius_z, 1e-6)
+            normalized_distance = np.sqrt(
+                scaled_long * scaled_long
+                + scaled_short * scaled_short
+                + scaled_z * scaled_z
+            )
+            signed_distance = (normalized_distance - 1.0) * min(
+                stamp.radius_long,
+                stamp.radius_short,
+                stamp.radius_z,
+            )
+            candidate = -signed_distance / max(voxel_size, 1e-6)
+            candidate += self._wall_roughness(
+                x_grid + offset_x,
+                y_grid + offset_y,
+                z_grid + offset_z,
+                signed_distance,
+                local_vertical=sample_dz,
+            )
+            if stamp.kind == "chamber":
+                candidate += 0.35 * amplitude * np.sin(
+                    frequency * 0.7 * (local_long + local_short + sample_dz)
+                    + phase_b
+                )
+            np.maximum(density_values, candidate, out=density_values)
 
         region = density[lower[0] : upper[0], lower[1] : upper[1], lower[2] : upper[2]]
         np.maximum(region, density_values.astype(np.float32), out=region)
