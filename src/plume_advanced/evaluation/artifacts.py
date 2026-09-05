@@ -247,6 +247,7 @@ def export_geometry_report(geometry: CaveGeometry, output_path: str | Path) -> P
     output.parent.mkdir(parents=True, exist_ok=True)
     summary = geometry.summary()
     bounds = geometry.voxel_grid.bounds
+    junction_records = [dict(record) for record in geometry.junction_records]
     payload = {
         "schema": "plume.geometry-report.v1",
         "storage_mode_requested": geometry.config.storage_mode,
@@ -272,6 +273,9 @@ def export_geometry_report(geometry: CaveGeometry, output_path: str | Path) -> P
         "visual_face_count": len(geometry.assembled_faces),
         "canonical_geometry_semantic_sha256": geometry_semantic_hash(geometry),
         "summary": summary,
+        # Keep aggregate summary fields unchanged while exposing local
+        # junction outliers and preserving unresolved ratios as null.
+        "junction_records": junction_records,
     }
     output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return output
