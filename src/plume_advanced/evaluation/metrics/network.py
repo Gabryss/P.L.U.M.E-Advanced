@@ -46,6 +46,7 @@ def network_metrics(
     lengths = np.asarray([segment.total_length for segment in network.segments], dtype=float)
     sinuosity_by_kind = _sinuosity_by_kind(network)
     uphill_by_kind = _uphill_by_kind(network)
+    uphill_provenance = _uphill_provenance_by_kind(network)
     state = _state_consistency(network, incoming, outgoing, conservation_tolerance)
     split_nodes = [node_id for node_id in degrees if len(outgoing[node_id]) > 1]
     merge_nodes = [node_id for node_id in degrees if len(incoming[node_id]) > 1]
@@ -151,6 +152,7 @@ def network_metrics(
         "sinuosity_statistics": sinuosity_by_kind,
         "sustained_uphill_by_kind": uphill_by_kind,
         "uphill_diagnostics": uphill_by_kind,
+        "uphill_provenance_by_kind": uphill_provenance,
         "normalized_topology": _normalized_topology(network, degrees, components),
         "branch_persistence_length_median_m": float(
             np.median(
@@ -395,6 +397,34 @@ def _uphill_by_kind(network: CaveNetwork) -> dict[str, dict[str, Any]]:
         | {"sustained_run_count_total": sum(int(item["sustained_run_count"]) for item in grouped[kind])}
         for kind in sorted(grouped)
     }
+
+
+def _uphill_provenance(segment: CaveSegment) -> str:
+    metadata = segment.metadata
+    profile = metadata.get("grade_profile")
+    if isinstance(profile, dict):
+        if profile.get("uphill_unresolved") or profile.get("resolved") is False:
+            return "uphill_unresolved"
+        if profile.get("formation_origin"):
+            return str(profile["formation_origin"])
+    if isinstance(profile, str) and profile:
+        if "unresolved" in profile:
+            return "uphill_unresolved"
+        return profile
+    if bool(metadata.get("uphill_unresolved", False)):
+        return "uphill_unresolved"
+    if bool(metadata.get("vertical_capture", False)):
+        return "vertical_capture"
+    if metadata.get("formation_origin"):
+        return str(metadata["formation_origin"])
+    return "unspecified"
+
+
+def _uphill_provenance_by_kind(network: CaveNetwork) -> dict[str, dict[str, int]]:
+    grouped: defaultdict[str, Counter[str]] = defaultdict(Counter)
+    for segment in network.segments:
+        grouped[str(segment.kind)][_uphill_provenance(segment)] += 1
+    return {kind: dict(sorted(counts.items())) for kind, counts in sorted(grouped.items())}
 
 
 def _normalized_topology(
