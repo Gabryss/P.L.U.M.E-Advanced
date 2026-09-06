@@ -1191,6 +1191,25 @@ def _validate_pipeline_configs(
         raise ValueError(
             "network.emplacement_history.retirement_flux_threshold must be in [0, 1]"
         )
+    if history.drained_pool_count[0] > history.drained_pool_count[1] or history.drained_pool_count[0] < 0:
+        raise ValueError("network.emplacement_history.drained_pool_count must be a nonnegative range")
+    if history.drained_pool_min_spacing_m < 0.0:
+        raise ValueError("network.emplacement_history.drained_pool_min_spacing_m cannot be negative")
+    for name, value in (
+        ("drained_pool_probability", history.drained_pool_probability),
+        ("drained_pool_flux_quantile", history.drained_pool_flux_quantile),
+    ):
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(f"network.emplacement_history.{name} must be in [0, 1]")
+    for name, value_range in (
+        ("drained_pool_length_m", history.drained_pool_length_m),
+        ("drained_pool_width_ratio", history.drained_pool_width_ratio),
+        ("drained_pool_depth_m", history.drained_pool_depth_m),
+    ):
+        if value_range[0] <= 0.0 or value_range[0] > value_range[1]:
+            raise ValueError(f"network.emplacement_history.{name} must be positive min <= max")
+    if history.drained_pool_min_spacing_m == 0.0:
+        raise ValueError("network.emplacement_history.drained_pool_min_spacing_m must be positive")
     grammar = network.braid_grammar
     for name, value_range in (
         ("zone_count", grammar.zone_count),

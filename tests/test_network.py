@@ -628,6 +628,28 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertGreater(summary["vertical_level_count"], 1.0)
         self.assertGreater(summary["stacked_segment_count"], 0.0)
         self.assertGreater(summary["vertical_capture_count"], 0.0)
+        self.assertGreaterEqual(summary["drained_lava_pool_count"], 1.0)
+        self.assertLessEqual(summary["drained_lava_pool_count"], 3.0)
+        pool_segments = [
+            segment
+            for segment in cave_network.segments
+            if segment.metadata.get("chamber_type") == "drained_lava_pool"
+        ]
+        self.assertTrue(pool_segments)
+        for segment in pool_segments:
+            metadata = segment.metadata
+            for key in (
+                "process_cause",
+                "pool_length_m",
+                "pool_width_m",
+                "pool_depth_m",
+                "pool_aspect_ratio",
+                "pool_inlet_count",
+                "pool_outlet_count",
+            ):
+                self.assertIn(key, metadata)
+            self.assertGreater(float(metadata["pool_length_m"]), 0.0)
+            self.assertGreater(float(metadata["pool_width_m"]), 0.0)
         self.assertGreater(summary["reoccupied_path_count"], 0.0)
         self.assertGreater(summary["piracy_event_count"], 0.0)
         self.assertGreater(summary["flux_starved_retired_count"], 0.0)

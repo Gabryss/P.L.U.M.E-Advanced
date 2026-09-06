@@ -33,6 +33,8 @@ class ProjectConfigurationTests(unittest.TestCase):
             config.network.emplacement_history.reoccupation_probability,
             0.0,
         )
+        self.assertTrue(config.network.emplacement_history.drained_pool_enabled)
+        self.assertEqual(config.network.emplacement_history.drained_pool_count, (1, 3))
         self.assertGreater(
             config.network.emplacement_history.stacked_lobe_fraction,
             0.0,

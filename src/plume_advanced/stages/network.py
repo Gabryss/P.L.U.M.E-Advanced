@@ -101,6 +101,17 @@ class EmplacementHistoryConfig:
     reoccupation_probability: float = 0.24
     breakout_probability: float = 0.58
     retirement_flux_threshold: float = 0.10
+    drained_pool_enabled: bool = True
+    drained_pool_probability: float = 0.96
+    drained_pool_count: tuple[int, int] = (1, 3)
+    drained_pool_min_spacing_m: float = 180.0
+    drained_pool_flux_quantile: float = 0.72
+    drained_pool_flux_weight: float = 1.0
+    drained_pool_grade_weight: float = 1.0
+    drained_pool_slope_break_weight: float = 0.8
+    drained_pool_length_m: tuple[float, float] = (35.0, 90.0)
+    drained_pool_width_ratio: tuple[float, float] = (2.0, 4.5)
+    drained_pool_depth_m: tuple[float, float] = (8.0, 24.0)
 
 
 @dataclass(frozen=True)
@@ -229,6 +240,7 @@ class CaveJunction:
     split_style: str
     merge_style: str
     capacity_bias: float
+    metadata: dict[str, SegmentMetadataValue] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -348,6 +360,14 @@ class CaveNetwork:
                     phase_utilization.get(phase, 0.0),
                     allocated / budget,
                 )
+        pool_records = {
+            str(segment.metadata.get("pool_id", segment.segment_id)): segment.metadata
+            for segment in self.segments
+            if segment.metadata.get("chamber_type") == "drained_lava_pool"
+        }
+        pool_widths = [float(item.get("pool_width_m", 0.0)) for item in pool_records.values()]
+        pool_aspects = [float(item.get("pool_aspect_ratio", 0.0)) for item in pool_records.values()]
+        pool_outlet_ratios = [float(item.get("pool_outlet_ratio", 0.0)) for item in pool_records.values()]
 
         return {
             "node_count": float(len(self.nodes)),
@@ -400,6 +420,10 @@ class CaveNetwork:
                     for segment in self.segments
                 )
             ),
+            "drained_lava_pool_count": float(len(pool_records)),
+            "drained_lava_pool_mean_width_m": float(np.mean(pool_widths)) if pool_widths else 0.0,
+            "drained_lava_pool_mean_aspect_ratio": float(np.mean(pool_aspects)) if pool_aspects else 0.0,
+            "drained_lava_pool_mean_outlet_ratio": float(np.mean(pool_outlet_ratios)) if pool_outlet_ratios else 0.0,
             "skylight_prone_segment_count": float(
                 sum(
                     segment.metadata.get("roof_state") == "skylight_prone"
@@ -581,6 +605,16 @@ def export_network_report(
                     "phase_flux_budget",
                     "phase_flux_allocated",
                     "requested_flux",
+                    "chamber_type",
+                    "process_cause",
+                    "pool_length_m",
+                    "pool_width_m",
+                    "pool_depth_m",
+                    "pool_aspect_ratio",
+                    "pool_outlet_ratio",
+                    "pool_inlet_count",
+                    "pool_outlet_count",
+                    "pool_site_score",
                 )
             },
         }
@@ -1244,6 +1278,12 @@ class CaveNetworkGenerator:
                         )
                     )
 
+        selected_paths = self._annotate_drained_pool_chambers(
+            host_field=host_field,
+            geometry=geometry,
+            selected_paths=tuple(selected_paths),
+            rng=procedural_rng(self.config.random_seed, "drained-lava-pools"),
+        )
         skeleton_mask, selected_flux, _ = self._build_representative_fields(
             shape=host_field.growth_cost.shape,
             selected_paths=tuple(selected_paths),
@@ -1406,6 +1446,118 @@ class CaveNetworkGenerator:
             + self.config.corridor_weight * corridor_score
         )
         return support
+
+    def _annotate_drained_pool_chambers(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        selected_paths: tuple[_SelectedPath, ...],
+        rng: np.random.Generator,
+    ) -> tuple[_SelectedPath, ...]:
+        """Select sparse, process-caused drained lava pools on existing routes."""
+        history = self.config.emplacement_history
+        if not history.drained_pool_enabled or not selected_paths:
+            return selected_paths
+        if float(rng.random()) > history.drained_pool_probability:
+            return selected_paths
+        _mask, route_flux, _families = self._build_representative_fields(
+            shape=host_field.elevation.shape,
+            selected_paths=selected_paths,
+        )
+        positive_flux = route_flux[route_flux > 0.0]
+        flux_reference = float(np.quantile(positive_flux, history.drained_pool_flux_quantile)) if positive_flux.size else 0.0
+        candidates: list[tuple[float, int, tuple[int, int], str, float, float]] = []
+        for path_index, selected_path in enumerate(selected_paths):
+            if selected_path.kind in {"source_feeder", "spur"} or len(selected_path.path) < 7:
+                continue
+            cells = selected_path.path
+            center_index = len(cells) // 2
+            center = cells[center_index]
+            before = cells[max(0, center_index - 3)]
+            after = cells[min(len(cells) - 1, center_index + 3)]
+            distance = max(
+                math.hypot(
+                    float(host_field.x_coords[after[1]] - host_field.x_coords[before[1]]),
+                    float(host_field.y_coords[after[0]] - host_field.y_coords[before[0]]),
+                ),
+                geometry.cell_scale,
+            )
+            grade = abs(float(host_field.elevation[after] - host_field.elevation[before])) / distance
+            slope_before = float(host_field.slope_degrees[before])
+            slope_after = float(host_field.slope_degrees[after])
+            slope_break = abs(slope_after - slope_before) / 18.0
+            local_flux = float(np.mean([route_flux[cell] for cell in cells]))
+            flux_score = local_flux / max(flux_reference, 1e-9)
+            capacity_loss = 1.0 - float(host_field.flow_capacity[center])
+            low_grade_score = float(np.exp(-grade / 0.08))
+            coalesced = bool((selected_path.metadata or {}).get("coalesced", False)) or selected_path.kind == "anastomosis"
+            if not (coalesced or slope_break >= 0.08 or capacity_loss >= 0.35):
+                continue
+            cause = "coalescence" if coalesced else "slope_break" if slope_break >= 0.08 else "capacity_loss"
+            score = (
+                history.drained_pool_flux_weight * flux_score
+                + history.drained_pool_grade_weight * low_grade_score
+                + history.drained_pool_slope_break_weight * slope_break
+                + 0.7 * capacity_loss
+            )
+            candidates.append((score, path_index, center, cause, local_flux, low_grade_score))
+        if not candidates:
+            return selected_paths
+        candidates.sort(key=lambda item: (-item[0], item[1]))
+        target_count = int(
+            rng.integers(history.drained_pool_count[0], history.drained_pool_count[1] + 1)
+        )
+        chosen: list[tuple[float, int, tuple[int, int], str, float, float]] = []
+        chosen_alongs: list[float] = []
+        for candidate in candidates:
+            if len(chosen) >= target_count:
+                break
+            along = float(geometry.along_grid[candidate[2]])
+            if any(abs(along - previous) < history.drained_pool_min_spacing_m for previous in chosen_alongs):
+                continue
+            chosen.append(candidate)
+            chosen_alongs.append(along)
+        if not chosen:
+            return selected_paths
+        chosen_by_path = {item[1]: item for item in chosen}
+        annotated: list[_SelectedPath] = []
+        for path_index, selected_path in enumerate(selected_paths):
+            candidate = chosen_by_path.get(path_index)
+            if candidate is None:
+                annotated.append(selected_path)
+                continue
+            _score, _index, center, cause, local_flux, low_grade_score = candidate
+            # Use the configured local passage envelope as the reference so
+            # pool widening remains an auditable 2--5x morphological change,
+            # independent of raster flux units.
+            base_width = 2.0 * self.config.base_passage_radius
+            length_m = float(rng.uniform(*history.drained_pool_length_m))
+            width_ratio = float(rng.uniform(*history.drained_pool_width_ratio))
+            depth_m = float(rng.uniform(*history.drained_pool_depth_m))
+            metadata = dict(selected_path.metadata or {})
+            metadata.update(
+                {
+                    "chamber_forming": True,
+                    "chamber_type": "drained_lava_pool",
+                    "pool_id": f"drained_pool_{path_index}",
+                    "chamber_id": f"drained_pool_{path_index}",
+                    "process_cause": cause,
+                    "pool_length_m": length_m,
+                    "pool_width_m": base_width * width_ratio,
+                    "pool_depth_m": depth_m,
+                    "pool_aspect_ratio": length_m / max(base_width * width_ratio, 1e-9),
+                    "pool_outlet_ratio": width_ratio,
+                    "pool_inlet_count": 2 if cause == "coalescence" else 1,
+                    "pool_outlet_count": 1,
+                    "pool_site_score": float(_score),
+                    "pool_flux": local_flux,
+                    "pool_low_grade_score": low_grade_score,
+                    "pool_center_along_m": float(geometry.along_grid[center]),
+                }
+            )
+            annotated.append(replace(selected_path, metadata=metadata))
+        return tuple(annotated)
 
     def _select_source_cells(
         self,
@@ -3555,6 +3707,10 @@ class CaveNetworkGenerator:
         for selected_path in selected_paths:
             node_cell_set.add(selected_path.path[0])
             node_cell_set.add(selected_path.path[-1])
+            if (selected_path.metadata or {}).get("chamber_type") == "drained_lava_pool":
+                pool_center = selected_path.path[len(selected_path.path) // 2]
+                node_cell_set.add(pool_center)
+                chamber_cells.add(pool_center)
             if selected_path.kind in {"chamber_braid", "ladder"} or bool(
                 (selected_path.metadata or {}).get("chamber_forming", False)
             ):
@@ -3573,7 +3729,14 @@ class CaveNetworkGenerator:
                 node_kind = "entry"
             elif cell == sink_cell:
                 node_kind = "exit"
-            elif cell in chamber_cells and path_use_counts.get(cell, 0) >= 2:
+            elif cell in chamber_cells and (
+                path_use_counts.get(cell, 0) >= 2
+                or any(
+                    (selected_path.metadata or {}).get("chamber_type") == "drained_lava_pool"
+                    and selected_path.path[len(selected_path.path) // 2] == cell
+                    for selected_path in selected_paths
+                )
+            ):
                 node_kind = "chamber"
             elif path_use_counts.get(cell, 0) == 1:
                 node_kind = (
@@ -4133,6 +4296,26 @@ class CaveNetworkGenerator:
                     split_style=split_style,
                     merge_style=merge_style,
                     capacity_bias=capacity_bias,
+                    metadata=next(
+                        (
+                            {
+                                key: segment.metadata[key]
+                                for key in (
+                                    "chamber_type",
+                                    "process_cause",
+                                    "pool_length_m",
+                                    "pool_width_m",
+                                    "pool_depth_m",
+                                    "pool_aspect_ratio",
+                                    "pool_outlet_ratio",
+                                )
+                                if key in segment.metadata
+                            }
+                            for segment in cluster_segments
+                            if segment.metadata.get("chamber_type") == "drained_lava_pool"
+                        ),
+                        {},
+                    ),
                 )
             )
         return junctions

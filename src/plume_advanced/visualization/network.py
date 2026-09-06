@@ -90,6 +90,7 @@ class CaveNetworkPlotter:
             f"Loops: {int(summary['loop_count'])} | "
             f"Captures/chambers: {int(summary['vertical_capture_count'])}/"
             f"{int(summary['process_chamber_count'])} | "
+            f"Drained pools: {int(summary['drained_lava_pool_count'])} | "
             f"Skeleton/visible channels: "
             f"{int(summary['max_parallel_channels'])}/"
             f"{int(summary['max_visible_parallel_channels'])} | "
@@ -158,6 +159,9 @@ class CaveNetworkPlotter:
             elif segment.kind == "chamber_braid":
                 color = "#fb7185"
                 linewidth = 0.8 if dense_graph else 1.0
+            elif segment.metadata.get("chamber_type") == "drained_lava_pool":
+                color = "#f97316"
+                linewidth = 1.8 if dense_graph else 2.4
             elif bool(segment.metadata.get("chamber_forming", False)):
                 color = "#fb7185"
                 linewidth = 1.1 if dense_graph else 1.45
