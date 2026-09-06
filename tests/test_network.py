@@ -696,6 +696,12 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
             len(breakout_records),
         )
         self.assertGreater(len(breakout_records), 0)
+        self.assertGreaterEqual(
+            len({int(metadata["birth_phase"]) for metadata in breakout_records.values()}),
+            2,
+            "default emplacement should span multiple eruptive phases",
+        )
+        phase_allocations: dict[int, float] = {}
         for metadata in breakout_records.values():
             self.assertEqual(
                 metadata["branching_process"],
@@ -714,6 +720,30 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
             parent_before = float(metadata["parent_flux_before_split"])
             parent_after = float(metadata["parent_flux_after_split"])
             returned_flux = float(metadata["coalescence_returned_flux"])
+            phase = int(metadata["birth_phase"])
+            phase_allocations[phase] = phase_allocations.get(phase, 0.0) + initial_flux
+            self.assertLessEqual(
+                phase_allocations[phase],
+                float(metadata["phase_flux_budget"]) + 1e-9,
+            )
+            self.assertIn(
+                metadata["formation_state"],
+                {
+                    "coalesced",
+                    "vertically_captured",
+                    "pirated_breakout",
+                    "reoccupied_passage",
+                    "thermally_abandoned",
+                    "flux_starved_retired",
+                    "stranded",
+                },
+            )
+            for key in ("reoccupied", "pirated", "coalesced", "stalled", "retired"):
+                self.assertIn(key, metadata)
+            self.assertIn(
+                metadata["event_type"],
+                {"new_breakout", "reoccupation", "pirated", "coalesced", "stalled", "retired"},
+            )
             self.assertGreaterEqual(parent_before, initial_flux)
             self.assertAlmostEqual(parent_after, parent_before - initial_flux)
             self.assertGreater(float(metadata["deposition_feedback_m"]), 0.0)

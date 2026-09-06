@@ -25,6 +25,14 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(config.network.network_density, 3.0)
         self.assertEqual(config.network.lobe_growth.path_count, (6, 6))
         self.assertEqual(config.network.emplacement_history.phase_count, (3, 5))
+        self.assertAlmostEqual(
+            config.network.emplacement_history.phase_flux_budget_fraction,
+            1.0,
+        )
+        self.assertGreaterEqual(
+            config.network.emplacement_history.reoccupation_probability,
+            0.0,
+        )
         self.assertGreater(
             config.network.emplacement_history.stacked_lobe_fraction,
             0.0,

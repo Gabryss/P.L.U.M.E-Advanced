@@ -161,6 +161,10 @@ maximum_absolute_level = 2
 chamber_formation_probability = 0.28
 vertical_capture_chamber_probability = 0.62
 roof_failure_probability = 0.16
+phase_flux_budget_fraction = 1.0
+reoccupation_probability = 0.24
+breakout_probability = 0.58
+retirement_flux_threshold = 0.08
 
 # Retained for the explicit legacy_braid compatibility mode.
 [network.braid_grammar]

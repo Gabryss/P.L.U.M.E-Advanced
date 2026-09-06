@@ -94,6 +94,13 @@ class EmplacementHistoryConfig:
     chamber_formation_probability: float = 0.28
     vertical_capture_chamber_probability: float = 0.62
     roof_failure_probability: float = 0.16
+    # Finite discharge available to each eruptive phase, expressed relative
+    # to ``network.source_flux``.  Later phases inherit only established
+    # passages and deposited relief from earlier pulses.
+    phase_flux_budget_fraction: float = 1.0
+    reoccupation_probability: float = 0.24
+    breakout_probability: float = 0.58
+    retirement_flux_threshold: float = 0.08
 
 
 @dataclass(frozen=True)
@@ -1502,9 +1509,48 @@ class CaveNetworkGenerator:
             self.config.source_flux,
             dtype=float,
         )
+        phase_budget = max(
+            float(self.config.source_flux)
+            * float(self.config.emplacement_history.phase_flux_budget_fraction),
+            0.0,
+        )
+        phase_allocated = np.zeros(max(phase_count, 1), dtype=float)
+        # Reoccupation targets are prior secondary lobe centerlines, not the
+        # arterial backbone or source feeders (which remain valid merge
+        # destinations but are not counted as passage reuse).
+        reusable_cells = {
+            cell
+            for selected_path in initial_paths
+            if selected_path.kind not in {"backbone", "source_feeder"}
+            for cell in selected_path.path
+        }
+        established_cells = set(existing_cells)
         emplacement_surface = np.array(host_field.elevation, dtype=float, copy=True)
         result: list[_SelectedPath] = []
-        for branch_index, breakout in enumerate(breakout_sites):
+        # Assign phases deterministically first, then process the event queue
+        # in chronological order.  This makes relief and passage reuse from an
+        # earlier pulse available to every later pulse, independent of the
+        # spatial ranking of breakout sites.
+        phase_assignments: dict[int, int] = {}
+        for branch_index in range(len(breakout_sites)):
+            phase_rng = procedural_rng(
+                self.config.random_seed,
+                "lobe-emplacement-history",
+                branch_index,
+            )
+            if len(breakout_sites) <= 1:
+                phase_assignments[branch_index] = 0
+            else:
+                phase_position = branch_index / (len(breakout_sites) - 1)
+                phase_value = int(round(phase_position * (phase_count - 1)))
+                phase_value += int(phase_rng.choice((-1, 0, 1), p=(0.16, 0.68, 0.16)))
+                phase_assignments[branch_index] = int(np.clip(phase_value, 0, phase_count - 1))
+        ordered_indices = sorted(
+            range(len(breakout_sites)),
+            key=lambda index: (phase_assignments[index], index),
+        )
+        for branch_index in ordered_indices:
+            breakout = breakout_sites[branch_index]
             anchor = breakout.cell
             branch_rng = procedural_rng(
                 self.config.random_seed,
@@ -1523,18 +1569,7 @@ class CaveNetworkGenerator:
                 "lobe-emplacement-history",
                 branch_index,
             )
-            if len(breakout_sites) <= 1:
-                birth_phase = 0
-            else:
-                phase_position = branch_index / (len(breakout_sites) - 1)
-                birth_phase = int(round(phase_position * (phase_count - 1)))
-                birth_phase = int(
-                    np.clip(
-                        birth_phase + int(phase_rng.choice((-1, 0, 1), p=(0.16, 0.68, 0.16))),
-                        0,
-                        phase_count - 1,
-                    )
-                )
+            birth_phase = phase_assignments[branch_index]
             active_span = self._sample_int_range(
                 phase_rng,
                 self.config.emplacement_history.active_phase_span,
@@ -1574,10 +1609,68 @@ class CaveNetworkGenerator:
             split_fraction = float(
                 np.clip(requested_fraction * (0.72 + 0.38 * severity), 0.0, 0.82)
             )
-            initial_flux = parent_flux_before * split_fraction
-            minimum_viable_flux = self.config.source_flux * controls.minimum_viable_flux_fraction
-            if initial_flux < minimum_viable_flux:
+            requested_flux = parent_flux_before * split_fraction
+            phase_remaining = max(phase_budget - phase_allocated[birth_phase], 0.0)
+            initial_flux = min(requested_flux, phase_remaining)
+            minimum_viable_flux = self.config.source_flux * max(
+                controls.minimum_viable_flux_fraction,
+                self.config.emplacement_history.retirement_flux_threshold,
+            )
+            if initial_flux <= 1e-9:
                 continue
+            viable_flux = initial_flux >= minimum_viable_flux
+            # Reoccupation is only available to a later phase when a nearby
+            # established passage lies in a compatible downstream corridor.
+            # The front still starts at the physical breakout anchor; no path
+            # teleportation is introduced.
+            anchor_along = float(geometry.along_grid[anchor])
+            nearby_established = [
+                cell
+                for cell in reusable_cells
+                if 0.45 * self.config.lobe_growth.minimum_persistence_steps * geometry.cell_scale
+                <= float(geometry.along_grid[cell]) - anchor_along
+                <= 10.0 * geometry.cell_scale
+                and math.hypot(cell[0] - anchor[0], cell[1] - anchor[1]) <= 12.0
+            ]
+            anchor_world = self._cell_to_world(host_field, anchor)
+            downhill_x, downhill_y = host_field.downhill_direction(
+                anchor_world[0],
+                anchor_world[1],
+                fallback_angle_degrees=math.degrees(math.atan2(geometry.flow_y, geometry.flow_x)),
+            )
+            downstream_alignment = downhill_x * geometry.flow_x + downhill_y * geometry.flow_y
+            reoccupied = bool(
+                birth_phase > 0
+                and nearby_established
+                and downstream_alignment >= -0.15
+                and phase_rng.random()
+                < self.config.emplacement_history.reoccupation_probability
+            )
+            reoccupation_target = (
+                min(
+                    nearby_established,
+                    key=lambda cell: math.hypot(cell[0] - anchor[0], cell[1] - anchor[1]),
+                )
+                if reoccupied
+                else None
+            )
+            reuse_prefix = (
+                self._build_connector_path(
+                    host_field=host_field,
+                    geometry=geometry,
+                    support_field=support_field,
+                    start_cell=anchor,
+                    end_cell=reoccupation_target,
+                    backbone_alongs=backbone_alongs,
+                    backbone_crosses=backbone_crosses,
+                )
+                if reoccupation_target is not None
+                else []
+            )
+            trace_start_cell = reoccupation_target or anchor
+            permit_merge = viable_flux and (
+                permit_merge or (reoccupied and (z_level == 0 or allow_capture))
+            )
             initial_direction = self._breakout_initial_direction(
                 host_field=host_field,
                 geometry=geometry,
@@ -1592,10 +1685,13 @@ class CaveNetworkGenerator:
                 downstream_potential=downstream_potential,
                 backbone_alongs=backbone_alongs,
                 backbone_crosses=backbone_crosses,
-                start_cell=anchor,
+                start_cell=trace_start_cell,
                 existing_cells=existing_cells,
                 lateral_sign=float(lateral_sign),
                 permit_merge=permit_merge,
+                merge_target_cells=(
+                    {reoccupation_target} if reoccupation_target is not None else None
+                ),
                 initial_flux=initial_flux,
                 initial_direction=initial_direction,
                 emplacement_surface=emplacement_surface,
@@ -1617,10 +1713,13 @@ class CaveNetworkGenerator:
                     downstream_potential=downstream_potential,
                     backbone_alongs=backbone_alongs,
                     backbone_crosses=backbone_crosses,
-                    start_cell=anchor,
+                    start_cell=trace_start_cell,
                     existing_cells=existing_cells,
                     lateral_sign=float(lateral_sign),
                     permit_merge=permit_merge,
+                    merge_target_cells=(
+                        {reoccupation_target} if reoccupation_target is not None else None
+                    ),
                     initial_flux=initial_flux,
                     initial_direction=self._breakout_initial_direction(
                         host_field=host_field,
@@ -1631,6 +1730,11 @@ class CaveNetworkGenerator:
                     ),
                     emplacement_surface=emplacement_surface,
                     rng=retry_rng,
+                )
+            if reuse_prefix:
+                trace = replace(
+                    trace,
+                    path=tuple(reuse_prefix[:-1]) + trace.path,
                 )
             if not trace.merged:
                 trace = self._trim_stranded_lobe_to_standoff(
@@ -1643,6 +1747,7 @@ class CaveNetworkGenerator:
             if len(simplified) < 3:
                 continue
 
+            phase_allocated[birth_phase] += trace.initial_flux
             parent_flux_after = max(parent_flux_before - trace.initial_flux, 0.0)
             phase_flux[birth_phase, anchor_index:] = np.maximum(
                 phase_flux[birth_phase, anchor_index:] - trace.initial_flux,
@@ -1670,12 +1775,27 @@ class CaveNetworkGenerator:
                 flux_fraction=trace.initial_flux / max(self.config.source_flux, 1e-9),
             )
 
-            if trace.merged:
+            pirated = bool(
+                reoccupied
+                and not trace.merged
+                and phase_rng.random() < self.config.emplacement_history.breakout_probability
+            )
+            if not viable_flux:
+                kind = "abandoned_lobe"
+            elif trace.merged:
                 kind = "anastomosis"
             elif trace.final_temperature_k <= controls.retirement_temperature_k:
                 kind = "abandoned_lobe"
             else:
                 kind = "stalled_lobe"
+            event_type = (
+                "retired" if not viable_flux or kind == "abandoned_lobe" else
+                "pirated" if pirated else
+                "reoccupation" if reoccupied else
+                "coalesced" if trace.merged else
+                "stalled" if kind == "stalled_lobe" else
+                "new_breakout"
+            )
             vertical_capture = trace.merged and z_level != 0
             chamber_probability = (
                 self.config.emplacement_history.vertical_capture_chamber_probability
@@ -1696,11 +1816,12 @@ class CaveNetworkGenerator:
                 trace.merged and phase_rng.random() < min(chamber_probability, 1.0)
             )
             formation_state = (
-                "vertically_captured"
-                if vertical_capture
-                else "coalesced"
-                if trace.merged
-                else "thermally_abandoned"
+                "flux_starved_retired" if not viable_flux else
+                "vertically_captured" if vertical_capture else
+                "coalesced" if trace.merged else
+                "pirated_breakout" if pirated else
+                "reoccupied_passage" if reoccupied else
+                "thermally_abandoned"
                 if trace.final_temperature_k <= controls.retirement_temperature_k
                 else "stranded"
             )
@@ -1731,6 +1852,25 @@ class CaveNetworkGenerator:
                     "lobe_path_id": f"lobe_{branch_index}",
                     "termination": "coalesced" if trace.merged else "cooled_or_stranded",
                     "initial_flux": trace.initial_flux,
+                    "requested_flux": requested_flux,
+                    "phase_flux_budget": phase_budget,
+                    "phase_flux_allocated": phase_allocated[birth_phase],
+                    "parent_flux_replenished": returned_flux,
+                    "reoccupied": reoccupied,
+                    "pirated": pirated,
+                    "event_type": event_type,
+                    "reoccupation_mode": (
+                        "piracy_breakout" if pirated else
+                        "reactivate" if reoccupied else
+                        "new_breakout"
+                    ),
+                    "downstream_alignment": downstream_alignment,
+                    "reoccupation_target_cell": (
+                        list(reoccupation_target) if reoccupation_target is not None else None
+                    ),
+                    "coalesced": bool(trace.merged),
+                    "stalled": bool(not trace.merged and kind == "stalled_lobe"),
+                    "retired": bool(kind == "abandoned_lobe"),
                     "branching_process": "flux_breakout_avulsion",
                     "breakout_trigger": breakout.trigger,
                     "breakout_score": breakout.score,
@@ -1760,6 +1900,8 @@ class CaveNetworkGenerator:
             )
             result.append(selected)
             existing_cells.update(trace.path)
+            established_cells.update(trace.path)
+            reusable_cells.update(trace.path)
         return tuple(result)
 
     def _trim_stranded_lobe_to_standoff(
@@ -2148,6 +2290,7 @@ class CaveNetworkGenerator:
         existing_cells: set[tuple[int, int]],
         lateral_sign: float,
         permit_merge: bool,
+        merge_target_cells: set[tuple[int, int]] | None = None,
         initial_flux: float,
         initial_direction: np.ndarray,
         emplacement_surface: np.ndarray,
@@ -2166,7 +2309,8 @@ class CaveNetworkGenerator:
         minimum_merge_along = start_along + 0.55 * minimum_steps * geometry.cell_scale
         eligible_merge_mask = np.zeros_like(host_field.elevation, dtype=bool)
         if permit_merge:
-            for cell in existing_cells:
+            merge_cells = merge_target_cells if merge_target_cells else existing_cells
+            for cell in merge_cells:
                 if float(geometry.along_grid[cell]) >= minimum_merge_along:
                     eligible_merge_mask[cell] = True
         has_merge_targets = bool(np.any(eligible_merge_mask))

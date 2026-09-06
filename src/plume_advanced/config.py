@@ -1178,9 +1178,19 @@ def _validate_pipeline_configs(
             history.vertical_capture_chamber_probability,
         ),
         ("roof_failure_probability", history.roof_failure_probability),
+        ("reoccupation_probability", history.reoccupation_probability),
+        ("breakout_probability", history.breakout_probability),
     ):
         if not 0.0 <= value <= 1.0:
             raise ValueError(f"network.emplacement_history.{name} must be in [0, 1]")
+    if history.phase_flux_budget_fraction < 0.0:
+        raise ValueError(
+            "network.emplacement_history.phase_flux_budget_fraction cannot be negative"
+        )
+    if not 0.0 <= history.retirement_flux_threshold <= 1.0:
+        raise ValueError(
+            "network.emplacement_history.retirement_flux_threshold must be in [0, 1]"
+        )
     grammar = network.braid_grammar
     for name, value_range in (
         ("zone_count", grammar.zone_count),
