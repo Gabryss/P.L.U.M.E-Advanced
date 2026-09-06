@@ -938,6 +938,17 @@ class CaveNetworkGenerator:
                 raise ValueError(
                     f"Selected emplacement backend {proposal.backend!r} returned an unusable backbone path"
                 )
+            downstream_progress = float(
+                geometry.along_grid[backbone_path[-1]]
+                - geometry.along_grid[backbone_path[0]]
+            )
+            minimum_progress = max(2.0 * geometry.cell_scale, 0.02 * geometry.along_extent)
+            if downstream_progress < minimum_progress:
+                raise ValueError(
+                    f"Selected emplacement backend {proposal.backend!r} produced only "
+                    f"{downstream_progress:.3f} m of downstream progress; at least "
+                    f"{minimum_progress:.3f} m is required"
+                )
             backend_provenance = {
                 "backend": proposal.backend,
                 "version": proposal.version,
@@ -1186,11 +1197,29 @@ class CaveNetworkGenerator:
         host_field: HostField,
         path: tuple[tuple[float, float], ...],
     ) -> list[tuple[int, int]]:
+        """Rasterize proposal points while erasing chronological loops.
+
+        External emplacement models may revisit an older lobe or raster cell.
+        A repeated cell cannot be admitted into PLUME's directed backbone: it
+        would create a semantic flow cycle during flux propagation.  Loop
+        erasure preserves the prefix leading into the revisit and discards the
+        intervening closed walk deterministically.
+        """
+
         cells: list[tuple[int, int]] = []
+        positions: dict[tuple[int, int], int] = {}
         for x_coord, y_coord in path:
             cell = self._world_to_cell(host_field, x_coord, y_coord)
-            if not cells or cell != cells[-1]:
-                cells.append(cell)
+            if cells and cell == cells[-1]:
+                continue
+            previous = positions.get(cell)
+            if previous is not None:
+                for removed in cells[previous + 1 :]:
+                    positions.pop(removed, None)
+                del cells[previous + 1 :]
+                continue
+            positions[cell] = len(cells)
+            cells.append(cell)
         return cells
 
     def _build_flow_geometry(self, host_field: HostField) -> _FlowGeometry:

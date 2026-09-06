@@ -113,6 +113,19 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
                 steps=4,
                 uphill_limit=1.2,
             )
+
+    def test_proposal_rasterization_erases_chronological_loops(self) -> None:
+        host = HostFieldGenerator(
+            HostFieldConfig(grid=GridConfig(width=60.0, height=20.0, nx=7, ny=3))
+        ).generate()
+        generator = CaveNetworkGenerator(CaveNetworkConfig())
+        cells = ((1, 1), (1, 2), (1, 3), (1, 2), (1, 4))
+        path = tuple(generator._cell_to_world(host, cell) for cell in cells)
+
+        rasterized = generator._proposal_path_to_cells(host, path)
+
+        self.assertEqual(rasterized, [(1, 1), (1, 2), (1, 4)])
+
     def test_no_argument_generators_preserve_entry_to_exit_reachability(self) -> None:
         host_field = HostFieldGenerator().generate()
         network = CaveNetworkGenerator().generate(host_field)
