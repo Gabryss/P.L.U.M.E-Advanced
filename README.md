@@ -302,11 +302,16 @@ Stage D turns the section field into a voxel-first mesh. The generator currently
 - adds zoned, multi-scale seeded wall relief near the isosurface, including
   stronger floor terrain variation, so smooth flow-lined regions alternate
   with rougher rocky regions
-- stamps widened junction/chamber regions into the same field
+- stamps bounded, asymmetric split/merge transitions over one to three local
+  diameters, using incident width and flux without producing spherical hubs
+- leaves grade-separated plan-view crossings as independent volumes unless
+  Stage B explicitly marks a coalescence, chamber, or vertical capture
 - processes the field in 3D chunks
 - switches from a dense field to overlapping sparse tiles when the configured
   dense-voxel budget would be exceeded
 - polygonizes chunk meshes with `scikit-image`
+- cancels opposite-wound internal seam faces and verifies that the assembled
+  surface remains closed and manifold
 - validates/exports the assembled OBJ-ready mesh with `trimesh`
 
 ## Configuration
