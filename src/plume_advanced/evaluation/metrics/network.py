@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 from scipy.spatial import cKDTree
 
+from plume_advanced.evaluation.metrics.emplacement import emplacement_metrics
 from plume_advanced.stages.host_field import HostField
 from plume_advanced.stages.network import CaveNetwork, CaveSegment
 
@@ -185,6 +186,10 @@ def network_metrics(
         "sustained_uphill_by_kind": uphill_by_kind,
         "uphill_diagnostics": uphill_by_kind,
         "uphill_provenance_by_kind": uphill_provenance,
+        # Staged-emplacement history is optional on legacy CaveNetwork
+        # objects.  The evaluator returns availability flags instead of
+        # inferring process outcomes when metadata is absent.
+        "emplacement_diagnostics": emplacement_metrics(network),
         "normalized_topology": _normalized_topology(network, degrees, components),
         "branch_persistence_length_median_m": float(
             np.median(
@@ -559,6 +564,7 @@ def sustained_uphill_diagnostics(network: CaveNetwork) -> dict[str, Any]:
 __all__ = [
     "host_exposure",
     "network_metrics",
+    "emplacement_metrics",
     "network_sinuosity_statistics",
     "sustained_uphill_diagnostics",
     "symmetric_centerline_distance",
