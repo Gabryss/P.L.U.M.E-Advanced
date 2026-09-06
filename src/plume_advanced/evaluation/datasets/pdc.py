@@ -54,7 +54,15 @@ def load_pdc(
         raise FileNotFoundError(f"PDC data root does not exist: {root}")
     sections: list[PDCSection] = []
     rejections: list[PDCRejection] = []
-    for path in sorted(root.rglob("*.txt")):
+    # PDC station files are named ``cross-section_1``, ``cross-section_2``,
+    # ... ``cross-section_10``.  Plain lexical sorting places station 10
+    # between stations 1 and 2 and silently corrupts any longitudinal
+    # analysis.  Keep cave/path ordering deterministic while comparing every
+    # digit run numerically.
+    for path in sorted(
+        root.rglob("*.txt"),
+        key=lambda item: _natural_path_key(item, root),
+    ):
         relative = path.relative_to(root).as_posix()
         try:
             raw = _parse_numeric_rows(path)
@@ -227,6 +235,22 @@ def _infer_identifiers(path: Path, root: Path) -> tuple[str, str]:
     relative = path.relative_to(root)
     cave_id = relative.parts[-2] if len(relative.parts) > 1 else path.stem.split("_")[0]
     return cave_id.strip() or "unknown", path.stem
+
+
+def _natural_path_key(
+    path: Path,
+    root: Path,
+) -> tuple[tuple[tuple[int, str | int], ...], ...]:
+    """Return a deterministic, numeric-aware key for a path below ``root``."""
+
+    return tuple(
+        tuple(
+            (1, int(token)) if token.isdigit() else (0, token.casefold())
+            for token in re.split(r"(\d+)", part)
+            if token
+        )
+        for part in path.relative_to(root).parts
+    )
 
 
 def _reason(error: Exception) -> str:

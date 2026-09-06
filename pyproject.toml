@@ -23,6 +23,7 @@ rocks = [
   "rocky @ git+https://github.com/Gabryss/Rocky.git@03c1db59ba45c9da74ab0859ebb547e81e552529",
 ]
 paper = [
+  "laspy[lazrs]>=2.6",
   "psutil>=6.0",
   "openpyxl>=3.1",
 ]

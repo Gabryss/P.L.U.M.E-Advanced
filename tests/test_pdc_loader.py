@@ -47,3 +47,20 @@ def test_pdc_repeated_prefix_marks_one_explicit_cycle(tmp_path: Path) -> None:
     assert sections[0].trailing_cycle_point_count == 2
     assert len(sections[0].raw_points) == 7
     assert len(sections[0].contour) == 5
+
+
+def test_pdc_loader_preserves_numeric_station_order(tmp_path: Path) -> None:
+    cave = tmp_path / "Cave_Stations"
+    cave.mkdir()
+    contour = "0 0\n2 0\n2 1\n0 1\n0 0\n"
+    for station in (10, 2, 1):
+        (cave / f"cross-section_{station}.txt").write_text(contour, encoding="utf-8")
+
+    sections, rejections = load_pdc(tmp_path)
+
+    assert rejections == []
+    assert [section.reference_section_id for section in sections] == [
+        "cross-section_1",
+        "cross-section_2",
+        "cross-section_10",
+    ]

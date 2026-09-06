@@ -6,6 +6,8 @@ paper/outputs/**
 !paper/outputs/.gitkeep
 paper/data/**
 !paper/data/README.md
+# Public reference archives are reproducibly downloaded, not committed.
+data/reference/
 paper/media/video/renders/
 .codex
 .vscode
