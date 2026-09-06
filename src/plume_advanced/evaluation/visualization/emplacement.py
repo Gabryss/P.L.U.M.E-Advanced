@@ -130,7 +130,8 @@ def render_emplacement_phase_activity(
                 )
                 for state in present_states
             ],
-            loc="lower right",
+            loc="center left",
+            bbox_to_anchor=(1.01, 0.5),
             fontsize=7,
         )
 
