@@ -111,6 +111,7 @@ class EmplacementHistoryConfig:
     drained_pool_slope_break_weight: float = 0.8
     drained_pool_length_m: tuple[float, float] = (35.0, 90.0)
     drained_pool_width_ratio: tuple[float, float] = (2.0, 4.5)
+    drained_pool_max_width_m: float = 28.0
     drained_pool_depth_m: tuple[float, float] = (5.0, 12.0)
 
 
@@ -1596,7 +1597,7 @@ class CaveNetworkGenerator:
             requested_width_ratio = float(rng.uniform(*history.drained_pool_width_ratio))
             pool_width = min(
                 base_width * requested_width_ratio,
-                2.0 * self.config.chamber_radius,
+                history.drained_pool_max_width_m,
             )
             width_ratio = pool_width / max(base_width, 1e-9)
             depth_m = float(rng.uniform(*history.drained_pool_depth_m))

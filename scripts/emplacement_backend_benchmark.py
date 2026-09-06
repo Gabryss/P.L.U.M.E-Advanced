@@ -28,7 +28,6 @@ from plume_advanced.evaluation.metrics.network import network_metrics
 from plume_advanced.stages.host_field import GridConfig, HostFieldConfig, HostFieldGenerator
 from plume_advanced.stages.network import CaveNetwork, CaveNetworkConfig, CaveNetworkGenerator
 
-
 BACKENDS = ("internal", "downflow_reference", "flowy")
 FAMILIES = ("natural", "monotonic")
 DEFAULT_SEEDS = (2, 7, 11, 17, 23)
@@ -85,7 +84,13 @@ def _network_signature(network: CaveNetwork, metrics: dict[str, Any]) -> str:
     payload = {
         "metrics": metrics,
         "nodes": [
-            [node.node_id, node.kind, round(node.x, 8), round(node.y, 8), round(node.along_position, 8)]
+            [
+                node.node_id,
+                node.kind,
+                round(node.x, 8),
+                round(node.y, 8),
+                round(node.along_position, 8),
+            ]
             for node in network.nodes
         ],
         "segments": [
@@ -96,7 +101,12 @@ def _network_signature(network: CaveNetwork, metrics: dict[str, Any]) -> str:
                 "kind": segment.kind,
                 "z": segment.z_level,
                 "points": [
-                    [round(point.x, 8), round(point.y, 8), round(point.elevation, 8), round(point.arc_length, 8)]
+                    [
+                        round(point.x, 8),
+                        round(point.y, 8),
+                        round(point.elevation, 8),
+                        round(point.arc_length, 8),
+                    ]
                     for point in segment.points
                 ],
             }
@@ -131,7 +141,9 @@ def _case_metrics(network: CaveNetwork, host: Any) -> dict[str, Any]:
         "cyclomatic_number": int(diagnostics["cyclomatic_number"]),
         "cyclomatic_per_km": float(diagnostics["cyclomatic_number"] * 1000.0 / route_length),
         "junction_density_per_km": float(len(network.junctions) * 1000.0 / route_length),
-        "stacked_share": float(diagnostics["stacked_segment_count"] / max(diagnostics["edge_count"], 1)),
+        "stacked_share": float(
+            diagnostics["stacked_segment_count"] / max(diagnostics["edge_count"], 1)
+        ),
         "sinuosity": float(diagnostics["length_weighted_mean_sinuosity"]),
         "downstream_progress_m": _downstream_progress(network),
         "main_route_length_m": float(diagnostics["main_route_length_m"]),
@@ -252,7 +264,8 @@ def _aggregate(cases: list[dict[str, Any]]) -> dict[str, Any]:
             "valid": len(valid),
             "success_rate": len(successes) / max(len(rows), 1),
             "valid_rate": len(valid) / max(len(rows), 1),
-            "deterministic_rate": sum(bool(row.get("deterministic")) for row in rows) / max(len(rows), 1),
+            "deterministic_rate": sum(bool(row.get("deterministic")) for row in rows)
+            / max(len(rows), 1),
             "failure_types": dict(
                 sorted(
                     {
@@ -260,9 +273,7 @@ def _aggregate(cases: list[dict[str, Any]]) -> dict[str, Any]:
                             (row.get("error") or {}).get("type") == error_type for row in rows
                         )
                         for error_type in {
-                            (row.get("error") or {}).get("type")
-                            for row in rows
-                            if row.get("error")
+                            (row.get("error") or {}).get("type") for row in rows if row.get("error")
                         }
                     }.items()
                 )
@@ -292,7 +303,11 @@ def _recommend(aggregates: dict[str, Any]) -> dict[str, Any]:
             continue
         valid = float(np.mean([row["valid_rate"] for row in rows]))
         deterministic = float(np.mean([row["deterministic_rate"] for row in rows]))
-        runtime = [row["metrics"]["runtime_s"]["median"] for row in rows if row["metrics"]["runtime_s"]["median"] is not None]
+        runtime = [
+            row["metrics"]["runtime_s"]["median"]
+            for row in rows
+            if row["metrics"]["runtime_s"]["median"] is not None
+        ]
         runtime_score = 1.0 / max(float(np.mean(runtime)) if runtime else 1e9, 1e-9)
         runtime_score = min(runtime_score, 1.0)
         components[backend] = {
@@ -303,9 +318,7 @@ def _recommend(aggregates: dict[str, Any]) -> dict[str, Any]:
             "scientific_relevance": scientific_scores[backend],
             "network_scope": network_scope_scores[backend],
         }
-        scores[backend] = sum(
-            weights[name] * score for name, score in components[backend].items()
-        )
+        scores[backend] = sum(weights[name] * score for name, score in components[backend].items())
     selected = max(scores, key=scores.get) if scores else "internal"
     return {
         "selected_default": selected,
@@ -322,7 +335,9 @@ def _recommend(aggregates: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _plot_networks(cases: list[dict[str, Any]], networks: dict[tuple[str, str], CaveNetwork], path: Path) -> None:
+def _plot_networks(
+    cases: list[dict[str, Any]], networks: dict[tuple[str, str], CaveNetwork], path: Path
+) -> None:
     fig, axes = plt.subplots(len(FAMILIES), len(BACKENDS), figsize=(15, 8), squeeze=False)
     colors = {"backbone": "#1f77b4", "source_feeder": "#2ca02c", "spur": "#9467bd"}
     for row, family in enumerate(FAMILIES):
@@ -330,9 +345,18 @@ def _plot_networks(cases: list[dict[str, Any]], networks: dict[tuple[str, str], 
             axis = axes[row][col]
             network = networks.get((family, backend))
             if network is None:
-                failure = next((case for case in cases if case["family"] == family and case["backend"] == backend), None)
+                failure = next(
+                    (
+                        case
+                        for case in cases
+                        if case["family"] == family and case["backend"] == backend
+                    ),
+                    None,
+                )
                 message = (failure or {}).get("error", {}).get("message", "no successful run")
-                axis.text(0.5, 0.5, "FAILED\n" + str(message)[:100], ha="center", va="center", wrap=True)
+                axis.text(
+                    0.5, 0.5, "FAILED\n" + str(message)[:100], ha="center", va="center", wrap=True
+                )
                 axis.set_axis_off()
                 axis.set_title(f"{family} · {backend}")
                 continue
@@ -344,7 +368,13 @@ def _plot_networks(cases: list[dict[str, Any]], networks: dict[tuple[str, str], 
                     alpha=0.8,
                     linewidth=1.0 + 0.5 * (segment.z_level != 0),
                 )
-            axis.scatter([node.x for node in network.nodes], [node.y for node in network.nodes], s=5, color="black", alpha=0.45)
+            axis.scatter(
+                [node.x for node in network.nodes],
+                [node.y for node in network.nodes],
+                s=5,
+                color="black",
+                alpha=0.45,
+            )
             axis.set_title(f"{family} · {backend}")
             axis.set_aspect("equal", adjustable="datalim")
             axis.set_xlabel("x (m)")
@@ -377,13 +407,25 @@ def _plot_metrics(cases: list[dict[str, Any]], path: Path) -> None:
                 if not values:
                     continue
                 x = family_index * 4.0 + backend_index
-                axis.scatter(np.full(len(values), x), values, color=colors[backend], alpha=0.6, s=24)
-                axis.plot([x - 0.15, x + 0.15], [np.median(values)] * 2, color=colors[backend], linewidth=3)
+                axis.scatter(
+                    np.full(len(values), x), values, color=colors[backend], alpha=0.6, s=24
+                )
+                axis.plot(
+                    [x - 0.15, x + 0.15],
+                    [np.median(values)] * 2,
+                    color=colors[backend],
+                    linewidth=3,
+                )
         axis.set_xticks([0, 1, 2, 4, 5, 6])
         axis.set_xticklabels(["N/I", "N/D", "N/F", "M/I", "M/D", "M/F"], rotation=30)
         axis.set_ylabel(label)
         axis.grid(alpha=0.2)
-    handles = [plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=colors[name], label=name, markersize=7) for name in BACKENDS]
+    handles = [
+        plt.Line2D(
+            [0], [0], marker="o", color="w", markerfacecolor=colors[name], label=name, markersize=7
+        )
+        for name in BACKENDS
+    ]
     fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.965), ncol=3)
     fig.suptitle(
         "Stage-B backend metrics across named seeds (N=natural, M=monotonic)",
@@ -446,7 +488,11 @@ def _plot_scorecard(
         axis.set_xticks(positions)
         axis.set_xticklabels(
             [
-                {"internal": "internal", "downflow_reference": "DOWNFLOW\nreference", "flowy": "Flowy"}[backend]
+                {
+                    "internal": "internal",
+                    "downflow_reference": "DOWNFLOW\nreference",
+                    "flowy": "Flowy",
+                }[backend]
                 for backend in available_backends
             ]
         )
@@ -482,15 +528,25 @@ def run_benchmark(
             for seed in seeds:
                 host = hosts[(family, seed)]
                 first, network = _run_one(
-                    family=family, backend=backend, seed=seed, host=host, flowy_executable=flowy_executable
+                    family=family,
+                    backend=backend,
+                    seed=seed,
+                    host=host,
+                    flowy_executable=flowy_executable,
                 )
                 second, _repeat_network = _run_one(
-                    family=family, backend=backend, seed=seed, host=host, flowy_executable=flowy_executable
+                    family=family,
+                    backend=backend,
+                    seed=seed,
+                    host=host,
+                    flowy_executable=flowy_executable,
                 )
                 first["deterministic"] = bool(
                     first["success"] == second["success"]
                     and first.get("signature") == second.get("signature")
-                    and (first.get("error") == second.get("error") if not first["success"] else True)
+                    and (
+                        first.get("error") == second.get("error") if not first["success"] else True
+                    )
                 )
                 if network is not None and (family, backend) not in network_for_plot:
                     network_for_plot[(family, backend)] = network
@@ -515,7 +571,9 @@ def run_benchmark(
             "determinism": "each case is generated twice with identical host and backend seed",
             "flowy_executable": flowy_executable,
         },
-        "backend_provenance": {backend: _provenance(backend, flowy_executable) for backend in backends},
+        "backend_provenance": {
+            backend: _provenance(backend, flowy_executable) for backend in backends
+        },
         "cases": cases,
         "aggregates": aggregates,
         "recommendation": _recommend(aggregates),
@@ -526,7 +584,9 @@ def run_benchmark(
             "scorecard_png": str(output / "scorecard.png"),
         },
     }
-    (output / "benchmark.json").write_text(json.dumps(_jsonable(report), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (output / "benchmark.json").write_text(
+        json.dumps(_jsonable(report), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     _plot_networks(cases, network_for_plot, output / "network_diagrams.png")
     _plot_metrics(cases, output / "metric_comparison.png")
     _plot_scorecard(aggregates, report["recommendation"], output / "scorecard.png")

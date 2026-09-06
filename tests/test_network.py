@@ -656,7 +656,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
             self.assertGreater(float(metadata["pool_width_m"]), 0.0)
             self.assertLessEqual(
                 float(metadata["pool_width_m"]),
-                2.0 * project_config.network.chamber_radius + 1e-9,
+                project_config.network.emplacement_history.drained_pool_max_width_m + 1e-9,
             )
             self.assertAlmostEqual(
                 float(metadata["pool_width_m"]),

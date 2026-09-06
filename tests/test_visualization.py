@@ -12,6 +12,10 @@ from plume_advanced.stages.floor_map import FloorAtlas, FloorCell, FloorMapConfi
 from plume_advanced.stages.host_field import HostFieldGenerator
 from plume_advanced.stages.network import CaveNetworkGenerator
 from plume_advanced.stages.section_field import SectionFieldGenerator
+from plume_advanced.visualization.drained_pools import (
+    DrainedPoolPlotConfig,
+    DrainedPoolPlotter,
+)
 from plume_advanced.visualization.events import (
     GeologicalEventPlotConfig,
     GeologicalEventPlotter,
@@ -62,6 +66,11 @@ def test_stage_diagnostic_renderers_write_valid_png_artifacts(
             network,
             sections,
             tmp_path / "sections.png",
+        ),
+        DrainedPoolPlotter(DrainedPoolPlotConfig((6.0, 4.0), 55)).render(
+            network,
+            sections,
+            tmp_path / "drained-pools.png",
         ),
         GeologicalEventPlotter(GeologicalEventPlotConfig((6.0, 4.0), 55)).render(
             network,

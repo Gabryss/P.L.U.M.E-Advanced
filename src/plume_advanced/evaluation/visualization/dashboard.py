@@ -6,12 +6,13 @@ invokes Stage D geometry or a production pipeline.
 
 from __future__ import annotations
 
-from pathlib import Path
-from collections import defaultdict
 import math
+from collections import defaultdict
+from pathlib import Path
 from typing import Any
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -71,7 +72,9 @@ def _density_rows(density_sweep: Any) -> list[dict[str, Any]]:
             grouped[float(density)].append(
                 {
                     "branch_ratio": float(normalized.get("branch_segment_fraction", 0.0)),
-                    "cyclomatic_per_km": float(metrics.get("cyclomatic_number", 0.0)) / route * 1000.0,
+                    "cyclomatic_per_km": float(metrics.get("cyclomatic_number", 0.0))
+                    / route
+                    * 1000.0,
                     "stacked_share": float(metrics.get("stacked_segment_count", 0))
                     / max(float(metrics.get("edge_count", metrics.get("segment_count", 0))), 1.0),
                     "capture_junction_density_per_km": float(
@@ -109,7 +112,14 @@ def _section_records(section_field: Any) -> list[dict[str, Any]]:
     for segment_field in getattr(section_field, "segment_fields", ()):
         for sample in segment_field.samples:
             metrics = contour_morphometry(sample.profile_points)
-            records.append({"segment_id": segment_field.segment_id, "arc_length": sample.segment_arc_length, **metrics, "profile": sample.profile_points})
+            records.append(
+                {
+                    "segment_id": segment_field.segment_id,
+                    "arc_length": sample.segment_arc_length,
+                    **metrics,
+                    "profile": sample.profile_points,
+                }
+            )
     return records
 
 
@@ -185,9 +195,7 @@ def _dominant_route_continuity(network: Any, records: list[dict[str, Any]]) -> d
         local_end = max(float(record["arc_length"]) for record in segment_records)
         for record in segment_records:
             local_arc = (
-                local_end - float(record["arc_length"])
-                if reverse
-                else float(record["arc_length"])
+                local_end - float(record["arc_length"]) if reverse else float(record["arc_length"])
             )
             cumulative_records.append({**record, "arc_length": offset + local_arc})
         offset += local_end
@@ -210,10 +218,14 @@ def dashboard_payload(
     pdc_label = "generated-only (no PDC calibration supplied)"
     if pdc_calibration is not None:
         if not isinstance(pdc_calibration, dict):
-            raise ValueError("PDC data must be wrapped as {'partition': 'calibration', 'records': ...}")
+            raise ValueError(
+                "PDC data must be wrapped as {'partition': 'calibration', 'records': ...}"
+            )
         partition = str(pdc_calibration.get("partition", "")).lower()
         if partition != "calibration":
-            raise ValueError("dashboard accepts calibration caves only; confirmatory PDC data is forbidden")
+            raise ValueError(
+                "dashboard accepts calibration caves only; confirmatory PDC data is forbidden"
+            )
         calibration = pdc_calibration.get("records", pdc_calibration.get("sections", []))
         pdc_label = "PDC calibration caves"
     payload = {
@@ -248,7 +260,13 @@ def render_diagnostic_dashboard(
 ) -> tuple[Path, Path | None]:
     """Render a 3x3 PNG dashboard and optional canonical JSON sidecar."""
 
-    payload = dashboard_payload(network, section_field, density_sweep=density_sweep, pdc_calibration=pdc_calibration, provenance=provenance)
+    payload = dashboard_payload(
+        network,
+        section_field,
+        density_sweep=density_sweep,
+        pdc_calibration=pdc_calibration,
+        provenance=provenance,
+    )
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     title = "PLUME diagnostic dashboard | " + ", ".join(
@@ -286,9 +304,17 @@ def _plot_topology(axis, network):
     for segment in sorted(network.segments, key=lambda item: item.segment_id):
         x = [point.x for point in segment.points]
         y = [point.y for point in segment.points]
-        birth_phase = segment.metadata.get("birth_phase", segment.metadata.get("emplacement_birth_phase"))
-        death_phase = segment.metadata.get("death_phase", segment.metadata.get("emplacement_death_phase"))
-        phase = float(birth_phase if birth_phase is not None else (death_phase if death_phase is not None else 0.0))
+        birth_phase = segment.metadata.get(
+            "birth_phase", segment.metadata.get("emplacement_birth_phase")
+        )
+        death_phase = segment.metadata.get(
+            "death_phase", segment.metadata.get("emplacement_death_phase")
+        )
+        phase = float(
+            birth_phase
+            if birth_phase is not None
+            else (death_phase if death_phase is not None else 0.0)
+        )
         axis.plot(
             x,
             y,
@@ -370,7 +396,13 @@ def _plot_density(axis, rows):
     axis.set_xlabel("network density")
     axis.legend(fontsize=7, loc="upper left")
     rates.legend(fontsize=7, loc="upper right")
-    axis.text(0.01, 0.01, "✓ connected / zero-flux-free; ✗ unresolved", transform=axis.transAxes, fontsize=7)
+    axis.text(
+        0.01,
+        0.01,
+        "✓ connected / zero-flux-free; ✗ unresolved",
+        transform=axis.transAxes,
+        fontsize=7,
+    )
 
 
 def _plot_section_evolution(axis, field):
@@ -443,8 +475,14 @@ def _plot_pdc(axis, sections):
     for offset, label in enumerate(labels):
         source = calibration_summary if label.startswith("PDC") else generated_summary
         medians = [source.get(feature, {}).get("median") or 0.0 for feature in features]
-        lows = [medians[index] - (source.get(feature, {}).get("q1") or medians[index]) for index, feature in enumerate(features)]
-        highs = [(source.get(feature, {}).get("q3") or medians[index]) - medians[index] for index, feature in enumerate(features)]
+        lows = [
+            medians[index] - (source.get(feature, {}).get("q1") or medians[index])
+            for index, feature in enumerate(features)
+        ]
+        highs = [
+            (source.get(feature, {}).get("q3") or medians[index]) - medians[index]
+            for index, feature in enumerate(features)
+        ]
         axis.bar(
             positions + (offset - (len(labels) - 1) / 2.0) * 0.35,
             medians,
@@ -455,7 +493,9 @@ def _plot_pdc(axis, sections):
             capsize=2,
         )
     axis.set_xticks(positions, features, rotation=45, ha="right")
-    axis.set_title("PDC quartiles (Q1 / median / Q3)\n" + sections.get("pdc_label", "generated-only"))
+    axis.set_title(
+        "PDC quartiles (Q1 / median / Q3)\n" + sections.get("pdc_label", "generated-only")
+    )
     axis.legend(fontsize=7)
 
 

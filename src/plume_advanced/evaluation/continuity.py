@@ -8,7 +8,7 @@ from typing import Any
 
 import numpy as np
 
-from ._common import finite, quantile, value
+from ._common import finite, value
 
 
 def _records(samples: Any) -> list[Any]:
@@ -48,13 +48,17 @@ def _series(samples: Any, field: str, arc_key: str) -> tuple[np.ndarray, np.ndar
     grouped: dict[float, list[float]] = {}
     for coordinate, measurement in pairs:
         grouped.setdefault(coordinate, []).append(measurement)
-    ordered = sorted((coordinate, sum(values) / len(values)) for coordinate, values in grouped.items())
+    ordered = sorted(
+        (coordinate, sum(values) / len(values)) for coordinate, values in grouped.items()
+    )
     if not ordered:
         return np.array([], dtype=float), np.array([], dtype=float)
     return np.array([item[0] for item in ordered]), np.array([item[1] for item in ordered])
 
 
-def _one_continuity(arcs: np.ndarray, values: np.ndarray, *, short_period_fraction: float, sample_count: int) -> dict[str, Any]:
+def _one_continuity(
+    arcs: np.ndarray, values: np.ndarray, *, short_period_fraction: float, sample_count: int
+) -> dict[str, Any]:
     if values.size == 0:
         return {
             "count": 0,
@@ -112,7 +116,11 @@ def _one_continuity(arcs: np.ndarray, values: np.ndarray, *, short_period_fracti
     low_ratio = max(0.0, min(1.0, 1.0 - short_ratio))
     differences = np.diff(uniform_values)
     second = np.diff(uniform_values, n=2)
-    roughness = float(np.mean(np.abs(second)) / (np.mean(np.abs(differences)) + 1.0e-12)) if second.size else 0.0
+    roughness = (
+        float(np.mean(np.abs(second)) / (np.mean(np.abs(differences)) + 1.0e-12))
+        if second.size
+        else 0.0
+    )
     # Autocorrelation peak reinforces the distinction between random roughness
     # and a genuinely repetitive short-period oscillation.
     ac = np.correlate(residual, residual, mode="full")[count - 1 :]
@@ -141,7 +149,15 @@ def _one_continuity(arcs: np.ndarray, values: np.ndarray, *, short_period_fracti
 def longitudinal_continuity(
     samples: Any,
     *,
-    fields: Iterable[str] = ("width", "height", "aspect_ratio", "area", "compactness", "floor_residual", "roof_asymmetry"),
+    fields: Iterable[str] = (
+        "width",
+        "height",
+        "aspect_ratio",
+        "area",
+        "compactness",
+        "floor_residual",
+        "roof_asymmetry",
+    ),
     arc_key: str = "arc_length",
     sample_count: int = 128,
     short_period_fraction: float = 0.20,

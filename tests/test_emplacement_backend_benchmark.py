@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import json
 import importlib.util
+import json
 from pathlib import Path
-
 
 _SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "emplacement_backend_benchmark.py"
 _SPEC = importlib.util.spec_from_file_location("emplacement_backend_benchmark", _SCRIPT)

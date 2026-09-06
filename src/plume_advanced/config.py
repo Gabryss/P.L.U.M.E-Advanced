@@ -689,6 +689,10 @@ def _build_network_config(
         emplacement_history_data,
         EmplacementHistoryConfig,
     )
+    emplacement_history_data.setdefault(
+        "drained_pool_max_width_m",
+        world.body.maximum_room_width_m,
+    )
     emplacement_history_values: Any = {
         key: _to_range_tuple(value) if isinstance(value, list) else value
         for key, value in emplacement_history_data.items()
@@ -1215,6 +1219,8 @@ def _validate_pipeline_configs(
             raise ValueError(f"network.emplacement_history.{name} must be positive min <= max")
     if history.drained_pool_min_spacing_m == 0.0:
         raise ValueError("network.emplacement_history.drained_pool_min_spacing_m must be positive")
+    if history.drained_pool_max_width_m <= 0.0:
+        raise ValueError("network.emplacement_history.drained_pool_max_width_m must be positive")
     grammar = network.braid_grammar
     for name, value_range in (
         ("zone_count", grammar.zone_count),

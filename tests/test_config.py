@@ -35,6 +35,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         )
         self.assertTrue(config.network.emplacement_history.drained_pool_enabled)
         self.assertEqual(config.network.emplacement_history.drained_pool_count, (1, 3))
+        self.assertEqual(config.network.emplacement_history.drained_pool_max_width_m, 28.0)
         self.assertGreater(
             config.network.emplacement_history.stacked_lobe_fraction,
             0.0,

@@ -178,6 +178,7 @@ drained_pool_grade_weight = 1.0
 drained_pool_slope_break_weight = 0.8
 drained_pool_length_m = [35.0, 90.0]
 drained_pool_width_ratio = [2.0, 4.5]
+drained_pool_max_width_m = 28.0
 drained_pool_depth_m = [5.0, 12.0]
 
 # Retained for the explicit legacy_braid compatibility mode.

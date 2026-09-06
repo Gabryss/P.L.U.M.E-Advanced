@@ -77,3 +77,19 @@ flatter, quieter floor and a modest arched roof. The ordinary-passage cap stays
 at 10 m; only explicitly labelled rooms may use the Earth room endmember of
 28 m. Stage D consumes the same metadata to form an elongated, seeded lobate
 volume instead of a spherical chamber.
+
+`drained_pool_max_width_m` is deliberately independent of the ordinary
+`chamber_radius`, so increasing the empirical room endmember does not inflate
+every structural junction in the network.
+
+Generate a review package without invoking Stage D or the rest of the mesh
+pipeline:
+
+```bash
+.venv/bin/python scripts/generate_network_diagnostics.py
+```
+
+The package includes Stage-B topology and emplacement plots, Stage-C section
+gradients, a pool-specific four-panel figure, a calibration-only PDC dashboard,
+and a seeded `network_density` sweep. Its `summary.json` explicitly records the
+Stage A–C-only scope.

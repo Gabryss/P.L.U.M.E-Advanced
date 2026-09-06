@@ -420,7 +420,13 @@ class SectionFieldGenerator:
                 profile = np.asarray(sample.profile_points)
                 width, height = sample.tube_width, sample.tube_height
                 floor_delta = 0.0
-                for index in (0, -1):
+                if math.isclose(sample.segment_arc_length, 0.0, abs_tol=1e-9):
+                    endpoint_indices = (0,)
+                elif math.isclose(sample.segment_arc_length, length, abs_tol=1e-9):
+                    endpoint_indices = (-1,)
+                else:
+                    endpoint_indices = (0, -1)
+                for index in endpoint_indices:
                     target = targets.get((field.segment_id, index))
                     if target is None:
                         continue
@@ -443,15 +449,26 @@ class SectionFieldGenerator:
                         profile = (1.0 - weight) * profile + weight * target_profile
                     width += weight * (reference.tube_width - sample.tube_width)
                     height += weight * (reference.tube_height - sample.tube_height)
-                width_cap = self.config.maximum_tube_width + max(
-                    (
-                        influence.weight**1.8
-                        * (self.config.chamber_max_tube_width - self.config.maximum_tube_width)
-                        for influence in sample.junction_influences
-                        if influence.kind == "chamber"
-                    ),
-                    default=0.0,
-                )
+                chamber_caps = []
+                for influence in sample.junction_influences:
+                    if influence.kind != "chamber":
+                        continue
+                    if influence.chamber_type == "drained_lava_pool":
+                        chamber_caps.append(
+                            self.config.maximum_tube_width
+                            + influence.room_weight
+                            * max(
+                                influence.target_width_m - self.config.maximum_tube_width,
+                                0.0,
+                            )
+                        )
+                    else:
+                        chamber_caps.append(
+                            self.config.maximum_tube_width
+                            + influence.weight**1.8
+                            * (self.config.chamber_max_tube_width - self.config.maximum_tube_width)
+                        )
+                width_cap = max([self.config.maximum_tube_width, *chamber_caps])
                 limited_width = min(width, width_cap)
                 limited_height = min(height, width_cap * self.config.maximum_height_ratio)
                 profile = profile * np.asarray((limited_width / width, limited_height / height))
@@ -1680,9 +1697,21 @@ class SectionFieldGenerator:
         )
 
     def _junction_anchor_arc(self, segment: CaveSegment, junction: CaveJunction) -> float:
-        if segment.start_node_id in junction.node_ids:
+        starts_here = segment.start_node_id in junction.node_ids
+        ends_here = segment.end_node_id in junction.node_ids
+        if starts_here and ends_here:
+            start_distance = math.hypot(
+                segment.points[0].x - junction.center_x,
+                segment.points[0].y - junction.center_y,
+            )
+            end_distance = math.hypot(
+                segment.points[-1].x - junction.center_x,
+                segment.points[-1].y - junction.center_y,
+            )
+            return 0.0 if start_distance <= end_distance else segment.total_length
+        if starts_here:
             return 0.0
-        if segment.end_node_id in junction.node_ids:
+        if ends_here:
             return segment.total_length
         return min(
             (point.arc_length for point in segment.points),

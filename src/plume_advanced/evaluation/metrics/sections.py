@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-import numpy as np
 from typing import Any
+
+import numpy as np
 from scipy.spatial import cKDTree
 
+from plume_advanced.evaluation.continuity import longitudinal_continuity
 from plume_advanced.evaluation.metrics.morphometry import contour_morphometry
 from plume_advanced.stages.section_field import SectionField, SectionSample
-from plume_advanced.evaluation.continuity import longitudinal_continuity
 
 PDC_FEATURES = (
     "width",
@@ -163,7 +164,13 @@ def section_field_diagnostics(section_field: SectionField) -> dict[str, Any]:
     for segment_field in section_field.segment_fields:
         for sample in segment_field.samples:
             metrics = contour_morphometry(sample.profile_points)
-            records.append({"segment_id": segment_field.segment_id, "arc_length": sample.segment_arc_length, **metrics})
+            records.append(
+                {
+                    "segment_id": segment_field.segment_id,
+                    "arc_length": sample.segment_arc_length,
+                    **metrics,
+                }
+            )
     return {
         "schema_version": "1.0",
         "morphometry": pdc_comparable_section_summary(records),
