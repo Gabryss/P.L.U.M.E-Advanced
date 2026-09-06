@@ -379,3 +379,72 @@ def test_global_dense_remesh_is_watertight():
     vertices, faces = generator._assemble_chunks(meshes)
     assert generator._mesh_is_closed_manifold(faces)
     assert trimesh.Trimesh(vertices=vertices, faces=faces, process=False).is_watertight
+
+
+def test_drained_pool_honors_independent_dimensions_and_flow_orientation():
+    from types import SimpleNamespace
+
+    from plume_advanced.stages.section_field import SectionJunctionInfluence
+
+    influence = SectionJunctionInfluence(21, "chamber", 1.0, "gradual", "gradual", 1.0, 12.0)
+    samples = tuple(replace(sample(float(x)), junction_influences=(influence,)) for x in np.linspace(-12, 12, 7))
+    junction = SimpleNamespace(
+        junction_id=21,
+        kind="chamber",
+        node_ids=(1,),
+        center_x=0.0,
+        center_y=0.0,
+        blend_length=12.0,
+        metadata={
+            "chamber_type": "drained_lava_pool",
+            "pool_length_m": 30.0,
+            "pool_width_m": 16.8,
+            "pool_depth_m": 4.0,
+            "pool_aspect_ratio": 4.2,
+            "process_cause": "drainback",
+        },
+    )
+    stamp = GeometryGenerator(GeometryConfig(minimum_radius=1.0))._junction_stamp_points(
+        {0: samples}, SimpleNamespace(junctions=(junction,), segments=())
+    )[0]
+    assert 2.0 * stamp.radius_long == pytest.approx(30.0)
+    assert 2.0 * stamp.radius_short == pytest.approx(16.8)
+    assert 2.0 * stamp.radius_z == pytest.approx(4.0)
+    assert abs(np.sin(stamp.angle)) < 1e-7
+    assert stamp.process_cause == "drainback"
+
+
+def test_drained_pool_shape_is_deterministic_and_vertically_bounded():
+    from plume_advanced.stages.geometry import _JunctionStamp
+
+    stamp = _JunctionStamp(
+        center=np.zeros(3), radius_long=15.0, radius_short=8.4, radius_z=2.0,
+        angle=0.0, phase=(0.3, 1.1, 2.2), kind="chamber",
+        refinement_factor=9, chamber_type="drained_lava_pool", pool_depth_m=4.0,
+    )
+    config = GeometryConfig(voxel_size=0.5, minimum_radius=1.0, random_seed=7)
+    first = np.full((81, 49, 25), -8.0, dtype=np.float32)
+    second = first.copy()
+    origin = np.array([-20.0, -12.0, -6.0])
+    GeometryGenerator(config)._stamp_junction_volume(density=first, origin=origin, stamp=stamp)
+    GeometryGenerator(config)._stamp_junction_volume(density=second, origin=origin, stamp=stamp)
+    np.testing.assert_array_equal(first, second)
+    carved_z = np.flatnonzero(np.any(first >= 0.0, axis=(0, 1)))
+    assert carved_z.size > 0
+    assert (carved_z[-1] - carved_z[0] + 1) * config.voxel_size <= 2.0 * stamp.radius_z + config.voxel_size
+
+
+def test_ordinary_chamber_dimensions_are_unchanged_by_unrelated_metadata():
+    from types import SimpleNamespace
+
+    from plume_advanced.stages.section_field import SectionJunctionInfluence
+
+    influence = SectionJunctionInfluence(22, "chamber", 1.0, "gradual", "gradual", 1.0, 12.0)
+    samples = tuple(replace(sample(float(x)), junction_influences=(influence,)) for x in np.linspace(-8, 8, 5))
+    base = dict(junction_id=22, kind="chamber", node_ids=(1,), center_x=0.0, center_y=0.0, blend_length=12.0)
+    generator = GeometryGenerator(GeometryConfig(minimum_radius=1.0, random_seed=3))
+    plain = generator._junction_stamp_points({0: samples}, SimpleNamespace(junctions=(SimpleNamespace(**base),), segments=()))[0]
+    tagged = generator._junction_stamp_points({0: samples}, SimpleNamespace(junctions=(SimpleNamespace(**base, metadata={"chamber_type": "skylight"}),), segments=()))[0]
+    assert (plain.radius_long, plain.radius_short, plain.radius_z, plain.phase) == (
+        tagged.radius_long, tagged.radius_short, tagged.radius_z, tagged.phase
+    )

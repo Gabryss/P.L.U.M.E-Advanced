@@ -50,6 +50,9 @@ class _JunctionStamp:
     incident_segment_ids: tuple[int, ...] = ()
     floor_span_m: float = 0.0
     refinement_factor: int = 1
+    chamber_type: str = ""
+    process_cause: str = ""
+    pool_depth_m: float = 0.0
 
 
 class GeometryGenerator:
@@ -1220,6 +1223,17 @@ class GeometryGenerator:
         samples_by_segment: dict[int, tuple[SectionSample, ...]],
         cave_network: CaveNetwork,
     ) -> list[_JunctionStamp]:
+        def metadata_dimension(
+            metadata: object,
+            key: str,
+            fallback: float,
+        ) -> float:
+            try:
+                value = float(getattr(metadata, "get", lambda *_: fallback)(key, fallback))
+            except (TypeError, ValueError):
+                return float(fallback)
+            return value if math.isfinite(value) and value > 0.0 else float(fallback)
+
         # Keep one representative section per incident segment.  Using all
         # exponentially weighted samples makes the room dimensions depend on
         # sampling density and can pull a junction centre down a long branch.
@@ -1307,7 +1321,73 @@ class GeometryGenerator:
             )
             blend_length = float(max(requested_blend, diameter, 1e-6))
             blend_length = min(blend_length, 3.0 * diameter)
-            if junction.kind == "chamber":
+            metadata = getattr(junction, "metadata", {}) or {}
+            chamber_type = str(
+                getattr(metadata, "get", lambda *_: "")(
+                    "chamber_type",
+                    "",
+                )
+            )
+            is_drained_pool = (
+                junction.kind == "chamber"
+                and chamber_type == "drained_lava_pool"
+            )
+            pool_depth_m = 0.0
+            process_cause = ""
+            if is_drained_pool:
+                requested_width = metadata_dimension(
+                    metadata,
+                    "pool_width_m",
+                    2.0 * median_width,
+                )
+                pool_width = float(
+                    np.clip(
+                        requested_width,
+                        2.0 * median_width,
+                        5.0 * median_width,
+                    )
+                )
+                pool_aspect = float(
+                    np.clip(
+                        metadata_dimension(metadata, "pool_aspect_ratio", 2.0),
+                        1.0,
+                        8.0,
+                    )
+                )
+                requested_length = metadata_dimension(
+                    metadata,
+                    "pool_length_m",
+                    max(blend_length, pool_width * pool_aspect),
+                )
+                pool_length = max(requested_length, pool_width, blend_length)
+                requested_depth = metadata_dimension(
+                    metadata,
+                    "pool_depth_m",
+                    median_height,
+                )
+                pool_depth_m = float(
+                    np.clip(
+                        requested_depth,
+                        0.65 * median_height,
+                        1.50 * median_height,
+                    )
+                )
+                radius_long = max(0.5 * pool_length, self.config.minimum_radius)
+                radius_short = max(0.5 * pool_width, self.config.minimum_radius)
+                radius_z = max(0.5 * pool_depth_m, self.config.minimum_radius)
+                roof_cap = max(
+                    min(sample.centerline_depth for sample in anchors)
+                    - self.config.voxel_size,
+                    self.config.minimum_radius,
+                )
+                radius_z = min(radius_z, roof_cap)
+                process_cause = str(
+                    getattr(metadata, "get", lambda *_: "")(
+                        "process_cause",
+                        "",
+                    )
+                )
+            elif junction.kind == "chamber":
                 # Chambers are broad but still bounded by the incident tube
                 # scale; this avoids a Boolean-looking spherical room.
                 radius_long = max(0.5 * blend_length, median_width * 0.95)
@@ -1320,16 +1400,17 @@ class GeometryGenerator:
                 radius_long = max(0.5 * blend_length, median_width * 1.05)
                 radius_long *= min(max(self.config.junction_radius_scale, 1.0), 1.35)
                 short_scale = 0.72
-            radius_long *= flux_scale
-            radius_long = max(radius_long, self.config.minimum_radius)
-            radius_short = max(
-                median_width * 0.58,
-                # Non-chamber generated diameter must stay within 2.5x the
-                # median incident diameter (the scientific morphology bound).
-                min(radius_long * short_scale, median_width * 1.22),
-                self.config.minimum_radius,
-            )
-            radius_z = max(median_height * 0.58, self.config.minimum_radius)
+            if not is_drained_pool:
+                radius_long *= flux_scale
+                radius_long = max(radius_long, self.config.minimum_radius)
+                radius_short = max(
+                    median_width * 0.58,
+                    # Non-chamber generated diameter must stay within 2.5x the
+                    # median incident diameter (the scientific morphology bound).
+                    min(radius_long * short_scale, median_width * 1.22),
+                    self.config.minimum_radius,
+                )
+                radius_z = max(median_height * 0.58, self.config.minimum_radius)
             floor_values = np.asarray(
                 [self._sample_floor(sample) for sample in anchors],
                 dtype=float,
@@ -1364,6 +1445,9 @@ class GeometryGenerator:
                     # Eight deterministic sub-voxel evaluations provide real
                     # local refinement even when global voxel size is coarse.
                     refinement_factor=9,
+                    chamber_type=chamber_type,
+                    process_cause=process_cause,
+                    pool_depth_m=pool_depth_m,
                 )
             )
         return stamp_points
@@ -1530,7 +1614,12 @@ class GeometryGenerator:
                 (
                     ("junction_id", int(stamp.junction_id)),
                     ("kind", str(stamp.kind)),
+                    ("chamber_type", str(stamp.chamber_type)),
+                    ("process_cause", str(stamp.process_cause)),
                     ("generated_width_m", float(2.0 * stamp.radius_short)),
+                    ("generated_length_m", float(2.0 * stamp.radius_long)),
+                    ("generated_height_m", float(2.0 * stamp.radius_z)),
+                    ("pool_depth_m", float(stamp.pool_depth_m)),
                     ("incident_widths_m", tuple(float(value) for value in stamp.incident_widths)),
                     ("daughter_parent_area_ratio", ratio),
                     ("floor_span_m", float(stamp.floor_span_m)),
@@ -2178,42 +2267,111 @@ class GeometryGenerator:
                 local_short / max(stamp.radius_short, 1e-6),
                 local_long / max(stamp.radius_long, 1e-6),
             )
-            radius_variation = 1.0 + amplitude * (
-                0.38 * np.sin(3.0 * theta + phase_a)
-                + 0.26 * np.sin(5.0 * theta + phase_b)
-                + 0.18 * np.cos(
-                    frequency * (local_long - 0.6 * local_short) + phase_c
+            if stamp.chamber_type == "drained_lava_pool":
+                # Compound pools are broad, elongated floor depressions with
+                # a few coherent lobes rather than radial room roughness.
+                radius_variation = 1.0 + amplitude * (
+                    0.30 * np.sin(2.0 * theta + phase_a)
+                    + 0.18 * np.sin(3.0 * theta + phase_b)
+                    + 0.12
+                    * np.cos(
+                        0.45 * frequency * local_long + phase_c
+                    )
                 )
-            )
-            radius_variation = np.clip(radius_variation, 0.72, 1.22)
+                radius_variation = np.clip(radius_variation, 0.84, 1.16)
+            else:
+                radius_variation = 1.0 + amplitude * (
+                    0.38 * np.sin(3.0 * theta + phase_a)
+                    + 0.26 * np.sin(5.0 * theta + phase_b)
+                    + 0.18 * np.cos(
+                        frequency * (local_long - 0.6 * local_short) + phase_c
+                    )
+                )
+                radius_variation = np.clip(radius_variation, 0.72, 1.22)
             scaled_long = local_long / np.maximum(
                 stamp.radius_long * radius_variation, 1e-6
             )
             scaled_short = local_short / np.maximum(
                 stamp.radius_short * radius_variation, 1e-6
             )
-            scaled_z = sample_dz / max(stamp.radius_z, 1e-6)
-            normalized_distance = np.sqrt(
-                scaled_long * scaled_long
-                + scaled_short * scaled_short
-                + scaled_z * scaled_z
-            )
-            signed_distance = (normalized_distance - 1.0) * min(
-                stamp.radius_long,
-                stamp.radius_short,
-                stamp.radius_z,
-            )
+            if stamp.chamber_type == "drained_lava_pool":
+                horizontal_norm = np.sqrt(
+                    scaled_long * scaled_long + scaled_short * scaled_short
+                )
+                horizontal_distance = (horizontal_norm - 1.0) * min(
+                    stamp.radius_long,
+                    stamp.radius_short,
+                )
+                # A low-amplitude, smoothly terraced floor preserves the
+                # drained pool bench while the roof stays modest and arched.
+                normalized_long = local_long / max(stamp.radius_long, 1e-6)
+                terrace = 0.055 * stamp.radius_z * np.tanh(
+                    5.0 * np.sin(math.pi * normalized_long + phase_c)
+                )
+                floor_z = -0.72 * stamp.radius_z + terrace
+                roof_z = stamp.radius_z * (
+                    0.58 + 0.24 * np.clip(1.0 - horizontal_norm**2, 0.0, 1.0)
+                )
+                floor_distance = floor_z - sample_dz
+                roof_distance = sample_dz - roof_z
+                rounding = max(
+                    0.12 * min(stamp.radius_short, stamp.radius_z),
+                    0.20 * voxel_size,
+                )
+
+                def smooth_max(first: np.ndarray, second: np.ndarray) -> np.ndarray:
+                    return 0.5 * (
+                        first
+                        + second
+                        + np.sqrt((first - second) ** 2 + rounding**2)
+                    )
+
+                signed_distance = smooth_max(
+                    smooth_max(horizontal_distance, floor_distance),
+                    roof_distance,
+                )
+            else:
+                scaled_z = sample_dz / max(stamp.radius_z, 1e-6)
+                normalized_distance = np.sqrt(
+                    scaled_long * scaled_long
+                    + scaled_short * scaled_short
+                    + scaled_z * scaled_z
+                )
+                signed_distance = (normalized_distance - 1.0) * min(
+                    stamp.radius_long,
+                    stamp.radius_short,
+                    stamp.radius_z,
+                )
             candidate = -signed_distance / max(voxel_size, 1e-6)
-            candidate += self._wall_roughness(
+            wall_relief = self._wall_roughness(
                 x_grid + offset_x,
                 y_grid + offset_y,
                 z_grid + offset_z,
                 signed_distance,
                 local_vertical=sample_dz,
             )
-            if stamp.kind == "chamber":
+            if stamp.chamber_type == "drained_lava_pool":
+                # Smooth/ropy floor, rougher preserved roof rind.
+                roof_relief_weight = np.clip(
+                    0.28 + 0.72 * (sample_dz / max(stamp.radius_z, 1e-6) + 0.72),
+                    0.22,
+                    1.0,
+                )
+                wall_relief *= roof_relief_weight
+            candidate += wall_relief
+            if stamp.kind == "chamber" and stamp.chamber_type != "drained_lava_pool":
                 candidate += 0.35 * amplitude * np.sin(
                     frequency * 0.7 * (local_long + local_short + sample_dz)
+                    + phase_b
+                )
+            elif stamp.chamber_type == "drained_lava_pool":
+                roof_weight = np.clip(
+                    0.5 + sample_dz / max(stamp.radius_z, 1e-6),
+                    0.0,
+                    1.0,
+                )
+                candidate += roof_weight * 0.22 * amplitude * np.sin(
+                    frequency * 0.75 * (local_long + 0.4 * local_short)
                     + phase_b
                 )
             np.maximum(density_values, candidate, out=density_values)
