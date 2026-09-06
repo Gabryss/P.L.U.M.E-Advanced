@@ -1524,6 +1524,19 @@ class CaveNetworkGenerator:
             if selected_path.kind not in {"backbone", "source_feeder"}
             for cell in selected_path.path
         }
+        reusable_path_ids = {
+            cell: str((selected_path.metadata or {}).get("lobe_path_id"))
+            for selected_path in initial_paths
+            if selected_path.kind not in {"backbone", "source_feeder"}
+            for cell in selected_path.path
+            if (selected_path.metadata or {}).get("lobe_path_id") is not None
+        }
+        reusable_path_orders = {
+            cell: int((selected_path.metadata or {}).get("branch_order", 0))
+            for selected_path in initial_paths
+            if selected_path.kind not in {"backbone", "source_feeder"}
+            for cell in selected_path.path
+        }
         established_cells = set(existing_cells)
         emplacement_surface = np.array(host_field.elevation, dtype=float, copy=True)
         result: list[_SelectedPath] = []
@@ -1653,6 +1666,16 @@ class CaveNetworkGenerator:
                 )
                 if reoccupied
                 else None
+            )
+            reoccupation_target_lobe_id = (
+                reusable_path_ids.get(reoccupation_target)
+                if reoccupation_target is not None
+                else None
+            )
+            branch_order = (
+                reusable_path_orders.get(reoccupation_target, 0) + 1
+                if reoccupation_target is not None
+                else 1
             )
             reuse_prefix = (
                 self._build_connector_path(
@@ -1868,6 +1891,8 @@ class CaveNetworkGenerator:
                     "reoccupation_target_cell": (
                         list(reoccupation_target) if reoccupation_target is not None else None
                     ),
+                    "reoccupation_target_lobe_id": reoccupation_target_lobe_id,
+                    "branch_order": branch_order,
                     "coalesced": bool(trace.merged),
                     "stalled": bool(not trace.merged and kind == "stalled_lobe"),
                     "retired": bool(kind == "abandoned_lobe"),
@@ -1902,6 +1927,10 @@ class CaveNetworkGenerator:
             existing_cells.update(trace.path)
             established_cells.update(trace.path)
             reusable_cells.update(trace.path)
+            reusable_path_ids.update(
+                {cell: f"lobe_{branch_index}" for cell in trace.path}
+            )
+            reusable_path_orders.update({cell: branch_order for cell in trace.path})
         return tuple(result)
 
     def _trim_stranded_lobe_to_standoff(
@@ -3264,6 +3293,7 @@ class CaveNetworkGenerator:
                 "death_phase": death_phase,
                 "active_phase_count": death_phase - birth_phase + 1,
                 "formation_state": formation_state,
+                "branch_order": 0 if kind in {"backbone", "source_feeder"} else 1,
                 "chamber_forming": chamber_forming,
                 "vertical_capture": False,
                 "emplacement_regime": "confined_arterial",

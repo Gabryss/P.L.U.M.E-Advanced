@@ -740,6 +740,8 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
             )
             for key in ("reoccupied", "pirated", "coalesced", "stalled", "retired"):
                 self.assertIn(key, metadata)
+            if metadata["reoccupied"]:
+                self.assertIsNotNone(metadata["reoccupation_target_lobe_id"])
             self.assertIn(
                 metadata["event_type"],
                 {"new_breakout", "reoccupation", "pirated", "coalesced", "stalled", "retired"},
@@ -774,6 +776,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
             self.assertIn("birth_phase", segment.metadata)
             self.assertIn("death_phase", segment.metadata)
             self.assertIn("formation_state", segment.metadata)
+            self.assertIn("branch_order", segment.metadata)
             self.assertIn("emplacement_regime", segment.metadata)
             self.assertIn("roof_state", segment.metadata)
             self.assertIn("peak_formation_flux", segment.metadata)
@@ -781,6 +784,19 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
                 int(segment.metadata["birth_phase"]),
                 int(segment.metadata["death_phase"]),
             )
+        arterial_orders = {
+            int(segment.metadata["branch_order"])
+            for segment in cave_network.segments
+            if segment.kind in {"backbone", "source_feeder"}
+        }
+        self.assertEqual(arterial_orders, {0})
+        direct_breakouts = [
+            segment
+            for segment in cave_network.segments
+            if segment.metadata.get("event_type") == "new_breakout"
+        ]
+        if direct_breakouts:
+            self.assertTrue(all(int(s.metadata["branch_order"]) == 1 for s in direct_breakouts))
 
         underpasses = [segment for segment in cave_network.segments if segment.kind == "underpass"]
         if underpasses:
