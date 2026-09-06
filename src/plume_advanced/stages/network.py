@@ -111,7 +111,7 @@ class EmplacementHistoryConfig:
     drained_pool_slope_break_weight: float = 0.8
     drained_pool_length_m: tuple[float, float] = (35.0, 90.0)
     drained_pool_width_ratio: tuple[float, float] = (2.0, 4.5)
-    drained_pool_depth_m: tuple[float, float] = (8.0, 24.0)
+    drained_pool_depth_m: tuple[float, float] = (5.0, 12.0)
 
 
 @dataclass(frozen=True)
@@ -367,7 +367,9 @@ class CaveNetwork:
         }
         pool_widths = [float(item.get("pool_width_m", 0.0)) for item in pool_records.values()]
         pool_aspects = [float(item.get("pool_aspect_ratio", 0.0)) for item in pool_records.values()]
-        pool_outlet_ratios = [float(item.get("pool_outlet_ratio", 0.0)) for item in pool_records.values()]
+        pool_outlet_ratios = [
+            float(item.get("pool_outlet_ratio", 0.0)) for item in pool_records.values()
+        ]
 
         return {
             "node_count": float(len(self.nodes)),
@@ -422,8 +424,12 @@ class CaveNetwork:
             ),
             "drained_lava_pool_count": float(len(pool_records)),
             "drained_lava_pool_mean_width_m": float(np.mean(pool_widths)) if pool_widths else 0.0,
-            "drained_lava_pool_mean_aspect_ratio": float(np.mean(pool_aspects)) if pool_aspects else 0.0,
-            "drained_lava_pool_mean_outlet_ratio": float(np.mean(pool_outlet_ratios)) if pool_outlet_ratios else 0.0,
+            "drained_lava_pool_mean_aspect_ratio": float(np.mean(pool_aspects))
+            if pool_aspects
+            else 0.0,
+            "drained_lava_pool_mean_outlet_ratio": float(np.mean(pool_outlet_ratios))
+            if pool_outlet_ratios
+            else 0.0,
             "skylight_prone_segment_count": float(
                 sum(
                     segment.metadata.get("roof_state") == "skylight_prone"
@@ -1466,58 +1472,98 @@ class CaveNetworkGenerator:
             selected_paths=selected_paths,
         )
         positive_flux = route_flux[route_flux > 0.0]
-        flux_reference = float(np.quantile(positive_flux, history.drained_pool_flux_quantile)) if positive_flux.size else 0.0
-        candidates: list[tuple[float, int, tuple[int, int], str, float, float]] = []
+        flux_reference = (
+            float(np.quantile(positive_flux, history.drained_pool_flux_quantile))
+            if positive_flux.size
+            else 0.0
+        )
+        candidates: list[tuple[float, int, int, tuple[int, int], str, float, float]] = []
         for path_index, selected_path in enumerate(selected_paths):
-            if selected_path.kind in {"source_feeder", "spur"} or len(selected_path.path) < 7:
+            if (
+                selected_path.kind in {"source_feeder", "spur", "underpass"}
+                or len(selected_path.path) < 7
+            ):
                 continue
             cells = selected_path.path
-            center_index = len(cells) // 2
-            center = cells[center_index]
-            before = cells[max(0, center_index - 3)]
-            after = cells[min(len(cells) - 1, center_index + 3)]
-            distance = max(
-                math.hypot(
-                    float(host_field.x_coords[after[1]] - host_field.x_coords[before[1]]),
-                    float(host_field.y_coords[after[0]] - host_field.y_coords[before[0]]),
-                ),
-                geometry.cell_scale,
+            coalesced = (
+                bool((selected_path.metadata or {}).get("coalesced", False))
+                or selected_path.kind == "anastomosis"
             )
-            grade = abs(float(host_field.elevation[after] - host_field.elevation[before])) / distance
-            slope_before = float(host_field.slope_degrees[before])
-            slope_after = float(host_field.slope_degrees[after])
-            slope_break = abs(slope_after - slope_before) / 18.0
-            local_flux = float(np.mean([route_flux[cell] for cell in cells]))
-            flux_score = local_flux / max(flux_reference, 1e-9)
-            capacity_loss = 1.0 - float(host_field.flow_capacity[center])
-            low_grade_score = float(np.exp(-grade / 0.08))
-            coalesced = bool((selected_path.metadata or {}).get("coalesced", False)) or selected_path.kind == "anastomosis"
-            if not (coalesced or slope_break >= 0.08 or capacity_loss >= 0.35):
-                continue
-            cause = "coalescence" if coalesced else "slope_break" if slope_break >= 0.08 else "capacity_loss"
-            score = (
-                history.drained_pool_flux_weight * flux_score
-                + history.drained_pool_grade_weight * low_grade_score
-                + history.drained_pool_slope_break_weight * slope_break
-                + 0.7 * capacity_loss
-            )
-            candidates.append((score, path_index, center, cause, local_flux, low_grade_score))
+            stride = max(1, (len(cells) - 6) // 24)
+            for center_index in range(3, len(cells) - 3, stride):
+                center = cells[center_index]
+                before = cells[center_index - 3]
+                after = cells[center_index + 3]
+                distance = max(
+                    math.hypot(
+                        float(host_field.x_coords[after[1]] - host_field.x_coords[before[1]]),
+                        float(host_field.y_coords[after[0]] - host_field.y_coords[before[0]]),
+                    ),
+                    geometry.cell_scale,
+                )
+                grade = (
+                    abs(float(host_field.elevation[after] - host_field.elevation[before]))
+                    / distance
+                )
+                slope_before = float(host_field.slope_degrees[before])
+                slope_after = float(host_field.slope_degrees[after])
+                slope_break = abs(slope_after - slope_before) / 18.0
+                local_flux = float(route_flux[center])
+                flux_score = local_flux / max(flux_reference, 1e-9)
+                capacity_loss = 1.0 - float(host_field.flow_capacity[center])
+                low_grade_score = float(np.exp(-grade / 0.08))
+                progress = center_index / max(len(cells) - 1, 1)
+                coalescence_approach = progress if coalesced and progress >= 0.55 else 0.0
+                if not (coalescence_approach > 0.0 or slope_break >= 0.08 or capacity_loss >= 0.35):
+                    continue
+                cause = (
+                    "coalescence"
+                    if coalescence_approach >= 0.72
+                    else "slope_break"
+                    if slope_break >= 0.08
+                    else "capacity_loss"
+                )
+                score = (
+                    history.drained_pool_flux_weight * flux_score
+                    + history.drained_pool_grade_weight * low_grade_score
+                    + history.drained_pool_slope_break_weight * slope_break
+                    + 0.7 * capacity_loss
+                    + 0.8 * coalescence_approach
+                )
+                candidates.append(
+                    (
+                        score,
+                        path_index,
+                        center_index,
+                        center,
+                        cause,
+                        local_flux,
+                        low_grade_score,
+                    )
+                )
         if not candidates:
             return selected_paths
         candidates.sort(key=lambda item: (-item[0], item[1]))
         target_count = int(
             rng.integers(history.drained_pool_count[0], history.drained_pool_count[1] + 1)
         )
-        chosen: list[tuple[float, int, tuple[int, int], str, float, float]] = []
+        chosen: list[tuple[float, int, int, tuple[int, int], str, float, float]] = []
         chosen_alongs: list[float] = []
+        chosen_paths: set[int] = set()
         for candidate in candidates:
             if len(chosen) >= target_count:
                 break
-            along = float(geometry.along_grid[candidate[2]])
-            if any(abs(along - previous) < history.drained_pool_min_spacing_m for previous in chosen_alongs):
+            if candidate[1] in chosen_paths:
+                continue
+            along = float(geometry.along_grid[candidate[3]])
+            if any(
+                abs(along - previous) < history.drained_pool_min_spacing_m
+                for previous in chosen_alongs
+            ):
                 continue
             chosen.append(candidate)
             chosen_alongs.append(along)
+            chosen_paths.add(candidate[1])
         if not chosen:
             return selected_paths
         chosen_by_path = {item[1]: item for item in chosen}
@@ -1527,37 +1573,112 @@ class CaveNetworkGenerator:
             if candidate is None:
                 annotated.append(selected_path)
                 continue
-            _score, _index, center, cause, local_flux, low_grade_score = candidate
+            (
+                _score,
+                _index,
+                center_index,
+                center,
+                cause,
+                local_flux,
+                low_grade_score,
+            ) = candidate
             # Use the configured local passage envelope as the reference so
             # pool widening remains an auditable 2--5x morphological change,
             # independent of raster flux units.
-            base_width = 2.0 * self.config.base_passage_radius
+            center_x, center_y = self._cell_to_world(host_field, center)
+            host_sample = host_field.sample(center_x, center_y)
+            base_width = 2.0 * self._local_radius(
+                host_field,
+                host_sample,
+                float(route_flux[center]),
+            )
             length_m = float(rng.uniform(*history.drained_pool_length_m))
-            width_ratio = float(rng.uniform(*history.drained_pool_width_ratio))
+            requested_width_ratio = float(rng.uniform(*history.drained_pool_width_ratio))
+            pool_width = min(
+                base_width * requested_width_ratio,
+                2.0 * self.config.chamber_radius,
+            )
+            width_ratio = pool_width / max(base_width, 1e-9)
             depth_m = float(rng.uniform(*history.drained_pool_depth_m))
             metadata = dict(selected_path.metadata or {})
+            metadata["pool_parent_chamber_id"] = metadata.get("chamber_id")
             metadata.update(
                 {
-                    "chamber_forming": True,
                     "chamber_type": "drained_lava_pool",
                     "pool_id": f"drained_pool_{path_index}",
                     "chamber_id": f"drained_pool_{path_index}",
                     "process_cause": cause,
                     "pool_length_m": length_m,
-                    "pool_width_m": base_width * width_ratio,
+                    "pool_width_m": pool_width,
                     "pool_depth_m": depth_m,
-                    "pool_aspect_ratio": length_m / max(base_width * width_ratio, 1e-9),
+                    "pool_aspect_ratio": length_m / max(pool_width, 1e-9),
                     "pool_outlet_ratio": width_ratio,
                     "pool_inlet_count": 2 if cause == "coalescence" else 1,
                     "pool_outlet_count": 1,
+                    "pool_outlet_width_m": base_width,
                     "pool_site_score": float(_score),
                     "pool_flux": local_flux,
                     "pool_low_grade_score": low_grade_score,
                     "pool_center_along_m": float(geometry.along_grid[center]),
+                    "pool_center_x_m": center_x,
+                    "pool_center_y_m": center_y,
+                    "pool_center_row": int(center[0]),
+                    "pool_center_column": int(center[1]),
+                    "pool_center_path_index": center_index,
                 }
             )
             annotated.append(replace(selected_path, metadata=metadata))
         return tuple(annotated)
+
+    @staticmethod
+    def _drained_pool_center_cell(
+        selected_path: _SelectedPath,
+    ) -> tuple[int, int] | None:
+        """Return the validated room centre recorded during process selection."""
+        if not selected_path.path:
+            return None
+        metadata = selected_path.metadata or {}
+        if metadata.get("chamber_type") != "drained_lava_pool":
+            return None
+        row = metadata.get("pool_center_row")
+        column = metadata.get("pool_center_column")
+        if isinstance(row, (int, float)) and isinstance(column, (int, float)):
+            recorded_cell = (int(row), int(column))
+            if recorded_cell in selected_path.path:
+                return recorded_cell
+        raw_index = metadata.get("pool_center_path_index", len(selected_path.path) // 2)
+        pool_index = (
+            int(raw_index) if isinstance(raw_index, (int, float)) else len(selected_path.path) // 2
+        )
+        return selected_path.path[int(np.clip(pool_index, 0, len(selected_path.path) - 1))]
+
+    @classmethod
+    def _metadata_for_path_section(
+        cls,
+        selected_path: _SelectedPath,
+        path_cells: list[tuple[int, int]],
+    ) -> dict[str, SegmentMetadataValue]:
+        """Keep room semantics only on segments incident to the room centre."""
+        metadata = dict(
+            selected_path.metadata
+            or cls._build_segment_metadata(
+                kind=selected_path.kind,
+                z_level=selected_path.z_level,
+            )
+        )
+        pool_center = cls._drained_pool_center_cell(selected_path)
+        if pool_center is None or pool_center in {path_cells[0], path_cells[-1]}:
+            return metadata
+        parent_chamber_id = metadata.get("pool_parent_chamber_id")
+        for key in tuple(metadata):
+            if key.startswith("pool_") or key in {
+                "chamber_type",
+                "chamber_id",
+                "process_cause",
+            }:
+                metadata.pop(key, None)
+        metadata["chamber_id"] = parent_chamber_id
+        return metadata
 
     def _select_source_cells(
         self,
@@ -3707,8 +3828,8 @@ class CaveNetworkGenerator:
         for selected_path in selected_paths:
             node_cell_set.add(selected_path.path[0])
             node_cell_set.add(selected_path.path[-1])
-            if (selected_path.metadata or {}).get("chamber_type") == "drained_lava_pool":
-                pool_center = selected_path.path[len(selected_path.path) // 2]
+            pool_center = self._drained_pool_center_cell(selected_path)
+            if pool_center is not None:
                 node_cell_set.add(pool_center)
                 chamber_cells.add(pool_center)
             if selected_path.kind in {"chamber_braid", "ladder"} or bool(
@@ -3732,8 +3853,7 @@ class CaveNetworkGenerator:
             elif cell in chamber_cells and (
                 path_use_counts.get(cell, 0) >= 2
                 or any(
-                    (selected_path.metadata or {}).get("chamber_type") == "drained_lava_pool"
-                    and selected_path.path[len(selected_path.path) // 2] == cell
+                    self._drained_pool_center_cell(selected_path) == cell
                     for selected_path in selected_paths
                 )
             ):
@@ -3798,10 +3918,9 @@ class CaveNetworkGenerator:
                             total_flux=total_flux,
                             kind=selected_path.kind,
                             z_level=selected_path.z_level,
-                            metadata=selected_path.metadata
-                            or self._build_segment_metadata(
-                                kind=selected_path.kind,
-                                z_level=selected_path.z_level,
+                            metadata=self._metadata_for_path_section(
+                                selected_path,
+                                current_cells,
                             ),
                         )
                         if segment is not None:
@@ -4283,6 +4402,42 @@ class CaveNetworkGenerator:
             segment_widths = [segment.mean_width for segment in cluster_segments if segment.points]
             mean_width = float(np.mean(segment_widths)) if segment_widths else 24.0
             blend_length = 3.0 * mean_width
+            pool_metadata: dict[str, SegmentMetadataValue] = {}
+            for segment in cluster_segments:
+                metadata = segment.metadata
+                if metadata.get("chamber_type") != "drained_lava_pool":
+                    continue
+                pool_x = metadata.get("pool_center_x_m")
+                pool_y = metadata.get("pool_center_y_m")
+                if not isinstance(pool_x, (int, float)) or not isinstance(pool_y, (int, float)):
+                    continue
+                if not any(
+                    math.hypot(node.x - float(pool_x), node.y - float(pool_y)) <= 1e-6
+                    for node in cluster_nodes
+                ):
+                    continue
+                pool_metadata = {
+                    key: metadata[key]
+                    for key in (
+                        "pool_id",
+                        "chamber_id",
+                        "chamber_type",
+                        "process_cause",
+                        "pool_length_m",
+                        "pool_width_m",
+                        "pool_depth_m",
+                        "pool_aspect_ratio",
+                        "pool_outlet_ratio",
+                        "pool_outlet_width_m",
+                        "pool_inlet_count",
+                        "pool_outlet_count",
+                        "pool_center_along_m",
+                        "pool_center_x_m",
+                        "pool_center_y_m",
+                    )
+                    if key in metadata
+                }
+                break
             junctions.append(
                 CaveJunction(
                     junction_id=len(junctions),
@@ -4296,26 +4451,7 @@ class CaveNetworkGenerator:
                     split_style=split_style,
                     merge_style=merge_style,
                     capacity_bias=capacity_bias,
-                    metadata=next(
-                        (
-                            {
-                                key: segment.metadata[key]
-                                for key in (
-                                    "chamber_type",
-                                    "process_cause",
-                                    "pool_length_m",
-                                    "pool_width_m",
-                                    "pool_depth_m",
-                                    "pool_aspect_ratio",
-                                    "pool_outlet_ratio",
-                                )
-                                if key in segment.metadata
-                            }
-                            for segment in cluster_segments
-                            if segment.metadata.get("chamber_type") == "drained_lava_pool"
-                        ),
-                        {},
-                    ),
+                    metadata=pool_metadata,
                 )
             )
         return junctions
@@ -4716,6 +4852,51 @@ class CaveNetworkGenerator:
         segments: list[CaveSegment],
     ) -> None:
         representative_radius = self.config.chamber_radius * self.config.chamber_radius_fraction
+        painted_pool_nodes: set[int] = set()
+        for segment in segments:
+            metadata = segment.metadata
+            if metadata.get("chamber_type") != "drained_lava_pool" or len(segment.points) < 2:
+                continue
+            pool_node_id = next(
+                (
+                    node_id
+                    for node_id in (segment.start_node_id, segment.end_node_id)
+                    if nodes[node_id].kind == "chamber"
+                ),
+                None,
+            )
+            if pool_node_id is None or pool_node_id in painted_pool_nodes:
+                continue
+            pool_node = nodes[pool_node_id]
+            if pool_node_id == segment.start_node_id:
+                direction = np.asarray(
+                    (
+                        segment.points[1].x - segment.points[0].x,
+                        segment.points[1].y - segment.points[0].y,
+                    ),
+                    dtype=float,
+                )
+            else:
+                direction = np.asarray(
+                    (
+                        segment.points[-1].x - segment.points[-2].x,
+                        segment.points[-1].y - segment.points[-2].y,
+                    ),
+                    dtype=float,
+                )
+            length = float(metadata.get("pool_length_m", 0.0) or 0.0)
+            width = float(metadata.get("pool_width_m", 0.0) or 0.0)
+            self._paint_ellipse(
+                host_field=host_field,
+                occupancy=occupancy,
+                width_field=width_field,
+                x_coord=pool_node.x,
+                y_coord=pool_node.y,
+                direction=direction,
+                length=max(length, width),
+                width=max(width, 2.0 * segment.mean_width),
+            )
+            painted_pool_nodes.add(pool_node_id)
         for node in nodes:
             if node.kind != "chamber":
                 continue
@@ -4739,9 +4920,12 @@ class CaveNetworkGenerator:
             )
         for segment in segments:
             is_process_chamber = bool(segment.metadata.get("chamber_forming", False))
+            is_drained_pool = segment.metadata.get("chamber_type") == "drained_lava_pool"
             if (segment.kind not in {"chamber_braid", "ladder"} and not is_process_chamber) or len(
                 segment.points
             ) < 3:
+                continue
+            if is_drained_pool:
                 continue
             midpoint = segment.points[len(segment.points) // 2]
             scale_value = segment.metadata.get("chamber_radius_scale", 1.0)
@@ -4759,6 +4943,34 @@ class CaveNetworkGenerator:
                 y_coord=midpoint.y,
                 radius=radius,
             )
+
+    def _paint_ellipse(
+        self,
+        *,
+        host_field: HostField,
+        occupancy: np.ndarray,
+        width_field: np.ndarray,
+        x_coord: float,
+        y_coord: float,
+        direction: np.ndarray,
+        length: float,
+        width: float,
+    ) -> None:
+        """Paint one flow-aligned, horizontally broad room footprint."""
+        norm = float(np.linalg.norm(direction))
+        along = direction / max(norm, 1e-9)
+        across = np.asarray((-along[1], along[0]), dtype=float)
+        x_grid, y_grid = np.meshgrid(host_field.x_coords, host_field.y_coords)
+        delta_x = x_grid - x_coord
+        delta_y = y_grid - y_coord
+        along_distance = delta_x * along[0] + delta_y * along[1]
+        across_distance = delta_x * across[0] + delta_y * across[1]
+        normalized_radius = np.square(along_distance / max(0.5 * length, 1e-9)) + np.square(
+            across_distance / max(0.5 * width, 1e-9)
+        )
+        mask = normalized_radius <= 1.0
+        occupancy[mask] = True
+        width_field[mask] = np.maximum(width_field[mask], width)
 
     def _paint_disk(
         self,

@@ -432,6 +432,7 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `minimum_viable_flux_fraction`, `coalescence_flux_return_fraction` | control branch survival and how much discharge rejoins the parent after coalescence |
 | `deposition_feedback_m`, `deposition_spread_cells` | control how accepted lobes modify the temporary surface seen by later growth |
 | `[network.emplacement_history]` | control seeded emplacement phases, route lifetimes, stacked-level abundance, vertical-capture chamber formation, and roof preservation |
+| `drained_pool_*` within `[network.emplacement_history]` | control the sparse count, spacing, process scoring, length, width ratio, and bounded depth of flow-aligned drained-lava rooms |
 | `phase_flux_budget_fraction`, `retirement_flux_threshold` | bound each pulse's source discharge and retire flux-starved paths independently of thermal retirement |
 | `reoccupation_probability`, `breakout_probability` | control later-pulse passage reuse and the subset that exits through a supply-piracy breakout |
 | `[network.braid_grammar]` | legacy-only ranges and probabilities used when `growth_model = "legacy_braid"` |
@@ -451,6 +452,7 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `centerline_wobble_*` | add bounded centerline meander to avoid unnaturally straight tube runs |
 | `vertical_level_spacing`, `maximum_uphill_grade`, `level_transition_fraction` | control stacked-route separation and physically bounded capture profiles |
 | `junction_*_gain` | control how strongly junction regions widen or stay tight through splits/merges |
+| `drained_pool_*` | convert Stage-B room metadata into broad, low, smoothly graded sections with flatter floors and retained roof texture |
 
 ### Floor Map Config
 

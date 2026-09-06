@@ -636,6 +636,10 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
             if segment.metadata.get("chamber_type") == "drained_lava_pool"
         ]
         self.assertTrue(pool_segments)
+        self.assertTrue(
+            all(segment.kind != "underpass" for segment in pool_segments),
+            "drained rooms must not be stamped onto grade-separated crossings",
+        )
         for segment in pool_segments:
             metadata = segment.metadata
             for key in (
@@ -650,6 +654,21 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
                 self.assertIn(key, metadata)
             self.assertGreater(float(metadata["pool_length_m"]), 0.0)
             self.assertGreater(float(metadata["pool_width_m"]), 0.0)
+            self.assertLessEqual(
+                float(metadata["pool_width_m"]),
+                2.0 * project_config.network.chamber_radius + 1e-9,
+            )
+            self.assertAlmostEqual(
+                float(metadata["pool_width_m"]),
+                float(metadata["pool_outlet_width_m"]) * float(metadata["pool_outlet_ratio"]),
+            )
+        pool_junctions = [
+            junction
+            for junction in cave_network.junctions
+            if junction.metadata.get("chamber_type") == "drained_lava_pool"
+        ]
+        self.assertEqual(len(pool_junctions), int(summary["drained_lava_pool_count"]))
+        self.assertTrue(all(junction.kind == "chamber" for junction in pool_junctions))
         self.assertGreater(summary["reoccupied_path_count"], 0.0)
         self.assertGreater(summary["piracy_event_count"], 0.0)
         self.assertGreater(summary["flux_starved_retired_count"], 0.0)

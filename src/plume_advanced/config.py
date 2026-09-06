@@ -1188,13 +1188,18 @@ def _validate_pipeline_configs(
             "network.emplacement_history.phase_flux_budget_fraction cannot be negative"
         )
     if not 0.0 <= history.retirement_flux_threshold <= 1.0:
+        raise ValueError("network.emplacement_history.retirement_flux_threshold must be in [0, 1]")
+    if (
+        history.drained_pool_count[0] > history.drained_pool_count[1]
+        or history.drained_pool_count[0] < 0
+    ):
         raise ValueError(
-            "network.emplacement_history.retirement_flux_threshold must be in [0, 1]"
+            "network.emplacement_history.drained_pool_count must be a nonnegative range"
         )
-    if history.drained_pool_count[0] > history.drained_pool_count[1] or history.drained_pool_count[0] < 0:
-        raise ValueError("network.emplacement_history.drained_pool_count must be a nonnegative range")
     if history.drained_pool_min_spacing_m < 0.0:
-        raise ValueError("network.emplacement_history.drained_pool_min_spacing_m cannot be negative")
+        raise ValueError(
+            "network.emplacement_history.drained_pool_min_spacing_m cannot be negative"
+        )
     for name, value in (
         ("drained_pool_probability", history.drained_pool_probability),
         ("drained_pool_flux_quantile", history.drained_pool_flux_quantile),
@@ -1294,6 +1299,16 @@ def _validate_pipeline_configs(
         raise ValueError(
             "section_field.chamber_max_tube_width cannot be smaller than maximum_tube_width"
         )
+    if section_field.drained_pool_width_scale <= 0.0:
+        raise ValueError("section_field.drained_pool_width_scale must be positive")
+    if not 0.0 < section_field.drained_pool_height_ratio_limit <= 1.0:
+        raise ValueError("section_field.drained_pool_height_ratio_limit must be in (0, 1]")
+    if not 0.0 <= section_field.drained_pool_floor_flatness <= 1.0:
+        raise ValueError("section_field.drained_pool_floor_flatness must be in [0, 1]")
+    if section_field.drained_pool_roof_arch <= 0.0:
+        raise ValueError("section_field.drained_pool_roof_arch must be positive")
+    if section_field.drained_pool_transition_power <= 0.0:
+        raise ValueError("section_field.drained_pool_transition_power must be positive")
     if section_field.sampling_policy not in {"adaptive", "uniform", "reference"}:
         raise ValueError("section_field.sampling_policy must be adaptive, uniform, or reference")
     if (

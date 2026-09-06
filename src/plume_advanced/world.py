@@ -93,13 +93,7 @@ class WorldConfig:
 
         span = max(float(span_m), 0.0)
         thickness = max(float(roof_thickness_m), 0.1)
-        demand = (
-            self.material.bulk_density_kg_m3
-            * self.body.gravity_m_s2
-            * span
-            * span
-            / thickness
-        )
+        demand = self.material.bulk_density_kg_m3 * self.body.gravity_m_s2 * span * span / thickness
         return float(demand / max(self.material.effective_tensile_strength_pa, 1.0))
 
 
@@ -157,7 +151,10 @@ BODY_PRESETS: dict[str, CelestialBodyProfile] = {
         gravity_m_s2=9.80665,
         default_material="terrestrial_basalt",
         maximum_passage_width_m=10.0,
-        maximum_room_width_m=20.0,
+        # PDC calibration sections reach 26.3 m and the mapped Valentine
+        # compound pool exceeds 22.9 m. Keep ordinary passages at 10 m while
+        # allowing sparse, explicitly labelled rooms to reach that endmember.
+        maximum_room_width_m=28.0,
         default_route_length_m=5_000.0,
         production_voxel_size_m=0.5,
         host_horizontal_scale=1.0,

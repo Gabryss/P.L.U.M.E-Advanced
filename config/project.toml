@@ -102,6 +102,9 @@ max_uphill_step = 1.2
 growth_cost_weight = 3.2
 corridor_weight = 0.35
 chamber_flux_quantile = 0.82
+# Preserve the previous generic chamber footprint; drained pools use their own
+# reference-bounded length and width metadata below.
+chamber_radius = 10.0
 occupancy_smoothing_passes = 2
 # Keep parallel centrelines separated by at least this many full passage
 # widths; the generator also enforces a host-corridor-relative minimum.
@@ -175,7 +178,7 @@ drained_pool_grade_weight = 1.0
 drained_pool_slope_break_weight = 0.8
 drained_pool_length_m = [35.0, 90.0]
 drained_pool_width_ratio = [2.0, 4.5]
-drained_pool_depth_m = [8.0, 24.0]
+drained_pool_depth_m = [5.0, 12.0]
 
 # Retained for the explicit legacy_braid compatibility mode.
 [network.braid_grammar]
@@ -233,6 +236,11 @@ centerline_wobble_wavelength = 105.0
 junction_pre_widen_gain = 0.10
 junction_constant_envelope_gain = 0.03
 chamber_widen_gain = 0.45
+drained_pool_width_scale = 1.0
+drained_pool_height_ratio_limit = 0.42
+drained_pool_floor_flatness = 0.84
+drained_pool_roof_arch = 1.04
+drained_pool_transition_power = 1.35
 minimum_roof_thickness = 6.5
 maximum_centerline_depth = 26.0
 preferred_cover_fraction = 0.34

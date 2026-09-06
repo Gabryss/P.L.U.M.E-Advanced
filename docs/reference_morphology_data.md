@@ -46,3 +46,34 @@ Artifacts are written to `outputs/reference_morphology/`:
 The PDC loader uses numeric station ordering (`1, 2, ..., 10`) rather than
 lexical filename ordering (`1, 10, 2`), which is required before computing any
 longitudinal statistic.
+
+## Current calibration observations
+
+The analysis intentionally computes tuning statistics from the 76 calibration
+caves only. Of 1,558 candidate contours, 1,286 are valid simple sections. Their
+width is 5.52 m at the median, 18.39 m at the 95th percentile, and 26.31 m at
+the maximum. The median width/height ratio is 1.80. Within individual caves,
+the median largest adjacent-section width ratio is 2.70, confirming that real
+tubes can change size much faster than a single globally smoothed profile.
+
+The 10 cm Valentine cloud contains 436,439 points. Its PCA-aligned planform
+envelope is about 221.8 m long and 24.6 m wide. One-metre longitudinal bins
+have a median envelope width of 11.6 m and a 95th percentile of 22.8 m, while
+the median height envelope is 3.16 m. These are multi-route envelopes rather
+than true orthogonal passage sections, but they support a useful design
+constraint: exceptional rooms should be broad and comparatively low, not
+scaled-up round tunnels.
+
+## Generator interpretation
+
+Stage B selects one to three seeded `drained_lava_pool` sites from high-flux,
+low-grade locations with a slope break, confinement loss, or route
+coalescence. It never places one on a grade-separated underpass. Each selected
+room stores its cause, centre, outlet width, length, width and bounded depth;
+the occupancy diagnostic paints its flow-aligned elliptical footprint.
+
+Stage C converts that metadata into a smooth longitudinal widening with a
+flatter, quieter floor and a modest arched roof. The ordinary-passage cap stays
+at 10 m; only explicitly labelled rooms may use the Earth room endmember of
+28 m. Stage D consumes the same metadata to form an elongated, seeded lobate
+volume instead of a spherical chamber.

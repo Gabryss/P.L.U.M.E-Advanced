@@ -60,6 +60,11 @@ class SectionFieldConfig:
     junction_pre_widen_gain: float = 0.18
     junction_constant_envelope_gain: float = 0.05
     chamber_widen_gain: float = 0.45
+    drained_pool_width_scale: float = 1.0
+    drained_pool_height_ratio_limit: float = 0.42
+    drained_pool_floor_flatness: float = 0.84
+    drained_pool_roof_arch: float = 1.04
+    drained_pool_transition_power: float = 1.35
     minimum_roof_thickness: float = 6.0
     maximum_centerline_depth: float = 26.0
     preferred_cover_fraction: float = 0.34
@@ -80,6 +85,10 @@ class SectionJunctionInfluence:
     merge_style: str
     capacity_bias: float
     blend_length_m: float = 0.0
+    chamber_type: str = ""
+    room_weight: float = 0.0
+    target_width_m: float = 0.0
+    target_height_m: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -188,6 +197,9 @@ class SectionField:
                 "mean_shape_change_per_100m": 0.0,
                 "morphology_regime_count": 0.0,
                 "morphology_family_score_standard_deviation": 0.0,
+                "drained_pool_sample_count": 0.0,
+                "drained_pool_max_width_m": 0.0,
+                "drained_pool_mean_aspect_ratio": 0.0,
             }
 
         all_samples = [
@@ -197,6 +209,14 @@ class SectionField:
         tube_heights = np.array([sample.tube_height for sample in all_samples], dtype=float)
         height_ratios = tube_heights / np.maximum(tube_widths, 1e-9)
         shape_change_rates: list[float] = []
+        pool_samples = [
+            sample
+            for sample in all_samples
+            if any(
+                influence.chamber_type == "drained_lava_pool" and influence.room_weight >= 0.08
+                for influence in sample.junction_influences
+            )
+        ]
         width_scale = max(float(np.mean(tube_widths)), 1e-9)
         height_scale = max(float(np.mean(tube_heights)), 1e-9)
         for segment_field in self.segment_fields:
@@ -244,6 +264,17 @@ class SectionField:
             "morphology_family_score_standard_deviation": float(
                 np.std([sample.morphology_family_score for sample in all_samples])
             ),
+            "drained_pool_sample_count": float(len(pool_samples)),
+            "drained_pool_max_width_m": float(
+                max((sample.tube_width for sample in pool_samples), default=0.0)
+            ),
+            "drained_pool_mean_aspect_ratio": float(
+                np.mean(
+                    [sample.tube_width / max(sample.tube_height, 1e-9) for sample in pool_samples]
+                )
+                if pool_samples
+                else 0.0
+            ),
         }
 
 
@@ -256,11 +287,7 @@ class SectionFieldGenerator:
 
     def generate(self, cave_network: CaveNetwork) -> SectionField:
         segment_lookup = {segment.segment_id: segment for segment in cave_network.segments}
-        flow_points = [
-            point
-            for segment in cave_network.segments
-            for point in segment.points
-        ]
+        flow_points = [point for segment in cave_network.segments for point in segment.points]
         maximum_lava_age_s = max((point.age_s for point in flow_points), default=0.0)
         maximum_lava_temperature_k = max(
             (point.temperature_k for point in flow_points),
@@ -416,11 +443,15 @@ class SectionFieldGenerator:
                         profile = (1.0 - weight) * profile + weight * target_profile
                     width += weight * (reference.tube_width - sample.tube_width)
                     height += weight * (reference.tube_height - sample.tube_height)
-                width_cap = self.config.maximum_tube_width + max((
-                    influence.weight ** 1.8
-                    * (self.config.chamber_max_tube_width - self.config.maximum_tube_width)
-                    for influence in sample.junction_influences if influence.kind == "chamber"
-                ), default=0.0)
+                width_cap = self.config.maximum_tube_width + max(
+                    (
+                        influence.weight**1.8
+                        * (self.config.chamber_max_tube_width - self.config.maximum_tube_width)
+                        for influence in sample.junction_influences
+                        if influence.kind == "chamber"
+                    ),
+                    default=0.0,
+                )
                 limited_width = min(width, width_cap)
                 limited_height = min(height, width_cap * self.config.maximum_height_ratio)
                 profile = profile * np.asarray((limited_width / width, limited_height / height))
@@ -466,14 +497,17 @@ class SectionFieldGenerator:
                     profile = np.asarray(sample.profile_points)
                     offset = float(np.min(profile[:, 0] * normal[2] + profile[:, 1] * binormal[2]))
                     z = floor - offset
-                    reframed.append(replace(
-                        sample,
-                        z=z,
-                        tangent=(float(tangent[0]), float(tangent[1]), float(tangent[2])),
-                        normal=normal, binormal=binormal,
-                        centerline_depth=sample.surface_z - z,
-                        roof_thickness=sample.surface_z - z - 0.5 * sample.tube_height,
-                    ))
+                    reframed.append(
+                        replace(
+                            sample,
+                            z=z,
+                            tangent=(float(tangent[0]), float(tangent[1]), float(tangent[2])),
+                            normal=normal,
+                            binormal=binormal,
+                            centerline_depth=sample.surface_z - z,
+                            roof_thickness=sample.surface_z - z - 0.5 * sample.tube_height,
+                        )
+                    )
                 updated = reframed
             result.append(replace(field, samples=tuple(updated)))
         return result
@@ -530,8 +564,7 @@ class SectionFieldGenerator:
             candidates = [
                 segment
                 for segment in segment_lookup.values()
-                if (segment.start_node_id, segment.end_node_id)
-                == (start_node_id, end_node_id)
+                if (segment.start_node_id, segment.end_node_id) == (start_node_id, end_node_id)
             ]
             if candidates:
                 route_segment_ids.append(
@@ -665,17 +698,14 @@ class SectionFieldGenerator:
                 "temperature_k",
             )
             lava_age_s = self._interpolate_attr(segment, arc_length, "age_s")
-            age_fraction = float(
-                np.clip(lava_age_s / max(maximum_lava_age_s, 1e-9), 0.0, 1.0)
-            )
+            age_fraction = float(np.clip(lava_age_s / max(maximum_lava_age_s, 1e-9), 0.0, 1.0))
             temperature_span = max(
                 maximum_lava_temperature_k - minimum_lava_temperature_k,
                 1e-9,
             )
             cooling_fraction = float(
                 np.clip(
-                    (maximum_lava_temperature_k - lava_temperature_k)
-                    / temperature_span,
+                    (maximum_lava_temperature_k - lava_temperature_k) / temperature_span,
                     0.0,
                     1.0,
                 )
@@ -696,8 +726,7 @@ class SectionFieldGenerator:
                 + height_softness
                 * np.logaddexp(
                     0.0,
-                    (raw_tube_height - self.config.minimum_tube_height)
-                    / height_softness,
+                    (raw_tube_height - self.config.minimum_tube_height) / height_softness,
                 )
             )
             floor_flatness = self._floor_flatness(
@@ -762,13 +791,24 @@ class SectionFieldGenerator:
                 lateral_skew=lateral_skew,
                 wall_roughness=float(
                     np.clip(
-                        local_morphology.wall_roughness
-                        * (0.85 + 0.30 * flow_maturity),
+                        local_morphology.wall_roughness * (0.85 + 0.30 * flow_maturity),
                         0.0,
                         self.config.morphology_wall_roughness_max,
                     )
                 ),
-                floor_relief=local_morphology.floor_relief,
+                floor_relief=local_morphology.floor_relief
+                * (
+                    1.0
+                    - 0.78
+                    * max(
+                        (
+                            influence.room_weight
+                            for influence in junction_influences
+                            if influence.chamber_type == "drained_lava_pool"
+                        ),
+                        default=0.0,
+                    )
+                ),
                 shape_bias=local_morphology.shape_bias,
                 roof_bias=local_morphology.roof_bias,
                 floor_bias=local_morphology.floor_bias,
@@ -958,7 +998,8 @@ class SectionFieldGenerator:
 
     def _directed_parent_morphology(
         self,
-        incoming: tuple[tuple[int, _SegmentMorphologyState], ...] | list[tuple[int, _SegmentMorphologyState]],
+        incoming: tuple[tuple[int, _SegmentMorphologyState], ...]
+        | list[tuple[int, _SegmentMorphologyState]],
     ) -> tuple[_SegmentMorphologyState, int] | None:
         """Combine only upstream (segment end-node) states deterministically."""
 
@@ -969,7 +1010,10 @@ class SectionFieldGenerator:
             segment_id, state = ordered[0]
             return state, segment_id
         states = [state for _, state in ordered]
-        mean = lambda name: float(np.mean([getattr(state, name) for state in states]))
+
+        def mean(name: str) -> float:
+            return float(np.mean([getattr(state, name) for state in states]))
+
         reference = states[0]
         combined = replace(
             reference,
@@ -1028,7 +1072,9 @@ class SectionFieldGenerator:
                     + (1.0 - inheritance) * math.log(max(width_scale, 1e-9))
                 )
             )
-            height_offset = inheritance * parent.height_ratio_offset + (1.0 - inheritance) * height_offset
+            height_offset = (
+                inheritance * parent.height_ratio_offset + (1.0 - inheritance) * height_offset
+            )
             shape_bias = inheritance * parent.shape_bias + (1.0 - inheritance) * shape_bias
             roof_bias = inheritance * parent.roof_bias + (1.0 - inheritance) * roof_bias
             floor_bias = inheritance * parent.floor_bias + (1.0 - inheritance) * floor_bias
@@ -1093,9 +1139,7 @@ class SectionFieldGenerator:
     ) -> _SegmentMorphologyState:
         """Evaluate a continuous, node-anchored morphology field."""
 
-        progress = float(
-            np.clip(arc_length / max(segment.total_length, 1e-9), 0.0, 1.0)
-        )
+        progress = float(np.clip(arc_length / max(segment.total_length, 1e-9), 0.0, 1.0))
         blend = progress * progress * (3.0 - 2.0 * progress)
         interior_envelope = max(math.sin(math.pi * progress), 0.0) ** 0.75
         strength = self.config.morphology_gradient_strength
@@ -1116,9 +1160,7 @@ class SectionFieldGenerator:
             projection_b = x_coord * math.cos(angle_b) + y_coord * math.sin(angle_b)
             wavelength = self.config.morphology_correlation_length
             value = math.sin(2.0 * math.pi * projection_a / wavelength + phase_a)
-            value += 0.52 * math.sin(
-                2.0 * math.pi * projection_b / (0.63 * wavelength) + phase_b
-            )
+            value += 0.52 * math.sin(2.0 * math.pi * projection_b / (0.63 * wavelength) + phase_b)
             return value / 1.52
 
         def gradient(label: str) -> float:
@@ -1134,14 +1176,10 @@ class SectionFieldGenerator:
             phase = float(route_rng.uniform(-math.pi, math.pi))
             secondary_phase = float(route_rng.uniform(-math.pi, math.pi))
             wave = math.sin(
-                2.0 * math.pi * arc_length / self.config.morphology_correlation_length
-                + phase
+                2.0 * math.pi * arc_length / self.config.morphology_correlation_length + phase
             )
             wave += 0.42 * math.sin(
-                2.0
-                * math.pi
-                * arc_length
-                / (0.53 * self.config.morphology_correlation_length)
+                2.0 * math.pi * arc_length / (0.53 * self.config.morphology_correlation_length)
                 + secondary_phase
             )
             return float(np.clip(0.72 * node_value + 0.55 * interior_envelope * wave, -2.0, 2.0))
@@ -1181,8 +1219,7 @@ class SectionFieldGenerator:
                 np.clip(
                     self.config.width_scale_median
                     * math.exp(
-                        0.28 * interior_envelope * base_width_log
-                        + 0.58 * strength * width_gradient
+                        0.28 * interior_envelope * base_width_log + 0.58 * strength * width_gradient
                     ),
                     0.32,
                     2.60,
@@ -1195,13 +1232,8 @@ class SectionFieldGenerator:
             floor_relief=float(
                 np.clip(
                     self.config.floor_relief_base
-                    + 0.30
-                    * interior_envelope
-                    * (base.floor_relief - self.config.floor_relief_base)
-                    + 0.55
-                    * strength
-                    * self.config.floor_relief_variation
-                    * floor_gradient,
+                    + 0.30 * interior_envelope * (base.floor_relief - self.config.floor_relief_base)
+                    + 0.55 * strength * self.config.floor_relief_variation * floor_gradient,
                     0.0,
                     self.config.morphology_floor_relief_max,
                 )
@@ -1212,10 +1244,7 @@ class SectionFieldGenerator:
                     + 0.30
                     * interior_envelope
                     * (base.wall_roughness - self.config.wall_roughness_base)
-                    + 0.70
-                    * strength
-                    * self.config.wall_roughness_variation
-                    * roughness_gradient,
+                    + 0.70 * strength * self.config.wall_roughness_variation * roughness_gradient,
                     0.0,
                     self.config.morphology_wall_roughness_max,
                 )
@@ -1266,9 +1295,7 @@ class SectionFieldGenerator:
             int(phase_value) if isinstance(phase_value, (int, float)) else 1,
             1,
         )
-        birth_phase = (
-            int(birth_value) if isinstance(birth_value, (int, float)) else 0
-        )
+        birth_phase = int(birth_value) if isinstance(birth_value, (int, float)) else 0
         relative_age = 1.0 - birth_phase / max(phase_count - 1, 1)
         width_scale = morphology.width_scale * (0.94 + 0.12 * relative_age)
         floor_relief = morphology.floor_relief * (0.82 + 0.36 * relative_age)
@@ -1306,7 +1333,9 @@ class SectionFieldGenerator:
             morphology,
             width_scale=float(np.clip(width_scale, 0.30, 2.85)),
             floor_relief=float(np.clip(floor_relief, 0.0, self.config.morphology_floor_relief_max)),
-            wall_roughness=float(np.clip(wall_roughness, 0.0, self.config.morphology_wall_roughness_max)),
+            wall_roughness=float(
+                np.clip(wall_roughness, 0.0, self.config.morphology_wall_roughness_max)
+            ),
         )
 
     def _section_width(
@@ -1334,9 +1363,12 @@ class SectionFieldGenerator:
             phase_count = float(phase_value)
         except (TypeError, ValueError):
             phase_count = 1.0
-        age_scale = 1.0 + self.config.morphology_age_width_gain * float(
-            np.clip(phase_count, 1.0, 8.0) - 1.0
-        ) / 7.0
+        age_scale = (
+            1.0
+            + self.config.morphology_age_width_gain
+            * float(np.clip(phase_count, 1.0, 8.0) - 1.0)
+            / 7.0
+        )
         process_scale = 1.0 + self.config.morphology_flux_width_gain * (flux_scale - 1.0)
         return float(
             np.clip(
@@ -1479,7 +1511,44 @@ class SectionFieldGenerator:
 
         for junction in connected_junctions:
             anchor = self._junction_anchor_arc(segment, junction)
-            weight = math.exp(-abs(arc_length - anchor) / max(junction.blend_length, 1.0))
+            distance = abs(arc_length - anchor)
+            junction_weight = math.exp(-distance / max(junction.blend_length, 1.0))
+            metadata = getattr(junction, "metadata", {}) or {}
+            chamber_type = str(metadata.get("chamber_type", ""))
+            room_weight = 0.0
+            target_width = 0.0
+            target_height = 0.0
+            influence_length = float(junction.blend_length)
+            if chamber_type == "drained_lava_pool" and junction.kind == "chamber":
+                pool_length = max(float(metadata.get("pool_length_m", 0.0) or 0.0), 1.0)
+                half_length = max(0.5 * pool_length, 0.75 * tube_width, 1.0)
+                if distance < half_length:
+                    progress = float(np.clip(distance / half_length, 0.0, 1.0))
+                    room_weight = math.cos(0.5 * math.pi * progress) ** (
+                        2.0 * self.config.drained_pool_transition_power
+                    )
+                requested_width = float(metadata.get("pool_width_m", 0.0) or 0.0)
+                target_width = float(
+                    np.clip(
+                        requested_width * self.config.drained_pool_width_scale,
+                        tube_width,
+                        self.config.chamber_max_tube_width,
+                    )
+                )
+                requested_height = float(metadata.get("pool_depth_m", 0.0) or 0.0)
+                pool_height_cap = min(
+                    1.5 * tube_height,
+                    target_width * self.config.drained_pool_height_ratio_limit,
+                )
+                target_height = float(
+                    np.clip(
+                        min(requested_height, pool_height_cap),
+                        max(self.config.minimum_tube_height, 0.85 * tube_height),
+                        max(tube_height, pool_height_cap),
+                    )
+                )
+                influence_length = pool_length
+            weight = max(junction_weight, room_weight)
             max_weight = max(max_weight, weight)
             influences.append(
                 SectionJunctionInfluence(
@@ -1489,30 +1558,56 @@ class SectionFieldGenerator:
                     split_style=junction.split_style,
                     merge_style=junction.merge_style,
                     capacity_bias=junction.capacity_bias,
-                    blend_length_m=float(junction.blend_length),
+                    blend_length_m=influence_length,
+                    chamber_type=chamber_type,
+                    room_weight=float(room_weight),
+                    target_width_m=target_width,
+                    target_height_m=target_height,
                 )
             )
             if (
                 junction.split_style == "pre_widen_then_split"
                 or junction.merge_style == "pre_widen_then_split"
             ):
-                width_scale += self.config.junction_pre_widen_gain * weight * junction.capacity_bias
-                height_scale += 0.10 * weight * junction.capacity_bias
-                flatness_delta += 0.10 * weight
-                arch_delta += 0.06 * weight
+                width_scale += (
+                    self.config.junction_pre_widen_gain * junction_weight * junction.capacity_bias
+                )
+                height_scale += 0.10 * junction_weight * junction.capacity_bias
+                flatness_delta += 0.10 * junction_weight
+                arch_delta += 0.06 * junction_weight
             else:
                 width_scale += (
                     self.config.junction_constant_envelope_gain
-                    * weight
+                    * junction_weight
                     * (junction.capacity_bias - 0.85)
                 )
-                height_scale += 0.03 * weight * junction.capacity_bias
-                flatness_delta += 0.04 * weight
-                arch_delta += 0.02 * weight
+                height_scale += 0.03 * junction_weight * junction.capacity_bias
+                flatness_delta += 0.04 * junction_weight
+                arch_delta += 0.02 * junction_weight
             if junction.kind == "crossing":
                 skew_scale *= 0.85
+            elif chamber_type == "drained_lava_pool":
+                if target_width > 0.0:
+                    target_width_scale = target_width / max(tube_width, 1e-9)
+                    width_scale = max(
+                        width_scale,
+                        (1.0 - room_weight) * width_scale + room_weight * target_width_scale,
+                    )
+                    width_cap = max(width_cap, target_width)
+                if target_height > 0.0:
+                    target_height_scale = target_height / max(tube_height, 1e-9)
+                    height_scale = (
+                        1.0 - room_weight
+                    ) * height_scale + room_weight * target_height_scale
+                desired_flatness_delta = self.config.drained_pool_floor_flatness - floor_flatness
+                flatness_delta = max(
+                    flatness_delta,
+                    room_weight * desired_flatness_delta,
+                )
+                arch_delta += room_weight * (self.config.drained_pool_roof_arch - roof_arch)
+                skew_scale *= 1.0 - 0.45 * room_weight
             elif junction.kind == "chamber":
-                chamber_weight = weight**1.8
+                chamber_weight = junction_weight**1.8
                 width_scale += self.config.chamber_widen_gain * chamber_weight
                 height_scale += 0.18 * chamber_weight
                 flatness_delta += 0.10 * chamber_weight
@@ -1638,10 +1733,7 @@ class SectionFieldGenerator:
         normalized = np.clip(np.abs(x_values) / max(half_width, 1.0), 0.0, 1.0)
         top_exp = float(
             np.clip(
-                1.78
-                - 0.24 * (roof_arch - 1.0)
-                - 0.48 * roof_bias
-                - 0.42 * shape_bias,
+                1.78 - 0.24 * (roof_arch - 1.0) - 0.48 * roof_bias - 0.42 * shape_bias,
                 0.72,
                 4.20,
             )

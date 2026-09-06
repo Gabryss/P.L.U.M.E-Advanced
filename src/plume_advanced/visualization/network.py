@@ -147,7 +147,10 @@ class CaveNetworkPlotter:
             y_coords = [point.y for point in segment.points]
             is_dominant = (segment.start_node_id, segment.end_node_id) in dominant_pairs
             linestyle: Any = "-"
-            if is_dominant:
+            if segment.metadata.get("chamber_type") == "drained_lava_pool":
+                color = "#f97316"
+                linewidth = 1.8 if dense_graph else 2.4
+            elif is_dominant:
                 color = "#22d3ee"
                 linewidth = 1.4 if dense_graph else 1.8
             elif segment.kind in {"backbone", "braid"}:
@@ -159,9 +162,6 @@ class CaveNetworkPlotter:
             elif segment.kind == "chamber_braid":
                 color = "#fb7185"
                 linewidth = 0.8 if dense_graph else 1.0
-            elif segment.metadata.get("chamber_type") == "drained_lava_pool":
-                color = "#f97316"
-                linewidth = 1.8 if dense_graph else 2.4
             elif bool(segment.metadata.get("chamber_forming", False)):
                 color = "#fb7185"
                 linewidth = 1.1 if dense_graph else 1.45

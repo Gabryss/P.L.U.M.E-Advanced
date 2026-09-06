@@ -19,7 +19,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(config.schema_version, 3)
         self.assertEqual(config.world.body.name, "earth")
         self.assertEqual(config.section_field.maximum_tube_width, 10.0)
-        self.assertEqual(config.section_field.chamber_max_tube_width, 20.0)
+        self.assertEqual(config.section_field.chamber_max_tube_width, 28.0)
         self.assertEqual(config.network.maximum_passage_radius, 5.0)
         self.assertEqual(config.network.growth_model, "hybrid_lobe")
         self.assertEqual(config.network.network_density, 3.0)

@@ -11,8 +11,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 
 from plume_advanced.config import load_project_config
-from plume_advanced.evaluation.artifacts import export_section_artifact
-from plume_advanced.evaluation.artifacts import section_semantic_hash
+from plume_advanced.evaluation.artifacts import export_section_artifact, section_semantic_hash
 from plume_advanced.evaluation.metrics.contours import self_intersection_count
 from plume_advanced.evaluation.metrics.morphometry import contour_morphometry
 from plume_advanced.stages.host_field import HostFieldGenerator
@@ -44,15 +43,17 @@ class SectionFieldTests(unittest.TestCase):
                 if sample.parent_morphology_segment_id is not None
             }
             for parent_id in parent_ids:
-                self.assertEqual(segment_lookup[parent_id].end_node_id, segment_lookup[field.segment_id].start_node_id)
+                self.assertEqual(
+                    segment_lookup[parent_id].end_node_id,
+                    segment_lookup[field.segment_id].start_node_id,
+                )
         self.assertGreater(first.summary()["morphology_family_score_standard_deviation"], 0.05)
         aspect_ratios = []
         compactness = []
         self.assertTrue(
             all(
                 self_intersection_count(sample.profile_points) == 0
-                and np.ptp(np.asarray(sample.profile_points), axis=0)[0]
-                <= sample.tube_width + 1e-6
+                and np.ptp(np.asarray(sample.profile_points), axis=0)[0] <= sample.tube_width + 1e-6
                 and np.ptp(np.asarray(sample.profile_points), axis=0)[1]
                 <= sample.tube_height + 1e-6
                 for sample in samples
@@ -62,7 +63,9 @@ class SectionFieldTests(unittest.TestCase):
             metrics = contour_morphometry(sample.profile_points)
             aspect_ratios.append(metrics["aspect_ratio"])
             compactness.append(metrics["compactness"])
-        self.assertGreater(np.percentile(aspect_ratios, 75) - np.percentile(aspect_ratios, 25), 0.20)
+        self.assertGreater(
+            np.percentile(aspect_ratios, 75) - np.percentile(aspect_ratios, 25), 0.20
+        )
         self.assertGreater(np.percentile(compactness, 75) - np.percentile(compactness, 25), 0.02)
         self.assertTrue(all(sample.junction_blend_length_m >= 0.0 for sample in samples))
 
@@ -70,9 +73,7 @@ class SectionFieldTests(unittest.TestCase):
         project_config = load_project_config(ROOT / "config" / "project.toml")
         host_field = HostFieldGenerator(project_config.host_field).generate()
         cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
-        section_field = SectionFieldGenerator(project_config.section_field).generate(
-            cave_network
-        )
+        section_field = SectionFieldGenerator(project_config.section_field).generate(cave_network)
         junction_ids = {junction.junction_id for junction in cave_network.junctions}
         route_segment_ids = set(section_field.dominant_route_segment_ids)
 
@@ -133,9 +134,7 @@ class SectionFieldTests(unittest.TestCase):
                 roof = profile[int(np.argmax(profile[:, 1]))]
                 floor = profile[int(np.argmin(profile[:, 1]))]
                 roof_world_z = sample.z + roof[0] * normal[2] + roof[1] * binormal[2]
-                floor_world_z = (
-                    sample.z + floor[0] * normal[2] + floor[1] * binormal[2]
-                )
+                floor_world_z = sample.z + floor[0] * normal[2] + floor[1] * binormal[2]
                 self.assertGreater(
                     float(roof_world_z),
                     float(floor_world_z),
@@ -165,10 +164,7 @@ class SectionFieldTests(unittest.TestCase):
         non_chamber_widths = [
             sample.tube_width
             for sample in all_samples
-            if not any(
-                influence.kind == "chamber"
-                for influence in sample.junction_influences
-            )
+            if not any(influence.kind == "chamber" for influence in sample.junction_influences)
         ]
         self.assertTrue(non_chamber_widths)
         self.assertLessEqual(max(non_chamber_widths), passage_cap)
@@ -184,6 +180,34 @@ class SectionFieldTests(unittest.TestCase):
         self.assertGreater(summary["width_coefficient_of_variation"], 0.08)
         self.assertGreater(summary["height_ratio_standard_deviation"], 0.025)
         self.assertGreater(summary["mean_shape_change_per_100m"], 0.10)
+        pool_samples = [
+            sample
+            for sample in all_samples
+            if any(
+                influence.chamber_type == "drained_lava_pool" and influence.room_weight >= 0.08
+                for influence in sample.junction_influences
+            )
+        ]
+        self.assertTrue(pool_samples)
+        self.assertEqual(summary["drained_pool_sample_count"], len(pool_samples))
+        self.assertGreater(summary["drained_pool_max_width_m"], float(np.median(widths)))
+        self.assertGreater(summary["drained_pool_mean_aspect_ratio"], 1.25)
+        self.assertGreater(max(sample.floor_flatness for sample in pool_samples), 0.75)
+        for sample in pool_samples:
+            for influence in sample.junction_influences:
+                if influence.chamber_type != "drained_lava_pool":
+                    continue
+                self.assertLessEqual(
+                    influence.target_width_m,
+                    project_config.world.body.maximum_room_width_m,
+                )
+                self.assertGreater(influence.target_height_m, 0.0)
+                self.assertLessEqual(
+                    influence.target_height_m,
+                    project_config.section_field.drained_pool_height_ratio_limit
+                    * influence.target_width_m
+                    + 1e-9,
+                )
 
         with tempfile.TemporaryDirectory() as temp_dir:
             npz_path, _ = export_section_artifact(
@@ -198,7 +222,8 @@ class SectionFieldTests(unittest.TestCase):
                 self.assertEqual(artifact["lava_flux"].shape, widths.shape)
 
         segment_field_lookup = {
-            segment_field.segment_id: segment_field for segment_field in section_field.segment_fields
+            segment_field.segment_id: segment_field
+            for segment_field in section_field.segment_fields
         }
         route_fields = [
             segment_field_lookup[segment_id]
@@ -233,32 +258,20 @@ class SectionFieldTests(unittest.TestCase):
         if endpoint_size_jumps:
             self.assertLess(max(endpoint_size_jumps), 1e-6)
 
-        stacked_segments = [
-            segment
-            for segment in cave_network.segments
-            if segment.z_level != 0
-        ]
+        stacked_segments = [segment for segment in cave_network.segments if segment.z_level != 0]
         if stacked_segments:
             flat_network = replace(
                 cave_network,
                 segments=tuple(
-                    replace(segment, z_level=0)
-                    if segment.z_level != 0
-                    else segment
+                    replace(segment, z_level=0) if segment.z_level != 0 else segment
                     for segment in cave_network.segments
                 ),
             )
-            flat_sections = SectionFieldGenerator(
-                project_config.section_field
-            ).generate(flat_network)
-            flat_lookup = {
-                field.segment_id: field
-                for field in flat_sections.segment_fields
-            }
-            physical_lookup = {
-                field.segment_id: field
-                for field in section_field.segment_fields
-            }
+            flat_sections = SectionFieldGenerator(project_config.section_field).generate(
+                flat_network
+            )
+            flat_lookup = {field.segment_id: field for field in flat_sections.segment_fields}
+            physical_lookup = {field.segment_id: field for field in section_field.segment_fields}
             separations = []
             endpoint_offsets = []
             for segment in stacked_segments:
@@ -267,9 +280,7 @@ class SectionFieldTests(unittest.TestCase):
                 midpoint = len(physical) // 2
                 separations.append(abs(physical[midpoint].z - flat[midpoint].z))
                 for endpoint in (0, -1):
-                    endpoint_offsets.append(
-                        abs(physical[endpoint].z - flat[endpoint].z)
-                    )
+                    endpoint_offsets.append(abs(physical[endpoint].z - flat[endpoint].z))
             self.assertGreater(
                 max(separations),
                 project_config.section_field.minimum_vertical_clearance,
