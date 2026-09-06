@@ -78,6 +78,7 @@ phase = [-3.14159, 3.14159]
 
 [network]
 growth_model = "hybrid_lobe"
+emplacement_backend = "internal"
 # Global loop/lobe density: 0 disables lobe branches, 1 preserves the calibrated
 # default, and values up to 3 launch progressively denser anastomosing networks.
 network_density = 3.0

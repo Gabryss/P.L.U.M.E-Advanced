@@ -5,8 +5,11 @@ from __future__ import annotations
 import heapq
 import json
 import math
+import subprocess
+import sys
+import tempfile
 from collections import defaultdict
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import numpy as np
@@ -88,6 +91,10 @@ class CaveNetworkConfig:
     random_seed: int | None = None
     growth_model: str = "hybrid_lobe"
     network_density: float = 1.0
+    emplacement_backend: str = "internal"
+    flowy_executable: str | None = None
+    flowy_timeout_s: float = 120.0
+    flowy_output_path: str | None = None
     # Independent opportunity controls; ``network_density`` remains the
     # monotonic endmember selector while these knobs describe process rates.
     lobe_launch_rate: float = 1.0
@@ -218,6 +225,7 @@ class CaveNetwork:
     slice_along_positions: tuple[float, ...]
     slice_channel_counts: tuple[int, ...]
     slice_visible_channel_counts: tuple[int, ...]
+    backend_provenance: dict[str, SegmentMetadataValue] = field(default_factory=dict)
 
     def summary(self) -> dict[str, float]:
         """Return scalar summaries for quick inspection."""
@@ -489,6 +497,7 @@ def export_network_report(
     report = {
         "schema": "plume.cave-network-diagnostics.v1",
         "summary": cave_network.summary(),
+        "emplacement_backend": cave_network.backend_provenance,
         "body_spatial_scale": cave_network.config.body_spatial_scale,
         "target_route_length_m": cave_network.config.target_route_length_m,
         "minimum_branch_offset_widths": (
@@ -569,6 +578,175 @@ class _LobeTrace:
     initial_flux: float
 
 
+@dataclass(frozen=True)
+class EmplacementProposal:
+    """Backend-neutral route evidence consumed by PLUME graph construction."""
+
+    paths: tuple[tuple[tuple[float, float], ...], ...]
+    backend: str
+    version: str
+    provenance: dict[str, SegmentMetadataValue]
+
+
+class DownflowReferenceBackend:
+    """Reference perturbed-DEM steepest-descent path ensemble.
+
+    This is a transparent PLUME implementation of the published stochastic
+    perturbed-DEM idea, not a claim to ship or call an official DOWNFLOW
+    library.  It returns route evidence only; PLUME owns graph semantics.
+    """
+
+    name = "downflow_reference"
+    version = "reference-1"
+
+    def propose(
+        self,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        *,
+        start_cell: tuple[int, int],
+        seed: int | None,
+        steps: int,
+        uphill_limit: float,
+    ) -> EmplacementProposal:
+        rng = procedural_rng(seed, "downflow-reference")
+        perturbation = CaveNetworkGenerator._correlated_terrain_perturbation(
+            host_field.elevation.shape,
+            amplitude_m=max(0.5, 0.03 * float(np.ptp(host_field.elevation))),
+            correlation_cells=5.0,
+            rng=rng,
+        )
+        path = [start_cell]
+        for _ in range(max(1, steps)):
+            current = path[-1]
+            if float(geometry.along_grid[current]) >= geometry.along_extent:
+                break
+            candidates = []
+            current_elevation = float(host_field.elevation[current])
+            y_index, x_index = current
+            ny, nx = host_field.elevation.shape
+            neighbors = [
+                (yy, xx)
+                for yy in range(max(0, y_index - 1), min(ny, y_index + 2))
+                for xx in range(max(0, x_index - 1), min(nx, x_index + 2))
+                if (yy, xx) != current
+            ]
+            for candidate in neighbors:
+                if candidate in path[-8:]:
+                    continue
+                along_delta = float(geometry.along_grid[candidate] - geometry.along_grid[current])
+                if along_delta < -0.25 * geometry.cell_scale:
+                    continue
+                uphill = float(host_field.elevation[candidate]) - current_elevation
+                if uphill > uphill_limit:
+                    continue
+                # Perturbed DEM descent with a gentle downstream tie-breaker.
+                score = float(host_field.elevation[candidate] + perturbation[candidate])
+                score -= 0.08 * along_delta
+                score += 1e-6 * float(rng.random())
+                candidates.append((score, candidate))
+            if not candidates:
+                break
+            path.append(min(candidates, key=lambda item: item[0])[1])
+        coordinates = tuple(
+            CaveNetworkGenerator._cell_to_world(host_field, cell) for cell in path
+        )
+        return EmplacementProposal(
+            paths=(coordinates,),
+            backend=self.name,
+            version=self.version,
+            provenance={
+                "algorithm": "stochastic_perturbed_dem_steepest_descent",
+                "official_library": False,
+                "seed_namespace": "downflow-reference",
+            },
+        )
+
+
+class FlowyBackend:
+    """Strict adapter for an explicitly configured flowy-code/flowy executable."""
+
+    name = "flowy"
+    version = "external"
+
+    def __init__(self, executable: str, *, timeout_s: float = 120.0, output_path: str | None = None):
+        self.executable = executable
+        self.timeout_s = timeout_s
+        self.output_path = output_path
+
+    def propose(
+        self,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        *,
+        start_cell: tuple[int, int],
+        seed: int | None,
+        steps: int,
+        uphill_limit: float,
+    ) -> EmplacementProposal:
+        del geometry, start_cell, steps, uphill_limit
+        output_path = self.output_path
+        temporary: tempfile.NamedTemporaryFile[str] | None = None
+        if output_path is None:
+            temporary = tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False)
+            output_path = temporary.name
+            temporary.close()
+        command = [self.executable, "--output", output_path, "--seed", str(seed if seed is not None else 0)]
+        if Path(self.executable).suffix == ".py":
+            command = [sys.executable, *command]
+        try:
+            completed = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=self.timeout_s,
+            )
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(
+                f"Selected flowy backend executable is unavailable: {self.executable}"
+            ) from exc
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(f"flowy backend timed out after {self.timeout_s}s") from exc
+        if completed.returncode != 0:
+            raise RuntimeError(
+                f"flowy backend failed with exit code {completed.returncode}: {completed.stderr.strip()}"
+            )
+        try:
+            payload = json.loads(Path(output_path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"flowy backend did not produce valid JSON at {output_path}") from exc
+        paths_payload = payload.get("paths", payload.get("lobes")) if isinstance(payload, dict) else None
+        if not isinstance(paths_payload, list):
+            raise ValueError("flowy output must contain a 'paths' or 'lobes' array")
+        paths: list[tuple[tuple[float, float], ...]] = []
+        for raw_path in paths_payload:
+            if not isinstance(raw_path, list):
+                raise ValueError("flowy path entries must be arrays")
+            points: list[tuple[float, float]] = []
+            for point in raw_path:
+                if isinstance(point, dict) and {"x", "y"} <= set(point):
+                    points.append((float(point["x"]), float(point["y"])))
+                elif isinstance(point, (list, tuple)) and len(point) >= 2:
+                    points.append((float(point[0]), float(point[1])))
+                else:
+                    raise ValueError("flowy points must be [x, y] or {x, y}")
+            if len(points) >= 2:
+                paths.append(tuple(points))
+        if not paths:
+            raise ValueError("flowy output contained no usable paths")
+        return EmplacementProposal(
+            paths=tuple(paths),
+            backend=self.name,
+            version=str(payload.get("version", self.version)),
+            provenance={
+                "executable": self.executable,
+                "output_schema": "paths:[[{x,y}|[x,y],...],...]",
+                "stdout": completed.stdout.strip()[:500],
+            },
+        )
+
+
 class CaveNetworkGenerator:
     """Generate a host-driven lava-tube network and raster occupancy."""
 
@@ -599,6 +777,11 @@ class CaveNetworkGenerator:
         # configured multi-vent feeder fan).
         if self.config.network_density <= 0.0:
             source_cells = (backbone_source,)
+        backend_provenance: dict[str, SegmentMetadataValue] = {
+            "backend": "internal",
+            "version": "builtin",
+            "provenance": "plume_hybrid_lobe",
+        }
         backbone_perturbation = None
         if self.config.growth_model == "hybrid_lobe":
             backbone_perturbation = self._correlated_terrain_perturbation(
@@ -607,14 +790,31 @@ class CaveNetworkGenerator:
                 correlation_cells=self.config.lobe_growth.perturbation_correlation_cells,
                 rng=procedural_rng(self.config.random_seed, "backbone-downflow"),
             )
-        backbone_path = self._trace_backbone_path(
-            host_field=host_field,
-            geometry=geometry,
-            support_field=support_field,
-            start_cell=backbone_source,
-            downstream_potential=downstream_potential,
-            terrain_perturbation=backbone_perturbation,
-        )
+        if self.config.emplacement_backend == "internal":
+            backbone_path = self._trace_backbone_path(
+                host_field=host_field,
+                geometry=geometry,
+                support_field=support_field,
+                start_cell=backbone_source,
+                downstream_potential=downstream_potential,
+                terrain_perturbation=backbone_perturbation,
+            )
+        else:
+            proposal = self._emplacement_proposal(
+                host_field=host_field,
+                geometry=geometry,
+                start_cell=backbone_source,
+            )
+            backbone_path = self._proposal_path_to_cells(host_field, proposal.paths[0])
+            if len(backbone_path) < 3:
+                raise ValueError(
+                    f"Selected emplacement backend {proposal.backend!r} returned an unusable backbone path"
+                )
+            backend_provenance = {
+                "backend": proposal.backend,
+                "version": proposal.version,
+                **proposal.provenance,
+            }
         if not backbone_path:
             return CaveNetwork(
                 config=self.config,
@@ -646,6 +846,7 @@ class CaveNetworkGenerator:
                 ),
             )
         ]
+        selected_paths[0].metadata.update(backend_provenance)
         occupied_cells = set(backbone_path)
         backbone_alongs, backbone_crosses = self._build_backbone_profile(backbone_path, geometry)
         for source_cell in source_cells:
@@ -812,7 +1013,56 @@ class CaveNetworkGenerator:
             slice_along_positions=slice_along_positions,
             slice_channel_counts=slice_channel_counts,
             slice_visible_channel_counts=slice_visible_channel_counts,
+            backend_provenance=backend_provenance,
         )
+
+    def _emplacement_proposal(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        start_cell: tuple[int, int],
+    ) -> EmplacementProposal:
+        backend = self.config.emplacement_backend
+        if backend == "downflow_reference":
+            return DownflowReferenceBackend().propose(
+                host_field,
+                geometry,
+                start_cell=start_cell,
+                seed=self.config.random_seed,
+                steps=self.config.trace_max_steps + 240,
+                uphill_limit=self.config.max_uphill_step,
+            )
+        if backend == "flowy":
+            if not self.config.flowy_executable:
+                raise ValueError(
+                    "emplacement_backend='flowy' requires network.flowy_executable"
+                )
+            return FlowyBackend(
+                self.config.flowy_executable,
+                timeout_s=self.config.flowy_timeout_s,
+                output_path=self.config.flowy_output_path,
+            ).propose(
+                host_field,
+                geometry,
+                start_cell=start_cell,
+                seed=self.config.random_seed,
+                steps=self.config.trace_max_steps,
+                uphill_limit=self.config.max_uphill_step,
+            )
+        raise ValueError(f"Unknown emplacement backend: {backend!r}")
+
+    def _proposal_path_to_cells(
+        self,
+        host_field: HostField,
+        path: tuple[tuple[float, float], ...],
+    ) -> list[tuple[int, int]]:
+        cells: list[tuple[int, int]] = []
+        for x_coord, y_coord in path:
+            cell = self._world_to_cell(host_field, x_coord, y_coord)
+            if not cells or cell != cells[-1]:
+                cells.append(cell)
+        return cells
 
     def _build_flow_geometry(self, host_field: HostField) -> _FlowGeometry:
         angle_radians = math.radians(host_field.config.flow_angle_degrees)

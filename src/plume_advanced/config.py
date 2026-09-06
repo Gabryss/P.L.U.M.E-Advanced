@@ -1073,6 +1073,20 @@ def _validate_pipeline_configs(
         raise ValueError("network.chamber_radius_fraction must be in (0, 1]")
     if network.growth_model not in {"hybrid_lobe", "legacy_braid"}:
         raise ValueError("network.growth_model must be hybrid_lobe or legacy_braid")
+    if network.emplacement_backend not in {
+        "internal",
+        "downflow_reference",
+        "flowy",
+    }:
+        raise ValueError(
+            "network.emplacement_backend must be internal, downflow_reference, or flowy"
+        )
+    if network.flowy_timeout_s <= 0.0:
+        raise ValueError("network.flowy_timeout_s must be positive")
+    if network.emplacement_backend == "flowy" and not network.flowy_executable:
+        raise ValueError(
+            "network.flowy_executable is required when emplacement_backend='flowy'"
+        )
     if not 0.0 <= network.network_density <= 3.0:
         raise ValueError("network.network_density must be in [0, 3]")
     if network.lobe_launch_rate < 0.0:

@@ -16,19 +16,92 @@ ROOT = Path(__file__).resolve().parents[1]
 from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.metrics.network import network_metrics
 from plume_advanced.procedural import procedural_rng
-from plume_advanced.stages.host_field import HostFieldConfig, HostFieldGenerator
+from plume_advanced.stages.host_field import GridConfig, HostFieldConfig, HostFieldGenerator
 from plume_advanced.stages.network import (
     CaveNetworkConfig,
     CaveNetworkGenerator,
     CaveNode,
     CavePoint,
     CaveSegment,
+    DownflowReferenceBackend,
+    FlowyBackend,
     _SelectedPath,
     export_network_report,
 )
 
 
 class CaveNetworkTests(unittest.TestCase):
+    def test_downflow_reference_is_deterministic_and_terrain_sensitive(self) -> None:
+        config = HostFieldConfig(
+            grid=GridConfig(width=360.0, height=720.0, nx=36, ny=60),
+            target_route_length_m=600.0,
+            seed_point=(0.0, -300.0),
+            flow_angle_degrees=90.0,
+            random_seed=7,
+        )
+        host = HostFieldGenerator(config).generate()
+        generator = CaveNetworkGenerator(
+            CaveNetworkConfig(random_seed=13, target_route_length_m=600.0)
+        )
+        geometry = generator._build_flow_geometry(host)
+        start = generator._world_to_cell(host, *config.seed_point)
+        backend = DownflowReferenceBackend()
+        first = backend.propose(
+            host, geometry, start_cell=start, seed=13, steps=100, uphill_limit=1.2
+        )
+        repeated = backend.propose(
+            host, geometry, start_cell=start, seed=13, steps=100, uphill_limit=1.2
+        )
+        self.assertEqual(first, repeated)
+        altered = replace(host, elevation=host.elevation + 0.35 * host.y_coords[:, None])
+        altered_proposal = backend.propose(
+            altered, geometry, start_cell=start, seed=13, steps=100, uphill_limit=1.2
+        )
+        self.assertNotEqual(first.paths, altered_proposal.paths)
+        self.assertEqual(first.backend, "downflow_reference")
+        self.assertFalse(first.provenance["official_library"])
+
+    def test_flowy_adapter_requires_executable_and_reads_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            script = Path(temp_dir) / "fake_flowy.py"
+            script.write_text(
+                "import json, sys\n"
+                "json.dump({'version': 'fixture-1', 'paths': [[[0, 0], [1, 1]]]}, "
+                "open(sys.argv[2], 'w', encoding='utf-8'))\n",
+                encoding="utf-8",
+            )
+            host = HostFieldGenerator(
+                HostFieldConfig(grid=GridConfig(width=20.0, height=20.0, nx=8, ny=8))
+            ).generate()
+            generator = CaveNetworkGenerator(CaveNetworkConfig())
+            geometry = generator._build_flow_geometry(host)
+            proposal = FlowyBackend(str(script)).propose(
+                host,
+                geometry,
+                start_cell=(0, 0),
+                seed=4,
+                steps=4,
+                uphill_limit=1.2,
+            )
+            self.assertEqual(proposal.backend, "flowy")
+            self.assertEqual(proposal.version, "fixture-1")
+            self.assertEqual(len(proposal.paths), 1)
+
+    def test_flowy_backend_does_not_silently_fallback_when_missing(self) -> None:
+        host = HostFieldGenerator(
+            HostFieldConfig(grid=GridConfig(width=20.0, height=20.0, nx=8, ny=8))
+        ).generate()
+        generator = CaveNetworkGenerator(CaveNetworkConfig())
+        geometry = generator._build_flow_geometry(host)
+        with self.assertRaises(FileNotFoundError):
+            FlowyBackend("/definitely/missing/flowy").propose(
+                host,
+                geometry,
+                start_cell=(0, 0),
+                seed=4,
+                steps=4,
+                uphill_limit=1.2,
+            )
     def test_no_argument_generators_preserve_entry_to_exit_reachability(self) -> None:
         host_field = HostFieldGenerator().generate()
         network = CaveNetworkGenerator().generate(host_field)
