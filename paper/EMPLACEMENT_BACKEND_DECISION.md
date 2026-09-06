@@ -1,8 +1,8 @@
 # Emplacement proposal backend decision
 
-Status: provisional engineering decision.  The frozen PDC evaluation partition
-is not used here because it constrains passage cross-sections, not surface-flow
-routing or network topology.
+Status: final engineering decision from the bounded Stage-B comparison.  The
+frozen PDC evaluation partition is not used here because it constrains passage
+cross-sections, not surface-flow routing or network topology.
 
 ## Scope
 
@@ -75,5 +75,31 @@ useful optional research prior.  `flowy` is expected to be the richer surface
 emplacement experiment, but it carries a GPL-3.0 external C++ dependency and a
 surface-deposit-to-buried-conduit interpretation gap.
 
-This ordering is deliberately falsifiable: the generated benchmark JSON and
-figures record the measurements used for the final decision.
+## Matched-seed result and decision
+
+The benchmark used five seeds on natural/default-like and monotonic control
+terrains, with every case repeated to test determinism.  The values below are
+engineering selection evidence, not population estimates for natural tubes.
+
+| Backend | Natural valid | Monotonic valid | Deterministic | Decision score |
+|---|---:|---:|---:|---:|
+| Internal hybrid | 5/5 | 5/5 | 100% | 0.975 |
+| DOWNFLOW reference | 5/5 | 5/5 | 100% | 0.875 |
+| Flowy v1.0.0 | 0/5 | 5/5 | 100% | 0.640 |
+
+Flowy produced valid evidence on monotonic slopes, but its median proposal
+advanced only about 275 m, versus roughly 763 m for the other two backends.  On
+all five natural terrains its lobe genealogy became trapped or moved upstream
+and was rejected by the strict progress gate.  The failures were deterministic
+and no fallback was applied.
+
+The **internal hybrid remains the operational default** because it is the only
+candidate that directly supplies the complete controlled buried-network
+semantics while matching DOWNFLOW-reference validity and determinism.  Of the
+two new external/research choices, **DOWNFLOW reference is selected as the best
+route prior**.  Flowy remains available as an experimental surface-footprint
+and thickness prior for calibrated cases, not as the default backbone source.
+
+The machine-readable evidence and three figures are written by
+`scripts/emplacement_backend_benchmark.py` to
+`outputs/emplacement_backend_benchmark/`.

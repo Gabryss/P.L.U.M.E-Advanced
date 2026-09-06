@@ -29,6 +29,7 @@ def test_emplacement_backend_benchmark_smoke(tmp_path) -> None:
     assert (tmp_path / "benchmark.json").exists()
     assert (tmp_path / "network_diagrams.png").exists()
     assert (tmp_path / "metric_comparison.png").exists()
+    assert (tmp_path / "scorecard.png").exists()
     persisted = json.loads((tmp_path / "benchmark.json").read_text(encoding="utf-8"))
     assert persisted["protocol"]["stage"] == "B"
     assert persisted["cases"] == report["cases"]

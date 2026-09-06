@@ -108,6 +108,9 @@ def _network_signature(network: CaveNetwork, metrics: dict[str, Any]) -> str:
 
 
 def _downstream_progress(network: CaveNetwork) -> float:
+    proposal_progress = network.backend_provenance.get("proposal_downstream_progress_m")
+    if isinstance(proposal_progress, (int, float)):
+        return float(proposal_progress)
     nodes = {node.node_id: node for node in network.nodes}
     route = [nodes[node_id] for node_id in network.dominant_route_node_ids if node_id in nodes]
     if len(route) < 2:
@@ -230,9 +233,10 @@ def _aggregate(cases: list[dict[str, Any]]) -> dict[str, Any]:
         valid = [row for row in rows if row["valid"]]
         values: dict[str, dict[str, float | None]] = {}
         for name in metric_names:
+            source_rows = rows if name == "runtime_s" else successes
             source = [
                 float(row["runtime_s"] if name == "runtime_s" else row["metrics"][name])
-                for row in successes
+                for row in source_rows
             ]
             values[name] = {
                 "median": float(np.median(source)) if source else None,
@@ -249,13 +253,39 @@ def _aggregate(cases: list[dict[str, Any]]) -> dict[str, Any]:
             "success_rate": len(successes) / max(len(rows), 1),
             "valid_rate": len(valid) / max(len(rows), 1),
             "deterministic_rate": sum(bool(row.get("deterministic")) for row in rows) / max(len(rows), 1),
+            "failure_types": dict(
+                sorted(
+                    {
+                        error_type: sum(
+                            (row.get("error") or {}).get("type") == error_type for row in rows
+                        )
+                        for error_type in {
+                            (row.get("error") or {}).get("type")
+                            for row in rows
+                            if row.get("error")
+                        }
+                    }.items()
+                )
+            ),
             "metrics": values,
         }
     return output
 
 
 def _recommend(aggregates: dict[str, Any]) -> dict[str, Any]:
+    weights = {
+        "validity": 0.35,
+        "determinism": 0.15,
+        "runtime": 0.10,
+        "integration": 0.15,
+        "scientific_relevance": 0.10,
+        "network_scope": 0.15,
+    }
+    integration_scores = {"internal": 1.0, "downflow_reference": 0.95, "flowy": 0.40}
+    scientific_scores = {"internal": 0.75, "downflow_reference": 0.80, "flowy": 0.95}
+    network_scope_scores = {"internal": 1.0, "downflow_reference": 0.35, "flowy": 0.40}
     scores: dict[str, float] = {}
+    components: dict[str, dict[str, float]] = {}
     for backend in BACKENDS:
         rows = [value for value in aggregates.values() if value["backend"] == backend]
         if not rows:
@@ -265,24 +295,29 @@ def _recommend(aggregates: dict[str, Any]) -> dict[str, Any]:
         runtime = [row["metrics"]["runtime_s"]["median"] for row in rows if row["metrics"]["runtime_s"]["median"] is not None]
         runtime_score = 1.0 / max(float(np.mean(runtime)) if runtime else 1e9, 1e-9)
         runtime_score = min(runtime_score, 1.0)
-        integration = {"internal": 1.0, "downflow_reference": 0.85, "flowy": 0.40}[backend]
-        topology = []
-        for row in rows:
-            for metric, scale in (("branch_fraction", 1.0), ("cyclomatic_per_km", 3.0), ("junction_density_per_km", 3.0)):
-                median = row["metrics"][metric]["median"]
-                if median is not None:
-                    topology.append(min(float(median) / scale, 1.0))
-        topology_score = float(np.mean(topology)) if topology else 0.0
-        scores[backend] = 0.35 * valid + 0.20 * deterministic + 0.15 * runtime_score + 0.15 * integration + 0.15 * topology_score
+        components[backend] = {
+            "validity": valid,
+            "determinism": deterministic,
+            "runtime": runtime_score,
+            "integration": integration_scores[backend],
+            "scientific_relevance": scientific_scores[backend],
+            "network_scope": network_scope_scores[backend],
+        }
+        scores[backend] = sum(
+            weights[name] * score for name, score in components[backend].items()
+        )
     selected = max(scores, key=scores.get) if scores else "internal"
     return {
         "selected_default": selected,
         "scores": scores,
-        "optional_experimental_priors": [backend for backend in BACKENDS if backend != selected],
+        "score_components": components,
+        "weights": weights,
+        "optional_experimental_priors": [backend for backend in scores if backend != selected],
         "rationale": (
-            "Select internal as the operational default when it wins the reproducible validity, "
-            "topology, runtime, and integration rubric; retain external/reference backends as "
-            "explicit priors with their observed terrain-dependent failures."
+            f"{selected} has the strongest weighted combination of validity, deterministic "
+            "reproduction, runtime, integration burden, scientific relevance, and ability to "
+            "contribute a complete buried-tube network. Other backends remain explicit priors; "
+            "their failures are recorded and never trigger a silent fallback."
         ),
     }
 
@@ -349,8 +384,74 @@ def _plot_metrics(cases: list[dict[str, Any]], path: Path) -> None:
         axis.set_ylabel(label)
         axis.grid(alpha=0.2)
     handles = [plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=colors[name], label=name, markersize=7) for name in BACKENDS]
-    fig.legend(handles=handles, loc="upper center", ncol=3)
-    fig.suptitle("Stage-B backend metrics across named seeds (N=natural, M=monotonic)")
+    fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.965), ncol=3)
+    fig.suptitle(
+        "Stage-B backend metrics across named seeds (N=natural, M=monotonic)",
+        y=0.995,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.92))
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
+def _plot_scorecard(
+    aggregates: dict[str, Any],
+    recommendation: dict[str, Any],
+    path: Path,
+) -> None:
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.8))
+    colors = {"internal": "#1f77b4", "downflow_reference": "#ff7f0e", "flowy": "#2ca02c"}
+    available_backends = [backend for backend in BACKENDS if backend in recommendation["scores"]]
+    available_families = [
+        family
+        for family in FAMILIES
+        if any(value["family"] == family for value in aggregates.values())
+    ]
+    positions = np.arange(len(available_backends), dtype=float)
+    width = 0.36
+    for family_index, family in enumerate(available_families):
+        offset = (family_index - 0.5 * (len(available_families) - 1)) * width
+        success = [
+            float(aggregates[f"{family}/{backend}"]["success_rate"])
+            for backend in available_backends
+        ]
+        runtime = [
+            aggregates[f"{family}/{backend}"]["metrics"]["runtime_s"]["median"]
+            for backend in available_backends
+        ]
+        axes[0].bar(positions + offset, success, width, label=family)
+        axes[1].bar(
+            positions + offset,
+            [float(value) if value is not None else 0.0 for value in runtime],
+            width,
+            label=family,
+        )
+    axes[0].set_ylim(0.0, 1.05)
+    axes[0].set_ylabel("successful valid runs / seeds")
+    axes[0].set_title("Validity by terrain family")
+    axes[1].set_ylabel("median wall time (s)")
+    axes[1].set_title("Stage-B runtime")
+    axes[0].legend(frameon=False)
+
+    scores = recommendation["scores"]
+    axes[2].bar(
+        positions,
+        [float(scores[backend]) for backend in available_backends],
+        color=[colors[backend] for backend in available_backends],
+    )
+    axes[2].set_ylim(0.0, 1.05)
+    axes[2].set_ylabel("weighted decision score")
+    axes[2].set_title(f"Selected default: {recommendation['selected_default']}")
+    for axis in axes:
+        axis.set_xticks(positions)
+        axis.set_xticklabels(
+            [
+                {"internal": "internal", "downflow_reference": "DOWNFLOW\nreference", "flowy": "Flowy"}[backend]
+                for backend in available_backends
+            ]
+        )
+        axis.grid(axis="y", alpha=0.2)
+    fig.suptitle("Emplacement backend validity, cost, and decision")
     fig.tight_layout(rect=(0, 0, 1, 0.94))
     fig.savefig(path, dpi=150)
     plt.close(fig)
@@ -422,11 +523,13 @@ def run_benchmark(
             "report_json": str(output / "benchmark.json"),
             "network_diagrams_png": str(output / "network_diagrams.png"),
             "metric_comparison_png": str(output / "metric_comparison.png"),
+            "scorecard_png": str(output / "scorecard.png"),
         },
     }
     (output / "benchmark.json").write_text(json.dumps(_jsonable(report), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     _plot_networks(cases, network_for_plot, output / "network_diagrams.png")
     _plot_metrics(cases, output / "metric_comparison.png")
+    _plot_scorecard(aggregates, report["recommendation"], output / "scorecard.png")
     return report
 
 

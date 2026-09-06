@@ -8,6 +8,7 @@ import unittest
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
 
@@ -24,6 +25,7 @@ from plume_advanced.stages.network import (
     CavePoint,
     CaveSegment,
     DownflowReferenceBackend,
+    EmplacementProposal,
     FlowyBackend,
     _SelectedPath,
     export_network_report,
@@ -126,6 +128,37 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
 
         self.assertEqual(rasterized, [(1, 1), (1, 2), (1, 4)])
 
+    def test_external_backbone_requires_material_downstream_progress(self) -> None:
+        host = HostFieldGenerator(
+            HostFieldConfig(
+                grid=GridConfig(width=600.0, height=200.0, nx=61, ny=21),
+                seed_point=(-250.0, 0.0),
+                target_route_length_m=500.0,
+                waves=(),
+                corridor_depth=0.0,
+            )
+        ).generate()
+        generator = CaveNetworkGenerator(
+            CaveNetworkConfig(
+                emplacement_backend="downflow_reference",
+                target_route_length_m=500.0,
+                network_density=0.0,
+            )
+        )
+        geometry = generator._build_flow_geometry(host)
+        start = generator._world_to_cell(host, -250.0, 0.0)
+        cells = (start, (start[0], start[1] + 1), (start[0], start[1] + 2))
+        proposal = EmplacementProposal(
+            paths=(tuple(generator._cell_to_world(host, cell) for cell in cells),),
+            backend="downflow_reference",
+            version="test",
+            provenance={},
+        )
+
+        with patch.object(generator, "_emplacement_proposal", return_value=proposal):
+            with self.assertRaisesRegex(ValueError, "downstream progress"):
+                generator.generate(host)
+
     def test_no_argument_generators_preserve_entry_to_exit_reachability(self) -> None:
         host_field = HostFieldGenerator().generate()
         network = CaveNetworkGenerator().generate(host_field)
@@ -134,6 +167,9 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertEqual(metrics["source_unreachable_node_count"], 0)
         self.assertEqual(metrics["entries_without_exit_path_count"], 0)
         self.assertEqual(metrics["zero_flux_segment_count"], 0)
+        self.assertEqual(network.backend_provenance["proposal_path_count"], 1)
+        self.assertGreater(network.backend_provenance["proposal_cell_count"], 2)
+        self.assertGreater(network.backend_provenance["proposal_downstream_progress_m"], 0.0)
 
     def test_downflow_perturbation_is_seeded_and_spatially_correlated(self) -> None:
         first = CaveNetworkGenerator._correlated_terrain_perturbation(

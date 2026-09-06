@@ -200,4 +200,3 @@ PDC confirmatory data for selection.
   [flowy-code/flowy](https://github.com/flowy-code/flowy).
 * Dietterich, H. R. et al. (2014), “Channel networks within lava flows,” *JGR
   Earth Surface*, [doi:10.1002/2014JF003103](https://doi.org/10.1002/2014JF003103).
-

@@ -910,6 +910,7 @@ class CaveNetworkGenerator:
             "version": "builtin",
             "provenance": "plume_hybrid_lobe",
         }
+        proposal_path_count = 1
         backbone_perturbation = None
         if self.config.growth_model == "hybrid_lobe":
             backbone_perturbation = self._correlated_terrain_perturbation(
@@ -933,6 +934,7 @@ class CaveNetworkGenerator:
                 geometry=geometry,
                 start_cell=backbone_source,
             )
+            proposal_path_count = len(proposal.paths)
             backbone_path = self._proposal_path_to_cells(host_field, proposal.paths[0])
             if len(backbone_path) < 3:
                 raise ValueError(
@@ -942,7 +944,10 @@ class CaveNetworkGenerator:
                 geometry.along_grid[backbone_path[-1]]
                 - geometry.along_grid[backbone_path[0]]
             )
-            minimum_progress = max(2.0 * geometry.cell_scale, 0.02 * geometry.along_extent)
+            # A proposal is a backbone prior, not merely a local vent lobe.
+            # Require it to explain a material part of the configured domain
+            # before PLUME is allowed to extend branches from it.
+            minimum_progress = max(2.0 * geometry.cell_scale, 0.25 * geometry.along_extent)
             if downstream_progress < minimum_progress:
                 raise ValueError(
                     f"Selected emplacement backend {proposal.backend!r} produced only "
@@ -967,6 +972,17 @@ class CaveNetworkGenerator:
                 slice_channel_counts=(),
                 slice_visible_channel_counts=(),
             )
+
+        backend_provenance.update(
+            {
+                "proposal_path_count": proposal_path_count,
+                "proposal_cell_count": len(backbone_path),
+                "proposal_downstream_progress_m": float(
+                    geometry.along_grid[backbone_path[-1]]
+                    - geometry.along_grid[backbone_path[0]]
+                ),
+            }
+        )
 
         emplacement_phase_count = self._sample_int_range(
             procedural_rng(self.config.random_seed, "emplacement-phase-count"),

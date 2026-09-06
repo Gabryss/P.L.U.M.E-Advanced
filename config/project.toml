@@ -78,7 +78,12 @@ phase = [-3.14159, 3.14159]
 
 [network]
 growth_model = "hybrid_lobe"
+# Operational default.  Set to "downflow_reference" for the lightweight
+# perturbed-DEM ensemble, or to "flowy" only with a compatible external
+# executable configured as `flowy_executable = "/path/to/flowy"`.
 emplacement_backend = "internal"
+downflow_ensemble_size = 8
+flowy_timeout_s = 120.0
 # Global loop/lobe density: 0 disables lobe branches, 1 preserves the calibrated
 # default, and values up to 3 launch progressively denser anastomosing networks.
 network_density = 3.0
