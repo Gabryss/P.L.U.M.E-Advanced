@@ -51,7 +51,7 @@ preview live in `docs/media/`; working renders and caches remain Git-ignored.
 | Stage | Status | Purpose | Current Output |
 |---|---|---|---|
 | A. Host Field | Implemented | Build terrain and structural layers | `outputs/stage_a_host_field.png` |
-| B. Cave Network | Implemented | Grow a seeded, host-driven lava-lobe network with splits, cooling, retirement, and coalescence | `outputs/stage_b_cave_network.png`, `outputs/stage_b_network.json`, diagnostics report |
+| B. Cave Network | Implemented | Grow a seeded, multi-phase lava-lobe network with competition, reoccupation, retirement, and coalescence | `outputs/stage_b_cave_network.png`, `outputs/stage_b_emplacement_history.png`, `outputs/stage_b_network.json`, diagnostics report |
 | C. Section Field | Implemented | Build adaptive/uniform/reference lava-tube cross-sections around the skeleton | `outputs/stage_c_section_field.png`, `outputs/stage_c_sections.{json,npz}` |
 | D. Geometry | Implemented | Stamp the cave network into a voxel grid, polygonize it, and build a globally welded render mesh | `outputs/stage_d_geometry.png`, geometry report, portable scene package |
 | E. Geological Events | Implemented | Ground rocks/boulders on the base cave and apply parameterized collapse/choke/infill structural modifiers | visualization and event report |
@@ -229,13 +229,16 @@ perturbation, and a lightweight thermal/flux budget. The generator:
 - balances momentum, perturbed slope, downstream potential, early channel avoidance, and later channel reuse at every growth step
 - returns only the surviving fraction of a coalesced branch to the downstream parent and retires launches below the viable-flux threshold
 - inflates a temporary emplacement surface after every accepted lobe, allowing later fronts to respond to earlier deposition
+- processes the seeded breakout queue in chronological eruptive phases so deposited relief and established passages persist into later pulses
+- limits every phase to a finite source budget and records source-budget utilization separately from downstream recirculation
+- permits downstream-compatible later pulses to reoccupy an established lobe and form a supply-piracy breakout without teleporting between graph locations
 - retires exposed lobes when their thermal budget falls below the configured threshold
 - emits `anastomosis` segments when lobes coalesce and `abandoned_lobe` or `stalled_lobe` segments when they terminate
 - constructs the preserved network over seeded emplacement phases, recording route birth, retirement, duty cycle, and peak formation flux
 - places a controlled fraction of old and young lobes on upper and lower levels, with smooth vertical capture at their attachments
 - distinguishes ordinary confluences from the subset of energetic coalescences that enlarge into chambers
 - classifies local breakout regime and preserved roof state (`intact_tube`, `partial_roof`, `skylight_prone`, or `open_channel`)
-- records each lobe's path id, causal breakout trigger, parent/branch/returned flux, surface feedback, termination reason, final temperature, and lateral separation
+- records each lobe's path id, topological branch order, causal breakout and loop mechanism, parent/branch/returned flux, reoccupation target, surface feedback, termination reason, final temperature, and lateral separation
 - clusters morphologically meaningful split/merge regions into explicit junction objects
 - solves the completed directed graph for exactly conserved flow and monotonic cooling/age
 - reserves chambers for explicit junction/confluence semantics rather than painting high-flux blobs into occupancy
@@ -253,7 +256,10 @@ into regularly spaced split zones.
 
 The Stage B visualization includes longitudinal channel/width diagnostics, a
 seeded lobe-lifetime diagram, a persistence-versus-sinuosity morphospace, a
-finite-flux allocation plot, and a breakout-cause/survival plot.
+finite-flux allocation plot, and a breakout-cause/survival plot. A separate
+`stage_b_emplacement_history.png` diagnostic shows per-phase active paths,
+finite source-budget allocation/return, and the survival timeline without
+running the section or mesh stages.
 The longitudinal panel reads
 left to right along the main flow direction: the filled step trace shows how
 many skeleton channels are present at each slice, the red dashed trace shows
@@ -421,6 +427,8 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `minimum_viable_flux_fraction`, `coalescence_flux_return_fraction` | control branch survival and how much discharge rejoins the parent after coalescence |
 | `deposition_feedback_m`, `deposition_spread_cells` | control how accepted lobes modify the temporary surface seen by later growth |
 | `[network.emplacement_history]` | control seeded emplacement phases, route lifetimes, stacked-level abundance, vertical-capture chamber formation, and roof preservation |
+| `phase_flux_budget_fraction`, `retirement_flux_threshold` | bound each pulse's source discharge and retire flux-starved paths independently of thermal retirement |
+| `reoccupation_probability`, `breakout_probability` | control later-pulse passage reuse and the subset that exits through a supply-piracy breakout |
 | `[network.braid_grammar]` | legacy-only ranges and probabilities used when `growth_model = "legacy_braid"` |
 
 ### Section Field Config
@@ -665,6 +673,7 @@ That one command produces:
 
 - `outputs/stage_a_host_field.png`
 - `outputs/stage_b_cave_network.png`
+- `outputs/stage_b_emplacement_history.png`
 - `outputs/stage_c_section_field.png`
 - `outputs/stage_e_geological_events.png`
 - `outputs/stage_c_floor_map.png`

@@ -28,40 +28,96 @@ def _multi_phase_network() -> CaveNetwork:
     )
     segments = (
         CaveSegment(
-            0, 0, 1, "backbone", 0,
+            0,
+            0,
+            1,
+            "backbone",
+            0,
             (_point(0, 0.0, 20.0, 0.0), _point(1, 10.0, 19.0, 10.0)),
-            {"lobe_path_id": "trunk", "emplacement_phase_count": 4, "birth_phase": 0, "death_phase": 3,
-             "formation_state": "persistent_arterial", "branch_order": 0, "new_path": True,
-             "initial_flux": 1.0, "parent_flux_before_split": 1.0},
+            {
+                "lobe_path_id": "trunk",
+                "emplacement_phase_count": 4,
+                "birth_phase": 0,
+                "death_phase": 3,
+                "formation_state": "persistent_arterial",
+                "branch_order": 0,
+                "new_path": True,
+                "initial_flux": 1.0,
+                "parent_flux_before_split": 1.0,
+            },
         ),
         CaveSegment(
-            1, 1, 2, "anastomosis", 1,
+            1,
+            1,
+            2,
+            "anastomosis",
+            1,
             (_point(0, 10.0, 19.0, 0.0), _point(1, 15.0, 20.0, 5.0), _point(2, 20.0, 18.0, 10.0)),
-            {"lobe_path_id": "lobe_0", "emplacement_phase_count": 4, "birth_phase": 1, "death_phase": 2,
-             "formation_state": "coalesced", "branch_order": 1, "new_path": True,
-             "initial_flux": 0.4, "parent_flux_before_split": 1.0, "coalescence_returned_flux": 0.2,
-             "loop_mechanism": "reconnect", "crossing_group_id": "cross_a", "coalescence_id": "coal_a"},
+            {
+                "lobe_path_id": "lobe_0",
+                "emplacement_phase_count": 4,
+                "birth_phase": 1,
+                "death_phase": 2,
+                "formation_state": "coalesced",
+                "branch_order": 1,
+                "new_path": True,
+                "initial_flux": 0.4,
+                "parent_flux_before_split": 1.0,
+                "coalescence_returned_flux": 0.2,
+                "loop_mechanism": "reconnect",
+                "crossing_group_id": "cross_a",
+                "coalescence_id": "coal_a",
+            },
         ),
         CaveSegment(
-            2, 2, 3, "abandoned_lobe", -1,
+            2,
+            2,
+            3,
+            "abandoned_lobe",
+            -1,
             (_point(0, 20.0, 18.0, 0.0), _point(1, 30.0, 17.0, 10.0)),
-            {"lobe_path_id": "lobe_1", "emplacement_phase_count": 4, "birth_phase": 2, "death_phase": 3,
-             "formation_state": "thermally_abandoned", "branch_order": 2, "reoccupied_path": True,
-             "initial_flux": 0.2, "crossing_group_id": "cross_a"},
+            {
+                "lobe_path_id": "lobe_1",
+                "emplacement_phase_count": 4,
+                "birth_phase": 2,
+                "death_phase": 3,
+                "formation_state": "thermally_abandoned",
+                "branch_order": 2,
+                "reoccupied_path": True,
+                "initial_flux": 0.2,
+                "crossing_group_id": "cross_a",
+            },
         ),
         CaveSegment(
-            3, 1, 4, "stalled_lobe", 0,
+            3,
+            1,
+            4,
+            "stalled_lobe",
+            0,
             (_point(0, 10.0, 19.0, 0.0), _point(1, 20.0, 18.0, 10.0)),
-            {"lobe_path_id": "lobe_2", "emplacement_phase_count": 4, "birth_phase": 1, "death_phase": 1,
-             "formation_state": "stranded", "branch_order": 1, "reoccupied_path": True,
-             "initial_flux": 0.1},
+            {
+                "lobe_path_id": "lobe_2",
+                "emplacement_phase_count": 4,
+                "birth_phase": 1,
+                "death_phase": 1,
+                "formation_state": "stranded",
+                "branch_order": 1,
+                "reoccupied_path": True,
+                "initial_flux": 0.1,
+            },
         ),
     )
     return CaveNetwork(
-        config=CaveNetworkConfig(), nodes=nodes, segments=segments, junctions=(),
-        occupancy=np.zeros((2, 2), dtype=bool), width_field=np.zeros((2, 2)),
-        dominant_route_node_ids=(0, 1, 2, 3), slice_along_positions=(),
-        slice_channel_counts=(), slice_visible_channel_counts=(),
+        config=CaveNetworkConfig(),
+        nodes=nodes,
+        segments=segments,
+        junctions=(),
+        occupancy=np.zeros((2, 2), dtype=bool),
+        width_field=np.zeros((2, 2)),
+        dominant_route_node_ids=(0, 1, 2, 3),
+        slice_along_positions=(),
+        slice_channel_counts=(),
+        slice_visible_channel_counts=(),
     )
 
 
@@ -75,7 +131,12 @@ def test_multi_phase_metrics_cover_flux_outcomes_and_hierarchy() -> None:
     assert report["flux_budget"]["returned_flux"] == 0.2
     assert report["path_classification"]["new_path_share"] == 0.5
     assert report["path_classification"]["reoccupied_path_share"] == 0.5
-    assert report["outcomes"]["counts"] == {"coalesced": 1, "retired": 1, "stalled": 1, "survived": 1}
+    assert report["outcomes"]["counts"] == {
+        "coalesced": 1,
+        "retired": 1,
+        "stalled": 1,
+        "survived": 1,
+    }
     assert report["branch_hierarchy"]["order_histogram"] == {"0": 1, "1": 2, "2": 1}
     assert report["trunk_dominance"]["trunk_length_share"] == 0.75
     assert report["loop_diagnostics"]["counts"] == {"reconnect": 1}
@@ -90,8 +151,18 @@ def test_legacy_network_is_safe_and_marks_history_unavailable() -> None:
     legacy = network.__class__(
         config=network.config,
         nodes=network.nodes,
-        segments=tuple(segment.__class__(segment.segment_id, segment.start_node_id, segment.end_node_id,
-                                         segment.kind, segment.z_level, segment.points, {}) for segment in network.segments),
+        segments=tuple(
+            segment.__class__(
+                segment.segment_id,
+                segment.start_node_id,
+                segment.end_node_id,
+                segment.kind,
+                segment.z_level,
+                segment.points,
+                {},
+            )
+            for segment in network.segments
+        ),
         junctions=network.junctions,
         occupancy=network.occupancy,
         width_field=network.width_field,
@@ -114,3 +185,45 @@ def test_phase_activity_plot_is_deterministic(tmp_path) -> None:
     first = render_emplacement_phase_activity(network, tmp_path / "first.png")
     second = render_emplacement_phase_activity(network, tmp_path / "second.png")
     assert first.read_bytes() == second.read_bytes()
+
+
+def test_graph_pieces_without_path_ids_are_grouped_by_arterial_origin() -> None:
+    network = _multi_phase_network()
+    segments = tuple(
+        segment.__class__(
+            segment.segment_id,
+            segment.start_node_id,
+            segment.end_node_id,
+            segment.kind,
+            segment.z_level,
+            segment.points,
+            {key: value for key, value in segment.metadata.items() if key != "lobe_path_id"},
+        )
+        for segment in network.segments
+    )
+    repeated_backbone = segments[0].__class__(
+        4,
+        1,
+        2,
+        "backbone",
+        0,
+        segments[0].points,
+        dict(segments[0].metadata),
+    )
+    grouped = network.__class__(
+        config=network.config,
+        nodes=network.nodes,
+        segments=(segments[0], repeated_backbone),
+        junctions=network.junctions,
+        occupancy=network.occupancy,
+        width_field=network.width_field,
+        dominant_route_node_ids=network.dominant_route_node_ids,
+        slice_along_positions=network.slice_along_positions,
+        slice_channel_counts=network.slice_channel_counts,
+        slice_visible_channel_counts=network.slice_visible_channel_counts,
+    )
+
+    report = emplacement_metrics(grouped)
+
+    assert report["outcomes"]["path_count"] == 1
+    assert report["branch_hierarchy"]["order_histogram"] == {"0": 1}

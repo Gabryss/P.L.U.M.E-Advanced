@@ -145,7 +145,6 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
                 network_density=0.0,
             )
         )
-        geometry = generator._build_flow_geometry(host)
         start = generator._world_to_cell(host, -250.0, 0.0)
         cells = (start, (start[0], start[1] + 1), (start[0], start[1] + 2))
         proposal = EmplacementProposal(
@@ -629,6 +628,10 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertGreater(summary["vertical_level_count"], 1.0)
         self.assertGreater(summary["stacked_segment_count"], 0.0)
         self.assertGreater(summary["vertical_capture_count"], 0.0)
+        self.assertGreater(summary["reoccupied_path_count"], 0.0)
+        self.assertGreater(summary["piracy_event_count"], 0.0)
+        self.assertGreater(summary["flux_starved_retired_count"], 0.0)
+        self.assertLessEqual(summary["max_phase_budget_utilization"], 1.0 + 1e-9)
         self.assertTrue(
             all(segment.z_level >= 0 for segment in cave_network.segments),
             "Preserved stacked lobes should sit above the younger arterial tube",
@@ -738,7 +741,15 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
                     "stranded",
                 },
             )
-            for key in ("reoccupied", "pirated", "coalesced", "stalled", "retired"):
+            for key in (
+                "new_path",
+                "reoccupied",
+                "reoccupied_path",
+                "pirated",
+                "coalesced",
+                "stalled",
+                "retired",
+            ):
                 self.assertIn(key, metadata)
             if metadata["reoccupied"]:
                 self.assertIsNotNone(metadata["reoccupation_target_lobe_id"])
@@ -757,6 +768,18 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
                 )
             else:
                 self.assertEqual(returned_flux, 0.0)
+            if metadata["coalesced"]:
+                self.assertIn(
+                    metadata["loop_mechanism"],
+                    {
+                        "vertical_capture",
+                        "passage_reoccupation",
+                        "obstacle_bypass",
+                        "overflow_anastomosis",
+                        "bend_bypass",
+                        "lateral_avulsion",
+                    },
+                )
         self.assertTrue(cave_network.junctions)
         self.assertTrue(any(junction.kind == "chamber" for junction in cave_network.junctions))
         self.assertTrue(

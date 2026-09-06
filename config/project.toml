@@ -164,7 +164,7 @@ roof_failure_probability = 0.16
 phase_flux_budget_fraction = 1.0
 reoccupation_probability = 0.24
 breakout_probability = 0.58
-retirement_flux_threshold = 0.08
+retirement_flux_threshold = 0.10
 
 # Retained for the explicit legacy_braid compatibility mode.
 [network.braid_grammar]

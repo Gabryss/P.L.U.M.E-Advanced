@@ -100,7 +100,7 @@ class EmplacementHistoryConfig:
     phase_flux_budget_fraction: float = 1.0
     reoccupation_probability: float = 0.24
     breakout_probability: float = 0.58
-    retirement_flux_threshold: float = 0.08
+    retirement_flux_threshold: float = 0.10
 
 
 @dataclass(frozen=True)
@@ -338,6 +338,16 @@ class CaveNetwork:
             float(metadata.get("coalescence_returned_flux", 0.0))
             for metadata in breakout_records.values()
         )
+        phase_utilization: dict[int, float] = {}
+        for metadata in breakout_records.values():
+            phase = int(metadata.get("birth_phase", 0) or 0)
+            budget = float(metadata.get("phase_flux_budget", 0.0) or 0.0)
+            allocated = float(metadata.get("phase_flux_allocated", 0.0) or 0.0)
+            if budget > 0.0:
+                phase_utilization[phase] = max(
+                    phase_utilization.get(phase, 0.0),
+                    allocated / budget,
+                )
 
         return {
             "node_count": float(len(self.nodes)),
@@ -353,6 +363,25 @@ class CaveNetwork:
             if breakout_fractions
             else 0.0,
             "coalescence_flux_return_ratio": returned_flux / max(allocated_flux, 1e-9),
+            "reoccupied_path_count": float(
+                sum(
+                    bool(metadata.get("reoccupied", False))
+                    for metadata in breakout_records.values()
+                )
+            ),
+            "piracy_event_count": float(
+                sum(bool(metadata.get("pirated", False)) for metadata in breakout_records.values())
+            ),
+            "flux_starved_retired_count": float(
+                sum(
+                    metadata.get("formation_state") == "flux_starved_retired"
+                    for metadata in breakout_records.values()
+                )
+            ),
+            "mean_phase_budget_utilization": (
+                float(np.mean(tuple(phase_utilization.values()))) if phase_utilization else 0.0
+            ),
+            "max_phase_budget_utilization": max(phase_utilization.values(), default=0.0),
             "anastomosis_count": float(
                 sum(segment.kind == "anastomosis" for segment in self.segments)
             ),
@@ -541,6 +570,17 @@ def export_network_report(
                     "deposition_feedback_m",
                     "termination",
                     "formation_state",
+                    "event_type",
+                    "new_path",
+                    "reoccupied",
+                    "pirated",
+                    "reoccupation_mode",
+                    "reoccupation_target_lobe_id",
+                    "branch_order",
+                    "loop_mechanism",
+                    "phase_flux_budget",
+                    "phase_flux_allocated",
+                    "requested_flux",
                 )
             },
         }
@@ -1656,8 +1696,7 @@ class CaveNetworkGenerator:
                 birth_phase > 0
                 and nearby_established
                 and downstream_alignment >= -0.15
-                and phase_rng.random()
-                < self.config.emplacement_history.reoccupation_probability
+                and phase_rng.random() < self.config.emplacement_history.reoccupation_probability
             )
             reoccupation_target = (
                 min(
@@ -1812,14 +1851,33 @@ class CaveNetworkGenerator:
             else:
                 kind = "stalled_lobe"
             event_type = (
-                "retired" if not viable_flux or kind == "abandoned_lobe" else
-                "pirated" if pirated else
-                "reoccupation" if reoccupied else
-                "coalesced" if trace.merged else
-                "stalled" if kind == "stalled_lobe" else
-                "new_breakout"
+                "retired"
+                if not viable_flux or kind == "abandoned_lobe"
+                else "pirated"
+                if pirated
+                else "reoccupation"
+                if reoccupied
+                else "coalesced"
+                if trace.merged
+                else "stalled"
+                if kind == "stalled_lobe"
+                else "new_breakout"
             )
             vertical_capture = trace.merged and z_level != 0
+            loop_mechanism = None
+            if trace.merged:
+                if vertical_capture:
+                    loop_mechanism = "vertical_capture"
+                elif reoccupied:
+                    loop_mechanism = "passage_reoccupation"
+                elif breakout.trigger == "seeded_blockage":
+                    loop_mechanism = "obstacle_bypass"
+                elif breakout.trigger == "capacity_overflow":
+                    loop_mechanism = "overflow_anastomosis"
+                elif breakout.trigger == "bend_overflow":
+                    loop_mechanism = "bend_bypass"
+                else:
+                    loop_mechanism = "lateral_avulsion"
             chamber_probability = (
                 self.config.emplacement_history.vertical_capture_chamber_probability
                 if vertical_capture
@@ -1839,12 +1897,17 @@ class CaveNetworkGenerator:
                 trace.merged and phase_rng.random() < min(chamber_probability, 1.0)
             )
             formation_state = (
-                "flux_starved_retired" if not viable_flux else
-                "vertically_captured" if vertical_capture else
-                "coalesced" if trace.merged else
-                "pirated_breakout" if pirated else
-                "reoccupied_passage" if reoccupied else
-                "thermally_abandoned"
+                "flux_starved_retired"
+                if not viable_flux
+                else "vertically_captured"
+                if vertical_capture
+                else "coalesced"
+                if trace.merged
+                else "pirated_breakout"
+                if pirated
+                else "reoccupied_passage"
+                if reoccupied
+                else "thermally_abandoned"
                 if trace.final_temperature_k <= controls.retirement_temperature_k
                 else "stranded"
             )
@@ -1880,12 +1943,17 @@ class CaveNetworkGenerator:
                     "phase_flux_allocated": phase_allocated[birth_phase],
                     "parent_flux_replenished": returned_flux,
                     "reoccupied": reoccupied,
+                    "reoccupied_path": reoccupied,
+                    "new_path": not reoccupied,
                     "pirated": pirated,
                     "event_type": event_type,
+                    "loop_mechanism": loop_mechanism,
                     "reoccupation_mode": (
-                        "piracy_breakout" if pirated else
-                        "reactivate" if reoccupied else
-                        "new_breakout"
+                        "piracy_breakout"
+                        if pirated
+                        else "reactivate"
+                        if reoccupied
+                        else "new_breakout"
                     ),
                     "downstream_alignment": downstream_alignment,
                     "reoccupation_target_cell": (
@@ -1927,9 +1995,7 @@ class CaveNetworkGenerator:
             existing_cells.update(trace.path)
             established_cells.update(trace.path)
             reusable_cells.update(trace.path)
-            reusable_path_ids.update(
-                {cell: f"lobe_{branch_index}" for cell in trace.path}
-            )
+            reusable_path_ids.update({cell: f"lobe_{branch_index}" for cell in trace.path})
             reusable_path_orders.update({cell: branch_order for cell in trace.path})
         return tuple(result)
 
@@ -1957,9 +2023,7 @@ class CaveNetworkGenerator:
             existing_mask[cell] = True
         distance_m = distance_transform_edt(~existing_mask) * max(cell_scale, 1e-9)
         standoff_m = max(
-            2.0
-            * self.config.base_passage_radius
-            * self.config.minimum_branch_offset_widths,
+            2.0 * self.config.base_passage_radius * self.config.minimum_branch_offset_widths,
             1.35 * cell_scale,
         )
         departure_index = next(

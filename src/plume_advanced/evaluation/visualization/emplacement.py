@@ -31,7 +31,14 @@ def render_emplacement_phase_activity(
     records = []
     for segment_index, segment in enumerate(network.segments):
         metadata = dict(segment.metadata or {})
-        path_id = metadata.get("lobe_path_id", metadata.get("path_id", f"segment_{segment.segment_id}_{segment_index}"))
+        path_id = metadata.get("lobe_path_id", metadata.get("path_id"))
+        if path_id is None:
+            origin = str(metadata.get("formation_origin", segment.kind))
+            path_id = (
+                f"{origin}_system"
+                if origin in {"backbone", "source_feeder", "spur"}
+                else f"segment_{segment.segment_id}_{segment_index}"
+            )
         if any(record["path_id"] == str(path_id) for record in records):
             continue
         birth = metadata.get("birth_phase", 0)
@@ -45,7 +52,13 @@ def render_emplacement_phase_activity(
         records.append({"path_id": str(path_id), "birth": birth, "death": death, "state": state})
     records.sort(key=lambda record: (record["birth"], record["path_id"]))
 
-    figure, axes = plt.subplots(2, 1, figsize=(12, 7), constrained_layout=True)
+    figure_height = max(7.0, 3.8 + 0.32 * len(records))
+    figure, axes = plt.subplots(
+        2,
+        1,
+        figsize=(12, figure_height),
+        constrained_layout=True,
+    )
     axis = axes[0]
     if not phase_available:
         axis.text(0.5, 0.5, "Phase metadata unavailable", ha="center", va="center")
@@ -57,11 +70,15 @@ def render_emplacement_phase_activity(
         allocated = [row["allocated_flux"] for row in phases]
         returned = [row["returned_flux"] for row in phases]
         axis.step(phase_numbers, active_paths, where="mid", linewidth=2.2, label="active paths")
-        axis.step(phase_numbers, active_segments, where="mid", linewidth=1.5, label="active segments")
+        axis.step(
+            phase_numbers, active_segments, where="mid", linewidth=1.5, label="active segments"
+        )
         axis.set_ylabel("Active count")
         axis.set_xlabel("Emplacement phase")
         secondary = axis.twinx()
-        secondary.plot(phase_numbers, allocated, color="#f97316", marker="o", label="allocated flux")
+        secondary.plot(
+            phase_numbers, allocated, color="#f97316", marker="o", label="allocated flux"
+        )
         secondary.plot(phase_numbers, returned, color="#22c55e", marker="s", label="returned flux")
         secondary.set_ylabel("Flux budget")
         handles, labels = axis.get_legend_handles_labels()
@@ -92,7 +109,11 @@ def render_emplacement_phase_activity(
                 color=colors.get(record["state"], "#64748b"),
                 alpha=0.85,
             )
-        axis.set_yticks(range(len(records)), [record["path_id"] for record in records])
+        axis.set_yticks(
+            range(len(records)),
+            [record["path_id"] for record in records],
+            fontsize=8,
+        )
         axis.set_xlabel("Emplacement phase")
         axis.set_ylabel("Path")
         axis.set_title("Path survival / retirement timeline")

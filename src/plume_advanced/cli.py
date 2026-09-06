@@ -57,6 +57,7 @@ from plume_advanced.evaluation.artifacts import (
     export_network_artifact,
     export_section_artifact,
 )
+from plume_advanced.evaluation.visualization import render_emplacement_phase_activity
 from plume_advanced.exporters import export_target_asset
 from plume_advanced.output_guard import (
     OutputOverwriteRefused,
@@ -431,13 +432,23 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
             cave_network,
             args.output,
         )
+        emplacement_history_output_path = render_emplacement_phase_activity(
+            cave_network,
+            args.output.with_name("stage_b_emplacement_history.png"),
+        )
         progress.finish(f"wrote {network_output_path.name}")
     else:
         network_output_path = None
+        emplacement_history_output_path = None
         progress.finish("diagnostic render disabled")
     completed_outputs.extend(
         path
-        for path in (network_report_path, network_artifact_path, network_output_path)
+        for path in (
+            network_report_path,
+            network_artifact_path,
+            network_output_path,
+            emplacement_history_output_path,
+        )
         if path is not None
     )
     stage_timings["network_s"] = time.perf_counter() - stage_started

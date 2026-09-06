@@ -70,7 +70,15 @@ def _truth(value: Any) -> bool | None:
 
 def _path_id(segment: CaveSegment, index: int) -> str:
     value = _first(segment.metadata, _PATH_KEYS)
-    return str(value) if value is not None else f"segment_{segment.segment_id}_{index}"
+    if value is not None:
+        return str(value)
+    # Graph extraction splits one semantic path at every junction.  Aggregate
+    # arterial systems lacking an explicit path ID so diagnostics do not
+    # mistake topology pieces for independent emplacement events.
+    origin = str(segment.metadata.get("formation_origin", segment.kind))
+    if origin in {"backbone", "source_feeder", "spur"}:
+        return f"{origin}_system"
+    return f"segment_{segment.segment_id}_{index}"
 
 
 def _phase_count(network: CaveNetwork, metadata: Iterable[dict[str, Any]]) -> tuple[int, bool]:
@@ -87,8 +95,15 @@ def _phase_count(network: CaveNetwork, metadata: Iterable[dict[str, Any]]) -> tu
 def _phase_bounds(metadata: dict[str, Any], phase_count: int) -> tuple[int, int]:
     birth_value = _number(_first(metadata, _BIRTH_KEYS, 0.0))
     death_value = _number(_first(metadata, _DEATH_KEYS, float(phase_count - 1)))
-    birth = max(0, min(phase_count - 1, int(round(birth_value if birth_value is not None else 0.0))))
-    death = max(birth, min(phase_count - 1, int(round(death_value if death_value is not None else phase_count - 1))))
+    birth = max(
+        0, min(phase_count - 1, int(round(birth_value if birth_value is not None else 0.0)))
+    )
+    death = max(
+        birth,
+        min(
+            phase_count - 1, int(round(death_value if death_value is not None else phase_count - 1))
+        ),
+    )
     return birth, death
 
 
@@ -157,7 +172,9 @@ def _explicit_bool(metadata: dict[str, Any], keys: Iterable[str]) -> bool | None
 def _phase_activity(records: list[dict[str, Any]], phase_count: int) -> list[dict[str, Any]]:
     phases: list[dict[str, Any]] = []
     for phase in range(phase_count):
-        active = [record for record in records if record["birth_phase"] <= phase <= record["death_phase"]]
+        active = [
+            record for record in records if record["birth_phase"] <= phase <= record["death_phase"]
+        ]
         allocated = sum(
             (_number(record["metadata"].get("initial_flux")) or 0.0)
             for record in records
@@ -173,6 +190,13 @@ def _phase_activity(records: list[dict[str, Any]], phase_count: int) -> list[dic
             for record in records
             if record["birth_phase"] == phase
         )
+        phase_budgets = [
+            budget
+            for record in records
+            if record["birth_phase"] == phase
+            and (budget := _number(record["metadata"].get("phase_flux_budget"))) is not None
+        ]
+        source_budget = max(phase_budgets, default=None)
         active_flux = sum(max(float(record["mean_flux"]), 0.0) for record in active)
         phases.append(
             {
@@ -184,8 +208,13 @@ def _phase_activity(records: list[dict[str, Any]], phase_count: int) -> list[dic
                 "allocated_flux": float(allocated),
                 "returned_flux": float(returned),
                 "net_allocated_flux": float(max(allocated - returned, 0.0)),
+                "source_budget": source_budget,
                 "budget_utilization": (
-                    float(allocated / parent_before) if parent_before > 0.0 else None
+                    float(allocated / source_budget)
+                    if source_budget is not None and source_budget > 0.0
+                    else float(allocated / parent_before)
+                    if parent_before > 0.0
+                    else None
                 ),
             }
         )
@@ -258,7 +287,11 @@ def emplacement_metrics(network: CaveNetwork) -> dict[str, Any]:
         item = record["metadata"]
         kinds = {segment.kind for segment in record["segments"]}
         outcome = _outcome(item, next(iter(sorted(kinds)), ""), record["death_phase"], phase_count)
-        if any(key in item for key in _STATE_KEYS) or kinds & {"abandoned_lobe", "stalled_lobe", "anastomosis"}:
+        if any(key in item for key in _STATE_KEYS) or kinds & {
+            "abandoned_lobe",
+            "stalled_lobe",
+            "anastomosis",
+        }:
             outcome_available = True
             outcomes[outcome] += 1
         is_new = _explicit_bool(item, _NEW_KEYS)
@@ -276,8 +309,12 @@ def emplacement_metrics(network: CaveNetwork) -> dict[str, Any]:
         "new_path_count": new_count,
         "reoccupied_path_count": reoccupied_count,
         "classified_path_count": new_count + reoccupied_count,
-        "new_path_share": new_count / max(new_count + reoccupied_count, 1) if explicit_path_classification else None,
-        "reoccupied_path_share": reoccupied_count / max(new_count + reoccupied_count, 1) if explicit_path_classification else None,
+        "new_path_share": new_count / max(new_count + reoccupied_count, 1)
+        if explicit_path_classification
+        else None,
+        "reoccupied_path_share": reoccupied_count / max(new_count + reoccupied_count, 1)
+        if explicit_path_classification
+        else None,
         "unclassified_path_count": total_paths - new_count - reoccupied_count,
     }
 
@@ -325,17 +362,17 @@ def emplacement_metrics(network: CaveNetwork) -> dict[str, Any]:
         coalescence = _first(segment.metadata, _COALESCE_KEYS)
         if coalescence is not None:
             coalescence_groups[str(coalescence)].append(segment)
-    multi_level = sum(len({segment.z_level for segment in group}) > 1 for group in crossing_groups.values())
+    multi_level = sum(
+        len({segment.z_level for segment in group}) > 1 for group in crossing_groups.values()
+    )
     # Flux budget fields are path-level records and may be repeated on every
     # segment belonging to the same lobe.  Use de-duplicated path records so
     # split paths do not inflate allocation or return totals.
     returned_flux = sum(
-        (_number(record["metadata"].get("coalescence_returned_flux")) or 0.0)
-        for record in records
+        (_number(record["metadata"].get("coalescence_returned_flux")) or 0.0) for record in records
     )
     initial_flux = sum(
-        (_number(record["metadata"].get("initial_flux")) or 0.0)
-        for record in records
+        (_number(record["metadata"].get("initial_flux")) or 0.0) for record in records
     )
 
     return {
@@ -349,7 +386,9 @@ def emplacement_metrics(network: CaveNetwork) -> dict[str, Any]:
             "initial_flux": float(initial_flux),
             "returned_flux": float(returned_flux),
             "net_flux": float(max(initial_flux - returned_flux, 0.0)),
-            "coalescence_return_ratio": float(returned_flux / initial_flux) if initial_flux > 0.0 else None,
+            "coalescence_return_ratio": float(returned_flux / initial_flux)
+            if initial_flux > 0.0
+            else None,
         },
         "path_classification": path_shares,
         "outcomes": {
