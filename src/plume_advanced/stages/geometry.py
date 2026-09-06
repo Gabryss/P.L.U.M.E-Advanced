@@ -46,6 +46,7 @@ class _JunctionStamp:
     blend_length_m: float = 0.0
     incident_widths: tuple[float, ...] = ()
     incident_heights: tuple[float, ...] = ()
+    incident_fluxes: tuple[float, ...] = ()
     incident_segment_ids: tuple[int, ...] = ()
     floor_span_m: float = 0.0
     refinement_factor: int = 1
@@ -227,13 +228,24 @@ class GeometryGenerator:
             f"welding {sum(mesh.vertex_count for mesh in chunk_meshes)} chunk vertices",
         )
         assembled_vertices, assembled_faces = self._assemble_chunks(chunk_meshes)
-        if assembled_faces:
-            triangles = np.asarray(assembled_faces, dtype=np.int64)
-            edges = np.sort(np.concatenate([
-                triangles[:, [0, 1]], triangles[:, [1, 2]], triangles[:, [2, 0]],
-            ]), axis=1)
-            _, edge_counts = np.unique(edges, axis=0, return_counts=True)
-            if np.any(edge_counts != 2):
+        if assembled_faces and not self._mesh_is_closed_manifold(assembled_faces):
+            # Independent chunk marches can disagree at an event surface that
+            # is nearly tangent to an internal interface.  Re-marching the
+            # unchanged dense field in one frame removes that seam ambiguity;
+            # the invariant is checked again and never suppressed.
+            if isinstance(voxel_grid, VoxelGrid):
+                chunk_meshes = self._march_global(voxel_grid)
+                assembled_vertices, assembled_faces = self._assemble_chunks(chunk_meshes)
+            if assembled_faces and not self._mesh_is_closed_manifold(assembled_faces):
+                triangles = np.asarray(assembled_faces, dtype=np.int64)
+                edges = np.sort(
+                    np.concatenate(
+                        [triangles[:, [0, 1]], triangles[:, [1, 2]], triangles[:, [2, 0]]],
+                        axis=0,
+                    ),
+                    axis=1,
+                )
+                _, edge_counts = np.unique(edges, axis=0, return_counts=True)
                 raise ValueError(
                     "Cave mesh is not closed and manifold: "
                     f"{np.count_nonzero(edge_counts == 1)} boundary edges, "
@@ -271,6 +283,56 @@ class GeometryGenerator:
             junction_report=base_geometry.junction_report,
             junction_records=base_geometry.junction_records,
         )
+
+    @staticmethod
+    def _mesh_is_closed_manifold(
+        faces: tuple[tuple[int, int, int], ...],
+    ) -> bool:
+        if not faces:
+            return True
+        triangles = np.asarray(faces, dtype=np.int64)
+        edges = np.sort(
+            np.concatenate(
+                [triangles[:, [0, 1]], triangles[:, [1, 2]], triangles[:, [2, 0]]],
+                axis=0,
+            ),
+            axis=1,
+        )
+        _, edge_counts = np.unique(edges, axis=0, return_counts=True)
+        return bool(np.all(edge_counts == 2))
+
+    def _march_global(self, voxel_grid: VoxelGrid) -> list[GeometryChunkMesh]:
+        """Polygonize a dense field in one shared coordinate frame."""
+
+        density = voxel_grid.density
+        if (
+            density.ndim != 3
+            or min(density.shape) < 2
+            or np.all(density < voxel_grid.iso_level)
+            or np.all(density >= voxel_grid.iso_level)
+        ):
+            return []
+        local_vertices, faces, _normals, _values = measure.marching_cubes(
+            density,
+            level=voxel_grid.iso_level,
+            spacing=(voxel_grid.voxel_size,) * 3,
+            allow_degenerate=False,
+        )
+        world_vertices = local_vertices + np.asarray(voxel_grid.origin, dtype=float)
+        nx, ny, nz = voxel_grid.shape
+        return [
+            GeometryChunkMesh(
+                chunk_id=0,
+                grid_bounds=(0, nx - 1, 0, ny - 1, 0, nz - 1),
+                vertices=tuple(
+                    (float(vertex[0]), float(vertex[1]), float(vertex[2]))
+                    for vertex in world_vertices
+                ),
+                faces=tuple(
+                    (int(face[0]), int(face[1]), int(face[2])) for face in faces
+                ),
+            )
+        ]
 
     @staticmethod
     def _remove_small_solid_pockets(grid: VoxelGrid | TiledVoxelGrid) -> None:
@@ -1187,6 +1249,10 @@ class GeometryGenerator:
                         )
 
         stamp_points: list[_JunctionStamp] = []
+        segment_lookup = {
+            segment.segment_id: segment
+            for segment in getattr(cave_network, "segments", ())
+        }
         for junction in cave_network.junctions:
             # Crossing junctions intentionally have no finite union volume.
             if junction.kind == "crossing":
@@ -1194,13 +1260,41 @@ class GeometryGenerator:
             incident = samples_by_junction.get(junction.junction_id, {})
             if not incident:
                 continue
+            incident_levels = {
+                getattr(segment_lookup.get(segment_id), "z_level", None)
+                for segment_id in incident
+            }
+            incident_levels.discard(None)
+            crossing_groups = {
+                getattr(segment_lookup.get(segment_id), "metadata", {}).get(
+                    "crossing_group_id"
+                )
+                for segment_id in incident
+            }
+            crossing_groups.discard(None)
+            # Distinct level bands are crossings unless the network explicitly
+            # marks a vertical capture/coalescence or chamber transition.
+            if (len(incident_levels) > 1 or crossing_groups) and junction.kind not in {
+                "chamber",
+                "capture",
+                "coalescence",
+                "vertical_capture",
+            }:
+                continue
             anchors = [item[1] for item in incident.values()]
             widths = tuple(float(max(sample.tube_width, 0.0)) for sample in anchors)
             heights = tuple(float(max(sample.tube_height, 0.0)) for sample in anchors)
+            fluxes = tuple(float(max(sample.lava_flux, 0.0)) for sample in anchors)
             if not widths:
                 continue
             median_width = float(np.median(widths))
             median_height = float(np.median(heights))
+            median_flux = float(np.median(fluxes)) if fluxes else 0.0
+            flux_scale = (
+                float(np.clip(np.mean(fluxes) / max(median_flux, 1e-9), 0.80, 1.20))
+                if median_flux > 0.0
+                else 1.0
+            )
             # The network contract supplies a 1–3 diameter blend length. Clamp
             # malformed/legacy values to that local scale before constructing
             # a finite transition volume.
@@ -1226,6 +1320,7 @@ class GeometryGenerator:
                 radius_long = max(0.5 * blend_length, median_width * 1.05)
                 radius_long *= min(max(self.config.junction_radius_scale, 1.0), 1.35)
                 short_scale = 0.72
+            radius_long *= flux_scale
             radius_long = max(radius_long, self.config.minimum_radius)
             radius_short = max(
                 median_width * 0.58,
@@ -1261,6 +1356,7 @@ class GeometryGenerator:
                     blend_length_m=blend_length,
                     incident_widths=widths,
                     incident_heights=heights,
+                    incident_fluxes=fluxes,
                     incident_segment_ids=tuple(sorted(incident)),
                     floor_span_m=(
                         float(np.ptp(floor_values)) if floor_values.size else 0.0

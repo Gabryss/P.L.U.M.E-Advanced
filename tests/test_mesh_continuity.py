@@ -338,3 +338,44 @@ def test_junction_refinement_is_seed_deterministic():
     first = GeometryGenerator(config)._build_voxel_grid(chains, network, None)
     second = GeometryGenerator(config)._build_voxel_grid(chains, network, None)
     np.testing.assert_array_equal(first.density, second.density)
+
+
+def test_distinct_network_levels_skip_implicit_crossing_union():
+    from types import SimpleNamespace
+
+    from plume_advanced.stages.section_field import SectionJunctionInfluence
+
+    influence = SectionJunctionInfluence(12, "junction", 1.0, "gradual", "gradual", 1.0, 12.0)
+    upper = tuple(replace(sample(float(x)), junction_influences=(influence,)) for x in np.linspace(-8, 8, 5))
+    lower = tuple(replace(sample(float(x), z=9.0), segment_id=1, junction_influences=(influence,)) for x in np.linspace(-8, 8, 5))
+    network = SimpleNamespace(
+        junctions=(SimpleNamespace(junction_id=12, kind="junction", node_ids=(3,), center_x=0.0, center_y=0.0, blend_length=12.0),),
+        segments=(SimpleNamespace(segment_id=0, z_level=0, metadata={}), SimpleNamespace(segment_id=1, z_level=1, metadata={})),
+    )
+    assert GeometryGenerator()._junction_stamp_points({0: upper, 1: lower}, network) == []
+
+
+def test_crossing_group_metadata_skips_union_even_at_same_level():
+    from types import SimpleNamespace
+
+    from plume_advanced.stages.section_field import SectionJunctionInfluence
+
+    influence = SectionJunctionInfluence(13, "junction", 1.0, "gradual", "gradual", 1.0, 12.0)
+    samples = tuple(replace(sample(float(x)), junction_influences=(influence,)) for x in np.linspace(-8, 8, 5))
+    network = SimpleNamespace(
+        junctions=(SimpleNamespace(junction_id=13, kind="junction", node_ids=(3,), center_x=0.0, center_y=0.0, blend_length=12.0),),
+        segments=(SimpleNamespace(segment_id=0, z_level=0, metadata={"crossing_group_id": "x"}),),
+    )
+    assert GeometryGenerator()._junction_stamp_points({0: samples}, network) == []
+
+
+def test_global_dense_remesh_is_watertight():
+    shape = (25, 21, 21)
+    xyz = np.indices(shape).astype(float)
+    density = (1.0 - np.sqrt(((xyz[0] - 12.0) / 9.0) ** 2 + ((xyz[1] - 10.0) / 7.0) ** 2 + ((xyz[2] - 10.0) / 7.0) ** 2)).astype(np.float32)
+    grid = VoxelGrid((50.0, -5.0, 2.0), 0.6, density, 0.0)
+    generator = GeometryGenerator(GeometryConfig(voxel_size=0.6, wall_roughness_amplitude=0.0))
+    meshes = generator._march_global(grid)
+    vertices, faces = generator._assemble_chunks(meshes)
+    assert generator._mesh_is_closed_manifold(faces)
+    assert trimesh.Trimesh(vertices=vertices, faces=faces, process=False).is_watertight
