@@ -63,6 +63,18 @@ class LobeGrowthConfig:
     retirement_temperature_k: float = 1_060.0
     branch_flux_fraction: tuple[float, float] = (0.18, 0.58)
     retired_path_fraction: float = 0.24
+    # Event-driven secondary growth. Breakouts are launched where finite
+    # parent discharge encounters poor carrying capacity, weak confinement,
+    # strong curvature, or a seeded obstruction. Accepted lobes modify a
+    # temporary emplacement surface before later fronts are traced.
+    breakout_capacity_weight: float = 2.40
+    breakout_confinement_weight: float = 1.65
+    breakout_curvature_weight: float = 1.10
+    breakout_blockage_weight: float = 1.35
+    minimum_viable_flux_fraction: float = 0.075
+    coalescence_flux_return_fraction: float = 0.72
+    deposition_feedback_m: float = 0.85
+    deposition_spread_cells: float = 1.75
     # Low-frequency planform controls for the arterial route.  These are
     # explicit heuristic controls (rather than hidden density effects) so a
     # seeded network can be made sinuous while retaining host-field steering.
@@ -233,19 +245,11 @@ class CaveNetwork:
 
         occupied_area = float(self.occupancy.sum())
         segment_lengths = [segment.total_length for segment in self.segments]
-        point_widths = [
-            point.width
-            for segment in self.segments
-            for point in segment.points
-        ]
+        point_widths = [point.width for segment in self.segments for point in segment.points]
         mean_segment_width = float(np.mean(point_widths)) if point_widths else 0.0
         min_segment_width = float(np.min(point_widths)) if point_widths else 0.0
         max_segment_width = float(np.max(point_widths)) if point_widths else 0.0
-        point_fluxes = [
-            point.flux
-            for segment in self.segments
-            for point in segment.points
-        ]
+        point_fluxes = [point.flux for segment in self.segments for point in segment.points]
         point_temperatures = [
             point.temperature_k
             for segment in self.segments
@@ -304,11 +308,29 @@ class CaveNetwork:
                 previous_uphill = uphill
         z_levels = {segment.z_level for segment in self.segments}
         emplacement_phases = []
+        breakout_records: dict[str, dict[str, SegmentMetadataValue]] = {}
         for segment in self.segments:
             phase_value = segment.metadata.get("emplacement_phase_count", 1)
             emplacement_phases.append(
                 int(phase_value) if isinstance(phase_value, (int, float)) else 1
             )
+            path_id = segment.metadata.get("lobe_path_id")
+            if path_id is not None and segment.metadata.get("branching_process") is not None:
+                breakout_records.setdefault(str(path_id), segment.metadata)
+        breakout_scores = [
+            float(metadata.get("breakout_score", 0.0)) for metadata in breakout_records.values()
+        ]
+        breakout_fractions = [
+            float(metadata.get("branch_flux_fraction", 0.0))
+            for metadata in breakout_records.values()
+        ]
+        allocated_flux = sum(
+            float(metadata.get("initial_flux", 0.0)) for metadata in breakout_records.values()
+        )
+        returned_flux = sum(
+            float(metadata.get("coalescence_returned_flux", 0.0))
+            for metadata in breakout_records.values()
+        )
 
         return {
             "node_count": float(len(self.nodes)),
@@ -318,14 +340,18 @@ class CaveNetwork:
             "loop_count": loop_count,
             "network_density": self.config.network_density,
             "lobe_path_count": float(len(lobe_path_ids)),
+            "breakout_event_count": float(len(breakout_records)),
+            "mean_breakout_score": float(np.mean(breakout_scores)) if breakout_scores else 0.0,
+            "mean_branch_flux_fraction": float(np.mean(breakout_fractions))
+            if breakout_fractions
+            else 0.0,
+            "coalescence_flux_return_ratio": returned_flux / max(allocated_flux, 1e-9),
             "anastomosis_count": float(
                 sum(segment.kind == "anastomosis" for segment in self.segments)
             ),
             "emplacement_phase_count": float(max(emplacement_phases, default=1)),
             "vertical_level_count": float(len(z_levels)),
-            "stacked_segment_count": float(
-                sum(segment.z_level != 0 for segment in self.segments)
-            ),
+            "stacked_segment_count": float(sum(segment.z_level != 0 for segment in self.segments)),
             "vertical_capture_count": float(
                 sum(
                     bool(segment.metadata.get("vertical_capture", False))
@@ -345,10 +371,7 @@ class CaveNetwork:
                 )
             ),
             "retired_lobe_count": float(
-                sum(
-                    segment.kind in {"abandoned_lobe", "stalled_lobe"}
-                    for segment in self.segments
-                )
+                sum(segment.kind in {"abandoned_lobe", "stalled_lobe"} for segment in self.segments)
             ),
             "terminal_count": terminal_count,
             "spur_count": spur_count,
@@ -359,26 +382,20 @@ class CaveNetwork:
             "min_segment_width": min_segment_width,
             "max_segment_width": max_segment_width,
             "maximum_flux": float(max(point_fluxes, default=0.0)),
-            "mean_temperature_k": float(np.mean(point_temperatures))
-            if point_temperatures
-            else 0.0,
+            "mean_temperature_k": float(np.mean(point_temperatures)) if point_temperatures else 0.0,
             "max_flow_conservation_error": self.max_flow_conservation_error(),
             "max_parallel_channels": float(
                 max(self.slice_channel_counts) if self.slice_channel_counts else 0
             ),
             "max_visible_parallel_channels": float(
-                max(self.slice_visible_channel_counts)
-                if self.slice_visible_channel_counts
-                else 0
+                max(self.slice_visible_channel_counts) if self.slice_visible_channel_counts else 0
             ),
             "primary_branch_count": float(len(branch_persistence)),
             "mean_branch_persistence_widths": float(
                 np.mean(branch_persistence) if branch_persistence else 0.0
             ),
             "short_branch_fraction": float(
-                np.mean(np.asarray(branch_persistence) < 3.0)
-                if branch_persistence
-                else 0.0
+                np.mean(np.asarray(branch_persistence) < 3.0) if branch_persistence else 0.0
             ),
             "length_weighted_mean_sinuosity": float(
                 weighted_sinuosity_numerator / max(sum(segment_lengths), 1e-9)
@@ -407,9 +424,7 @@ class CaveNetwork:
             if incoming[node.node_id] <= 0.0 or outgoing[node.node_id] <= 0.0:
                 continue
             denominator = max(incoming[node.node_id], outgoing[node.node_id], 1e-9)
-            errors.append(
-                abs(incoming[node.node_id] - outgoing[node.node_id]) / denominator
-            )
+            errors.append(abs(incoming[node.node_id] - outgoing[node.node_id]) / denominator)
         return float(max(errors, default=0.0))
 
     @property
@@ -424,8 +439,7 @@ class CaveNetwork:
             candidates = [
                 segment
                 for segment in self.segments
-                if segment.start_node_id == start_node_id
-                and segment.end_node_id == end_node_id
+                if segment.start_node_id == start_node_id and segment.end_node_id == end_node_id
             ]
             if candidates:
                 total += max(candidates, key=lambda segment: segment.mean_flux).total_length
@@ -442,9 +456,7 @@ class CaveNetwork:
         if not self.nodes:
             return 0
 
-        adjacency: dict[int, set[int]] = {
-            node.node_id: set() for node in self.nodes
-        }
+        adjacency: dict[int, set[int]] = {node.node_id: set() for node in self.nodes}
         for segment in self.segments:
             adjacency[segment.start_node_id].add(segment.end_node_id)
             adjacency[segment.end_node_id].add(segment.start_node_id)
@@ -490,10 +502,43 @@ def export_network_report(
         kind_summary[kind] = {
             "count": float(len(segments)),
             "total_length_m": float(sum(segment.total_length for segment in segments)),
-            "mean_persistence_widths": float(
-                np.mean(persistence) if persistence else 0.0
-            ),
+            "mean_persistence_widths": float(np.mean(persistence) if persistence else 0.0),
         }
+
+    breakout_paths: dict[str, dict[str, SegmentMetadataValue]] = {}
+    for segment in cave_network.segments:
+        path_id = segment.metadata.get("lobe_path_id")
+        if path_id is None or segment.metadata.get("branching_process") is None:
+            continue
+        breakout_paths.setdefault(str(path_id), segment.metadata)
+    breakout_events = [
+        {
+            "path_id": path_id,
+            **{
+                name: metadata.get(name)
+                for name in (
+                    "birth_phase",
+                    "death_phase",
+                    "branching_process",
+                    "breakout_trigger",
+                    "breakout_score",
+                    "breakout_capacity_deficit",
+                    "breakout_confinement_loss",
+                    "breakout_curvature",
+                    "breakout_blockage",
+                    "parent_flux_before_split",
+                    "parent_flux_after_split",
+                    "branch_flux_fraction",
+                    "initial_flux",
+                    "coalescence_returned_flux",
+                    "deposition_feedback_m",
+                    "termination",
+                    "formation_state",
+                )
+            },
+        }
+        for path_id, metadata in sorted(breakout_paths.items())
+    ]
 
     report = {
         "schema": "plume.cave-network-diagnostics.v1",
@@ -501,10 +546,9 @@ def export_network_report(
         "emplacement_backend": cave_network.backend_provenance,
         "body_spatial_scale": cave_network.config.body_spatial_scale,
         "target_route_length_m": cave_network.config.target_route_length_m,
-        "minimum_branch_offset_widths": (
-            cave_network.config.minimum_branch_offset_widths
-        ),
+        "minimum_branch_offset_widths": (cave_network.config.minimum_branch_offset_widths),
         "segment_kinds": kind_summary,
+        "breakout_events": breakout_events,
         "visibility_profile": [
             {
                 "along_position_m": along,
@@ -580,6 +624,20 @@ class _LobeTrace:
 
 
 @dataclass(frozen=True)
+class _BreakoutSite:
+    """One process-scored opportunity for a secondary tube breakout."""
+
+    cell: tuple[int, int]
+    backbone_index: int
+    score: float
+    trigger: str
+    capacity_deficit: float
+    confinement_loss: float
+    curvature: float
+    blockage: float
+
+
+@dataclass(frozen=True)
 class EmplacementProposal:
     """Backend-neutral route evidence consumed by PLUME graph construction."""
 
@@ -639,7 +697,9 @@ class DownflowReferenceBackend:
                 for candidate in neighbors:
                     if candidate in path[-8:]:
                         continue
-                    along_delta = float(geometry.along_grid[candidate] - geometry.along_grid[current])
+                    along_delta = float(
+                        geometry.along_grid[candidate] - geometry.along_grid[current]
+                    )
                     if along_delta < -0.25 * geometry.cell_scale:
                         continue
                     uphill = float(host_field.elevation[candidate]) - current_elevation
@@ -689,7 +749,9 @@ class FlowyBackend:
     name = "flowy"
     version = "external"
 
-    def __init__(self, executable: str, *, timeout_s: float = 120.0, output_path: str | None = None):
+    def __init__(
+        self, executable: str, *, timeout_s: float = 120.0, output_path: str | None = None
+    ):
         self.executable = executable
         self.timeout_s = timeout_s
         self.output_path = output_path
@@ -712,7 +774,9 @@ class FlowyBackend:
         input_path = run_dir / "input.toml"
         elevation = np.asarray(host_field.elevation, dtype=float)
         x0, y0 = float(host_field.x_coords[0]), float(host_field.y_coords[0])
-        cellsize = float(np.mean([host_field.config.grid.spacing_x, host_field.config.grid.spacing_y]))
+        cellsize = float(
+            np.mean([host_field.config.grid.spacing_x, host_field.config.grid.spacing_y])
+        )
         with dem_path.open("w", encoding="utf-8") as stream:
             stream.write(
                 f"ncols {elevation.shape[1]}\nnrows {elevation.shape[0]}\n"
@@ -723,51 +787,60 @@ class FlowyBackend:
             "\n".join(
                 [
                     'run_name = "plume_backend"',
-                    'write_lobes_csv = true',
+                    "write_lobes_csv = true",
                     f'source = "{dem_path}"',
-                    'vent_flag = 0',
-                    f'x_vent = [{float(host_field.x_coords[start_cell[1]])}]',
-                    f'y_vent = [{float(host_field.y_coords[start_cell[0]])}]',
-                    'east_to_vent = 1000.0',
-                    'west_to_vent = 1000.0',
-                    'south_to_vent = 1000.0',
-                    'north_to_vent = 1000.0',
-                    'hazard_flag = 1',
-                    'masking_threshold = 0.97',
-                    'n_flows = 1',
-                    'min_n_lobes = 64',
-                    'max_n_lobes = 64',
-                    'volume_flag = 1',
-                    'total_volume = 100000.0',
-                    'fixed_dimension_flag = 1',
-                    'lobe_area = 100.0',
-                    'thickness_ratio = 1.0',
-                    'topo_mod_flag = 0',
-                    'thickening_parameter = 0.2',
-                    'lobe_exponent = 0.1',
-                    'max_slope_prob = 0.995',
-                    'inertial_exponent = 0.125',
-                    'rng_seed = ' + str(seed if seed is not None else 0),
-                    '[Advanced]',
-                    'restart_files = []',
-                    'n_init = 1',
-                    'n_check_loop = 0',
-                    'start_from_dist_flag = 0',
-                    'dist_fact = 1.0',
-                    'npoints = 20',
-                    'aspect_ratio_coeff = 2.0',
-                    'max_aspect_ratio = 2.5',
+                    "vent_flag = 0",
+                    f"x_vent = [{float(host_field.x_coords[start_cell[1]])}]",
+                    f"y_vent = [{float(host_field.y_coords[start_cell[0]])}]",
+                    "east_to_vent = 1000.0",
+                    "west_to_vent = 1000.0",
+                    "south_to_vent = 1000.0",
+                    "north_to_vent = 1000.0",
+                    "hazard_flag = 1",
+                    "masking_threshold = 0.97",
+                    "n_flows = 1",
+                    "min_n_lobes = 64",
+                    "max_n_lobes = 64",
+                    "volume_flag = 1",
+                    "total_volume = 100000.0",
+                    "fixed_dimension_flag = 1",
+                    "lobe_area = 100.0",
+                    "thickness_ratio = 1.0",
+                    "topo_mod_flag = 0",
+                    "thickening_parameter = 0.2",
+                    "lobe_exponent = 0.1",
+                    "max_slope_prob = 0.995",
+                    "inertial_exponent = 0.125",
+                    "rng_seed = " + str(seed if seed is not None else 0),
+                    "[Advanced]",
+                    "restart_files = []",
+                    "n_init = 1",
+                    "n_check_loop = 0",
+                    "start_from_dist_flag = 0",
+                    "dist_fact = 1.0",
+                    "npoints = 20",
+                    "aspect_ratio_coeff = 2.0",
+                    "max_aspect_ratio = 2.5",
                     'shape_name = ""',
-                    'saveraster_flag = 1',
-                    'saveshape_flag = 0',
-                    'plot_lobes_flag = 0',
-                    'plot_flow_flag = 0',
+                    "saveraster_flag = 1",
+                    "saveshape_flag = 0",
+                    "plot_lobes_flag = 0",
+                    "plot_flow_flag = 0",
                 ]
             )
             + "\n",
             encoding="utf-8",
         )
-        command = [self.executable, str(input_path), "-a", str(dem_path), "-n", "plume_backend", "-o", str(output_dir)]
+        command = [
+            self.executable,
+            str(input_path),
+            "-a",
+            str(dem_path),
+            "-n",
+            "plume_backend",
+            "-o",
+            str(output_dir),
+        ]
         if Path(self.executable).suffix == ".py":
             command = [sys.executable, *command]
         try:
@@ -798,7 +871,11 @@ class FlowyBackend:
                 timeout=min(self.timeout_s, 10.0),
             )
             version_text = (version_result.stdout or version_result.stderr).strip()
-            tokens = [token.strip("vV") for token in version_text.split() if any(char.isdigit() for char in token)]
+            tokens = [
+                token.strip("vV")
+                for token in version_text.split()
+                if any(char.isdigit() for char in token)
+            ]
             if tokens:
                 version = tokens[-1]
         except (OSError, subprocess.TimeoutExpired):
@@ -811,8 +888,10 @@ class FlowyBackend:
             if thickness.ndim != 2 or not np.isfinite(thickness).any():
                 raise ValueError("flowy thickness raster is empty or malformed")
             csv_files = sorted(output_dir.glob("lobes_*.csv"))
-            paths = self._paths_from_lobes_csv(csv_files[0]) if csv_files else self._paths_from_thickness(
-                thickness, host_field
+            paths = (
+                self._paths_from_lobes_csv(csv_files[0])
+                if csv_files
+                else self._paths_from_thickness(thickness, host_field)
             )
         except (OSError, ValueError) as exc:
             raise ValueError(f"flowy backend output parsing failed in {output_dir}") from exc
@@ -842,7 +921,9 @@ class FlowyBackend:
             parent = int(float(row.get("idx_parent", -1)))
             if parent >= 0:
                 children[parent].append(index)
-        roots = [index for index, row in enumerate(rows) if int(float(row.get("idx_parent", -1))) < 0]
+        roots = [
+            index for index, row in enumerate(rows) if int(float(row.get("idx_parent", -1))) < 0
+        ]
         if not roots:
             return []
         root = max(roots, key=lambda index: float(rows[index].get("n_descendents", 0.0)))
@@ -941,8 +1022,7 @@ class CaveNetworkGenerator:
                     f"Selected emplacement backend {proposal.backend!r} returned an unusable backbone path"
                 )
             downstream_progress = float(
-                geometry.along_grid[backbone_path[-1]]
-                - geometry.along_grid[backbone_path[0]]
+                geometry.along_grid[backbone_path[-1]] - geometry.along_grid[backbone_path[0]]
             )
             # A proposal is a backbone prior, not merely a local vent lobe.
             # Require it to explain a material part of the configured domain
@@ -978,8 +1058,12 @@ class CaveNetworkGenerator:
                 "proposal_path_count": proposal_path_count,
                 "proposal_cell_count": len(backbone_path),
                 "proposal_downstream_progress_m": float(
-                    geometry.along_grid[backbone_path[-1]]
-                    - geometry.along_grid[backbone_path[0]]
+                    geometry.along_grid[backbone_path[-1]] - geometry.along_grid[backbone_path[0]]
+                ),
+                "secondary_growth_model": (
+                    "flux_breakout_avulsion"
+                    if self.config.growth_model == "hybrid_lobe"
+                    else "legacy_braid"
                 ),
             }
         )
@@ -1191,9 +1275,7 @@ class CaveNetworkGenerator:
             )
         if backend == "flowy":
             if not self.config.flowy_executable:
-                raise ValueError(
-                    "emplacement_backend='flowy' requires network.flowy_executable"
-                )
+                raise ValueError("emplacement_backend='flowy' requires network.flowy_executable")
             return FlowyBackend(
                 self.config.flowy_executable,
                 timeout_s=self.config.flowy_timeout_s,
@@ -1270,9 +1352,7 @@ class CaveNetworkGenerator:
 
     def _build_support_field(self, host_field: HostField, geometry: _FlowGeometry) -> np.ndarray:
         corridor_score = np.exp(
-            -np.square(
-                geometry.cross_grid / max(host_field.config.corridor_width, 1.0)
-            )
+            -np.square(geometry.cross_grid / max(host_field.config.corridor_width, 1.0))
         )
         support = (
             self.config.growth_cost_weight * (1.0 - host_field.routing_cost)
@@ -1286,9 +1366,8 @@ class CaveNetworkGenerator:
         geometry: _FlowGeometry,
     ) -> tuple[tuple[int, int], ...]:
         support = self._build_support_field(host_field, geometry)
-        source_band = (
-            (geometry.along_grid >= 0.0)
-            & (geometry.along_grid <= self.config.source_band_length)
+        source_band = (geometry.along_grid >= 0.0) & (
+            geometry.along_grid <= self.config.source_band_length
         )
         cross_band = np.abs(geometry.cross_grid) <= self.config.source_band_half_width
         candidate_mask = source_band & cross_band
@@ -1377,7 +1456,7 @@ class CaveNetworkGenerator:
                 * self.config.lobe_launch_rate
             )
         )
-        anchors = self._select_lobe_anchors(
+        breakout_sites = self._select_breakout_sites(
             host_field=host_field,
             geometry=geometry,
             support_field=support_field,
@@ -1385,28 +1464,26 @@ class CaveNetworkGenerator:
             count=path_count,
             rng=rng,
         )
-        if not anchors:
+        if not breakout_sites:
             return ()
 
         existing_cells = set(backbone_path)
         for selected_path in initial_paths:
             existing_cells.update(selected_path.path)
 
-        retired_count = int(round(len(anchors) * controls.retired_path_fraction))
+        retired_count = int(round(len(breakout_sites) * controls.retired_path_fraction))
         retired_indices = set(
             int(index)
             for index in rng.choice(
-                len(anchors),
-                size=min(retired_count, len(anchors)),
+                len(breakout_sites),
+                size=min(retired_count, len(breakout_sites)),
                 replace=False,
             )
         )
-        stacked_candidates = tuple(
-            range(max(1, int(math.ceil(0.65 * len(anchors)))))
-        )
+        stacked_candidates = tuple(range(max(1, int(math.ceil(0.65 * len(breakout_sites))))))
         stacked_count = min(
             len(stacked_candidates),
-            int(round(len(anchors) * self.config.emplacement_history.stacked_lobe_fraction)),
+            int(round(len(breakout_sites) * self.config.emplacement_history.stacked_lobe_fraction)),
         )
         stacked_indices = set(
             int(index)
@@ -1417,8 +1494,18 @@ class CaveNetworkGenerator:
             )
         )
         side_counts = {-1: 0, 1: 0}
+        # Each emplacement pulse begins with a finite arterial discharge. A
+        # breakout removes flux from the downstream parent and a successful
+        # coalescence returns only the configured surviving fraction.
+        phase_flux = np.full(
+            (max(phase_count, 1), len(backbone_path)),
+            self.config.source_flux,
+            dtype=float,
+        )
+        emplacement_surface = np.array(host_field.elevation, dtype=float, copy=True)
         result: list[_SelectedPath] = []
-        for branch_index, anchor in enumerate(anchors):
+        for branch_index, breakout in enumerate(breakout_sites):
+            anchor = breakout.cell
             branch_rng = procedural_rng(
                 self.config.random_seed,
                 "lobe-front",
@@ -1436,10 +1523,10 @@ class CaveNetworkGenerator:
                 "lobe-emplacement-history",
                 branch_index,
             )
-            if len(anchors) <= 1:
+            if len(breakout_sites) <= 1:
                 birth_phase = 0
             else:
-                phase_position = branch_index / (len(anchors) - 1)
+                phase_position = branch_index / (len(breakout_sites) - 1)
                 birth_phase = int(round(phase_position * (phase_count - 1)))
                 birth_phase = int(
                     np.clip(
@@ -1461,9 +1548,7 @@ class CaveNetworkGenerator:
             )
             allow_capture = True
             if z_level != 0 and self.config.capture_probability < 1.0:
-                allow_capture = (
-                    float(phase_rng.random()) <= self.config.capture_probability
-                )
+                allow_capture = float(phase_rng.random()) <= self.config.capture_probability
             allow_loop = True
             if self.config.loop_probability < 1.0:
                 allow_loop = float(branch_rng.random()) <= self.config.loop_probability
@@ -1471,6 +1556,34 @@ class CaveNetworkGenerator:
                 branch_index not in retired_indices
                 and allow_loop
                 and (z_level == 0 or allow_capture)
+            )
+            anchor_index = int(np.clip(breakout.backbone_index, 0, len(backbone_path) - 1))
+            parent_flux_before = float(phase_flux[birth_phase, anchor_index])
+            requested_fraction = self._sample_float_range(
+                branch_rng,
+                controls.branch_flux_fraction,
+            )
+            maximum_breakout_score = max(
+                controls.breakout_capacity_weight
+                + controls.breakout_confinement_weight
+                + controls.breakout_curvature_weight
+                + controls.breakout_blockage_weight,
+                1e-9,
+            )
+            severity = float(np.clip(breakout.score / maximum_breakout_score, 0.0, 1.0))
+            split_fraction = float(
+                np.clip(requested_fraction * (0.72 + 0.38 * severity), 0.0, 0.82)
+            )
+            initial_flux = parent_flux_before * split_fraction
+            minimum_viable_flux = self.config.source_flux * controls.minimum_viable_flux_fraction
+            if initial_flux < minimum_viable_flux:
+                continue
+            initial_direction = self._breakout_initial_direction(
+                host_field=host_field,
+                geometry=geometry,
+                backbone_path=backbone_path,
+                backbone_index=anchor_index,
+                lateral_sign=float(lateral_sign),
             )
             trace = self._trace_lobe_front(
                 host_field=host_field,
@@ -1483,6 +1596,9 @@ class CaveNetworkGenerator:
                 existing_cells=existing_cells,
                 lateral_sign=float(lateral_sign),
                 permit_merge=permit_merge,
+                initial_flux=initial_flux,
+                initial_direction=initial_direction,
+                emplacement_surface=emplacement_surface,
                 rng=branch_rng,
             )
             if len(trace.path) < 3:
@@ -1505,22 +1621,62 @@ class CaveNetworkGenerator:
                     existing_cells=existing_cells,
                     lateral_sign=float(lateral_sign),
                     permit_merge=permit_merge,
+                    initial_flux=initial_flux,
+                    initial_direction=self._breakout_initial_direction(
+                        host_field=host_field,
+                        geometry=geometry,
+                        backbone_path=backbone_path,
+                        backbone_index=anchor_index,
+                        lateral_sign=float(lateral_sign),
+                    ),
+                    emplacement_surface=emplacement_surface,
                     rng=retry_rng,
+                )
+            if not trace.merged:
+                trace = self._trim_stranded_lobe_to_standoff(
+                    trace=trace,
+                    existing_cells=existing_cells,
+                    shape=host_field.elevation.shape,
+                    cell_scale=geometry.cell_scale,
                 )
             simplified = self._simplify_path(list(trace.path))
             if len(simplified) < 3:
                 continue
 
+            parent_flux_after = max(parent_flux_before - trace.initial_flux, 0.0)
+            phase_flux[birth_phase, anchor_index:] = np.maximum(
+                phase_flux[birth_phase, anchor_index:] - trace.initial_flux,
+                0.0,
+            )
+            returned_flux = 0.0
+            if trace.merged:
+                returned_flux = trace.initial_flux * controls.coalescence_flux_return_fraction
+                merge_along = float(geometry.along_grid[trace.path[-1]])
+                merge_index = int(
+                    np.argmin(
+                        np.abs(
+                            np.asarray(
+                                [geometry.along_grid[cell] for cell in backbone_path],
+                                dtype=float,
+                            )
+                            - merge_along
+                        )
+                    )
+                )
+                phase_flux[birth_phase, merge_index:] += returned_flux
+            deposited_relief = self._deposit_lobe_feedback(
+                emplacement_surface=emplacement_surface,
+                path=trace.path,
+                flux_fraction=trace.initial_flux / max(self.config.source_flux, 1e-9),
+            )
+
             if trace.merged:
                 kind = "anastomosis"
-            elif permit_merge:
-                kind = "stalled_lobe"
-            else:
+            elif trace.final_temperature_k <= controls.retirement_temperature_k:
                 kind = "abandoned_lobe"
-            vertical_capture = (
-                trace.merged
-                and z_level != 0
-            )
+            else:
+                kind = "stalled_lobe"
+            vertical_capture = trace.merged and z_level != 0
             chamber_probability = (
                 self.config.emplacement_history.vertical_capture_chamber_probability
                 if vertical_capture
@@ -1528,15 +1684,14 @@ class CaveNetworkGenerator:
             )
             normalized_flux = float(
                 np.clip(
-                    trace.initial_flux
-                    / max(self.config.source_flux, 1e-9),
+                    trace.initial_flux / max(self.config.source_flux, 1e-9),
                     0.0,
                     1.0,
                 )
             )
-            chamber_probability *= (
-                0.65 + 0.55 * normalized_flux
-            ) * max(self.config.chamber_gain, 0.0)
+            chamber_probability *= (0.65 + 0.55 * normalized_flux) * max(
+                self.config.chamber_gain, 0.0
+            )
             chamber_forming = bool(
                 trace.merged and phase_rng.random() < min(chamber_probability, 1.0)
             )
@@ -1546,7 +1701,7 @@ class CaveNetworkGenerator:
                 else "coalesced"
                 if trace.merged
                 else "thermally_abandoned"
-                if not permit_merge
+                if trace.final_temperature_k <= controls.retirement_temperature_k
                 else "stranded"
             )
             regime = self._local_emplacement_regime(
@@ -1576,6 +1731,18 @@ class CaveNetworkGenerator:
                     "lobe_path_id": f"lobe_{branch_index}",
                     "termination": "coalesced" if trace.merged else "cooled_or_stranded",
                     "initial_flux": trace.initial_flux,
+                    "branching_process": "flux_breakout_avulsion",
+                    "breakout_trigger": breakout.trigger,
+                    "breakout_score": breakout.score,
+                    "breakout_capacity_deficit": breakout.capacity_deficit,
+                    "breakout_confinement_loss": breakout.confinement_loss,
+                    "breakout_curvature": breakout.curvature,
+                    "breakout_blockage": breakout.blockage,
+                    "parent_flux_before_split": parent_flux_before,
+                    "parent_flux_after_split": parent_flux_after,
+                    "branch_flux_fraction": split_fraction,
+                    "coalescence_returned_flux": returned_flux,
+                    "deposition_feedback_m": deposited_relief,
                     "final_temperature_k": trace.final_temperature_k,
                     "maximum_lateral_separation_m": trace.maximum_lateral_separation,
                     "vertical_capture": vertical_capture,
@@ -1594,6 +1761,60 @@ class CaveNetworkGenerator:
             result.append(selected)
             existing_cells.update(trace.path)
         return tuple(result)
+
+    def _trim_stranded_lobe_to_standoff(
+        self,
+        *,
+        trace: _LobeTrace,
+        existing_cells: set[tuple[int, int]],
+        shape: tuple[int, int],
+        cell_scale: float,
+    ) -> _LobeTrace:
+        """Prevent an unmerged tube from grazing an older passage shell.
+
+        A centerline can remain in a distinct raster cell yet curve back to
+        within one passage diameter after spline smoothing. Such a route is
+        neither a geological coalescence nor a distinct lobe and can create a
+        tangential voxel contact. Preserve its divergent portion and retire it
+        before the first unresolved return.
+        """
+
+        if trace.merged or len(trace.path) < 4 or not existing_cells:
+            return trace
+        existing_mask = np.zeros(shape, dtype=bool)
+        for cell in existing_cells:
+            existing_mask[cell] = True
+        distance_m = distance_transform_edt(~existing_mask) * max(cell_scale, 1e-9)
+        standoff_m = max(
+            2.0
+            * self.config.base_passage_radius
+            * self.config.minimum_branch_offset_widths,
+            1.35 * cell_scale,
+        )
+        departure_index = next(
+            (
+                index
+                for index, cell in enumerate(trace.path[1:], start=1)
+                if float(distance_m[cell]) >= standoff_m
+            ),
+            None,
+        )
+        if departure_index is None:
+            return replace(trace, path=trace.path[:2])
+        contact_index = next(
+            (
+                index
+                for index, cell in enumerate(
+                    trace.path[departure_index + 1 :],
+                    start=departure_index + 1,
+                )
+                if float(distance_m[cell]) < standoff_m
+            ),
+            None,
+        )
+        if contact_index is None:
+            return trace
+        return replace(trace, path=trace.path[:contact_index])
 
     def _emplacement_z_level(
         self,
@@ -1665,7 +1886,7 @@ class CaveNetworkGenerator:
             return "partial_roof"
         return "intact_tube"
 
-    def _select_lobe_anchors(
+    def _select_breakout_sites(
         self,
         *,
         host_field: HostField,
@@ -1674,56 +1895,245 @@ class CaveNetworkGenerator:
         backbone_path: list[tuple[int, int]],
         count: int,
         rng: np.random.Generator,
-    ) -> tuple[tuple[int, int], ...]:
-        """Sample separated split sites from local capacity and low gradients."""
+    ) -> tuple[_BreakoutSite, ...]:
+        """Select separated overflow, avulsion, and obstruction events.
+
+        Unlike a generic anchor sampler, this evaluates why the supplying
+        arterial tube would fail locally. The four process terms remain
+        descriptive proxies rather than a full rheological simulation, but
+        they make branch birth conditional on the host and parent route.
+        """
 
         if count <= 0 or len(backbone_path) < 5:
             return ()
         lower = int(round(0.10 * (len(backbone_path) - 1)))
         upper = int(round(0.90 * (len(backbone_path) - 1)))
-        candidates = list(dict.fromkeys(backbone_path[lower : upper + 1]))
+        unique_candidates: list[tuple[int, tuple[int, int]]] = []
+        seen: set[tuple[int, int]] = set()
+        for index in range(lower, upper + 1):
+            cell = backbone_path[index]
+            if cell in seen:
+                continue
+            seen.add(cell)
+            unique_candidates.append((index, cell))
+        blockage_field = self._correlated_terrain_perturbation(
+            host_field.elevation.shape,
+            amplitude_m=1.0,
+            correlation_cells=max(
+                1.0,
+                0.65 * self.config.lobe_growth.perturbation_correlation_cells,
+            ),
+            rng=rng,
+        )
+        blockage_min = float(np.min(blockage_field))
+        blockage_span = max(float(np.max(blockage_field)) - blockage_min, 1e-9)
+        blockage_field = (blockage_field - blockage_min) / blockage_span
+        candidates = [
+            self._breakout_site_metrics(
+                host_field=host_field,
+                geometry=geometry,
+                support_field=support_field,
+                backbone_path=backbone_path,
+                backbone_index=index,
+                blockage=float(blockage_field[cell]),
+            )
+            for index, cell in unique_candidates
+        ]
+        # Local bank relief is often nearly constant at DEM resolution. Rank
+        # each driver along the supplying route so the dominant label denotes
+        # an anomalous process opportunity rather than the largest raw unit.
+        driver_names = (
+            "capacity_deficit",
+            "confinement_loss",
+            "curvature",
+            "blockage",
+        )
+        ranked_drivers: dict[str, np.ndarray] = {}
+        for name in driver_names:
+            values = np.asarray([getattr(site, name) for site in candidates], dtype=float)
+            order = np.argsort(np.argsort(values, kind="stable"), kind="stable")
+            ranked_drivers[name] = order.astype(float) / max(len(values) - 1, 1)
+        controls = self.config.lobe_growth
+        calibrated: list[_BreakoutSite] = []
+        for index, site in enumerate(candidates):
+            components = {
+                "capacity_overflow": controls.breakout_capacity_weight
+                * float(ranked_drivers["capacity_deficit"][index]),
+                "margin_avulsion": controls.breakout_confinement_weight
+                * float(ranked_drivers["confinement_loss"][index]),
+                "bend_overflow": controls.breakout_curvature_weight
+                * float(ranked_drivers["curvature"][index]),
+                "seeded_blockage": controls.breakout_blockage_weight
+                * float(ranked_drivers["blockage"][index]),
+            }
+            calibrated.append(
+                replace(
+                    site,
+                    score=float(sum(components.values()) + 0.18 * float(support_field[site.cell])),
+                    trigger=max(components, key=components.get),
+                )
+            )
         density_scale = math.sqrt(max(self.config.network_density, 0.05))
         minimum_spacing = (
             self.config.lobe_growth.minimum_anchor_spacing_fraction
             * geometry.along_extent
             / density_scale
         )
-        anchors: list[tuple[int, int]] = []
-        while candidates and len(anchors) < count:
-            scores = np.asarray(
-                [
-                    1.25 * float(host_field.flow_capacity[cell])
-                    + 1.15
-                    * (
-                        1.0
-                        - float(
-                            np.clip(host_field.slope_degrees[cell] / 18.0, 0.0, 1.0)
-                        )
-                    )
-                    + 0.25 * float(support_field[cell])
-                    + 0.30
-                    * min(
-                        abs(float(geometry.cross_grid[cell]))
-                        / max(host_field.config.corridor_width, 1.0),
-                        1.0,
-                    )
-                    for cell in candidates
-                ],
-                dtype=float,
-            )
+        sites: list[_BreakoutSite] = []
+        while calibrated and len(sites) < count:
+            scores = np.asarray([site.score for site in calibrated], dtype=float)
             probabilities = np.exp(scores - float(scores.max()))
             probabilities /= float(probabilities.sum())
-            chosen_index = int(rng.choice(len(candidates), p=probabilities))
-            chosen = candidates.pop(chosen_index)
-            anchors.append(chosen)
-            chosen_along = float(geometry.along_grid[chosen])
-            candidates = [
-                cell
-                for cell in candidates
-                if abs(float(geometry.along_grid[cell]) - chosen_along)
-                >= minimum_spacing
+            chosen_index = int(rng.choice(len(calibrated), p=probabilities))
+            chosen = calibrated[chosen_index]
+            sites.append(chosen)
+            chosen_along = float(geometry.along_grid[chosen.cell])
+            calibrated = [
+                site
+                for site in calibrated
+                if abs(float(geometry.along_grid[site.cell]) - chosen_along) >= minimum_spacing
             ]
-        return tuple(sorted(anchors, key=lambda cell: float(geometry.along_grid[cell])))
+        return tuple(sorted(sites, key=lambda site: float(geometry.along_grid[site.cell])))
+
+    def _breakout_site_metrics(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        support_field: np.ndarray,
+        backbone_path: list[tuple[int, int]],
+        backbone_index: int,
+        blockage: float,
+    ) -> _BreakoutSite:
+        cell = backbone_path[backbone_index]
+        controls = self.config.lobe_growth
+        slope_fraction = float(np.clip(host_field.slope_degrees[cell] / 18.0, 0.0, 1.0))
+        capacity_deficit = float(
+            np.clip(
+                0.72 * (1.0 - float(host_field.flow_capacity[cell]))
+                + 0.28 * (1.0 - slope_fraction),
+                0.0,
+                1.0,
+            )
+        )
+
+        center_elevation = float(host_field.elevation[cell])
+        lateral_relief: list[float] = []
+        for neighbor in self._neighbor_cells(host_field, cell):
+            dx = float(host_field.x_coords[neighbor[1]] - host_field.x_coords[cell[1]])
+            dy = float(host_field.y_coords[neighbor[0]] - host_field.y_coords[cell[0]])
+            length = max(math.hypot(dx, dy), 1e-9)
+            lateral_alignment = abs(
+                (dx / length) * geometry.cross_x + (dy / length) * geometry.cross_y
+            )
+            if lateral_alignment < 0.55:
+                continue
+            lateral_relief.append(
+                max(float(host_field.elevation[neighbor]) - center_elevation, 0.0)
+            )
+        bank_relief = float(np.mean(lateral_relief)) if lateral_relief else 0.0
+        confinement_loss = float(
+            1.0
+            - np.clip(
+                bank_relief / max(0.85 * self.config.base_passage_radius, 1.0),
+                0.0,
+                1.0,
+            )
+        )
+
+        previous_cell = backbone_path[max(0, backbone_index - 2)]
+        following_cell = backbone_path[min(len(backbone_path) - 1, backbone_index + 2)]
+        previous_world = self._cell_to_world(host_field, previous_cell)
+        current_world = self._cell_to_world(host_field, cell)
+        following_world = self._cell_to_world(host_field, following_cell)
+        incoming = np.asarray(
+            (current_world[0] - previous_world[0], current_world[1] - previous_world[1]),
+            dtype=float,
+        )
+        outgoing = np.asarray(
+            (following_world[0] - current_world[0], following_world[1] - current_world[1]),
+            dtype=float,
+        )
+        incoming /= max(float(np.linalg.norm(incoming)), 1e-9)
+        outgoing /= max(float(np.linalg.norm(outgoing)), 1e-9)
+        curvature = float(np.clip(0.5 * (1.0 - np.dot(incoming, outgoing)), 0.0, 1.0))
+
+        components = {
+            "capacity_overflow": controls.breakout_capacity_weight * capacity_deficit,
+            "margin_avulsion": controls.breakout_confinement_weight * confinement_loss,
+            "bend_overflow": controls.breakout_curvature_weight * curvature,
+            "seeded_blockage": controls.breakout_blockage_weight * blockage,
+        }
+        trigger = max(components, key=components.get)
+        score = float(sum(components.values()) + 0.18 * float(support_field[cell]))
+        return _BreakoutSite(
+            cell=cell,
+            backbone_index=backbone_index,
+            score=score,
+            trigger=trigger,
+            capacity_deficit=capacity_deficit,
+            confinement_loss=confinement_loss,
+            curvature=curvature,
+            blockage=float(blockage),
+        )
+
+    def _breakout_initial_direction(
+        self,
+        *,
+        host_field: HostField,
+        geometry: _FlowGeometry,
+        backbone_path: list[tuple[int, int]],
+        backbone_index: int,
+        lateral_sign: float,
+    ) -> np.ndarray:
+        """Combine the parent tangent with a side-wall breakout impulse."""
+
+        previous_cell = backbone_path[max(0, backbone_index - 2)]
+        following_cell = backbone_path[min(len(backbone_path) - 1, backbone_index + 2)]
+        previous_world = self._cell_to_world(host_field, previous_cell)
+        following_world = self._cell_to_world(host_field, following_cell)
+        parent_tangent = np.asarray(
+            (
+                following_world[1] - previous_world[1],
+                following_world[0] - previous_world[0],
+            ),
+            dtype=float,
+        )
+        parent_tangent /= max(float(np.linalg.norm(parent_tangent)), 1e-9)
+        direction = parent_tangent + 0.70 * lateral_sign * np.asarray(
+            (geometry.cross_y, geometry.cross_x),
+            dtype=float,
+        )
+        direction /= max(float(np.linalg.norm(direction)), 1e-9)
+        return direction
+
+    def _deposit_lobe_feedback(
+        self,
+        *,
+        emplacement_surface: np.ndarray,
+        path: tuple[tuple[int, int], ...],
+        flux_fraction: float,
+    ) -> float:
+        """Inflate the temporary surface so later fronts can avulse naturally."""
+
+        amplitude = self.config.lobe_growth.deposition_feedback_m * float(
+            np.clip(flux_fraction, 0.0, 1.0) ** 0.55
+        )
+        if amplitude <= 0.0 or not path:
+            return 0.0
+        stamp = np.zeros_like(emplacement_surface, dtype=float)
+        for cell in path:
+            stamp[cell] = 1.0
+        spread = gaussian_filter(
+            stamp,
+            sigma=self.config.lobe_growth.deposition_spread_cells,
+            mode="constant",
+        )
+        maximum = float(np.max(spread))
+        if maximum <= 0.0:
+            return 0.0
+        emplacement_surface += amplitude * spread / maximum
+        return amplitude
 
     def _trace_lobe_front(
         self,
@@ -1738,17 +2148,17 @@ class CaveNetworkGenerator:
         existing_cells: set[tuple[int, int]],
         lateral_sign: float,
         permit_merge: bool,
+        initial_flux: float,
+        initial_direction: np.ndarray,
+        emplacement_surface: np.ndarray,
         rng: np.random.Generator,
     ) -> _LobeTrace:
         controls = self.config.lobe_growth
-        perturbed_elevation = (
-            host_field.elevation
-            + self._correlated_terrain_perturbation(
-                host_field.elevation.shape,
-                amplitude_m=controls.terrain_perturbation_m,
-                correlation_cells=controls.perturbation_correlation_cells,
-                rng=rng,
-            )
+        perturbed_elevation = emplacement_surface + self._correlated_terrain_perturbation(
+            host_field.elevation.shape,
+            amplitude_m=controls.terrain_perturbation_m,
+            correlation_cells=controls.perturbation_correlation_cells,
+            rng=rng,
         )
 
         start_along = float(geometry.along_grid[start_cell])
@@ -1767,22 +2177,11 @@ class CaveNetworkGenerator:
 
         path = [start_cell]
         maximum_steps = self._sample_int_range(rng, controls.maximum_steps)
-        previous_step = np.asarray(
-            (
-                geometry.flow_y + lateral_sign * geometry.cross_y,
-                geometry.flow_x + lateral_sign * geometry.cross_x,
-            ),
-            dtype=float,
-        )
+        previous_step = np.asarray(initial_direction, dtype=float)
         previous_step /= max(float(np.linalg.norm(previous_step)), 1e-9)
-        initial_flux = self.config.source_flux * self._sample_float_range(
-            rng,
-            controls.branch_flux_fraction,
-        )
         temperature = max(
             controls.retirement_temperature_k,
-            self.config.source_temperature_k
-            - self.config.cooling_k_per_m * max(start_along, 0.0),
+            self.config.source_temperature_k - self.config.cooling_k_per_m * max(start_along, 0.0),
         )
         maximum_separation = 0.0
         merged = False
@@ -1814,9 +2213,7 @@ class CaveNetworkGenerator:
                 on_existing = next_cell in existing_cells
                 eligible_merge = bool(eligible_merge_mask[next_cell])
                 if on_existing and not (
-                    permit_merge
-                    and step_index + 1 >= minimum_steps
-                    and eligible_merge
+                    permit_merge and step_index + 1 >= minimum_steps and eligible_merge
                 ):
                     continue
 
@@ -1830,9 +2227,7 @@ class CaveNetworkGenerator:
                 )
                 step_length = max(float(np.linalg.norm(step_vector)), 1e-9)
                 step_direction = step_vector / step_length
-                actual_uphill = float(
-                    host_field.elevation[next_cell] - host_field.elevation[current]
-                )
+                actual_uphill = float(emplacement_surface[next_cell] - emplacement_surface[current])
                 hydraulic_head = (
                     self.config.max_uphill_step
                     + 0.65
@@ -1854,9 +2249,9 @@ class CaveNetworkGenerator:
                     1.0,
                 )
                 inertia = float(np.dot(previous_step, step_direction))
-                cross_delta = (
-                    float(geometry.cross_grid[next_cell]) - current_cross
-                ) / max(geometry.cell_scale, 1.0)
+                cross_delta = (float(geometry.cross_grid[next_cell]) - current_cross) / max(
+                    geometry.cell_scale, 1.0
+                )
                 distance_gain = (
                     float(channel_distance[current] - channel_distance[next_cell])
                     if has_merge_targets
@@ -1885,16 +2280,8 @@ class CaveNetworkGenerator:
                     * lateral_sign
                     * cross_delta
                 )
-                score -= (
-                    controls.channel_avoidance_weight
-                    * divergence_fraction
-                    * proximity
-                )
-                score += (
-                    controls.channel_reuse_weight
-                    * (1.0 - divergence_fraction)
-                    * distance_gain
-                )
+                score -= controls.channel_avoidance_weight * divergence_fraction * proximity
+                score += controls.channel_reuse_weight * (1.0 - divergence_fraction) * distance_gain
                 score += 8.0 if eligible_merge and step_index + 1 >= minimum_steps else 0.0
                 candidates.append((next_cell, float(score)))
 
@@ -1916,15 +2303,13 @@ class CaveNetworkGenerator:
             step_length = float(np.linalg.norm(step_vector))
             previous_step = step_vector / max(step_length, 1e-9)
             path.append(next_cell)
-            selected_uphill = float(host_field.elevation[next_cell]) - float(
-                host_field.elevation[current]
+            selected_uphill = float(emplacement_surface[next_cell]) - float(
+                emplacement_surface[current]
             )
             uphill_streak = uphill_streak + 1 if selected_uphill > 0.0 else 0
 
             next_along = float(geometry.along_grid[next_cell])
-            reference_cross = float(
-                np.interp(next_along, backbone_alongs, backbone_crosses)
-            )
+            reference_cross = float(np.interp(next_along, backbone_alongs, backbone_crosses))
             maximum_separation = max(
                 maximum_separation,
                 abs(float(geometry.cross_grid[next_cell]) - reference_cross),
@@ -1932,9 +2317,7 @@ class CaveNetworkGenerator:
             temperature = max(
                 273.15,
                 temperature
-                - self.config.cooling_k_per_m
-                * controls.exposed_cooling_multiplier
-                * step_length,
+                - self.config.cooling_k_per_m * controls.exposed_cooling_multiplier * step_length,
             )
             if bool(eligible_merge_mask[next_cell]) and len(path) > minimum_steps:
                 merged = True
@@ -2086,9 +2469,7 @@ class CaveNetworkGenerator:
             current_potential = float(downstream_potential[current])
             current_elevation = float(host_field.elevation[current])
             current_perturbed_elevation = current_elevation + (
-                float(terrain_perturbation[current])
-                if terrain_perturbation is not None
-                else 0.0
+                float(terrain_perturbation[current]) if terrain_perturbation is not None else 0.0
             )
             if current_along >= geometry.along_extent or not math.isfinite(current_potential):
                 break
@@ -2162,10 +2543,14 @@ class CaveNetworkGenerator:
                 target_cross = float(np.clip(target_cross, -0.88 * max_cross, 0.88 * max_cross))
                 # Steer toward a smooth, seeded lateral target while keeping
                 # the host downhill and support terms authoritative.
-                score += 1.75 * (
-                    abs(target_cross - float(geometry.cross_grid[current]))
-                    - abs(target_cross - next_cross)
-                ) / max(geometry.cell_scale, 1.0)
+                score += (
+                    1.75
+                    * (
+                        abs(target_cross - float(geometry.cross_grid[current]))
+                        - abs(target_cross - next_cross)
+                    )
+                    / max(geometry.cell_scale, 1.0)
+                )
                 score += 1.35 * np.clip(
                     (current_perturbed_elevation - next_perturbed_elevation)
                     / max(0.25 * geometry.cell_scale, 1.0),
@@ -2214,7 +2599,9 @@ class CaveNetworkGenerator:
         spread = 0.34 * host_field.config.corridor_width
         zone_count = self._sample_int_range(rng, grammar.zone_count)
         center_min, center_max = grammar.center_fraction
-        raw_centers = sorted(float(rng.uniform(center_min, center_max)) for _ in range(zone_count * 4))
+        raw_centers = sorted(
+            float(rng.uniform(center_min, center_max)) for _ in range(zone_count * 4)
+        )
         centers: list[float] = []
         for center in raw_centers:
             if all(abs(center - existing) >= grammar.min_center_spacing for existing in centers):
@@ -2254,8 +2641,12 @@ class CaveNetworkGenerator:
                     _ZoneBranch(
                         kind=kind,
                         lateral_offset=sign * max(sampled_offset, minimum_offset),
-                        start_shift_fraction=self._sample_float_range(rng, grammar.start_shift_fraction),
-                        end_shift_fraction=self._sample_float_range(rng, grammar.end_shift_fraction),
+                        start_shift_fraction=self._sample_float_range(
+                            rng, grammar.start_shift_fraction
+                        ),
+                        end_shift_fraction=self._sample_float_range(
+                            rng, grammar.end_shift_fraction
+                        ),
                         skew=self._sample_float_range(rng, grammar.skew),
                         wobble=self._sample_float_range(rng, grammar.wobble),
                         phase=float(rng.uniform(0.0, 2.0 * math.pi)),
@@ -2267,15 +2658,21 @@ class CaveNetworkGenerator:
             ladder_rungs: tuple[float, ...] = ()
             if branch_count >= 2 and rng.random() < grammar.ladder_probability:
                 rung_count = self._sample_int_range(rng, grammar.ladder_rung_count)
-                ladder_rungs = tuple(sorted(float(rng.uniform(0.25, 0.75)) for _ in range(rung_count)))
+                ladder_rungs = tuple(
+                    sorted(float(rng.uniform(0.25, 0.75)) for _ in range(rung_count))
+                )
 
             zones.append(
                 _BraidZone(
                     center_fraction=center,
-                    half_length_fraction=self._sample_float_range(rng, grammar.half_length_fraction),
+                    half_length_fraction=self._sample_float_range(
+                        rng, grammar.half_length_fraction
+                    ),
                     branches=tuple(branches),
                     ladder_rungs=ladder_rungs,
-                    chamber_radius_scale=self._sample_float_range(rng, grammar.chamber_radius_scale),
+                    chamber_radius_scale=self._sample_float_range(
+                        rng, grammar.chamber_radius_scale
+                    ),
                 )
             )
 
@@ -2326,8 +2723,12 @@ class CaveNetworkGenerator:
             max_cross_delta = max(
                 abs(
                     float(geometry.cross_grid[cell])
-                    - float(np.interp(float(geometry.along_grid[cell]), backbone_alongs, backbone_crosses))
+                    - float(
+                        np.interp(
+                            float(geometry.along_grid[cell]), backbone_alongs, backbone_crosses
+                        )
                     )
+                )
                 for cell in simplified
             )
             if max_cross_delta < max(0.18 * host_field.config.corridor_width, 18.0):
@@ -2410,15 +2811,12 @@ class CaveNetworkGenerator:
                 branch.skew,
                 branch.phase,
             )
-            meander = branch.wobble * envelope * (
-                0.72
-                * math.sin(
-                    2.0 * math.pi * 0.58 * clamped_progress + branch.phase
-                )
-                + 0.28
-                * math.sin(
-                    2.0 * math.pi * 1.31 * clamped_progress
-                    + 0.5 * branch.phase
+            meander = (
+                branch.wobble
+                * envelope
+                * (
+                    0.72 * math.sin(2.0 * math.pi * 0.58 * clamped_progress + branch.phase)
+                    + 0.28 * math.sin(2.0 * math.pi * 1.31 * clamped_progress + 0.5 * branch.phase)
                 )
             )
             target_cross = (
@@ -2465,9 +2863,7 @@ class CaveNetworkGenerator:
         )
         exponent = 1.15 + 0.25 * abs(skew)
         rounded = max(math.sin(math.pi * warped), 0.0) ** exponent
-        breathing = 1.0 + 0.035 * rounded * math.sin(
-            2.0 * math.pi * 0.55 * t + phase
-        )
+        breathing = 1.0 + 0.035 * rounded * math.sin(2.0 * math.pi * 0.55 * t + phase)
         return max(0.0, rounded * breathing)
 
     def _build_zone_ladders(
@@ -2579,18 +2975,12 @@ class CaveNetworkGenerator:
             t = sample_index / samples
             x_coord = (1.0 - t) * start_world[0] + t * end_world[0]
             y_coord = (1.0 - t) * start_world[1] + t * end_world[1]
-            target_along = (
-                (1.0 - t) * float(geometry.along_grid[start_cell])
-                + t * float(geometry.along_grid[end_cell])
+            target_along = (1.0 - t) * float(geometry.along_grid[start_cell]) + t * float(
+                geometry.along_grid[end_cell]
             )
-            target_cross = (
-                0.35
-                * (
-                    float(geometry.cross_grid[start_cell])
-                    + float(geometry.cross_grid[end_cell])
-                )
-                + 0.65 * float(np.interp(target_along, backbone_alongs, backbone_crosses))
-            )
+            target_cross = 0.35 * (
+                float(geometry.cross_grid[start_cell]) + float(geometry.cross_grid[end_cell])
+            ) + 0.65 * float(np.interp(target_along, backbone_alongs, backbone_crosses))
             snapped = self._snap_target_cell(
                 host_field=host_field,
                 geometry=geometry,
@@ -2625,7 +3015,9 @@ class CaveNetworkGenerator:
         for candidate in self._neighbor_cells(host_field, target_cell) + [target_cell]:
             candidate_cross = float(geometry.cross_grid[candidate])
             candidate_world = self._cell_to_world(host_field, candidate)
-            distance_penalty = 0.018 * math.hypot(candidate_world[0] - target_x, candidate_world[1] - target_y)
+            distance_penalty = 0.018 * math.hypot(
+                candidate_world[0] - target_x, candidate_world[1] - target_y
+            )
             cross_penalty = 0.05 * abs(candidate_cross - target_cross)
             score = float(support_field[candidate]) - distance_penalty - cross_penalty
             if score > best_score:
@@ -2744,10 +3136,7 @@ class CaveNetworkGenerator:
     ) -> tuple[np.ndarray, np.ndarray, dict[str, np.ndarray]]:
         mask = np.zeros(shape, dtype=bool)
         flux = np.zeros(shape, dtype=float)
-        family_flux = {
-            label: np.zeros(shape, dtype=float)
-            for label in self.FAMILY_LABELS
-        }
+        family_flux = {label: np.zeros(shape, dtype=float) for label in self.FAMILY_LABELS}
         for selected_path in selected_paths:
             family_label = self._family_label_for_kind(selected_path.kind)
             for cell in selected_path.path:
@@ -2786,9 +3175,7 @@ class CaveNetworkGenerator:
         return tuple(result)
 
     @staticmethod
-    def _smooth_graph_routes(
-        host: HostField, segments: list[CaveSegment]
-    ) -> list[CaveSegment]:
+    def _smooth_graph_routes(host: HostField, segments: list[CaveSegment]) -> list[CaveSegment]:
         """Fit flowing routes after graph extraction, retaining exact nodes.
 
         Smoothing operates in metres and is bounded by passage width. Cubic
@@ -2805,9 +3192,14 @@ class CaveNetworkGenerator:
                 direction = direction / max(float(np.linalg.norm(direction)), 1e-9)
                 incident[node].append((segment, direction))
         node_directions = {
-            node: max(values, key=lambda item: (
-                item[0].kind == "backbone", item[0].mean_width, item[0].total_length
-            ))[1]
+            node: max(
+                values,
+                key=lambda item: (
+                    item[0].kind == "backbone",
+                    item[0].mean_width,
+                    item[0].total_length,
+                ),
+            )[1]
             for node, values in incident.items()
         }
         result = []
@@ -2822,9 +3214,13 @@ class CaveNetworkGenerator:
             distances = np.linspace(0.0, length, max(5, int(math.ceil(length / spacing)) + 1))
             linear = np.column_stack([np.interp(distances, arc, raw[:, axis]) for axis in range(2)])
             sigma_m = min(2.0 * segment.mean_width, 0.15 * length)
-            smooth = gaussian_filter1d(linear, sigma_m / (distances[1] - distances[0]), axis=0, mode="nearest")
+            smooth = gaussian_filter1d(
+                linear, sigma_m / (distances[1] - distances[0]), axis=0, mode="nearest"
+            )
             delta = smooth - linear
-            delta *= np.minimum(1.0, segment.mean_width / np.maximum(np.linalg.norm(delta, axis=1), 1e-9))[:, None]
+            delta *= np.minimum(
+                1.0, segment.mean_width / np.maximum(np.linalg.norm(delta, axis=1), 1e-9)
+            )[:, None]
             smooth = linear + delta
             smooth[0], smooth[-1] = raw[0], raw[-1]
             curve = CubicSpline(distances, smooth, axis=0)
@@ -2842,8 +3238,10 @@ class CaveNetworkGenerator:
                     mask = distances <= reach
                 else:
                     transition = CubicHermiteSpline(
-                        [length - reach, length], [curve(length - reach), raw[-1]],
-                        [curve(length - reach, 1), direction], axis=0
+                        [length - reach, length],
+                        [curve(length - reach), raw[-1]],
+                        [curve(length - reach, 1), direction],
+                        axis=0,
                     )
                     mask = distances >= length - reach
                 coords[mask] = transition(distances[mask])
@@ -2859,13 +3257,20 @@ class CaveNetworkGenerator:
             points = []
             for index, (xy, distance, width) in enumerate(zip(coords, new_arc, widths)):
                 substrate = host.sample(float(xy[0]), float(xy[1]))
-                points.append(CavePoint(
-                    index=index, x=float(xy[0]), y=float(xy[1]),
-                    elevation=substrate.elevation, slope_degrees=substrate.slope_degrees,
-                    cover_thickness=substrate.cover_thickness,
-                    roof_competence=substrate.roof_competence, growth_cost=substrate.growth_cost,
-                    arc_length=float(distance), width=float(width),
-                ))
+                points.append(
+                    CavePoint(
+                        index=index,
+                        x=float(xy[0]),
+                        y=float(xy[1]),
+                        elevation=substrate.elevation,
+                        slope_degrees=substrate.slope_degrees,
+                        cover_thickness=substrate.cover_thickness,
+                        roof_competence=substrate.roof_competence,
+                        growth_cost=substrate.growth_cost,
+                        arc_length=float(distance),
+                        width=float(width),
+                    )
+                )
             result.append(replace(segment, points=tuple(points)))
         return result
 
@@ -2897,12 +3302,14 @@ class CaveNetworkGenerator:
         source_cells = {
             selected_path.path[0]
             for selected_path in selected_paths
-            if selected_path.kind in {"backbone", "source_feeder"}
-            and selected_path.path
+            if selected_path.kind in {"backbone", "source_feeder"} and selected_path.path
         }
         sink_cell = max(
             all_path_cells,
-            key=lambda cell: (float(geometry.along_grid[cell]), -abs(float(geometry.cross_grid[cell]))),
+            key=lambda cell: (
+                float(geometry.along_grid[cell]),
+                -abs(float(geometry.cross_grid[cell])),
+            ),
         )
 
         node_cell_set: set[tuple[int, int]] = set(source_cells) | {sink_cell}
@@ -2931,11 +3338,15 @@ class CaveNetworkGenerator:
             elif cell in chamber_cells and path_use_counts.get(cell, 0) >= 2:
                 node_kind = "chamber"
             elif path_use_counts.get(cell, 0) == 1:
-                node_kind = "spur_terminal" if any(
-                    selected_path.kind in {"spur", "abandoned_lobe"}
-                    and cell in {selected_path.path[0], selected_path.path[-1]}
-                    for selected_path in selected_paths
-                ) else "terminal"
+                node_kind = (
+                    "spur_terminal"
+                    if any(
+                        selected_path.kind in {"spur", "abandoned_lobe"}
+                        and cell in {selected_path.path[0], selected_path.path[-1]}
+                        for selected_path in selected_paths
+                    )
+                    else "terminal"
+                )
             nodes.append(
                 CaveNode(
                     node_id=node_id,
@@ -2957,22 +3368,26 @@ class CaveNetworkGenerator:
                 current_cells.append(cell)
                 if cell not in node_cells:
                     continue
-                if (
-                    not selected_path.merge_shared_cells
-                    and cell not in {path[0], path[-1]}
-                ):
+                if not selected_path.merge_shared_cells and cell not in {path[0], path[-1]}:
                     continue
                 start_node_id = node_cells[current_cells[0]]
                 end_node_id = node_cells[cell]
                 if start_node_id != end_node_id and len(current_cells) >= 2:
                     signature_cells = tuple(current_cells)
-                    signature = (min(start_node_id, end_node_id), max(start_node_id, end_node_id), signature_cells)
+                    signature = (
+                        min(start_node_id, end_node_id),
+                        max(start_node_id, end_node_id),
+                        signature_cells,
+                    )
                     reverse_signature = (
                         min(start_node_id, end_node_id),
                         max(start_node_id, end_node_id),
                         tuple(reversed(signature_cells)),
                     )
-                    if signature not in seen_signatures and reverse_signature not in seen_signatures:
+                    if (
+                        signature not in seen_signatures
+                        and reverse_signature not in seen_signatures
+                    ):
                         segment = self._build_segment_from_cells(
                             host_field=host_field,
                             path_cells=current_cells,
@@ -2982,7 +3397,8 @@ class CaveNetworkGenerator:
                             total_flux=total_flux,
                             kind=selected_path.kind,
                             z_level=selected_path.z_level,
-                            metadata=selected_path.metadata or self._build_segment_metadata(
+                            metadata=selected_path.metadata
+                            or self._build_segment_metadata(
                                 kind=selected_path.kind,
                                 z_level=selected_path.z_level,
                             ),
@@ -3038,8 +3454,7 @@ class CaveNetworkGenerator:
             end = node_lookup[segment.end_node_id]
             starts_at_entry = start.kind == "entry"
             ends_at_terminal = (
-                end.kind in {"terminal", "spur_terminal"}
-                and undirected_degree[end.node_id] == 1
+                end.kind in {"terminal", "spur_terminal"} and undirected_degree[end.node_id] == 1
             )
             if starts_at_entry or ends_at_terminal:
                 oriented.append(segment)
@@ -3125,8 +3540,7 @@ class CaveNetworkGenerator:
                 (
                     (index, segment)
                     for index, segment in enumerate(repaired)
-                    if segment.start_node_id not in reachable
-                    and segment.end_node_id in reachable
+                    if segment.start_node_id not in reachable and segment.end_node_id in reachable
                 ),
                 key=lambda item: (item[1].total_length, item[1].segment_id),
             )
@@ -3218,15 +3632,10 @@ class CaveNetworkGenerator:
             # supply is stable while individual fissure-fed entries vary with
             # their local carrying capacity and named seed.
             inlet_flux = (
-                self.config.source_flux
-                * len(entry_nodes)
-                * strength
-                / max(strength_sum, 1e-9)
+                self.config.source_flux * len(entry_nodes) * strength / max(strength_sum, 1e-9)
             )
             available_flux[node.node_id] += inlet_flux
-            temperature_energy[node.node_id] += (
-                inlet_flux * self.config.source_temperature_k
-            )
+            temperature_energy[node.node_id] += inlet_flux * self.config.source_temperature_k
 
         flux_by_segment: dict[int, float] = {}
         temperature_by_segment: dict[int, float] = {}
@@ -3251,23 +3660,17 @@ class CaveNetworkGenerator:
             for segment_id, weight in zip(segment_ids, weights, strict=True):
                 segment = segment_lookup[segment_id]
                 segment_flux = node_flux * float(weight)
-                travel_time = (
-                    segment.total_length
-                    / max(self.config.nominal_flow_speed_m_s, 1e-6)
-                )
+                travel_time = segment.total_length / max(self.config.nominal_flow_speed_m_s, 1e-6)
                 cooled_temperature = max(
                     273.15,
-                    node_temperature
-                    - self.config.cooling_k_per_m * segment.total_length,
+                    node_temperature - self.config.cooling_k_per_m * segment.total_length,
                 )
                 downstream = segment.end_node_id
                 flux_by_segment[segment_id] = segment_flux
                 temperature_by_segment[segment_id] = node_temperature
                 age_by_segment[segment_id] = node_age
                 available_flux[downstream] += segment_flux
-                temperature_energy[downstream] += (
-                    segment_flux * cooled_temperature
-                )
+                temperature_energy[downstream] += segment_flux * cooled_temperature
                 age_flux[downstream] += segment_flux * (node_age + travel_time)
 
         resolved: list[CaveSegment] = []
@@ -3298,13 +3701,10 @@ class CaveNetworkGenerator:
                     flux=flux,
                     temperature_k=max(
                         273.15,
-                        start_temperature
-                        - self.config.cooling_k_per_m * point.arc_length,
+                        start_temperature - self.config.cooling_k_per_m * point.arc_length,
                     ),
                     age_s=(
-                        start_age
-                        + point.arc_length
-                        / max(self.config.nominal_flow_speed_m_s, 1e-6)
+                        start_age + point.arc_length / max(self.config.nominal_flow_speed_m_s, 1e-6)
                     ),
                 )
                 for point in segment.points
@@ -3333,13 +3733,9 @@ class CaveNetworkGenerator:
                 int(phase_value) if isinstance(phase_value, (int, float)) else 1,
                 1,
             )
-            birth_phase = (
-                int(birth_value) if isinstance(birth_value, (int, float)) else 0
-            )
+            birth_phase = int(birth_value) if isinstance(birth_value, (int, float)) else 0
             death_phase = (
-                int(death_value)
-                if isinstance(death_value, (int, float))
-                else phase_count - 1
+                int(death_value) if isinstance(death_value, (int, float)) else phase_count - 1
             )
             active_count = max(death_phase - birth_phase + 1, 1)
             duty_cycle = active_count / phase_count
@@ -3399,8 +3795,7 @@ class CaveNetworkGenerator:
         candidate_node_ids = {
             node.node_id
             for node in nodes
-            if node.kind in {"junction", "chamber"}
-            or len(adjacency[node.node_id]) >= 3
+            if node.kind in {"junction", "chamber"} or len(adjacency[node.node_id]) >= 3
         }
         if not candidate_node_ids:
             return []
@@ -3411,7 +3806,9 @@ class CaveNetworkGenerator:
         passage_width = float(np.median([segment.mean_width for segment in segments]))
         max_along_gap = 3.0 * passage_width
         max_distance = 4.0 * passage_width
-        for node_id in sorted(candidate_node_ids, key=lambda item: node_lookup[item].along_position):
+        for node_id in sorted(
+            candidate_node_ids, key=lambda item: node_lookup[item].along_position
+        ):
             if node_id in visited:
                 continue
             cluster = {node_id}
@@ -3432,11 +3829,15 @@ class CaveNetworkGenerator:
                         for segment in segments
                     )
                     cluster_span = max(
-                        math.hypot(neighbor.x - node_lookup[member].x, neighbor.y - node_lookup[member].y)
+                        math.hypot(
+                            neighbor.x - node_lookup[member].x, neighbor.y - node_lookup[member].y
+                        )
                         for member in cluster
                     )
-                    if cluster_span <= max_distance and along_gap <= max_along_gap and (
-                        distance <= max_distance or shared_segment
+                    if (
+                        cluster_span <= max_distance
+                        and along_gap <= max_along_gap
+                        and (distance <= max_distance or shared_segment)
                     ):
                         visited.add(neighbor_id)
                         cluster.add(neighbor_id)
@@ -3447,11 +3848,7 @@ class CaveNetworkGenerator:
         for cluster in clusters:
             cluster_nodes = [node_lookup[node_id] for node_id in sorted(cluster)]
             segment_ids = sorted(
-                {
-                    segment.segment_id
-                    for node_id in cluster
-                    for segment in adjacency[node_id]
-                }
+                {segment.segment_id for node_id in cluster for segment in adjacency[node_id]}
             )
             cluster_segments = [segments[segment_id] for segment_id in segment_ids]
             if any(segment.kind == "underpass" for segment in cluster_segments):
@@ -3482,11 +3879,7 @@ class CaveNetworkGenerator:
                 merge_style = "constant_envelope_then_divide"
                 capacity_bias = 1.0
 
-            segment_widths = [
-                segment.mean_width
-                for segment in cluster_segments
-                if segment.points
-            ]
+            segment_widths = [segment.mean_width for segment in cluster_segments if segment.points]
             mean_width = float(np.mean(segment_widths)) if segment_widths else 24.0
             blend_length = 3.0 * mean_width
             junctions.append(
@@ -3519,17 +3912,16 @@ class CaveNetworkGenerator:
         z_level: int,
         metadata: dict[str, SegmentMetadataValue],
     ) -> CaveSegment | None:
-        coordinates = [
-            self._cell_to_world(host_field, cell)
-            for cell in path_cells
-        ]
+        coordinates = [self._cell_to_world(host_field, cell) for cell in path_cells]
         coordinates = self._deduplicate_coordinates(coordinates)
         if len(coordinates) < 2:
             return None
 
         points: list[CavePoint] = []
         arc_length = 0.0
-        for index, ((x_coord, y_coord), cell) in enumerate(zip(coordinates, path_cells, strict=False)):
+        for index, ((x_coord, y_coord), cell) in enumerate(
+            zip(coordinates, path_cells, strict=False)
+        ):
             if index > 0:
                 previous_x, previous_y = coordinates[index - 1]
                 arc_length += math.hypot(x_coord - previous_x, y_coord - previous_y)
@@ -3683,9 +4075,7 @@ class CaveNetworkGenerator:
             or dominant_route_node_ids[-1] != exit_id
         ):
             raise ValueError("Cave network has no valid directed dominant route")
-        route_edges = {
-            (segment.start_node_id, segment.end_node_id) for segment in segments
-        }
+        route_edges = {(segment.start_node_id, segment.end_node_id) for segment in segments}
         if any(
             pair not in route_edges
             for pair in zip(dominant_route_node_ids, dominant_route_node_ids[1:])
@@ -3719,7 +4109,10 @@ class CaveNetworkGenerator:
         candidates: list[tuple[tuple[int, int], float]] = []
         for y_index, x_index in occupied_cells:
             along_position = float(geometry.along_grid[y_index, x_index])
-            if along_position < 0.18 * geometry.along_extent or along_position > 0.82 * geometry.along_extent:
+            if (
+                along_position < 0.18 * geometry.along_extent
+                or along_position > 0.82 * geometry.along_extent
+            ):
                 continue
             score = float(total_flux[y_index, x_index])
             candidates.append(((int(y_index), int(x_index)), score))
@@ -3729,7 +4122,8 @@ class CaveNetworkGenerator:
         minimum_separation = 120.0
         for cell, _score in candidates:
             if any(
-                math.hypot(cell[1] - other[1], cell[0] - other[0]) < minimum_separation / max(geometry.cell_scale, 1.0)
+                math.hypot(cell[1] - other[1], cell[0] - other[0])
+                < minimum_separation / max(geometry.cell_scale, 1.0)
                 for other in selected
             ):
                 continue
@@ -3783,8 +4177,7 @@ class CaveNetworkGenerator:
 
             if include_passage_width:
                 intervals = sorted(
-                    (cross - 0.5 * width, cross + 0.5 * width)
-                    for cross, width in crossings
+                    (cross - 0.5 * width, cross + 0.5 * width) for cross, width in crossings
                 )
                 channel_count = 0
                 current_end = -math.inf
@@ -3804,7 +4197,9 @@ class CaveNetworkGenerator:
                         channel_count += 1
                     previous = current
             counts.append(channel_count)
-        return tuple(float(value) for value in along_positions), tuple(int(value) for value in counts)
+        return tuple(float(value) for value in along_positions), tuple(
+            int(value) for value in counts
+        )
 
     def _build_downstream_potential(
         self,
@@ -3899,9 +4294,7 @@ class CaveNetworkGenerator:
         nodes: list[CaveNode],
         segments: list[CaveSegment],
     ) -> None:
-        representative_radius = (
-            self.config.chamber_radius * self.config.chamber_radius_fraction
-        )
+        representative_radius = self.config.chamber_radius * self.config.chamber_radius_fraction
         for node in nodes:
             if node.kind != "chamber":
                 continue
@@ -3925,17 +4318,18 @@ class CaveNetworkGenerator:
             )
         for segment in segments:
             is_process_chamber = bool(segment.metadata.get("chamber_forming", False))
-            if (
-                segment.kind not in {"chamber_braid", "ladder"}
-                and not is_process_chamber
-            ) or len(segment.points) < 3:
+            if (segment.kind not in {"chamber_braid", "ladder"} and not is_process_chamber) or len(
+                segment.points
+            ) < 3:
                 continue
             midpoint = segment.points[len(segment.points) // 2]
             scale_value = segment.metadata.get("chamber_radius_scale", 1.0)
             chamber_scale = float(scale_value) if isinstance(scale_value, (int, float)) else 1.0
-            radius = representative_radius * (
-                0.90 if segment.kind == "chamber_braid" or is_process_chamber else 0.62
-            ) * chamber_scale
+            radius = (
+                representative_radius
+                * (0.90 if segment.kind == "chamber_braid" or is_process_chamber else 0.62)
+                * chamber_scale
+            )
             self._paint_disk(
                 host_field=host_field,
                 occupancy=occupancy,
@@ -4042,7 +4436,9 @@ class CaveNetworkGenerator:
         transition_cost = step_length * support_cost
         transition_cost += step_length * 0.55 * max(0.0, 0.1 - flow_alignment)
         transition_cost += step_length * 0.75 * max(0.0, 0.15 - downhill_alignment)
-        transition_cost += step_length * 0.85 * max(0.0, -along_delta / max(geometry.cell_scale, 1.0))
+        transition_cost += (
+            step_length * 0.85 * max(0.0, -along_delta / max(geometry.cell_scale, 1.0))
+        )
         transition_cost += 7.5 * uphill
         return transition_cost
 
@@ -4171,7 +4567,11 @@ class CaveNetworkGenerator:
     ) -> list[tuple[float, float]]:
         deduplicated: list[tuple[float, float]] = []
         for x_coord, y_coord in coordinates:
-            if deduplicated and math.isclose(x_coord, deduplicated[-1][0]) and math.isclose(y_coord, deduplicated[-1][1]):
+            if (
+                deduplicated
+                and math.isclose(x_coord, deduplicated[-1][0])
+                and math.isclose(y_coord, deduplicated[-1][1])
+            ):
                 continue
             deduplicated.append((x_coord, y_coord))
         return deduplicated
@@ -4185,7 +4585,9 @@ class CaveNetworkGenerator:
         spacing = float(coords[1] - coords[0])
         return int(round((value - float(coords[0])) / spacing))
 
-    def _world_to_cell(self, host_field: HostField, x_coord: float, y_coord: float) -> tuple[int, int]:
+    def _world_to_cell(
+        self, host_field: HostField, x_coord: float, y_coord: float
+    ) -> tuple[int, int]:
         return (
             self._coordinate_to_index(host_field.y_coords, y_coord),
             self._coordinate_to_index(host_field.x_coords, x_coord),
@@ -4198,14 +4600,12 @@ class CaveNetworkGenerator:
 
     @staticmethod
     def _project_along(geometry: _FlowGeometry, x_coord: float, y_coord: float) -> float:
-        return (
-            (x_coord - geometry.seed_x) * geometry.flow_x
-            + (y_coord - geometry.seed_y) * geometry.flow_y
-        )
+        return (x_coord - geometry.seed_x) * geometry.flow_x + (
+            y_coord - geometry.seed_y
+        ) * geometry.flow_y
 
     @staticmethod
     def _project_cross(geometry: _FlowGeometry, x_coord: float, y_coord: float) -> float:
-        return (
-            (x_coord - geometry.seed_x) * geometry.cross_x
-            + (y_coord - geometry.seed_y) * geometry.cross_y
-        )
+        return (x_coord - geometry.seed_x) * geometry.cross_x + (
+            y_coord - geometry.seed_y
+        ) * geometry.cross_y

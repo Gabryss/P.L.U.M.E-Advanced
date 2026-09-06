@@ -77,9 +77,24 @@ def network_metrics(
         for segment in network.segments
         if segment.metadata.get("lobe_path_id") is not None
     }
+    breakout_records: dict[str, dict[str, Any]] = {}
+    for segment in network.segments:
+        path_id = segment.metadata.get("lobe_path_id")
+        if path_id is None or segment.metadata.get("branching_process") is None:
+            continue
+        breakout_records.setdefault(str(path_id), segment.metadata)
+    trigger_histogram = Counter(
+        str(metadata.get("breakout_trigger", "unknown")) for metadata in breakout_records.values()
+    )
+    allocated_breakout_flux = sum(
+        float(metadata.get("initial_flux", 0.0)) for metadata in breakout_records.values()
+    )
+    returned_breakout_flux = sum(
+        float(metadata.get("coalescence_returned_flux", 0.0))
+        for metadata in breakout_records.values()
+    )
     roof_states = Counter(
-        str(segment.metadata.get("roof_state", "unspecified"))
-        for segment in network.segments
+        str(segment.metadata.get("roof_state", "unspecified")) for segment in network.segments
     )
     phase_counts = [
         int(value)
@@ -94,25 +109,42 @@ def network_metrics(
         "edge_count": len(network.segments),
         "network_density": network.config.network_density,
         "lobe_path_count": len(lobe_path_ids),
-        "anastomosis_count": sum(
-            segment.kind == "anastomosis" for segment in network.segments
-        ),
+        "breakout_event_count": len(breakout_records),
+        "breakout_trigger_histogram": dict(sorted(trigger_histogram.items())),
+        "mean_breakout_score": float(
+            np.mean(
+                [
+                    float(metadata.get("breakout_score", 0.0))
+                    for metadata in breakout_records.values()
+                ]
+            )
+        )
+        if breakout_records
+        else 0.0,
+        "mean_branch_flux_fraction": float(
+            np.mean(
+                [
+                    float(metadata.get("branch_flux_fraction", 0.0))
+                    for metadata in breakout_records.values()
+                ]
+            )
+        )
+        if breakout_records
+        else 0.0,
+        "coalescence_flux_return_ratio": returned_breakout_flux
+        / max(allocated_breakout_flux, 1e-9),
+        "anastomosis_count": sum(segment.kind == "anastomosis" for segment in network.segments),
         "emplacement_phase_count": max(phase_counts, default=1),
-        "stacked_segment_count": sum(
-            segment.z_level != 0 for segment in network.segments
-        ),
+        "stacked_segment_count": sum(segment.z_level != 0 for segment in network.segments),
         "vertical_capture_count": sum(
-            bool(segment.metadata.get("vertical_capture", False))
-            for segment in network.segments
+            bool(segment.metadata.get("vertical_capture", False)) for segment in network.segments
         ),
         "process_chamber_segment_count": sum(
-            bool(segment.metadata.get("chamber_forming", False))
-            for segment in network.segments
+            bool(segment.metadata.get("chamber_forming", False)) for segment in network.segments
         ),
         "roof_state_histogram": dict(sorted(roof_states.items())),
         "retired_lobe_count": sum(
-            segment.kind in {"abandoned_lobe", "stalled_lobe"}
-            for segment in network.segments
+            segment.kind in {"abandoned_lobe", "stalled_lobe"} for segment in network.segments
         ),
         "total_centerline_length_m": float(np.sum(lengths)),
         "main_route_length_m": float(network.dominant_route_length),
@@ -347,7 +379,10 @@ def _segment_uphill(segment: CaveSegment) -> dict[str, float | int]:
     points = segment.points
     total = max(float(segment.total_length), 0.0)
     if total <= 0.0 and len(points) > 1:
-        total = sum(max(float(second.arc_length - first.arc_length), 0.0) for first, second in zip(points, points[1:]))
+        total = sum(
+            max(float(second.arc_length - first.arc_length), 0.0)
+            for first, second in zip(points, points[1:])
+        )
     runs: list[float] = []
     run = 0.0
     uphill_length = 0.0
@@ -391,10 +426,13 @@ def _uphill_by_kind(network: CaveNetwork) -> dict[str, dict[str, Any]]:
     )
     return {
         kind: {
-            field: _distribution([float(item[field]) for item in grouped[kind]])
-            for field in fields
+            field: _distribution([float(item[field]) for item in grouped[kind]]) for field in fields
         }
-        | {"sustained_run_count_total": sum(int(item["sustained_run_count"]) for item in grouped[kind])}
+        | {
+            "sustained_run_count_total": sum(
+                int(item["sustained_run_count"]) for item in grouped[kind]
+            )
+        }
         for kind in sorted(grouped)
     }
 
@@ -438,12 +476,20 @@ def _normalized_topology(
         segment.kind not in {"backbone", "source_feeder"} for segment in network.segments
     )
     return {
-        "node_density_per_1000m": 1000.0 * node_count / max(float(network.dominant_route_length), 1e-9),
-        "edge_density_per_1000m": 1000.0 * segment_count / max(float(network.dominant_route_length), 1e-9),
+        "node_density_per_1000m": 1000.0
+        * node_count
+        / max(float(network.dominant_route_length), 1e-9),
+        "edge_density_per_1000m": 1000.0
+        * segment_count
+        / max(float(network.dominant_route_length), 1e-9),
         "edge_to_node_ratio": segment_count / node_count if node_count else 0.0,
         "branch_segment_fraction": branch_segments / segment_count if segment_count else 0.0,
-        "junction_node_fraction": sum(degree > 2 for degree in degrees.values()) / node_count if node_count else 0.0,
-        "cycle_rank_per_node": max(0, segment_count - node_count + components) / node_count if node_count else 0.0,
+        "junction_node_fraction": sum(degree > 2 for degree in degrees.values()) / node_count
+        if node_count
+        else 0.0,
+        "cycle_rank_per_node": max(0, segment_count - node_count + components) / node_count
+        if node_count
+        else 0.0,
     }
 
 

@@ -414,6 +414,35 @@ class ProjectConfigurationTests(unittest.TestCase):
                         """
                     )
 
+    def test_flux_breakout_controls_are_validated(self) -> None:
+        invalid_controls = (
+            (
+                "minimum_viable_flux_fraction",
+                0.0,
+                "minimum_viable_flux_fraction must be in",
+            ),
+            (
+                "coalescence_flux_return_fraction",
+                1.1,
+                "coalescence_flux_return_fraction must be in",
+            ),
+            (
+                "deposition_feedback_m",
+                -0.1,
+                "deposition_feedback_m cannot be negative",
+            ),
+        )
+        for name, value, message in invalid_controls:
+            with self.subTest(name=name):
+                with self.assertRaisesRegex(ValueError, message):
+                    self._load_minimal(
+                        f"""
+                        schema_version = 2
+                        [network.lobe_growth]
+                        {name} = {value}
+                        """
+                    )
+
     def test_unknown_top_level_section_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "Unknown top-level"):
             self._load_minimal(

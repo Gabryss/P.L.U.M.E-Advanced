@@ -134,6 +134,18 @@ exposed_cooling_multiplier = 5.0
 retirement_temperature_k = 1060.0
 branch_flux_fraction = [0.18, 0.58]
 retired_path_fraction = 0.24
+# Secondary routes are finite-flux breakouts rather than independent paths.
+# These weights control where overflow/avulsion events occur, while the last
+# four values control branch survival, coalescence return, and the evolving
+# emplacement surface seen by later lobes.
+breakout_capacity_weight = 2.40
+breakout_confinement_weight = 1.65
+breakout_curvature_weight = 1.10
+breakout_blockage_weight = 1.35
+minimum_viable_flux_fraction = 0.075
+coalescence_flux_return_fraction = 0.72
+deposition_feedback_m = 0.85
+deposition_spread_cells = 1.75
 backbone_curvature_fraction = 0.20
 backbone_curvature_wavelength_fraction = 0.38
 backbone_curvature_secondary_fraction = 0.35

@@ -224,15 +224,18 @@ perturbation, and a lightweight thermal/flux budget. The generator:
 
 - uses the host field and the configured `procedural_seed`
 - traces a downhill backbone over correlated, seed-controlled terrain uncertainty
-- launches active lobe fronts from separated, capacity-weighted anchors
+- scores overflow, margin-avulsion, bend-overflow, and seeded-blockage events along the supplying route
+- allocates each accepted breakout a finite fraction of its parent phase's flux, so neighboring lobes compete instead of behaving as independent paths
 - balances momentum, perturbed slope, downstream potential, early channel avoidance, and later channel reuse at every growth step
+- returns only the surviving fraction of a coalesced branch to the downstream parent and retires launches below the viable-flux threshold
+- inflates a temporary emplacement surface after every accepted lobe, allowing later fronts to respond to earlier deposition
 - retires exposed lobes when their thermal budget falls below the configured threshold
 - emits `anastomosis` segments when lobes coalesce and `abandoned_lobe` or `stalled_lobe` segments when they terminate
 - constructs the preserved network over seeded emplacement phases, recording route birth, retirement, duty cycle, and peak formation flux
 - places a controlled fraction of old and young lobes on upper and lower levels, with smooth vertical capture at their attachments
 - distinguishes ordinary confluences from the subset of energetic coalescences that enlarge into chambers
 - classifies local breakout regime and preserved roof state (`intact_tube`, `partial_roof`, `skylight_prone`, or `open_channel`)
-- records each lobe's path id, termination reason, initial flux, final temperature, and lateral separation
+- records each lobe's path id, causal breakout trigger, parent/branch/returned flux, surface feedback, termination reason, final temperature, and lateral separation
 - clusters morphologically meaningful split/merge regions into explicit junction objects
 - solves the completed directed graph for exactly conserved flow and monotonic cooling/age
 - reserves chambers for explicit junction/confluence semantics rather than painting high-flux blobs into occupancy
@@ -249,7 +252,8 @@ also adjusts anchor spacing so additional paths can form without collapsing
 into regularly spaced split zones.
 
 The Stage B visualization includes longitudinal channel/width diagnostics, a
-seeded lobe-lifetime diagram, and a persistence-versus-sinuosity morphospace.
+seeded lobe-lifetime diagram, a persistence-versus-sinuosity morphospace, a
+finite-flux allocation plot, and a breakout-cause/survival plot.
 The longitudinal panel reads
 left to right along the main flow direction: the filled step trace shows how
 many skeleton channels are present at each slice, the red dashed trace shows
@@ -413,6 +417,9 @@ or hand-authored scenarios, but the default project config is range-driven.
 | `network_density` | high-level `[0, 3]` multiplier for natural lobe, loop, and anastomosis abundance; `1` is the calibrated default |
 | `channel_count_samples` | control longitudinal network diagnostics sampling |
 | `[network.lobe_growth]` | control active-lobe population, persistence, correlated terrain uncertainty, routing forces, branch flux, cooling, retirement, and coalescence |
+| `breakout_*` within `[network.lobe_growth]` | weight capacity overflow, confinement loss, curvature, and seeded blockage when selecting causal branch events |
+| `minimum_viable_flux_fraction`, `coalescence_flux_return_fraction` | control branch survival and how much discharge rejoins the parent after coalescence |
+| `deposition_feedback_m`, `deposition_spread_cells` | control how accepted lobes modify the temporary surface seen by later growth |
 | `[network.emplacement_history]` | control seeded emplacement phases, route lifetimes, stacked-level abundance, vertical-capture chamber formation, and roof preservation |
 | `[network.braid_grammar]` | legacy-only ranges and probabilities used when `growth_model = "legacy_braid"` |
 

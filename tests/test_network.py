@@ -72,7 +72,7 @@ class CaveNetworkTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             script = Path(temp_dir) / "fake_flowy.py"
             script.write_text(
-                '''import pathlib, sys
+                """import pathlib, sys
 out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
 (out / "plume_backend_thickness_full.asc").write_text(
     "ncols 2\\nnrows 2\\nxllcorner 0\\nyllcorner 0\\ncellsize 1\\nNODATA_value -9999\\n1 1\\n1 1\\n"
@@ -80,7 +80,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
 (out / "lobes_0.csv").write_text(
     "centerx,centery,idx_parent,n_descendents,dist_n_lobes\\n0,0,-1,2,1\\n1,1,0,1,2\\n"
 )
-''',
+""",
                 encoding="utf-8",
             )
             host = HostFieldGenerator(
@@ -218,14 +218,30 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertEqual(restored[2], paths[2])
 
     def test_routes_round_grid_corners_and_keep_exact_attachment_positions(self) -> None:
-        substrate = SimpleNamespace(elevation=10., slope_degrees=0., cover_thickness=20.,
-                                    roof_competence=1., growth_cost=0.)
+        substrate = SimpleNamespace(
+            elevation=10.0,
+            slope_degrees=0.0,
+            cover_thickness=20.0,
+            roof_competence=1.0,
+            growth_cost=0.0,
+        )
         host = SimpleNamespace(sample=lambda x, y: substrate)
-        coordinates = ((0., 0.), (100., 0.), (100., 100.))
-        points = tuple(CavePoint(
-            index=i, x=x, y=y, elevation=10., slope_degrees=0., cover_thickness=20.,
-            roof_competence=1., growth_cost=0., arc_length=100. * i, width=10.,
-        ) for i, (x, y) in enumerate(coordinates))
+        coordinates = ((0.0, 0.0), (100.0, 0.0), (100.0, 100.0))
+        points = tuple(
+            CavePoint(
+                index=i,
+                x=x,
+                y=y,
+                elevation=10.0,
+                slope_degrees=0.0,
+                cover_thickness=20.0,
+                roof_competence=1.0,
+                growth_cost=0.0,
+                arc_length=100.0 * i,
+                width=10.0,
+            )
+            for i, (x, y) in enumerate(coordinates)
+        )
         segment = CaveSegment(0, 0, 1, "backbone", 0, points, {})
         curved = CaveNetworkGenerator._smooth_graph_routes(host, [segment])[0]
         xy = np.asarray([(point.x, point.y) for point in curved.points])
@@ -233,8 +249,8 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         directions = np.diff(xy, axis=0)
         directions /= np.linalg.norm(directions, axis=1, keepdims=True)
         turns = np.arccos(np.clip(np.sum(directions[:-1] * directions[1:], axis=1), -1, 1))
-        self.assertLess(float(np.max(turns)), math.radians(20.))
-        self.assertTrue(np.all(np.diff([point.arc_length for point in curved.points]) > 0.))
+        self.assertLess(float(np.max(turns)), math.radians(20.0))
+        self.assertTrue(np.all(np.diff([point.arc_length for point in curved.points]) > 0.0))
 
     def test_split_and_merge_conserve_flux_and_advance_thermal_state(self) -> None:
         config = CaveNetworkConfig(
@@ -480,9 +496,9 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         sparse = CaveNetworkGenerator(
             replace(project_config.network, network_density=0.5)
         ).generate(host_field)
-        dense = CaveNetworkGenerator(
-            replace(project_config.network, network_density=1.5)
-        ).generate(host_field)
+        dense = CaveNetworkGenerator(replace(project_config.network, network_density=1.5)).generate(
+            host_field
+        )
 
         sparse_summary = sparse.summary()
         dense_summary = dense.summary()
@@ -522,13 +538,9 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         )
         first = CaveNetworkGenerator(config).generate(host_field)
         repeated = CaveNetworkGenerator(config).generate(host_field)
-        first_xy = [
-            [(point.x, point.y) for point in segment.points]
-            for segment in first.segments
-        ]
+        first_xy = [[(point.x, point.y) for point in segment.points] for segment in first.segments]
         repeated_xy = [
-            [(point.x, point.y) for point in segment.points]
-            for segment in repeated.segments
+            [(point.x, point.y) for point in segment.points] for segment in repeated.segments
         ]
         self.assertEqual(first_xy, repeated_xy)
         self.assertGreater(
@@ -618,10 +630,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertGreater(summary["stacked_segment_count"], 0.0)
         self.assertGreater(summary["vertical_capture_count"], 0.0)
         self.assertTrue(
-            all(
-                segment.z_level >= 0
-                for segment in cave_network.segments
-            ),
+            all(segment.z_level >= 0 for segment in cave_network.segments),
             "Preserved stacked lobes should sit above the younger arterial tube",
         )
 
@@ -650,9 +659,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertEqual(metrics["zero_flux_segment_count"], 0)
         self.assertTrue(
             all(
-                point.flux >= 0.0
-                and point.temperature_k >= 273.15
-                and point.age_s >= 0.0
+                point.flux >= 0.0 and point.temperature_k >= 273.15 and point.age_s >= 0.0
                 for segment in cave_network.segments
                 for point in segment.points
             )
@@ -679,6 +686,45 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         )
         self.assertIn("chamber", {node.kind for node in cave_network.nodes})
         self.assertIn("terminal", {node.kind for node in cave_network.nodes})
+        breakout_records = {
+            str(segment.metadata["lobe_path_id"]): segment.metadata
+            for segment in cave_network.segments
+            if segment.metadata.get("branching_process") is not None
+        }
+        self.assertEqual(
+            int(summary["breakout_event_count"]),
+            len(breakout_records),
+        )
+        self.assertGreater(len(breakout_records), 0)
+        for metadata in breakout_records.values():
+            self.assertEqual(
+                metadata["branching_process"],
+                "flux_breakout_avulsion",
+            )
+            self.assertIn(
+                metadata["breakout_trigger"],
+                {
+                    "capacity_overflow",
+                    "margin_avulsion",
+                    "bend_overflow",
+                    "seeded_blockage",
+                },
+            )
+            initial_flux = float(metadata["initial_flux"])
+            parent_before = float(metadata["parent_flux_before_split"])
+            parent_after = float(metadata["parent_flux_after_split"])
+            returned_flux = float(metadata["coalescence_returned_flux"])
+            self.assertGreaterEqual(parent_before, initial_flux)
+            self.assertAlmostEqual(parent_after, parent_before - initial_flux)
+            self.assertGreater(float(metadata["deposition_feedback_m"]), 0.0)
+            if metadata["termination"] == "coalesced":
+                self.assertAlmostEqual(
+                    returned_flux,
+                    initial_flux
+                    * project_config.network.lobe_growth.coalescence_flux_return_fraction,
+                )
+            else:
+                self.assertEqual(returned_flux, 0.0)
         self.assertTrue(cave_network.junctions)
         self.assertTrue(any(junction.kind == "chamber" for junction in cave_network.junctions))
         self.assertTrue(
@@ -720,12 +766,12 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
             )
 
         chamber_segments = [
-            segment
-            for segment in cave_network.segments
-            if segment.kind == "anastomosis"
+            segment for segment in cave_network.segments if segment.kind == "anastomosis"
         ]
         self.assertTrue(chamber_segments)
-        self.assertTrue(any(segment.metadata["chamber_id"] is not None for segment in chamber_segments))
+        self.assertTrue(
+            any(segment.metadata["chamber_id"] is not None for segment in chamber_segments)
+        )
         self.assertTrue(any(segment.metadata["chamber_id"] is None for segment in chamber_segments))
         self.assertTrue(
             all(
@@ -735,10 +781,16 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
             )
         )
         self.assertTrue(
-            all(segment.metadata.get("growth_model") == "hybrid_lobe" for segment in chamber_segments)
+            all(
+                segment.metadata.get("growth_model") == "hybrid_lobe"
+                for segment in chamber_segments
+            )
         )
         self.assertTrue(
-            all(float(segment.metadata.get("initial_flux", 0.0)) > 0.0 for segment in chamber_segments)
+            all(
+                float(segment.metadata.get("initial_flux", 0.0)) > 0.0
+                for segment in chamber_segments
+            )
         )
         self.assertTrue(
             all(
@@ -762,7 +814,9 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
                 length = math.hypot(dx, dy)
                 if math.isclose(length, 0.0):
                     continue
-                alignments.append((dx / length) * flow_direction[0] + (dy / length) * flow_direction[1])
+                alignments.append(
+                    (dx / length) * flow_direction[0] + (dy / length) * flow_direction[1]
+                )
 
         self.assertTrue(alignments)
         self.assertGreater(float(np.mean(alignments)), 0.55)

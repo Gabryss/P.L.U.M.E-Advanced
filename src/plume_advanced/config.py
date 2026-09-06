@@ -676,8 +676,7 @@ def _build_network_config(
         lobe_growth_data.get("path_count", list(LobeGrowthConfig.path_count))
     )
     lobe_growth_data["path_count"] = [
-        max(0, int(round(value * branch_abundance_scale)))
-        for value in lobe_path_range
+        max(0, int(round(value * branch_abundance_scale))) for value in lobe_path_range
     ]
     lobe_growth_values: Any = {
         key: _to_range_tuple(value) if isinstance(value, list) else value
@@ -694,9 +693,7 @@ def _build_network_config(
         key: _to_range_tuple(value) if isinstance(value, list) else value
         for key, value in emplacement_history_data.items()
     }
-    config_data["emplacement_history"] = EmplacementHistoryConfig(
-        **emplacement_history_values
-    )
+    config_data["emplacement_history"] = EmplacementHistoryConfig(**emplacement_history_values)
     return CaveNetworkConfig(**config_data)
 
 
@@ -1086,9 +1083,7 @@ def _validate_pipeline_configs(
     if network.downflow_ensemble_size <= 0:
         raise ValueError("network.downflow_ensemble_size must be positive")
     if network.emplacement_backend == "flowy" and not network.flowy_executable:
-        raise ValueError(
-            "network.flowy_executable is required when emplacement_backend='flowy'"
-        )
+        raise ValueError("network.flowy_executable is required when emplacement_backend='flowy'")
     if not 0.0 <= network.network_density <= 3.0:
         raise ValueError("network.network_density must be in [0, 3]")
     if network.lobe_launch_rate < 0.0:
@@ -1123,15 +1118,16 @@ def _validate_pipeline_configs(
         "candidate_temperature": lobe.candidate_temperature,
         "exposed_cooling_multiplier": lobe.exposed_cooling_multiplier,
         "retirement_temperature_k": lobe.retirement_temperature_k,
+        "deposition_spread_cells": lobe.deposition_spread_cells,
     }
     if any(value <= 0.0 for value in positive_lobe_values.values()):
         raise ValueError("network.lobe_growth positive controls must be greater than zero")
     if lobe.terrain_perturbation_m < 0.0:
         raise ValueError("network.lobe_growth.terrain_perturbation_m cannot be negative")
+    if lobe.deposition_feedback_m < 0.0:
+        raise ValueError("network.lobe_growth.deposition_feedback_m cannot be negative")
     if not 0.0 <= lobe.backbone_curvature_fraction <= 1.0:
-        raise ValueError(
-            "network.lobe_growth.backbone_curvature_fraction must be in [0, 1]"
-        )
+        raise ValueError("network.lobe_growth.backbone_curvature_fraction must be in [0, 1]")
     if lobe.backbone_curvature_wavelength_fraction <= 0.0:
         raise ValueError(
             "network.lobe_growth.backbone_curvature_wavelength_fraction must be positive"
@@ -1140,35 +1136,40 @@ def _validate_pipeline_configs(
         raise ValueError(
             "network.lobe_growth.backbone_curvature_secondary_fraction must be in [0, 1]"
         )
-    if min(
-        lobe.inertia_weight,
-        lobe.perturbed_slope_weight,
-        lobe.downstream_potential_weight,
-        lobe.initial_divergence_weight,
-        lobe.channel_avoidance_weight,
-        lobe.channel_reuse_weight,
-        lobe.branch_flux_fraction[0],
-    ) < 0.0:
+    if (
+        min(
+            lobe.inertia_weight,
+            lobe.perturbed_slope_weight,
+            lobe.downstream_potential_weight,
+            lobe.initial_divergence_weight,
+            lobe.channel_avoidance_weight,
+            lobe.channel_reuse_weight,
+            lobe.branch_flux_fraction[0],
+            lobe.breakout_capacity_weight,
+            lobe.breakout_confinement_weight,
+            lobe.breakout_curvature_weight,
+            lobe.breakout_blockage_weight,
+        )
+        < 0.0
+    ):
         raise ValueError("network.lobe_growth weights and flux fractions cannot be negative")
     if not 0.0 <= lobe.retired_path_fraction <= 1.0:
         raise ValueError("network.lobe_growth.retired_path_fraction must be in [0, 1]")
+    if not 0.0 < lobe.minimum_viable_flux_fraction <= 1.0:
+        raise ValueError("network.lobe_growth.minimum_viable_flux_fraction must be in (0, 1]")
+    if not 0.0 <= lobe.coalescence_flux_return_fraction <= 1.0:
+        raise ValueError("network.lobe_growth.coalescence_flux_return_fraction must be in [0, 1]")
     history = network.emplacement_history
     for name, value_range in (
         ("phase_count", history.phase_count),
         ("active_phase_span", history.active_phase_span),
     ):
         if value_range[0] > value_range[1]:
-            raise ValueError(
-                f"network.emplacement_history.{name} must have min <= max"
-            )
+            raise ValueError(f"network.emplacement_history.{name} must have min <= max")
         if value_range[0] <= 0:
-            raise ValueError(
-                f"network.emplacement_history.{name} values must be positive"
-            )
+            raise ValueError(f"network.emplacement_history.{name} values must be positive")
     if history.maximum_absolute_level < 0:
-        raise ValueError(
-            "network.emplacement_history.maximum_absolute_level cannot be negative"
-        )
+        raise ValueError("network.emplacement_history.maximum_absolute_level cannot be negative")
     for name, value in (
         ("stacked_lobe_fraction", history.stacked_lobe_fraction),
         ("chamber_formation_probability", history.chamber_formation_probability),
@@ -1179,9 +1180,7 @@ def _validate_pipeline_configs(
         ("roof_failure_probability", history.roof_failure_probability),
     ):
         if not 0.0 <= value <= 1.0:
-            raise ValueError(
-                f"network.emplacement_history.{name} must be in [0, 1]"
-            )
+            raise ValueError(f"network.emplacement_history.{name} must be in [0, 1]")
     grammar = network.braid_grammar
     for name, value_range in (
         ("zone_count", grammar.zone_count),
@@ -1253,9 +1252,7 @@ def _validate_pipeline_configs(
     if section_field.morphology_correlation_length <= 0.0:
         raise ValueError("section_field.morphology_correlation_length must be positive")
     if section_field.morphology_floor_relief_max < section_field.floor_relief_base:
-        raise ValueError(
-            "section_field.morphology_floor_relief_max must be >= floor_relief_base"
-        )
+        raise ValueError("section_field.morphology_floor_relief_max must be >= floor_relief_base")
     if section_field.morphology_wall_roughness_max < section_field.wall_roughness_base:
         raise ValueError(
             "section_field.morphology_wall_roughness_max must be >= wall_roughness_base"

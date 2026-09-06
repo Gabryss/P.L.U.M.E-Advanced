@@ -95,6 +95,26 @@ def test_welding_preserves_close_vertices_within_one_chunk():
     assert faces == ((0, 1, 2),)
 
 
+def test_welding_cancels_opposite_internal_chunk_faces():
+    first = GeometryChunkMesh(
+        0,
+        (0, 1, 0, 1, 0, 1),
+        ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
+        ((0, 1, 2),),
+    )
+    second = GeometryChunkMesh(
+        1,
+        (1, 2, 0, 1, 0, 1),
+        ((0.0, 1.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 0.0)),
+        ((0, 1, 2),),
+    )
+    vertices, faces = GeometryGenerator(
+        GeometryConfig(weld_tolerance=1e-5)
+    )._assemble_chunks([first, second])
+    assert len(vertices) == 3
+    assert faces == ()
+
+
 @pytest.mark.parametrize("voxel", [0.5, 0.6])
 @pytest.mark.parametrize("chunk_size", [8, 13])
 def test_translated_nonbinary_chunks_are_closed_after_smoothing(voxel, chunk_size):

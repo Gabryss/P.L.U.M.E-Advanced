@@ -16,7 +16,7 @@ from plume_advanced.stages.network import CaveNetwork
 class CaveNetworkPlotConfig:
     """Figure settings for the cave-network visualization."""
 
-    figure_size: tuple[float, float] = (16.0, 14.0)
+    figure_size: tuple[float, float] = (16.0, 20.0)
     dpi: int = 180
 
 
@@ -38,12 +38,11 @@ class CaveNetworkPlotter:
         output.parent.mkdir(parents=True, exist_ok=True)
 
         fig, axes = plt.subplots(
-            3,
+            4,
             2,
             figsize=self.config.figure_size,
-            constrained_layout=False,
+            constrained_layout=self.config.figure_size[1] >= 12.0,
         )
-        fig.suptitle("Stage B - Cave Network", fontsize=16)
 
         self._draw_map_panel(
             ax=axes[0, 0],
@@ -78,6 +77,8 @@ class CaveNetworkPlotter:
         self._draw_profile_panel(ax=axes[1, 1], cave_network=cave_network)
         self._draw_emplacement_timeline(ax=axes[2, 0], cave_network=cave_network)
         self._draw_topology_scatter(ax=axes[2, 1], cave_network=cave_network)
+        self._draw_breakout_flux(ax=axes[3, 0], cave_network=cave_network)
+        self._draw_breakout_process(ax=axes[3, 1], cave_network=cave_network)
 
         summary = cave_network.summary()
         summary_line = (
@@ -94,8 +95,7 @@ class CaveNetworkPlotter:
             f"{int(summary['max_visible_parallel_channels'])} | "
             f"Dominant route: {summary['dominant_route_length']:.1f}"
         )
-        fig.text(0.5, 0.01, summary_line, ha="center", fontsize=10)
-        fig.tight_layout(rect=(0.0, 0.045, 1.0, 0.965))
+        fig.suptitle(f"Stage B - Cave Network\n{summary_line}", fontsize=14)
 
         fig.savefig(output, dpi=self.config.dpi, bbox_inches="tight")
         plt.close(fig)
@@ -137,7 +137,9 @@ class CaveNetworkPlotter:
                 aspect="equal",
             )
 
-        dominant_pairs = set(zip(cave_network.dominant_route_node_ids, cave_network.dominant_route_node_ids[1:]))
+        dominant_pairs = set(
+            zip(cave_network.dominant_route_node_ids, cave_network.dominant_route_node_ids[1:])
+        )
         dense_graph = len(cave_network.nodes) >= 250
         for segment in cave_network.segments:
             x_coords = [point.x for point in segment.points]
@@ -206,7 +208,9 @@ class CaveNetworkPlotter:
                 color = "#fb923c"
             elif node.kind == "chamber":
                 color = "#fb7185"
-            node_size = 4 + 1.4 * degrees[node.node_id] if dense_graph else 8 + 3.0 * degrees[node.node_id]
+            node_size = (
+                4 + 1.4 * degrees[node.node_id] if dense_graph else 8 + 3.0 * degrees[node.node_id]
+            )
             ax.scatter(
                 [node.x],
                 [node.y],
@@ -311,9 +315,7 @@ class CaveNetworkPlotter:
 
         lines = ax.get_lines() + secondary_axis.get_lines()
         legend_items = [
-            (line, line.get_label())
-            for line in lines
-            if not line.get_label().startswith("_")
+            (line, line.get_label()) for line in lines if not line.get_label().startswith("_")
         ]
         ax.legend(
             [line for line, _label in legend_items],
@@ -354,8 +356,12 @@ class CaveNetworkPlotter:
             return int(suffix) if suffix.isdigit() else 0
 
         ordered = sorted(paths.items(), key=path_number)
-        colors = {"coalesced": "#38bdf8", "vertically_captured": "#a855f7",
-                  "thermally_abandoned": "#f97316", "stranded": "#f59e0b"}
+        colors = {
+            "coalesced": "#38bdf8",
+            "vertically_captured": "#a855f7",
+            "thermally_abandoned": "#f97316",
+            "stranded": "#f59e0b",
+        }
         for row, (path_id, record) in enumerate(ordered):
             birth_value = record["birth"]
             death_value = record["death"]
@@ -417,6 +423,110 @@ class CaveNetworkPlotter:
         ax.set_title("Persistence–Sinuosity Morphospace (◆ stacked)")
         ax.grid(True, alpha=0.18)
         ax.legend(loc="best", fontsize=7)
+
+    @staticmethod
+    def _breakout_records(cave_network: CaveNetwork) -> list[dict[str, object]]:
+        records: dict[str, dict[str, object]] = {}
+        nodes = {node.node_id: node for node in cave_network.nodes}
+        for segment in cave_network.segments:
+            path_id = segment.metadata.get("lobe_path_id")
+            if path_id is None or segment.metadata.get("branching_process") is None:
+                continue
+            key = str(path_id)
+            along = min(
+                nodes[segment.start_node_id].along_position,
+                nodes[segment.end_node_id].along_position,
+            )
+            if key in records:
+                records[key]["along"] = min(float(records[key]["along"]), along)
+                continue
+            records[key] = {
+                "path_id": key,
+                "along": along,
+                "trigger": str(segment.metadata.get("breakout_trigger", "unknown")),
+                "outcome": str(segment.metadata.get("formation_state", "unknown")),
+                "score": float(segment.metadata.get("breakout_score", 0.0)),
+                "parent_before": float(segment.metadata.get("parent_flux_before_split", 0.0)),
+                "parent_after": float(segment.metadata.get("parent_flux_after_split", 0.0)),
+                "branch_flux": float(segment.metadata.get("initial_flux", 0.0)),
+                "split_fraction": float(segment.metadata.get("branch_flux_fraction", 0.0)),
+                "returned_flux": float(segment.metadata.get("coalescence_returned_flux", 0.0)),
+            }
+        return sorted(records.values(), key=lambda item: float(item["along"]))
+
+    @classmethod
+    def _draw_breakout_flux(cls, *, ax, cave_network: CaveNetwork) -> None:
+        records = cls._breakout_records(cave_network)
+        ax.set_title("Finite-Flux Breakout Allocation")
+        ax.set_xlabel("Breakout event (downstream order)")
+        ax.set_ylabel("Normalized flux")
+        if not records:
+            ax.text(0.5, 0.5, "No breakout events", ha="center", va="center")
+            ax.set_axis_off()
+            return
+        positions = np.arange(len(records), dtype=float)
+        source_flux = max(float(cave_network.config.source_flux), 1e-9)
+        before = np.asarray([float(item["parent_before"]) for item in records]) / source_flux
+        after = np.asarray([float(item["parent_after"]) for item in records]) / source_flux
+        branch = np.asarray([float(item["branch_flux"]) for item in records]) / source_flux
+        returned = np.asarray([float(item["returned_flux"]) for item in records]) / source_flux
+        ax.plot(positions, before, color="#0f766e", marker="o", ms=3, label="parent before")
+        ax.plot(positions, after, color="#64748b", marker=".", label="parent after")
+        ax.bar(positions, branch, color="#f97316", alpha=0.48, label="branch allocation")
+        ax.bar(positions, returned, color="#38bdf8", alpha=0.72, label="returned at merge")
+        ax.axhline(
+            cave_network.config.lobe_growth.minimum_viable_flux_fraction,
+            color="#dc2626",
+            linestyle="--",
+            linewidth=1.0,
+            label="survival threshold",
+        )
+        ax.set_xticks(
+            positions,
+            [str(item["path_id"]).replace("lobe_", "") for item in records],
+        )
+        ax.legend(fontsize=7, ncols=2)
+        ax.grid(True, axis="y", alpha=0.2)
+
+    @classmethod
+    def _draw_breakout_process(cls, *, ax, cave_network: CaveNetwork) -> None:
+        records = cls._breakout_records(cave_network)
+        ax.set_title("Breakout Cause And Survival")
+        ax.set_xlabel("Process opportunity score")
+        ax.set_ylabel("Allocated parent-flux fraction")
+        if not records:
+            ax.text(0.5, 0.5, "No breakout events", ha="center", va="center")
+            ax.set_axis_off()
+            return
+        trigger_colors = {
+            "capacity_overflow": "#dc2626",
+            "margin_avulsion": "#8b5cf6",
+            "bend_overflow": "#f59e0b",
+            "seeded_blockage": "#475569",
+        }
+        outcome_markers = {
+            "coalesced": "o",
+            "vertically_captured": "D",
+            "thermally_abandoned": "X",
+            "stranded": "s",
+        }
+        seen: set[str] = set()
+        for item in records:
+            trigger = str(item["trigger"])
+            outcome = str(item["outcome"])
+            label = trigger.replace("_", " ") if trigger not in seen else "_nolegend_"
+            seen.add(trigger)
+            ax.scatter(
+                [float(item["score"])],
+                [float(item["split_fraction"])],
+                color=trigger_colors.get(trigger, "#64748b"),
+                marker=outcome_markers.get(outcome, "o"),
+                s=42,
+                alpha=0.82,
+                label=label,
+            )
+        ax.legend(fontsize=7, title="dominant trigger")
+        ax.grid(True, alpha=0.2)
 
     @staticmethod
     def _build_width_profile(

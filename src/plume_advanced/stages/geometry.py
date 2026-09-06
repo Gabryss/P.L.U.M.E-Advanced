@@ -2334,7 +2334,10 @@ class GeometryGenerator:
         roots = np.asarray([root(index) for index in range(len(positions))])
         representatives, inverse = np.unique(roots, return_inverse=True)
         vertices = positions[representatives]
-        faces: list[tuple[int, int, int]] = []
+        faces_by_signature: dict[
+            tuple[int, int, int],
+            tuple[int, int, int],
+        ] = {}
         offset = 0
         for mesh in chunk_meshes:
             for a, b, c in mesh.faces:
@@ -2343,15 +2346,31 @@ class GeometryGenerator:
                     int(inverse[offset + b]),
                     int(inverse[offset + c]),
                 )
-                if len(set(face)) == 3:
-                    faces.append(face)
+                if len(set(face)) != 3:
+                    continue
+                signature = tuple(sorted(face))
+                existing = faces_by_signature.get(signature)
+                if existing is None:
+                    faces_by_signature[signature] = face
+                    continue
+                same_winding = face in (
+                    existing,
+                    (existing[1], existing[2], existing[0]),
+                    (existing[2], existing[0], existing[1]),
+                )
+                if not same_winding:
+                    # The chunks marched opposite sides of their overlapping
+                    # interface. Both coincident triangles are internal and
+                    # must cancel; retaining either leaves a three-face edge.
+                    faces_by_signature.pop(signature)
             offset += len(mesh.vertices)
+        faces = tuple(faces_by_signature.values())
         return (
             tuple(
                 (float(vertex[0]), float(vertex[1]), float(vertex[2]))
                 for vertex in vertices
             ),
-            tuple(faces),
+            faces,
         )
 
     @staticmethod
