@@ -22,6 +22,7 @@ def render_emplacement_phase_activity(
     """
 
     import matplotlib.pyplot as plt
+    from matplotlib.patches import Patch
 
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -66,14 +67,10 @@ def render_emplacement_phase_activity(
     else:
         phase_numbers = [row["phase"] for row in phases]
         active_paths = [row["active_path_count"] for row in phases]
-        active_segments = [row["active_segment_count"] for row in phases]
         allocated = [row["allocated_flux"] for row in phases]
         returned = [row["returned_flux"] for row in phases]
         axis.step(phase_numbers, active_paths, where="mid", linewidth=2.2, label="active paths")
-        axis.step(
-            phase_numbers, active_segments, where="mid", linewidth=1.5, label="active segments"
-        )
-        axis.set_ylabel("Active count")
+        axis.set_ylabel("Active semantic paths")
         axis.set_xlabel("Emplacement phase")
         secondary = axis.twinx()
         secondary.plot(
@@ -96,6 +93,11 @@ def render_emplacement_phase_activity(
             "coalesced": "#38bdf8",
             "vertically_captured": "#a855f7",
             "thermally_abandoned": "#f97316",
+            "flux_starved_retired": "#dc2626",
+            "pirated_breakout": "#f59e0b",
+            "reoccupied_passage": "#14b8a6",
+            "persistent_arterial": "#64748b",
+            "persistent_feeder": "#64748b",
             "stranded": "#f59e0b",
             "stalled": "#f59e0b",
         }
@@ -119,6 +121,18 @@ def render_emplacement_phase_activity(
         axis.set_title("Path survival / retirement timeline")
         axis.grid(True, axis="x", alpha=0.2)
         axis.invert_yaxis()
+        present_states = sorted({record["state"] for record in records})
+        axis.legend(
+            handles=[
+                Patch(
+                    facecolor=colors.get(state, "#64748b"),
+                    label=state.replace("_", " "),
+                )
+                for state in present_states
+            ],
+            loc="lower right",
+            fontsize=7,
+        )
 
     figure.suptitle("Stage-B staged emplacement diagnostics")
     figure.savefig(output, dpi=dpi, metadata={"Software": "PLUME evaluation"})
