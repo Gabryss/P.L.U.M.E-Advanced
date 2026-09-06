@@ -58,16 +58,27 @@ class CaveNetworkTests(unittest.TestCase):
             altered, geometry, start_cell=start, seed=13, steps=100, uphill_limit=1.2
         )
         self.assertNotEqual(first.paths, altered_proposal.paths)
+        changed_seed = backend.propose(
+            host, geometry, start_cell=start, seed=14, steps=100, uphill_limit=1.2
+        )
+        self.assertNotEqual(first.paths, changed_seed.paths)
         self.assertEqual(first.backend, "downflow_reference")
         self.assertFalse(first.provenance["official_library"])
+        self.assertEqual(first.provenance["ensemble_size"], 8)
 
     def test_flowy_adapter_requires_executable_and_reads_fixture(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             script = Path(temp_dir) / "fake_flowy.py"
             script.write_text(
-                "import json, sys\n"
-                "json.dump({'version': 'fixture-1', 'paths': [[[0, 0], [1, 1]]]}, "
-                "open(sys.argv[2], 'w', encoding='utf-8'))\n",
+                '''import pathlib, sys
+out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
+(out / "plume_backend_thickness_full.asc").write_text(
+    "ncols 2\\nnrows 2\\nxllcorner 0\\nyllcorner 0\\ncellsize 1\\nNODATA_value -9999\\n1 1\\n1 1\\n"
+)
+(out / "lobes_0.csv").write_text(
+    "centerx,centery,idx_parent,n_descendents,dist_n_lobes\\n0,0,-1,2,1\\n1,1,0,1,2\\n"
+)
+''',
                 encoding="utf-8",
             )
             host = HostFieldGenerator(
@@ -84,7 +95,7 @@ class CaveNetworkTests(unittest.TestCase):
                 uphill_limit=1.2,
             )
             self.assertEqual(proposal.backend, "flowy")
-            self.assertEqual(proposal.version, "fixture-1")
+            self.assertEqual(proposal.version, "external")
             self.assertEqual(len(proposal.paths), 1)
 
     def test_flowy_backend_does_not_silently_fallback_when_missing(self) -> None:

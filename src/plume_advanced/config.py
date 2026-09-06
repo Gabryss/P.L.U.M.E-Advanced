@@ -1083,6 +1083,8 @@ def _validate_pipeline_configs(
         )
     if network.flowy_timeout_s <= 0.0:
         raise ValueError("network.flowy_timeout_s must be positive")
+    if network.downflow_ensemble_size <= 0:
+        raise ValueError("network.downflow_ensemble_size must be positive")
     if network.emplacement_backend == "flowy" and not network.flowy_executable:
         raise ValueError(
             "network.flowy_executable is required when emplacement_backend='flowy'"

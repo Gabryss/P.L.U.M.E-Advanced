@@ -95,6 +95,7 @@ class CaveNetworkConfig:
     flowy_executable: str | None = None
     flowy_timeout_s: float = 120.0
     flowy_output_path: str | None = None
+    downflow_ensemble_size: int = 8
     # Independent opportunity controls; ``network_density`` remains the
     # monotonic endmember selector while these knobs describe process rates.
     lobe_launch_rate: float = 1.0
@@ -608,57 +609,76 @@ class DownflowReferenceBackend:
         seed: int | None,
         steps: int,
         uphill_limit: float,
+        ensemble_size: int = 8,
     ) -> EmplacementProposal:
-        rng = procedural_rng(seed, "downflow-reference")
-        perturbation = CaveNetworkGenerator._correlated_terrain_perturbation(
-            host_field.elevation.shape,
-            amplitude_m=max(0.5, 0.03 * float(np.ptp(host_field.elevation))),
-            correlation_cells=5.0,
-            rng=rng,
+        ensemble: list[list[tuple[int, int]]] = []
+        corridor_counts: defaultdict[tuple[int, int], int] = defaultdict(int)
+        for member in range(max(1, ensemble_size)):
+            rng = procedural_rng(seed, "downflow-reference", member)
+            perturbation = CaveNetworkGenerator._correlated_terrain_perturbation(
+                host_field.elevation.shape,
+                amplitude_m=max(0.5, 0.03 * float(np.ptp(host_field.elevation))),
+                correlation_cells=5.0,
+                rng=rng,
+            )
+            path = [start_cell]
+            for _ in range(max(1, steps)):
+                current = path[-1]
+                if float(geometry.along_grid[current]) >= geometry.along_extent:
+                    break
+                candidates = []
+                current_elevation = float(host_field.elevation[current])
+                y_index, x_index = current
+                ny, nx = host_field.elevation.shape
+                neighbors = [
+                    (yy, xx)
+                    for yy in range(max(0, y_index - 1), min(ny, y_index + 2))
+                    for xx in range(max(0, x_index - 1), min(nx, x_index + 2))
+                    if (yy, xx) != current
+                ]
+                for candidate in neighbors:
+                    if candidate in path[-8:]:
+                        continue
+                    along_delta = float(geometry.along_grid[candidate] - geometry.along_grid[current])
+                    if along_delta < -0.25 * geometry.cell_scale:
+                        continue
+                    uphill = float(host_field.elevation[candidate]) - current_elevation
+                    if uphill > uphill_limit:
+                        continue
+                    score = float(host_field.elevation[candidate] + perturbation[candidate])
+                    score -= 0.08 * along_delta
+                    score += 1e-6 * float(rng.random())
+                    candidates.append((score, candidate))
+                if not candidates:
+                    break
+                path.append(min(candidates, key=lambda item: item[0])[1])
+            ensemble.append(path)
+            for cell in set(path):
+                corridor_counts[cell] += 1
+        ranked = sorted(corridor_counts.items(), key=lambda item: (-item[1], item[0]))
+        persistence_floor = max(1, int(math.ceil(0.25 * max(1, ensemble_size))))
+        persistent_cells = {cell for cell, count in ranked if count >= persistence_floor}
+        scored_paths = []
+        for path in ensemble:
+            score = sum(corridor_counts[cell] for cell in path if cell in persistent_cells)
+            scored_paths.append((score, tuple(path)))
+        scored_paths.sort(key=lambda item: (-item[0], item[1]))
+        selected_paths = tuple(
+            tuple(CaveNetworkGenerator._cell_to_world(host_field, cell) for cell in path)
+            for _score, path in scored_paths[: min(3, len(scored_paths))]
+            if len(path) >= 3
         )
-        path = [start_cell]
-        for _ in range(max(1, steps)):
-            current = path[-1]
-            if float(geometry.along_grid[current]) >= geometry.along_extent:
-                break
-            candidates = []
-            current_elevation = float(host_field.elevation[current])
-            y_index, x_index = current
-            ny, nx = host_field.elevation.shape
-            neighbors = [
-                (yy, xx)
-                for yy in range(max(0, y_index - 1), min(ny, y_index + 2))
-                for xx in range(max(0, x_index - 1), min(nx, x_index + 2))
-                if (yy, xx) != current
-            ]
-            for candidate in neighbors:
-                if candidate in path[-8:]:
-                    continue
-                along_delta = float(geometry.along_grid[candidate] - geometry.along_grid[current])
-                if along_delta < -0.25 * geometry.cell_scale:
-                    continue
-                uphill = float(host_field.elevation[candidate]) - current_elevation
-                if uphill > uphill_limit:
-                    continue
-                # Perturbed DEM descent with a gentle downstream tie-breaker.
-                score = float(host_field.elevation[candidate] + perturbation[candidate])
-                score -= 0.08 * along_delta
-                score += 1e-6 * float(rng.random())
-                candidates.append((score, candidate))
-            if not candidates:
-                break
-            path.append(min(candidates, key=lambda item: item[0])[1])
-        coordinates = tuple(
-            CaveNetworkGenerator._cell_to_world(host_field, cell) for cell in path
-        )
+        coordinates = selected_paths or ((),)
         return EmplacementProposal(
-            paths=(coordinates,),
+            paths=coordinates,
             backend=self.name,
             version=self.version,
             provenance={
                 "algorithm": "stochastic_perturbed_dem_steepest_descent",
                 "official_library": False,
                 "seed_namespace": "downflow-reference",
+                "ensemble_size": ensemble_size,
+                "persistent_corridor_cells": len(persistent_cells),
             },
         )
 
@@ -684,14 +704,70 @@ class FlowyBackend:
         steps: int,
         uphill_limit: float,
     ) -> EmplacementProposal:
-        del geometry, start_cell, steps, uphill_limit
-        output_path = self.output_path
-        temporary: tempfile.NamedTemporaryFile[str] | None = None
-        if output_path is None:
-            temporary = tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False)
-            output_path = temporary.name
-            temporary.close()
-        command = [self.executable, "--output", output_path, "--seed", str(seed if seed is not None else 0)]
+        del geometry, steps, uphill_limit
+        run_dir = Path(tempfile.mkdtemp(prefix="plume-flowy-"))
+        output_dir = Path(self.output_path) if self.output_path else run_dir / "output"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        dem_path = run_dir / "terrain.asc"
+        input_path = run_dir / "input.toml"
+        elevation = np.asarray(host_field.elevation, dtype=float)
+        x0, y0 = float(host_field.x_coords[0]), float(host_field.y_coords[0])
+        cellsize = float(np.mean([host_field.config.grid.spacing_x, host_field.config.grid.spacing_y]))
+        with dem_path.open("w", encoding="utf-8") as stream:
+            stream.write(
+                f"ncols {elevation.shape[1]}\nnrows {elevation.shape[0]}\n"
+                f"xllcorner {x0}\nyllcorner {y0}\ncellsize {cellsize}\nNODATA_value -9999\n"
+            )
+            np.savetxt(stream, elevation[::-1], fmt="%.8g")
+        input_path.write_text(
+            "\n".join(
+                [
+                    'run_name = "plume_backend"',
+                    'write_lobes_csv = true',
+                    f'source = "{dem_path}"',
+                    'vent_flag = 0',
+                    f'x_vent = [{float(host_field.x_coords[start_cell[1]])}]',
+                    f'y_vent = [{float(host_field.y_coords[start_cell[0]])}]',
+                    'east_to_vent = 1000.0',
+                    'west_to_vent = 1000.0',
+                    'south_to_vent = 1000.0',
+                    'north_to_vent = 1000.0',
+                    'hazard_flag = 1',
+                    'masking_threshold = 0.97',
+                    'n_flows = 1',
+                    'min_n_lobes = 64',
+                    'max_n_lobes = 64',
+                    'volume_flag = 1',
+                    'total_volume = 100000.0',
+                    'fixed_dimension_flag = 1',
+                    'lobe_area = 100.0',
+                    'thickness_ratio = 1.0',
+                    'topo_mod_flag = 0',
+                    'thickening_parameter = 0.2',
+                    'lobe_exponent = 0.1',
+                    'max_slope_prob = 0.995',
+                    'inertial_exponent = 0.125',
+                    'rng_seed = ' + str(seed if seed is not None else 0),
+                    '[Advanced]',
+                    'restart_files = []',
+                    'n_init = 1',
+                    'n_check_loop = 0',
+                    'start_from_dist_flag = 0',
+                    'dist_fact = 1.0',
+                    'npoints = 20',
+                    'aspect_ratio_coeff = 2.0',
+                    'max_aspect_ratio = 2.5',
+                    'shape_name = ""',
+                    'saveraster_flag = 1',
+                    'saveshape_flag = 0',
+                    'plot_lobes_flag = 0',
+                    'plot_flow_flag = 0',
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        command = [self.executable, str(input_path), "-a", str(dem_path), "-n", "plume_backend", "-o", str(output_dir)]
         if Path(self.executable).suffix == ".py":
             command = [sys.executable, *command]
         try:
@@ -712,39 +788,91 @@ class FlowyBackend:
             raise RuntimeError(
                 f"flowy backend failed with exit code {completed.returncode}: {completed.stderr.strip()}"
             )
+        version = self.version
         try:
-            payload = json.loads(Path(output_path).read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            raise ValueError(f"flowy backend did not produce valid JSON at {output_path}") from exc
-        paths_payload = payload.get("paths", payload.get("lobes")) if isinstance(payload, dict) else None
-        if not isinstance(paths_payload, list):
-            raise ValueError("flowy output must contain a 'paths' or 'lobes' array")
-        paths: list[tuple[tuple[float, float], ...]] = []
-        for raw_path in paths_payload:
-            if not isinstance(raw_path, list):
-                raise ValueError("flowy path entries must be arrays")
-            points: list[tuple[float, float]] = []
-            for point in raw_path:
-                if isinstance(point, dict) and {"x", "y"} <= set(point):
-                    points.append((float(point["x"]), float(point["y"])))
-                elif isinstance(point, (list, tuple)) and len(point) >= 2:
-                    points.append((float(point[0]), float(point[1])))
-                else:
-                    raise ValueError("flowy points must be [x, y] or {x, y}")
-            if len(points) >= 2:
-                paths.append(tuple(points))
+            version_result = subprocess.run(
+                [self.executable, "--version"],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=min(self.timeout_s, 10.0),
+            )
+            version_text = (version_result.stdout or version_result.stderr).strip()
+            tokens = [token.strip("vV") for token in version_text.split() if any(char.isdigit() for char in token)]
+            if tokens:
+                version = tokens[-1]
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        try:
+            thickness_files = sorted(output_dir.glob("*_thickness_full.asc"))
+            if not thickness_files:
+                raise ValueError(f"flowy output missing *_thickness_full.asc in {output_dir}")
+            thickness = np.loadtxt(thickness_files[0], skiprows=6)
+            if thickness.ndim != 2 or not np.isfinite(thickness).any():
+                raise ValueError("flowy thickness raster is empty or malformed")
+            csv_files = sorted(output_dir.glob("lobes_*.csv"))
+            paths = self._paths_from_lobes_csv(csv_files[0]) if csv_files else self._paths_from_thickness(
+                thickness, host_field
+            )
+        except (OSError, ValueError) as exc:
+            raise ValueError(f"flowy backend output parsing failed in {output_dir}") from exc
         if not paths:
             raise ValueError("flowy output contained no usable paths")
         return EmplacementProposal(
             paths=tuple(paths),
             backend=self.name,
-            version=str(payload.get("version", self.version)),
+            version=version,
             provenance={
                 "executable": self.executable,
-                "output_schema": "paths:[[{x,y}|[x,y],...],...]",
+                "output_schema": "*_thickness_full.asc + lobes_*.csv",
                 "stdout": completed.stdout.strip()[:500],
             },
         )
+
+    @staticmethod
+    def _paths_from_lobes_csv(path: Path) -> list[tuple[tuple[float, float], ...]]:
+        import csv
+
+        with path.open(newline="", encoding="utf-8") as stream:
+            rows = list(csv.DictReader(stream))
+        if not rows or not {"centerx", "centery", "idx_parent"} <= set(rows[0]):
+            return []
+        children: defaultdict[int, list[int]] = defaultdict(list)
+        for index, row in enumerate(rows):
+            parent = int(float(row.get("idx_parent", -1)))
+            if parent >= 0:
+                children[parent].append(index)
+        roots = [index for index, row in enumerate(rows) if int(float(row.get("idx_parent", -1))) < 0]
+        if not roots:
+            return []
+        root = max(roots, key=lambda index: float(rows[index].get("n_descendents", 0.0)))
+        chain = [root]
+        while children.get(chain[-1]):
+            chain.append(
+                max(
+                    children[chain[-1]],
+                    key=lambda index: float(rows[index].get("n_descendents", 0.0)),
+                )
+            )
+        points = [(float(rows[index]["centerx"]), float(rows[index]["centery"])) for index in chain]
+        return [tuple(points)] if len(points) >= 2 else []
+
+    @staticmethod
+    def _paths_from_thickness(
+        thickness: np.ndarray,
+        host_field: HostField,
+    ) -> list[tuple[tuple[float, float], ...]]:
+        indices = np.argwhere(thickness > max(float(np.nanmax(thickness)) * 0.35, 1e-12))
+        if len(indices) < 2:
+            return []
+        points = [
+            (
+                float(host_field.x_coords[min(index[1], len(host_field.x_coords) - 1)]),
+                float(host_field.y_coords[max(0, len(host_field.y_coords) - 1 - index[0])]),
+            )
+            for index in indices[:: max(1, len(indices) // 256)]
+        ]
+        return [tuple(points)] if len(points) >= 2 else []
 
 
 class CaveNetworkGenerator:
@@ -1032,6 +1160,7 @@ class CaveNetworkGenerator:
                 seed=self.config.random_seed,
                 steps=self.config.trace_max_steps + 240,
                 uphill_limit=self.config.max_uphill_step,
+                ensemble_size=self.config.downflow_ensemble_size,
             )
         if backend == "flowy":
             if not self.config.flowy_executable:
