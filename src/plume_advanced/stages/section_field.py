@@ -8,6 +8,7 @@ from dataclasses import dataclass, replace
 import numpy as np
 
 from plume_advanced.procedural import procedural_rng
+from plume_advanced.stability import RoofStabilityModel
 from plume_advanced.stages.network import CaveJunction, CaveNetwork, CaveSegment
 
 
@@ -25,7 +26,7 @@ class SectionFieldConfig:
     height_ratio_variation: float = 0.18
     height_ratio_longitudinal_variation: float = 0.07
     minimum_tube_width: float = 1.0
-    minimum_tube_height: float = 3.0
+    minimum_tube_height: float = 0.35
     maximum_tube_width: float = 12.0
     chamber_max_tube_width: float = 24.0
     minimum_sample_spacing: float = 8.0
@@ -68,10 +69,23 @@ class SectionFieldConfig:
     minimum_roof_thickness: float = 6.0
     maximum_centerline_depth: float = 26.0
     preferred_cover_fraction: float = 0.34
-    vertical_level_spacing: float = 14.0
+    vertical_level_spacing: float = 0.0  # zero: actual passage height plus rock clearance
     minimum_vertical_clearance: float = 2.0
     maximum_uphill_grade: float = 0.015
     level_transition_fraction: float = 0.18
+    gravity_m_s2: float = 9.80665
+    rock_density_kg_m3: float = 2900.0
+    effective_tensile_strength_pa: float = 3_000_000.0
+    roof_safety_factor: float = 1.5
+    bench_strength: float = 0.6
+    floor_incision_ratio: float = 0.10
+
+    @property
+    def roof_stability_model(self) -> RoofStabilityModel:
+        return RoofStabilityModel(
+            self.gravity_m_s2, self.rock_density_kg_m3,
+            self.effective_tensile_strength_pa, self.roof_safety_factor,
+        )
 
 
 @dataclass(frozen=True)
@@ -156,6 +170,12 @@ class SectionSample:
     morphology_family_score: float = 0.0
     parent_morphology_segment_id: int | None = None
     junction_blend_length_m: float = 0.0
+    floor_world_z: float = 0.0
+    roof_world_z: float = 0.0
+    maximum_stable_width_m: float = 0.0
+    maximum_stable_height_m: float = 0.0
+    roof_demand_ratio: float = 0.0
+    collapse_required: bool = False
 
 
 @dataclass(frozen=True)
@@ -200,6 +220,8 @@ class SectionField:
                 "drained_pool_sample_count": 0.0,
                 "drained_pool_max_width_m": 0.0,
                 "drained_pool_mean_aspect_ratio": 0.0,
+                "unstable_section_count": 0.0,
+                "maximum_roof_demand_ratio": 0.0,
             }
 
         all_samples = [
@@ -235,6 +257,8 @@ class SectionField:
                 shape_change_rates.append(100.0 * float(np.linalg.norm(delta)) / spacing)
         return {
             "segment_field_count": float(len(self.segment_fields)),
+            "unstable_section_count": float(sum(s.collapse_required for s in all_samples)),
+            "maximum_roof_demand_ratio": max(s.roof_demand_ratio for s in all_samples),
             "sample_count": float(sample_count),
             "dominant_route_segment_count": float(len(self.dominant_route_segment_ids)),
             "max_junction_blend_weight": float(
@@ -368,10 +392,66 @@ class SectionFieldGenerator:
                 )
             )
         segment_fields = self._harmonize_connections(cave_network, segment_fields)
+        # A cooled/stranded terminal should close gradually, even when the
+        # section morphology would otherwise inflate it back to passage size.
+        segment_fields = self._taper_blind_terminals(cave_network, segment_fields)
+        # Assess final profiles after junction blending, grade adjustments and
+        # frame transport. Nominal height/cover controls are not the final roof.
+        segment_fields = [
+            replace(field, samples=tuple(self._assess_roof(sample) for sample in field.samples))
+            for field in segment_fields
+        ]
         return SectionField(
             config=self.config,
             segment_fields=tuple(segment_fields),
             dominant_route_segment_ids=dominant_route_segment_ids,
+        )
+
+    @staticmethod
+    def _taper_blind_terminals(network, fields):
+        lookup = {s.segment_id: s for s in network.segments}
+        result = []
+        for field in fields:
+            segment = lookup[field.segment_id]
+            if not segment.metadata.get("quality_terminal_taper") or not field.samples:
+                result.append(field)
+                continue
+            length = field.samples[-1].segment_arc_length
+            reach = min(.45*length, 6*max(s.tube_width for s in field.samples))
+            samples = []
+            for sample in field.samples:
+                u = float(np.clip((sample.segment_arc_length-length+reach)/max(reach, 1e-9), 0, 1))
+                blend = u*u*(3-2*u)
+                scale = np.array([1-.7*blend, 1-.45*blend])
+                if network.config.topology.style in {"trunk_dominated", "interconnected"}:
+                    # Stage B already tapers these branches. Cap morphology
+                    # inflation instead of multiplying a second taper into a
+                    # needle. The generic grammar retains its existing taper.
+                    target_width = max(s.tube_width for s in field.samples) * (1-.60*blend)
+                    ratio = min(1., target_width / max(sample.tube_width, 1e-9))
+                    scale = np.array([ratio, math.sqrt(ratio)])
+                profile = np.asarray(sample.profile_points)*scale
+                samples.append(replace(sample, tube_width=sample.tube_width*scale[0],
+                                       tube_height=sample.tube_height*scale[1],
+                                       profile_points=tuple(map(tuple, profile))))
+            result.append(replace(field, samples=tuple(samples)))
+        return result
+
+    def _assess_roof(self, sample: SectionSample) -> SectionSample:
+        profile = np.asarray(sample.profile_points, dtype=float)
+        elevations = sample.z + profile[:, 0] * sample.normal[2] + profile[:, 1] * sample.binormal[2]
+        floor, roof = float(np.min(elevations)), float(np.max(elevations))
+        assessment = self.config.roof_stability_model.assess(
+            width_m=float(np.ptp(profile[:, 0])), height_m=roof - floor,
+            floor_depth_m=sample.surface_z - floor,
+        )
+        return replace(
+            sample, roof_thickness=assessment.roof_thickness_m,
+            floor_world_z=floor, roof_world_z=roof,
+            maximum_stable_width_m=assessment.maximum_width_m,
+            maximum_stable_height_m=assessment.maximum_height_m,
+            roof_demand_ratio=assessment.demand_ratio,
+            collapse_required=assessment.failed,
         )
 
     def _harmonize_connections(
@@ -421,7 +501,7 @@ class SectionFieldGenerator:
                 width, height = sample.tube_width, sample.tube_height
                 floor_delta = 0.0
                 if math.isclose(sample.segment_arc_length, 0.0, abs_tol=1e-9):
-                    endpoint_indices = (0,)
+                    endpoint_indices: tuple[int, ...] = (0,)
                 elif math.isclose(sample.segment_arc_length, length, abs_tol=1e-9):
                     endpoint_indices = (-1,)
                 else:
@@ -441,7 +521,11 @@ class SectionFieldGenerator:
                     correction *= min(
                         1.0, 0.4 * endpoint.tube_width / max(np.linalg.norm(correction), 1e-9)
                     )
-                    xy = xy + weight * correction
+                    # Accepted Stage-B routes already have constrained bends.
+                    # Moving stations again toward a different incident tangent
+                    # can reverse the last few centimetres of a short branch.
+                    if not network.config.quality.enabled:
+                        xy = xy + weight * correction
                     tangent = (1.0 - weight) * tangent + weight * direction
                     floor_delta += weight * (target_floor - self._sample_floor(endpoint))
                     target_profile = np.asarray(reference.profile_points).copy()
@@ -842,6 +926,15 @@ class SectionFieldGenerator:
                     local_morphology.floor_phase,
                     wavelength_fraction=0.52,
                 ),
+                bench_strength=self.config.bench_strength
+                * float(np.clip(local_morphology.floor_bias + 0.35, 0.0, 1.0))
+                * (0.25 + 0.75 * flow_maturity),
+                floor_incision_ratio=self.config.floor_incision_ratio
+                * (0.5 + 0.5 * math.sin(self._morphology_phase(
+                    segment, arc_length, local_morphology.floor_phase,
+                    wavelength_fraction=0.65,
+                )))
+                * (1.0 - junction_blend_weight),
             )
             samples.append(
                 SectionSample(
@@ -883,12 +976,10 @@ class SectionFieldGenerator:
         segment: CaveSegment,
         samples: list[SectionSample],
     ) -> list[SectionSample]:
-        """Apply a shelf-like level offset with a bounded downstream climb.
+        """Fit a smooth level displacement to available cover and flow grade.
 
-        The former symmetric sine offset made stacked passages resemble hanging
-        cables. This profile holds the requested level through the route body,
-        uses unequal entry/exit transitions, and projects the result onto a
-        maximum hydraulic uphill grade while retaining exact endpoint joins.
+        A level label requests separation; short or shallow reaches may have
+        insufficient space to realize it. Endpoints remain exact graph joins.
         """
 
         if segment.z_level == 0 or len(samples) < 3 or segment.total_length <= 1e-6:
@@ -896,32 +987,18 @@ class SectionFieldGenerator:
 
         arc = np.asarray([sample.segment_arc_length for sample in samples], dtype=float)
         progress = np.clip(arc / max(segment.total_length, 1e-9), 0.0, 1.0)
-        transition_rng = procedural_rng(
-            self.config.random_seed,
-            "vertical-level-transition",
-            segment.segment_id,
-        )
-        transition = self.config.level_transition_fraction
-        entry_fraction = float(np.clip(transition * transition_rng.uniform(0.65, 1.05), 0.06, 0.34))
-        exit_fraction = float(np.clip(transition * transition_rng.uniform(1.10, 1.65), 0.08, 0.42))
-
-        def smoothstep(values: np.ndarray) -> np.ndarray:
-            values = np.clip(values, 0.0, 1.0)
-            return values * values * (3.0 - 2.0 * values)
-
-        envelope = np.minimum(
-            smoothstep(progress / entry_fraction),
-            smoothstep((1.0 - progress) / exit_fraction),
-        )
+        # A full-span smooth rise/fall has no artificial flat deck or short
+        # exit ramp. Limit its amplitude as a whole instead of clipping points
+        # against the roof, which used to create plateaus and sharp corners.
+        envelope = np.sin(math.pi * progress) ** 2
         base_z = np.asarray([sample.z for sample in samples], dtype=float)
         surface_z = np.asarray([sample.surface_z for sample in samples], dtype=float)
         tube_height = np.asarray([sample.tube_height for sample in samples], dtype=float)
         cover = np.asarray([sample.cover_thickness for sample in samples], dtype=float)
-        separation = np.maximum(
+        separation = max(
             self.config.vertical_level_spacing,
-            tube_height + self.config.minimum_vertical_clearance,
+            float(np.max(tube_height)) + self.config.minimum_vertical_clearance,
         )
-        desired_z = base_z + segment.z_level * separation * envelope
 
         minimum_depth = self.config.minimum_roof_thickness + 0.5 * tube_height
         maximum_depth = np.maximum(
@@ -930,28 +1007,24 @@ class SectionFieldGenerator:
         )
         minimum_z = surface_z - maximum_depth
         maximum_z = surface_z - minimum_depth
-        profile_z = np.clip(desired_z, minimum_z, maximum_z)
-        profile_z[0] = base_z[0]
-        profile_z[-1] = base_z[-1]
-
-        maximum_grade = self.config.maximum_uphill_grade
-        for _ in range(4):
-            for index in range(len(profile_z) - 2, -1, -1):
-                spacing = max(arc[index + 1] - arc[index], 1e-9)
-                profile_z[index] = max(
-                    profile_z[index],
-                    profile_z[index + 1] - maximum_grade * spacing,
-                )
-            profile_z[0] = base_z[0]
-            for index in range(1, len(profile_z)):
-                spacing = max(arc[index] - arc[index - 1], 1e-9)
-                profile_z[index] = min(
-                    profile_z[index],
-                    profile_z[index - 1] + maximum_grade * spacing,
-                )
-            profile_z = np.clip(profile_z, minimum_z, maximum_z)
-            profile_z[0] = base_z[0]
-            profile_z[-1] = base_z[-1]
+        unit_offset = float(segment.z_level) * envelope
+        limits = [separation]
+        positive, negative = unit_offset > 1e-9, unit_offset < -1e-9
+        if np.any(positive):
+            limits.append(float(np.min((maximum_z[positive] - base_z[positive]) / unit_offset[positive])))
+        if np.any(negative):
+            limits.append(float(np.min((minimum_z[negative] - base_z[negative]) / unit_offset[negative])))
+        growing = np.diff(unit_offset) > 1e-9
+        if np.any(growing):
+            # Never introduce a new excessive uphill reach. Existing host
+            # gradients are handled separately from the level displacement.
+            allowance = np.maximum(
+                self.config.maximum_uphill_grade * np.diff(arc) - np.diff(base_z), 0.0
+            )
+            limits.append(float(np.min(allowance[growing] / np.diff(unit_offset)[growing])))
+        amplitude = max(0.0, min(limits))
+        profile_z = base_z + amplitude * unit_offset
+        profile_z[0], profile_z[-1] = base_z[0], base_z[-1]
 
         resolved: list[SectionSample] = []
         for sample, z_coord in zip(samples, profile_z, strict=True):
@@ -1306,7 +1379,7 @@ class SectionFieldGenerator:
     ) -> _SegmentMorphologyState:
         """Translate preserved emplacement history into section character."""
 
-        phase_value = segment.metadata.get("emplacement_phase_count", 1)
+        phase_value = segment.metadata.get("active_phase_count" if segment.metadata.get("network_process") == "independent_gallery_v1" else "emplacement_phase_count", 1)
         birth_value = segment.metadata.get("birth_phase", 0)
         phase_count = max(
             int(phase_value) if isinstance(phase_value, (int, float)) else 1,
@@ -1375,9 +1448,9 @@ class SectionFieldGenerator:
         flux = self._interpolate_attr(segment, arc_length, "flux")
         flux_reference = max(segment.mean_flux, 1e-9)
         flux_scale = float(np.clip(flux / flux_reference, 0.55, 1.65))
-        phase_value = segment.metadata.get("emplacement_phase_count", 1)
+        phase_value = segment.metadata.get("active_phase_count" if segment.metadata.get("network_process") == "independent_gallery_v1" else "emplacement_phase_count", 1)
         try:
-            phase_count = float(phase_value)
+            phase_count = float(phase_value) if isinstance(phase_value, (str, int, float)) else 1.0
         except (TypeError, ValueError):
             phase_count = 1.0
         age_scale = (
@@ -1754,12 +1827,16 @@ class SectionFieldGenerator:
         asymmetry_bias: float,
         roughness_phase: float,
         floor_phase: float,
+        bench_strength: float = 0.0,
+        floor_incision_ratio: float = 0.0,
     ) -> tuple[tuple[float, float], ...]:
         half_width = 0.5 * tube_width
         half_height = 0.5 * tube_height
         resolution = max(self.config.profile_resolution // 2, 8)
-        x_values = np.linspace(-half_width, half_width, resolution, dtype=float)
-        normalized = np.clip(np.abs(x_values) / max(half_width, 1.0), 0.0, 1.0)
+        # Cluster vertices at the wall turns rather than leaving a long flat
+        # bevel between uniformly spaced roof/floor samples.
+        x_values = -half_width * np.cos(np.linspace(0.0, math.pi, resolution))
+        normalized = np.clip(np.abs(x_values) / max(half_width, 1e-9), 0.0, 1.0)
         top_exp = float(
             np.clip(
                 1.78 - 0.24 * (roof_arch - 1.0) - 0.48 * roof_bias - 0.42 * shape_bias,
@@ -1825,7 +1902,17 @@ class SectionFieldGenerator:
                 reversed(x_values), reversed(normalized), strict=True
             )
         ]
-        closed_profile = floor_profile + roof_profile + [floor_profile[0]]
+        # Preserve a former lava level as a ledge on each side; a narrow
+        # incised channel changes the floor independently of the roof curve.
+        # All profiles retain the same vertex count for longitudinal blending.
+        bench_level = -half_height * floor_depth_factor * (1.0 - 0.70 * bench_strength)
+        shaped_floor = []
+        for (x, y), u in zip(floor_profile, reversed(normalized), strict=True):
+            ledge_weight = float(np.clip((u - 0.55) / 0.12, 0.0, 1.0))
+            y += ledge_weight * max(bench_level - y, 0.0) if bench_strength > 0.0 else 0.0
+            y -= tube_height * floor_incision_ratio * math.exp(-(u / 0.22) ** 2)
+            shaped_floor.append((x, y))
+        closed_profile = shaped_floor + roof_profile + [shaped_floor[0]]
         # Keep the semantic contour envelope consistent with declared section
         # dimensions even when roughness/asymmetry pushes a wall outward.
         contour = np.asarray(closed_profile, dtype=float)
@@ -1833,7 +1920,9 @@ class SectionFieldGenerator:
         limit = np.asarray((tube_width, tube_height), dtype=float)
         scale = np.minimum(1.0, limit / np.maximum(extent, 1e-9))
         center = 0.5 * (np.min(contour, axis=0) + np.max(contour, axis=0))
-        contour = center + (contour - center) * scale
+        contour[:, 0] = center[0] + (contour[:, 0] - center[0]) * scale[0]
+        # Limit incision at the requested envelope without moving the ceiling.
+        contour[:, 1] = np.maximum(contour[:, 1], np.max(contour[:, 1]) - tube_height)
         contour[-1] = contour[0]
         return tuple((float(point[0]), float(point[1])) for point in contour)
 
@@ -1927,8 +2016,8 @@ class SectionFieldGenerator:
         tangent = vector / norm
         return (float(tangent[0]), float(tangent[1]), float(tangent[2]))
 
+    @staticmethod
     def _build_frame(
-        self,
         tangent: tuple[float, float, float],
         previous_normal: tuple[float, float, float] | None,
     ) -> tuple[tuple[float, float, float], tuple[float, float, float]]:

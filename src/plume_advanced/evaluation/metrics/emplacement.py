@@ -173,7 +173,7 @@ def _phase_activity(records: list[dict[str, Any]], phase_count: int) -> list[dic
     phases: list[dict[str, Any]] = []
     for phase in range(phase_count):
         active = [
-            record for record in records if record["birth_phase"] <= phase <= record["death_phase"]
+            record for record in records if phase in record["metadata"].get("active_phases", range(record["birth_phase"], record["death_phase"]+1))
         ]
         allocated = sum(
             (_number(record["metadata"].get("initial_flux")) or 0.0)
@@ -198,6 +198,10 @@ def _phase_activity(records: list[dict[str, Any]], phase_count: int) -> list[dic
         ]
         source_budget = max(phase_budgets, default=None)
         active_flux = sum(max(float(record["mean_flux"]), 0.0) for record in active)
+        if any("phase_fluxes" in r["metadata"] for r in records):
+            active_flux = sum(float(np.mean([s.metadata["phase_fluxes"][phase] for s in r["segments"]])) for r in active)
+            allocated = sum(s.metadata["phase_fluxes"][phase] for r in active for s in r["segments"] if s.metadata.get("topology_role") == "side_branch")
+            source_budget = max((float(r["metadata"].get("phase_flux_budget",0)) for r in records),default=0)
         phases.append(
             {
                 "phase": phase,
@@ -278,7 +282,7 @@ def emplacement_metrics(network: CaveNetwork) -> dict[str, Any]:
         for item in metadata
     )
 
-    outcomes = Counter()
+    outcomes: Counter[str] = Counter()
     outcome_available = False
     new_count = 0
     reoccupied_count = 0

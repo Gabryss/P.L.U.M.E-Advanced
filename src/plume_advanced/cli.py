@@ -407,8 +407,16 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     stage_started = time.perf_counter()
     cave_network = resumable(
         "network",
-        lambda: CaveNetworkGenerator(project_config.network).generate(host_field),
+        lambda: CaveNetworkGenerator(project_config.network).generate(
+            host_field, section_config=project_config.section_field,
+            quality_report_path=args.output.with_name("network_quality_report.json"),
+            quality_progress=progress.log,
+        ),
     )
+    if project_config.network.quality.enabled:
+        from plume_advanced.stages.network_quality import write_quality_report
+        completed_outputs.append(write_quality_report(
+            cave_network.quality_report, args.output.with_name("network_quality_report.json")))
     network_summary = cave_network.summary()
     network_report_path = export_network_report(
         cave_network,

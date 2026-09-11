@@ -3,9 +3,18 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TypedDict
 
 from plume_advanced.evaluation.metrics.emplacement import emplacement_metrics
 from plume_advanced.stages.network import CaveNetwork
+from plume_advanced.stages.network_metadata import metadata_float
+
+
+class _PathLifetime(TypedDict):
+    path_id: str
+    birth: int
+    death: int
+    state: str
 
 
 def render_emplacement_phase_activity(
@@ -21,6 +30,10 @@ def render_emplacement_phase_activity(
     rendered as an explicit unavailable panel rather than guessed history.
     """
 
+    if network.config.topology.generation_mode == "independent_growth":
+        from plume_advanced.visualization.network_topology import render_gallery_history
+        return render_gallery_history(network, output_path, dpi=dpi)
+
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
 
@@ -29,7 +42,7 @@ def render_emplacement_phase_activity(
     diagnostics = emplacement_metrics(network)
     phases = diagnostics["phase_activity"]
     phase_available = bool(diagnostics["phase_metadata_available"])
-    records = []
+    records: list[_PathLifetime] = []
     for segment_index, segment in enumerate(network.segments):
         metadata = dict(segment.metadata or {})
         path_id = metadata.get("lobe_path_id", metadata.get("path_id"))
@@ -42,11 +55,12 @@ def render_emplacement_phase_activity(
             )
         if any(record["path_id"] == str(path_id) for record in records):
             continue
-        birth = metadata.get("birth_phase", 0)
-        death = metadata.get("death_phase", diagnostics["phase_count"] - 1)
         try:
-            birth = int(birth)
-            death = max(birth, int(death))
+            birth = int(metadata_float(metadata, "birth_phase"))
+            death = max(
+                birth,
+                int(metadata_float(metadata, "death_phase", diagnostics["phase_count"] - 1)),
+            )
         except (TypeError, ValueError):
             birth, death = 0, diagnostics["phase_count"] - 1
         state = str(metadata.get("formation_state", metadata.get("termination", "unknown")))

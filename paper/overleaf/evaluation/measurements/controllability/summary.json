@@ -1,0 +1,29 @@
+{
+  "complete_n": 1200,
+  "controls": {
+    "distributary": {
+      "n": 300,
+      "primary_metric": "cyclomatic_number",
+      "spearman_rho": -0.005004809652024063
+    },
+    "duration": {
+      "n": 300,
+      "primary_metric": "main_route_length_m",
+      "spearman_rho": 0.7822058669487797
+    },
+    "inflation": {
+      "n": 300,
+      "primary_metric": "junction_to_passage_width_ratio",
+      "spearman_rho": 0.13472816053393674
+    },
+    "supply": {
+      "n": 300,
+      "primary_metric": "host_horizontal_scale",
+      "spearman_rho": 1.0
+    }
+  },
+  "failed_n": 0,
+  "intervention_policy": "Override the declared flow control before resolving every stage, exactly as a project TOML edit would do.",
+  "planned_n": 1200,
+  "schema": "plume.controllability-summary.v2"
+}

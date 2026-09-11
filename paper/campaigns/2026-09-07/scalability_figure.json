@@ -1,0 +1,8 @@
+{
+  "figure": "paper/overleaf/figures/f10_scalability.png",
+  "sha256": "008870dccc1292121dcbcc26c12d73acc4b12abc15b02ec8ad00e35db6dd183b",
+  "source": "paper/outputs/scalability/raw_results.csv",
+  "source_sha256": "9947ee46c3cfb2289e29fb779165e693d1abe74718e8b5dc0e8905c322025f65",
+  "reporting_implementation_sha256": "e39007b3c806dfb34ab41e713b4ed15589ab1b1466fc2a8084a659ce285a03e1",
+  "scope": "All 40 outcomes, including five dense 5 km memory-limit failures. Failure times are stopped costs, not completed reconstruction times."
+}

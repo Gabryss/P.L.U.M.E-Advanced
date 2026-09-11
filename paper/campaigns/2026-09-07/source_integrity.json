@@ -1,0 +1,16 @@
+{
+  "frozen": {
+    "verified_files": 136,
+    "file_manifest_sha256": "985011be995430320281772e3b149adb59e998471605f3381b2dea8dac85f051",
+    "all_content_hashes_match": true
+  },
+  "frozen_controls_v2": {
+    "verified_files": 137,
+    "file_manifest_sha256": "c367e048207f0e4972d7cce3735f1d1bc69b56484837b16f44fbb46b976b2a91",
+    "all_content_hashes_match": true
+  },
+  "external_assets": {
+    "verified_files": 4,
+    "all_content_hashes_match": true
+  }
+}

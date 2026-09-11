@@ -1,0 +1,311 @@
+# earth_long_interconnected: Earth, 3000 m route target, 3 system(s), no rocks.
+# Persistent parallel routes in one host, with conserved formation history.
+# Stage figures are rendered by scripts/render_run_diagnostics.py after the mesh.
+schema_version = 3
+procedural_seed = 20260911
+
+[world]
+# Supported presets: "earth", "mars", "moon".
+# Passage/room dimensions and stability inputs follow this selection unless
+# they are explicitly overridden below.
+body = "earth"
+material = "terrestrial_basalt"
+
+[flow_regime]
+# Dimensionless procedural controls kept separate from gravity/geology.
+supply_rate_scale = 1.0
+duration_scale = 1.0
+inflation = 0.50
+distributary_tendency = 0.65
+cooling_rate_scale = 1.0
+
+[run]
+# Development mode shortens each body proportionally without shrinking passages.
+dev_mode = false
+quality = "standard"
+dev_max_route_length_m = 1500.0
+dev_max_braid_zones = 2
+# The batch renders all stage figures from saved checkpoints after generation.
+render_diagnostics = false
+# Safety default: prompt before writing into a non-empty generation directory.
+# Set true only for unattended/debug batches that intentionally replace files.
+overwrite_outputs = false
+
+[export]
+# Build ready-to-import packages for Blender, UE5, Unity, Gazebo Jetty, and
+# NVIDIA Omniverse from the same canonical cave mesh.
+target = "blender"
+format = "glb"
+generate_collision = false
+
+[host_field]
+# Explicit metric host extent for this inspection case.
+apply_body_scaling = false
+corridor_count = 3
+corridor_spacing = 35.0
+corridor_lateral_variation = 25.0
+corridor_correlation_length = 180.0
+
+[host_field.routing_weights]
+slope = 0.12
+cover = 0.10
+fracture = 0.22
+capacity = 0.28
+stability = 0.28
+normalize = true
+enabled = true
+
+[host_field.grid]
+width = 400.0
+height = 3400.0
+nx = 160
+ny = 1360
+
+[host_field.ranges]
+seed_point_x = [-8.0, 8.0]
+seed_point_y = [-1650.0, -1630.0]
+high_side_elevation = [170.0, 205.0]
+longitudinal_drop = [40.0, 70.0]
+flow_angle_degrees = [89.0, 91.0]
+corridor_depth = [1.0, 2.0]
+corridor_width = [18.0, 24.0]
+volcanic_layer_thickness = [56.0, 78.0]
+minimum_stable_cover = [15.0, 24.0]
+roof_competence_baseline = [0.64, 0.80]
+roof_competence_variation = [0.12, 0.24]
+fracture_zone_angle_degrees = [-14.0, 16.0]
+fracture_zone_center_offset = [-120.0, 140.0]
+fracture_zone_width = [120.0, 260.0]
+
+[host_field.wave_ranges]
+count = [3, 5]
+amplitude = [0.3, 1.0]
+wavelength = [100.0, 300.0]
+angle_degrees = [-65.0, 85.0]
+phase = [-3.14159, 3.14159]
+
+[network]
+target_route_length_m = 3000.0
+minimum_passage_radius = 1.5
+growth_model = "hybrid_lobe"
+emplacement_backend = "internal"
+growth_cost_weight = 3.2
+chamber_radius = 10.0
+occupancy_smoothing_passes = 2
+paint_flux_chambers = false
+channel_count_samples = 28
+
+# Persistent host-guided fronts; local capture/release creates connections.
+[network.systems]
+count = 3
+source_spacing_widths = 3.5
+lateral_variation_widths = 5.0
+correlation_length_widths = 12.0
+merge_distance_widths = 0.65
+split_distance_widths = 2.2
+minimum_shared_length_widths = 5.0
+minimum_independent_length_widths = 5.0
+split_confirmation_widths = 1.5
+interaction_spacing_widths = 2.0
+
+[network.topology]
+style = "interconnected"
+generation_mode = "independent_growth"
+side_branch_count = [0, 4]
+side_branch_length_widths = [2.5, 4.0]
+
+[network.interconnection]
+minimum_parallel_fraction = 0.4
+minimum_window_parallel_fraction = 0.2
+interaction_window_m = 600.0
+
+[network.emplacement_history]
+phase_count = [4, 4]
+active_phase_span = [1, 1]
+stacked_lobe_fraction = 0.0
+breakout_probability = 0.85
+reoccupation_probability = 0.75
+phase_flux_budget_fraction = 0.3
+drained_pool_enabled = true
+drained_pool_probability = 1.0
+drained_pool_count = [2, 3]
+drained_pool_min_spacing_m = 120.0
+drained_pool_length_m = [15.0, 25.0]
+drained_pool_width_ratio = [1.2, 1.5]
+drained_pool_max_width_m = 12.0
+drained_pool_depth_m = [1.0, 2.0]
+
+[network.quality]
+enabled = true
+max_attempts = 64
+repair_passes = 3
+
+[section_field]
+# Resolve shallow branch interiors at the fixed 0.20 m voxel size.
+minimum_tube_height = 0.9
+sampling_policy = "adaptive"
+base_height_ratio = 0.30
+minimum_height_ratio = 0.12
+maximum_height_ratio = 0.36
+width_scale_median = 1.0
+width_scale_log_sigma = 0.20
+width_longitudinal_variation = 0.18
+height_ratio_variation = 0.06
+height_ratio_longitudinal_variation = 0.035
+minimum_sample_spacing = 1.0
+maximum_sample_spacing = 3.0
+curvature_spacing_weight = 120.0
+width_gradient_spacing_weight = 34.0
+junction_spacing_weight = 1.15
+profile_resolution = 40
+floor_flatness_base = 0.36
+floor_flatness_width_weight = 0.12
+floor_relief_base = 0.035
+floor_relief_variation = 0.010
+roof_arch_base = 1.08
+roof_arch_roof_weight = 0.18
+wall_roughness_base = 0.14
+wall_roughness_variation = 0.045
+morphology_gradient_strength = 0.32
+morphology_correlation_length = 140.0
+morphology_regime_strength = 0.72
+morphology_family_spread = 0.82
+morphology_flux_width_gain = 0.16
+morphology_age_width_gain = 0.10
+morphology_floor_relief_max = 0.42
+morphology_wall_roughness_max = 0.30
+profile_shape_variation = 0.92
+lateral_skew_amplitude = 0.16
+centerline_wobble_amplitude = 0.0
+centerline_wobble_wavelength = 105.0
+junction_pre_widen_gain = 0.10
+junction_constant_envelope_gain = 0.03
+chamber_widen_gain = 0.45
+drained_pool_width_scale = 1.0
+drained_pool_height_ratio_limit = 0.22
+drained_pool_floor_flatness = 0.84
+drained_pool_roof_arch = 1.04
+drained_pool_transition_power = 1.35
+minimum_roof_thickness = 6.5
+maximum_centerline_depth = 26.0
+preferred_cover_fraction = 0.34
+maximum_uphill_grade = 0.015
+# Automatic separation from passage height and required intervening rock.
+vertical_level_spacing = 0.0
+level_transition_fraction = 0.18
+
+[floor_map]
+# The topology-aware floor atlas is generated even when props are disabled.
+lateral_spacing_m = 2.5
+maximum_lateral_fraction = 0.72
+plan_resolution_m = 2.0
+minimum_clearance_m = 1.0
+
+[events]
+enabled = false
+include_rock_props = false
+enabled_kinds = []
+# Multiplies background rocks, boulder anchors, rubble patches, and talus.
+rock_population_multiplier = 1.0
+use_rocky_meshes = false
+strict_optional_provider = true
+rocky_source_path = ""
+rocky_texture_dir = "../texture/dark_rock_8k/textures"
+rocky_output_dir = "../outputs/rocky_stage_e"
+rocky_resolution_scale = 1.0
+rocky_max_subdivisions = 5
+ground_embed_fraction = 0.08
+clustered_debris_fraction = 0.45
+collapse_cluster_radius_scale = 4.0
+collapse_cluster_spacing_scale = 0.90
+# Floor-area density keeps wide galleries from looking emptier than narrow ones.
+debris_density_basis = "floor_area"
+rock_density_per_100m2 = 0.45
+boulder_density_per_100m2 = 0.04
+# Retained for reproducible legacy length-based projects.
+rock_density_per_100m = 2.00
+boulder_density_per_100m = 0.18
+geological_event_density_per_100m = 0.12
+collapse_event_fraction = 0.35
+choke_event_fraction = 0.30
+infill_event_fraction = 0.35
+minimum_event_spacing = 22.0
+minimum_rock_spacing = 0.10
+minimum_boulder_spacing = 0.35
+# Radii: abundant cobbles/small rocks plus rarer rover-scale boulders.
+rock_radius_range = [0.03, 0.75]
+boulder_radius_range = [0.30, 4.0]
+rock_size_bias = 2.8
+boulder_size_bias = 2.4
+collapse_radius_range = [4.0, 9.0]
+choke_radius_range = [3.0, 7.0]
+infill_radius_range = [5.0, 12.0]
+max_lateral_floor_fraction = 0.62
+gallery_width_size_fraction = 0.30
+gallery_clearance_size_fraction = 0.45
+# A boulder may rise through at most two-thirds of local vertical clearance.
+boulder_max_height_fraction = 0.6666666667
+roof_block_size_fraction = 0.35
+edge_accumulation_strength = 0.70
+placement_jitter_m = 0.75
+background_contact_spacing = 1.15
+# Preserve a continuous route for a rover up to one metre wide.
+rover_width_m = 1.0
+rover_side_margin_m = 0.10
+rover_max_lateral_slope = 0.50
+preserve_rover_route = true
+# Layered debris populations: patchy floor scatter, wall scree, transported
+# lag deposits, compact boulder halos, and larger collapse talus fans.
+enable_debris_families = true
+clean_floor_fraction = 0.45
+debris_patch_length_m = 30.0
+wall_scree_fraction = 0.35
+transported_lag_fraction = 0.15
+boulder_satellite_count_range = [25, 55]
+boulder_halo_radius_range_m = [1.2, 4.5]
+collapse_fragment_count_range = [50, 120]
+collapse_talus_radius_range_m = [5.0, 15.0]
+# Smaller parent-and-child rubble patches replace most uniform floor scatter.
+minor_cluster_density_per_1000m2 = 0.80
+minor_cluster_count_range = [8, 18]
+minor_cluster_radius_range_m = [1.2, 3.0]
+mesh_latitude_segments = 8
+mesh_longitude_segments = 14
+
+[geometry]
+voxel_size = 0.20
+# Repair one/two-cell fissures before roof checks; verify final mesh topology.
+density_closing_voxels = 1
+# Resolve voxel size from the body and run quality. Preview currently yields
+# Earth/Mars/Moon voxel sizes of 1/2/4 m; use resolution_policy="fixed"
+# together with voxel_size for an explicit override.
+resolution_policy = "fixed"
+storage_mode = "auto"
+# Switch to sparse overlapping tiles before the dense field exceeds this size.
+max_dense_voxels = 80000000
+density_margin = 24.0
+chunk_size = 64
+iso_level = 0.0
+use_section_profiles = true
+wall_roughness_amplitude = 0.28
+wall_roughness_frequency = 0.18
+wall_roughness_blend = 0.85
+# Resolvable accretion on the cave itself, with smooth and rough patches.
+surface_wall_relief_m = 0.55
+surface_roof_relief_m = 0.65
+surface_floor_relief_m = 0.22
+surface_crust_relief_m = 0.10
+surface_feature_scale_m = 0.85
+surface_normal_filter_voxels = 0.75
+junction_irregularity_amplitude = 0.30
+junction_irregularity_frequency = 0.095
+structural_event_blend = 0.35
+weld_tolerance = 1e-5
+cave_normal_scale = 2.0
+cave_smoothing_iterations = 2
+cave_displacement_scale_m = 0.0
+cave_displacement_midlevel = 0.5
+cave_diffuse_texture = ""
+cave_normal_texture = ""
+cave_roughness_texture = ""
+cave_displacement_texture = ""

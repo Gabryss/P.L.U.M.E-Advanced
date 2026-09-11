@@ -1,0 +1,14 @@
+{
+  "figure": "paper/overleaf/figures/f09_morphometry.png",
+  "sha256": "61609cf56e90ba92f9304ef012f51a7afeb10f0403a80d749a774bfcef7e7b07",
+  "source_sha256": {
+    "raw_reference_sections.csv": "d24b60f740909326d48faa3b0449078e3616d8a068f4dd75de97785db368fc28",
+    "raw_generated_sections.csv": "decaa7029468902bef61b807eb91c03acee4c2c6b4e653f4b243e1b4539de2eb",
+    "raw_baseline_sections.csv": "3e4b4b0e2d6e88a7cd5613b341de202f1b24b83638abc96ca8f4305da458e834"
+  },
+  "scope": "Section-weighted marginal ECDFs; at most 4,000 exact ECDF support points displayed per curve. All data used for Table IV.",
+  "reference_caves": 19,
+  "reference_sections": 200,
+  "generated_worlds": 100,
+  "generated_sections": 118257
+}

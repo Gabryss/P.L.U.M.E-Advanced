@@ -1,0 +1,36 @@
+{
+  "complete_cases": 30,
+  "effects": {
+    "error_mean_m": {
+      "adaptive_minus_uniform": 0.43921369505140295,
+      "ci_lower": 0.4322956494995308,
+      "ci_upper": 0.4540755326773581
+    },
+    "error_p95_m": {
+      "adaptive_minus_uniform": 2.107129234383689,
+      "ci_lower": 2.0659646806458842,
+      "ci_upper": 2.1685796641648896
+    },
+    "section_count": {
+      "adaptive_minus_uniform": -29.5,
+      "ci_lower": -32.0,
+      "ci_upper": -27.0
+    }
+  },
+  "medians": {
+    "error_mean_m": {
+      "adaptive": 2.295831211075231,
+      "uniform": 1.8614626019740586
+    },
+    "error_p95_m": {
+      "adaptive": 6.116300471883318,
+      "uniform": 4.012357602520746
+    },
+    "section_count": {
+      "adaptive": 1198.5,
+      "uniform": 1227.0
+    }
+  },
+  "median_reference_count": 9911.5,
+  "adaptive_lower_mean_error_cases": 0
+}

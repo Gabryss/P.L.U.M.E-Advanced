@@ -1,0 +1,7796 @@
+{
+  "mesh_count": 649,
+  "watertight_count": 649,
+  "base_grounded_anchor_count": 649,
+  "scope": "Mesh validity and base-floor placement records; not a final collision or traversability certificate.",
+  "meshes": [
+    {
+      "event_id": 0,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006132168273340646,
+        0.05599734764963166
+      ]
+    },
+    {
+      "event_id": 1,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0059712123856237465,
+        0.05630288273996359
+      ]
+    },
+    {
+      "event_id": 2,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004540639260824249,
+        0.04399067173572726
+      ]
+    },
+    {
+      "event_id": 3,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000001515,
+        0.030033480584771576
+      ]
+    },
+    {
+      "event_id": 4,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0034105412854123986,
+        0.03427532670166325
+      ]
+    },
+    {
+      "event_id": 5,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.014360162624507632,
+        0.13734753394630841
+      ]
+    },
+    {
+      "event_id": 6,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004607115575742783,
+        0.04442667316217589
+      ]
+    },
+    {
+      "event_id": 7,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000009567,
+        0.031042934700218225
+      ]
+    },
+    {
+      "event_id": 8,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000011559,
+        0.028473115403609542
+      ]
+    },
+    {
+      "event_id": 9,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009412792705273638,
+        0.09190264615259483
+      ]
+    },
+    {
+      "event_id": 10,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004584312499597946,
+        0.043138940399852305
+      ]
+    },
+    {
+      "event_id": 11,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005954159791998906,
+        0.051834362176847525
+      ]
+    },
+    {
+      "event_id": 12,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999990792,
+        0.029712402018247326
+      ]
+    },
+    {
+      "event_id": 13,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999990335,
+        0.028741136800232783
+      ]
+    },
+    {
+      "event_id": 14,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0333990899985884,
+        0.3731563249565273
+      ]
+    },
+    {
+      "event_id": 15,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999783816,
+        0.027515069938359997
+      ]
+    },
+    {
+      "event_id": 16,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.012222875310629572,
+        0.1303805853994697
+      ]
+    },
+    {
+      "event_id": 17,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999929476,
+        0.02765434093283591
+      ]
+    },
+    {
+      "event_id": 18,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000007767,
+        0.028535631299429737
+      ]
+    },
+    {
+      "event_id": 19,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.011201475999595792,
+        0.11701658495577863
+      ]
+    },
+    {
+      "event_id": 20,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0038399944012155397,
+        0.03712063053137742
+      ]
+    },
+    {
+      "event_id": 21,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.010091133267928265,
+        0.09923816365005306
+      ]
+    },
+    {
+      "event_id": 22,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999924407,
+        0.029336122001795143
+      ]
+    },
+    {
+      "event_id": 23,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01177146786263508,
+        0.09624830933159555
+      ]
+    },
+    {
+      "event_id": 24,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008400875953656631,
+        0.0782431015112826
+      ]
+    },
+    {
+      "event_id": 25,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003443128533546069,
+        0.030519361562165226
+      ]
+    },
+    {
+      "event_id": 26,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0330684564633686,
+        0.35326642986034396
+      ]
+    },
+    {
+      "event_id": 27,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000048418,
+        0.027556184579503675
+      ]
+    },
+    {
+      "event_id": 28,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009466041905456182,
+        0.0895419292650646
+      ]
+    },
+    {
+      "event_id": 29,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007303833552923641,
+        0.05988070066266357
+      ]
+    },
+    {
+      "event_id": 30,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007934447990376245,
+        0.07089344052021156
+      ]
+    },
+    {
+      "event_id": 31,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004674112118824493,
+        0.04724374786754926
+      ]
+    },
+    {
+      "event_id": 32,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008246050608811985,
+        0.07873237408027797
+      ]
+    },
+    {
+      "event_id": 33,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000004464,
+        0.03045460376553962
+      ]
+    },
+    {
+      "event_id": 34,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005186624213090334,
+        0.04648672743418112
+      ]
+    },
+    {
+      "event_id": 35,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000002021,
+        0.023084140147354652
+      ]
+    },
+    {
+      "event_id": 36,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005403084272639709,
+        0.05164717559209697
+      ]
+    },
+    {
+      "event_id": 37,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00320000000000108,
+        0.030834239955044165
+      ]
+    },
+    {
+      "event_id": 38,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999950818,
+        0.031911259360958885
+      ]
+    },
+    {
+      "event_id": 39,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999981413,
+        0.029420761315956837
+      ]
+    },
+    {
+      "event_id": 40,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0037346642498271632,
+        0.03755105636920045
+      ]
+    },
+    {
+      "event_id": 41,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999837076,
+        0.025994439553718995
+      ]
+    },
+    {
+      "event_id": 42,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004429459493603668,
+        0.037556447180916504
+      ]
+    },
+    {
+      "event_id": 43,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005842955941579355,
+        0.051915428913483545
+      ]
+    },
+    {
+      "event_id": 44,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000051844,
+        0.02933508456670313
+      ]
+    },
+    {
+      "event_id": 45,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.015152085422424485,
+        0.1535462532343045
+      ]
+    },
+    {
+      "event_id": 46,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005799279271877014,
+        0.055866152718000654
+      ]
+    },
+    {
+      "event_id": 47,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.014849191539873114,
+        0.1347999908750474
+      ]
+    },
+    {
+      "event_id": 48,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006512796024872287,
+        0.06627710064342515
+      ]
+    },
+    {
+      "event_id": 49,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003919946866480639,
+        0.03839480938642539
+      ]
+    },
+    {
+      "event_id": 50,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.011321795868265832,
+        0.11198590060214708
+      ]
+    },
+    {
+      "event_id": 51,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0035031061402469445,
+        0.032901514624849165
+      ]
+    },
+    {
+      "event_id": 52,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009228885076224526,
+        0.07845304354700143
+      ]
+    },
+    {
+      "event_id": 53,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000006446,
+        0.027484533723531362
+      ]
+    },
+    {
+      "event_id": 54,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.011793028333408577,
+        0.11661058551644
+      ]
+    },
+    {
+      "event_id": 55,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0036940992113715524,
+        0.03385893702799872
+      ]
+    },
+    {
+      "event_id": 56,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999998553,
+        0.029432144355713747
+      ]
+    },
+    {
+      "event_id": 57,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0042419729669778685,
+        0.039401503138160085
+      ]
+    },
+    {
+      "event_id": 58,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0033768837845866853,
+        0.03312189597610811
+      ]
+    },
+    {
+      "event_id": 59,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005576550267495432,
+        0.04785469930680167
+      ]
+    },
+    {
+      "event_id": 60,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999872226,
+        0.02883696800294972
+      ]
+    },
+    {
+      "event_id": 61,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000027974,
+        0.030697279272339117
+      ]
+    },
+    {
+      "event_id": 62,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008192569793898017,
+        0.0820089509616058
+      ]
+    },
+    {
+      "event_id": 63,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004641877616378081,
+        0.04304402929093657
+      ]
+    },
+    {
+      "event_id": 64,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999994412,
+        0.030284750912082225
+      ]
+    },
+    {
+      "event_id": 65,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004549128567147915,
+        0.04142405618865321
+      ]
+    },
+    {
+      "event_id": 66,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999991575,
+        0.03226868209539391
+      ]
+    },
+    {
+      "event_id": 67,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006783477471603102,
+        0.0647636903681022
+      ]
+    },
+    {
+      "event_id": 68,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005392398027476226,
+        0.050352742962261575
+      ]
+    },
+    {
+      "event_id": 69,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008532691128687373,
+        0.07986337985222083
+      ]
+    },
+    {
+      "event_id": 70,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000010356,
+        0.03248211637767289
+      ]
+    },
+    {
+      "event_id": 71,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0050097077549165325,
+        0.04093475888228307
+      ]
+    },
+    {
+      "event_id": 72,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000104874,
+        0.0315844811886983
+      ]
+    },
+    {
+      "event_id": 73,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006343365190701404,
+        0.06471830151309146
+      ]
+    },
+    {
+      "event_id": 74,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00336811334498601,
+        0.029929475812190878
+      ]
+    },
+    {
+      "event_id": 75,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003464044046955662,
+        0.03381888436600196
+      ]
+    },
+    {
+      "event_id": 76,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0036198197187042747,
+        0.0337009897765171
+      ]
+    },
+    {
+      "event_id": 77,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999997108,
+        0.027088118166590923
+      ]
+    },
+    {
+      "event_id": 78,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.010091981495438556,
+        0.10414744214140242
+      ]
+    },
+    {
+      "event_id": 79,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0035652491558595344,
+        0.033242548502032274
+      ]
+    },
+    {
+      "event_id": 80,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.016965186532499475,
+        0.17950992089379245
+      ]
+    },
+    {
+      "event_id": 81,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.025212062491086817,
+        0.27092657929028074
+      ]
+    },
+    {
+      "event_id": 82,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0045725193097045725,
+        0.04395669117985267
+      ]
+    },
+    {
+      "event_id": 83,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000001518,
+        0.028971388458741348
+      ]
+    },
+    {
+      "event_id": 84,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032592823502329174,
+        0.032121079912798924
+      ]
+    },
+    {
+      "event_id": 85,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000005323,
+        0.029494094285999164
+      ]
+    },
+    {
+      "event_id": 86,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999968603,
+        0.03207946868154847
+      ]
+    },
+    {
+      "event_id": 87,
+      "kind": "boulder",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.038828467624605144,
+        0.4042323496741933
+      ]
+    },
+    {
+      "event_id": 88,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00590444386873646,
+        0.06010830890290573
+      ]
+    },
+    {
+      "event_id": 89,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008596630358576076,
+        0.07793776255422867
+      ]
+    },
+    {
+      "event_id": 90,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004496009280214851,
+        0.04032271785409794
+      ]
+    },
+    {
+      "event_id": 91,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009025091039436,
+        0.09085089893523823
+      ]
+    },
+    {
+      "event_id": 92,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00919514919361397,
+        0.09614297518213316
+      ]
+    },
+    {
+      "event_id": 93,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.018320745143241213,
+        0.18958116630413985
+      ]
+    },
+    {
+      "event_id": 94,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009234152810877961,
+        0.08564692167500723
+      ]
+    },
+    {
+      "event_id": 95,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000026643,
+        0.02718946402370962
+      ]
+    },
+    {
+      "event_id": 96,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.015094935776029071,
+        0.1460144878633483
+      ]
+    },
+    {
+      "event_id": 97,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000010132,
+        0.028855634117282418
+      ]
+    },
+    {
+      "event_id": 98,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005139236617614826,
+        0.04750867931572988
+      ]
+    },
+    {
+      "event_id": 99,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01062081410118577,
+        0.11169272541905823
+      ]
+    },
+    {
+      "event_id": 100,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.04024821089767183,
+        0.3977445915903013
+      ]
+    },
+    {
+      "event_id": 101,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009921443134681178,
+        0.09420945088490179
+      ]
+    },
+    {
+      "event_id": 102,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.012016515452432737,
+        0.116319807776709
+      ]
+    },
+    {
+      "event_id": 103,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007691640795099974,
+        0.06903714229171008
+      ]
+    },
+    {
+      "event_id": 104,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007305349828123475,
+        0.06761786876729117
+      ]
+    },
+    {
+      "event_id": 105,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032870407627954745,
+        0.02920472197129905
+      ]
+    },
+    {
+      "event_id": 106,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000069035,
+        0.031907887047217094
+      ]
+    },
+    {
+      "event_id": 107,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006107230826843838,
+        0.05507740118846145
+      ]
+    },
+    {
+      "event_id": 108,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999997914,
+        0.03022002459470793
+      ]
+    },
+    {
+      "event_id": 109,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005387588430206123,
+        0.053280098413822044
+      ]
+    },
+    {
+      "event_id": 110,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004117232990453509,
+        0.03844137987789606
+      ]
+    },
+    {
+      "event_id": 111,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00320000000000583,
+        0.030586373803673114
+      ]
+    },
+    {
+      "event_id": 112,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0035352547709961,
+        0.03437249808736534
+      ]
+    },
+    {
+      "event_id": 113,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000005973,
+        0.026581362755096774
+      ]
+    },
+    {
+      "event_id": 114,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000017258,
+        0.03004188134454543
+      ]
+    },
+    {
+      "event_id": 115,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999863258,
+        0.030391156227803827
+      ]
+    },
+    {
+      "event_id": 116,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008229752615257166,
+        0.07684134901688547
+      ]
+    },
+    {
+      "event_id": 117,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.014241897555066106,
+        0.14292239144613728
+      ]
+    },
+    {
+      "event_id": 118,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999946754,
+        0.031088231766973874
+      ]
+    },
+    {
+      "event_id": 119,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0072687138847217225,
+        0.06381412116856001
+      ]
+    },
+    {
+      "event_id": 120,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000010629,
+        0.0307708428119475
+      ]
+    },
+    {
+      "event_id": 121,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0063673531127586575,
+        0.06115438828448897
+      ]
+    },
+    {
+      "event_id": 122,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.010497491134192991,
+        0.09478388776526582
+      ]
+    },
+    {
+      "event_id": 123,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004260309512495331,
+        0.042334107034023565
+      ]
+    },
+    {
+      "event_id": 124,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007607771336909305,
+        0.07255960696928476
+      ]
+    },
+    {
+      "event_id": 125,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004794107198173315,
+        0.04034078669688796
+      ]
+    },
+    {
+      "event_id": 126,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000008292,
+        0.02975140360154889
+      ]
+    },
+    {
+      "event_id": 127,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999843365,
+        0.0290612437527509
+      ]
+    },
+    {
+      "event_id": 128,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000061246,
+        0.030471478002630337
+      ]
+    },
+    {
+      "event_id": 129,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0034656161408482176,
+        0.03170479243219627
+      ]
+    },
+    {
+      "event_id": 130,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00409714101963548,
+        0.04131227317230803
+      ]
+    },
+    {
+      "event_id": 131,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004485729320358689,
+        0.0402718139346534
+      ]
+    },
+    {
+      "event_id": 132,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999994936,
+        0.03050469307639192
+      ]
+    },
+    {
+      "event_id": 133,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0034750202883604177,
+        0.0318195973634303
+      ]
+    },
+    {
+      "event_id": 134,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0034421231757792163,
+        0.03344636815440793
+      ]
+    },
+    {
+      "event_id": 135,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0085540406747835,
+        0.07639848118635872
+      ]
+    },
+    {
+      "event_id": 136,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999985612,
+        0.03084950128491819
+      ]
+    },
+    {
+      "event_id": 137,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007390739034007997,
+        0.05921187050274677
+      ]
+    },
+    {
+      "event_id": 138,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000010595,
+        0.029195011536781945
+      ]
+    },
+    {
+      "event_id": 139,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000004434,
+        0.030295314212912434
+      ]
+    },
+    {
+      "event_id": 140,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000003457,
+        0.02907474941993855
+      ]
+    },
+    {
+      "event_id": 141,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00374870994958544,
+        0.03442915487562232
+      ]
+    },
+    {
+      "event_id": 142,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999922928,
+        0.03160670673696216
+      ]
+    },
+    {
+      "event_id": 143,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000024452,
+        0.02729664995311424
+      ]
+    },
+    {
+      "event_id": 144,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999992223,
+        0.028943864483736398
+      ]
+    },
+    {
+      "event_id": 145,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000002166,
+        0.03099431863187512
+      ]
+    },
+    {
+      "event_id": 146,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007588754000925848,
+        0.07316541140940447
+      ]
+    },
+    {
+      "event_id": 147,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999984025,
+        0.02912259530135697
+      ]
+    },
+    {
+      "event_id": 148,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000003651,
+        0.031077051578164837
+      ]
+    },
+    {
+      "event_id": 149,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009586877927107768,
+        0.09619212805050446
+      ]
+    },
+    {
+      "event_id": 150,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004794525027953023,
+        0.046396772189106227
+      ]
+    },
+    {
+      "event_id": 151,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000001779,
+        0.028286611452157894
+      ]
+    },
+    {
+      "event_id": 152,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00753634520870326,
+        0.07026299278306392
+      ]
+    },
+    {
+      "event_id": 153,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006348492007429324,
+        0.056044430388754514
+      ]
+    },
+    {
+      "event_id": 154,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000008066,
+        0.02864747952034781
+      ]
+    },
+    {
+      "event_id": 155,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999998828,
+        0.027299637587127258
+      ]
+    },
+    {
+      "event_id": 156,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999921635,
+        0.03044649470501175
+      ]
+    },
+    {
+      "event_id": 157,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000013662,
+        0.029005571951344122
+      ]
+    },
+    {
+      "event_id": 158,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003997216549572521,
+        0.03859184118243176
+      ]
+    },
+    {
+      "event_id": 159,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.03148247413808512,
+        0.3361513467246489
+      ]
+    },
+    {
+      "event_id": 160,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009938684853159631,
+        0.09634103280042491
+      ]
+    },
+    {
+      "event_id": 161,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005184026871399015,
+        0.04265844705713967
+      ]
+    },
+    {
+      "event_id": 162,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007817118946421633,
+        0.07417163260224766
+      ]
+    },
+    {
+      "event_id": 163,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007972966163540011,
+        0.07522475246303537
+      ]
+    },
+    {
+      "event_id": 164,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00345072104504101,
+        0.031891493023358655
+      ]
+    },
+    {
+      "event_id": 165,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999951707,
+        0.030874256839697738
+      ]
+    },
+    {
+      "event_id": 166,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004026462819061601,
+        0.03937811988986846
+      ]
+    },
+    {
+      "event_id": 167,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000004319,
+        0.028611213424156397
+      ]
+    },
+    {
+      "event_id": 168,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006642521878319517,
+        0.0646035270355111
+      ]
+    },
+    {
+      "event_id": 169,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004727163572216769,
+        0.044032763009404986
+      ]
+    },
+    {
+      "event_id": 170,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000005444,
+        0.03007770322506648
+      ]
+    },
+    {
+      "event_id": 171,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009422638453549657,
+        0.08931246515527082
+      ]
+    },
+    {
+      "event_id": 172,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009428359949517498,
+        0.09303370665770276
+      ]
+    },
+    {
+      "event_id": 173,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004471237687768745,
+        0.041554167361456056
+      ]
+    },
+    {
+      "event_id": 174,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0036972468622635344,
+        0.03587841377353301
+      ]
+    },
+    {
+      "event_id": 175,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000006683,
+        0.030753744405624537
+      ]
+    },
+    {
+      "event_id": 176,
+      "kind": "boulder",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.04327191075394225,
+        0.476874598394115
+      ]
+    },
+    {
+      "event_id": 177,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005516829860994144,
+        0.053462357912003565
+      ]
+    },
+    {
+      "event_id": 178,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009988643761724295,
+        0.09591992892512761
+      ]
+    },
+    {
+      "event_id": 179,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01110392344219535,
+        0.1056502522824179
+      ]
+    },
+    {
+      "event_id": 180,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005096888727486016,
+        0.04629224124737669
+      ]
+    },
+    {
+      "event_id": 181,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004415030727739634,
+        0.034180743897274976
+      ]
+    },
+    {
+      "event_id": 182,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005475742429474006,
+        0.04634806339291612
+      ]
+    },
+    {
+      "event_id": 183,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.011856605790888711,
+        0.11891732922366319
+      ]
+    },
+    {
+      "event_id": 184,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999805704,
+        0.0317829723391898
+      ]
+    },
+    {
+      "event_id": 185,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999896755,
+        0.02856894193208722
+      ]
+    },
+    {
+      "event_id": 186,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0036894109212645167,
+        0.03236356515993374
+      ]
+    },
+    {
+      "event_id": 187,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000010065,
+        0.029745279089327965
+      ]
+    },
+    {
+      "event_id": 188,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000008167,
+        0.03294444260407483
+      ]
+    },
+    {
+      "event_id": 189,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000009719,
+        0.03069097388649077
+      ]
+    },
+    {
+      "event_id": 190,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999773694,
+        0.02641882656507098
+      ]
+    },
+    {
+      "event_id": 191,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999942153,
+        0.02665081918738842
+      ]
+    },
+    {
+      "event_id": 192,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999989366,
+        0.031361115130154375
+      ]
+    },
+    {
+      "event_id": 193,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00320000000000921,
+        0.03182467223053804
+      ]
+    },
+    {
+      "event_id": 194,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000041526,
+        0.03141503270412456
+      ]
+    },
+    {
+      "event_id": 195,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006884142858961365,
+        0.06506147284122007
+      ]
+    },
+    {
+      "event_id": 196,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000008401,
+        0.02662313885686474
+      ]
+    },
+    {
+      "event_id": 197,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032070838509712595,
+        0.024611428790124363
+      ]
+    },
+    {
+      "event_id": 198,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999920174,
+        0.0326709362260339
+      ]
+    },
+    {
+      "event_id": 199,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008982228161443057,
+        0.08476838102284054
+      ]
+    },
+    {
+      "event_id": 200,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032778575454633905,
+        0.03125205221561946
+      ]
+    },
+    {
+      "event_id": 201,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004317212700674328,
+        0.037103079534732505
+      ]
+    },
+    {
+      "event_id": 202,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0042961939551857875,
+        0.038115622224520106
+      ]
+    },
+    {
+      "event_id": 203,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999998857,
+        0.028383274474563062
+      ]
+    },
+    {
+      "event_id": 204,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006453067138831276,
+        0.06222873472136506
+      ]
+    },
+    {
+      "event_id": 205,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004845667070076845,
+        0.047829936807902165
+      ]
+    },
+    {
+      "event_id": 206,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00591915810928671,
+        0.05557380143224759
+      ]
+    },
+    {
+      "event_id": 207,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000007019,
+        0.031929663173041856
+      ]
+    },
+    {
+      "event_id": 209,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.024070207959618155,
+        0.23458402143370263
+      ]
+    },
+    {
+      "event_id": 210,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0038842154066545233,
+        0.03861137434482912
+      ]
+    },
+    {
+      "event_id": 211,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007000075212376956,
+        0.06635788532361776
+      ]
+    },
+    {
+      "event_id": 212,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000013307,
+        0.0291899749305421
+      ]
+    },
+    {
+      "event_id": 213,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0038542982156584845,
+        0.03768778557518162
+      ]
+    },
+    {
+      "event_id": 214,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.020132295033440713,
+        0.22329070558271955
+      ]
+    },
+    {
+      "event_id": 215,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003831908184360651,
+        0.03186514300967953
+      ]
+    },
+    {
+      "event_id": 216,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004737640743702063,
+        0.043964042525509665
+      ]
+    },
+    {
+      "event_id": 217,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0071087290188080405,
+        0.07167752509532678
+      ]
+    },
+    {
+      "event_id": 218,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004565656652885607,
+        0.04314735237638037
+      ]
+    },
+    {
+      "event_id": 219,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000023273,
+        0.03247822262452014
+      ]
+    },
+    {
+      "event_id": 220,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999963442,
+        0.026141767485281384
+      ]
+    },
+    {
+      "event_id": 221,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999971322,
+        0.02769898489024323
+      ]
+    },
+    {
+      "event_id": 222,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999942955,
+        0.02833286938788063
+      ]
+    },
+    {
+      "event_id": 223,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999993037,
+        0.027544125247516323
+      ]
+    },
+    {
+      "event_id": 224,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999997634,
+        0.030639055834837673
+      ]
+    },
+    {
+      "event_id": 225,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006971642511952049,
+        0.06883033596205912
+      ]
+    },
+    {
+      "event_id": 227,
+      "kind": "boulder",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0315165602201527,
+        0.29353789164204996
+      ]
+    },
+    {
+      "event_id": 228,
+      "kind": "boulder",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.06558970621147445,
+        0.7385751499999144
+      ]
+    },
+    {
+      "event_id": 229,
+      "kind": "boulder",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.05230512560936884,
+        0.5720582305283373
+      ]
+    },
+    {
+      "event_id": 230,
+      "kind": "boulder",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.034744268562128235,
+        0.35611997174678484
+      ]
+    },
+    {
+      "event_id": 231,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000023594,
+        0.026942564368486334
+      ]
+    },
+    {
+      "event_id": 232,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007228709552430832,
+        0.06348874572693682
+      ]
+    },
+    {
+      "event_id": 233,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.020663025866397507,
+        0.1867306220587331
+      ]
+    },
+    {
+      "event_id": 234,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004481422853418111,
+        0.03920072550990335
+      ]
+    },
+    {
+      "event_id": 235,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.012952765820543994,
+        0.12553916922356542
+      ]
+    },
+    {
+      "event_id": 236,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004905666908636342,
+        0.04577287475386952
+      ]
+    },
+    {
+      "event_id": 237,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.020275043148996277,
+        0.21255132062158055
+      ]
+    },
+    {
+      "event_id": 238,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006247801894165079,
+        0.062401164834018544
+      ]
+    },
+    {
+      "event_id": 239,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005852491670318285,
+        0.047207428196173344
+      ]
+    },
+    {
+      "event_id": 240,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004280155027989546,
+        0.040635887750713445
+      ]
+    },
+    {
+      "event_id": 241,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007723989017818589,
+        0.07763850025154351
+      ]
+    },
+    {
+      "event_id": 242,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01219274928235561,
+        0.11840043110909891
+      ]
+    },
+    {
+      "event_id": 243,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003541201534002974,
+        0.03392394772824558
+      ]
+    },
+    {
+      "event_id": 244,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999783243,
+        0.03094584690413996
+      ]
+    },
+    {
+      "event_id": 245,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00594446290567404,
+        0.05561327103166592
+      ]
+    },
+    {
+      "event_id": 246,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.015304984423889785,
+        0.16750719564515784
+      ]
+    },
+    {
+      "event_id": 247,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000021608,
+        0.02966187344696236
+      ]
+    },
+    {
+      "event_id": 248,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000012795,
+        0.03157997889694851
+      ]
+    },
+    {
+      "event_id": 249,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01574901628856124,
+        0.15893933311312447
+      ]
+    },
+    {
+      "event_id": 250,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.014543403857244425,
+        0.1546194257780606
+      ]
+    },
+    {
+      "event_id": 251,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999998549,
+        0.0295994227949499
+      ]
+    },
+    {
+      "event_id": 252,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000010804,
+        0.028937164226215832
+      ]
+    },
+    {
+      "event_id": 253,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01396952800045103,
+        0.14184729205480273
+      ]
+    },
+    {
+      "event_id": 254,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999996283,
+        0.030711710246339115
+      ]
+    },
+    {
+      "event_id": 255,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008063873923424511,
+        0.08459805403390046
+      ]
+    },
+    {
+      "event_id": 256,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999933527,
+        0.029962756105264887
+      ]
+    },
+    {
+      "event_id": 257,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999903924,
+        0.0287203127752072
+      ]
+    },
+    {
+      "event_id": 258,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999996632,
+        0.028750204085839292
+      ]
+    },
+    {
+      "event_id": 259,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000021069,
+        0.031098942919002996
+      ]
+    },
+    {
+      "event_id": 260,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006063532434722187,
+        0.06094977912093422
+      ]
+    },
+    {
+      "event_id": 261,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999843026,
+        0.028103865436221974
+      ]
+    },
+    {
+      "event_id": 262,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007820585688674801,
+        0.08103304058522627
+      ]
+    },
+    {
+      "event_id": 263,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0033417088755968846,
+        0.028122212077433553
+      ]
+    },
+    {
+      "event_id": 264,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000067396,
+        0.03162563592628123
+      ]
+    },
+    {
+      "event_id": 265,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00864498096758751,
+        0.08467686334449931
+      ]
+    },
+    {
+      "event_id": 266,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000330406,
+        0.02977494165399708
+      ]
+    },
+    {
+      "event_id": 267,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999975355,
+        0.03233866109981155
+      ]
+    },
+    {
+      "event_id": 268,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005304952167356183,
+        0.05546433658156225
+      ]
+    },
+    {
+      "event_id": 269,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008849822933606935,
+        0.07815652234996609
+      ]
+    },
+    {
+      "event_id": 270,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000001545,
+        0.030456868420657677
+      ]
+    },
+    {
+      "event_id": 271,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004073730083194721,
+        0.03738259645312829
+      ]
+    },
+    {
+      "event_id": 272,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999859884,
+        0.03153219235244705
+      ]
+    },
+    {
+      "event_id": 273,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999946173,
+        0.02945530768723749
+      ]
+    },
+    {
+      "event_id": 274,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999996315,
+        0.030046224317958715
+      ]
+    },
+    {
+      "event_id": 275,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000026716,
+        0.02453956710406704
+      ]
+    },
+    {
+      "event_id": 276,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999994972,
+        0.02965637937885253
+      ]
+    },
+    {
+      "event_id": 277,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000006801,
+        0.03289912751116598
+      ]
+    },
+    {
+      "event_id": 278,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000176336,
+        0.02910351812150743
+      ]
+    },
+    {
+      "event_id": 279,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0052311625602929224,
+        0.04543239531867527
+      ]
+    },
+    {
+      "event_id": 280,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0043924687635269926,
+        0.043798920521778376
+      ]
+    },
+    {
+      "event_id": 281,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.014250299927124158,
+        0.11323799194820468
+      ]
+    },
+    {
+      "event_id": 282,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005168658669259559,
+        0.05102692585624159
+      ]
+    },
+    {
+      "event_id": 283,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005610477596076037,
+        0.05396484861924024
+      ]
+    },
+    {
+      "event_id": 284,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000005002,
+        0.03183127246987741
+      ]
+    },
+    {
+      "event_id": 285,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006956473247788541,
+        0.06630190504083018
+      ]
+    },
+    {
+      "event_id": 286,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003308243531665698,
+        0.03289455130747112
+      ]
+    },
+    {
+      "event_id": 287,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999993635,
+        0.025573648821282328
+      ]
+    },
+    {
+      "event_id": 288,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999907823,
+        0.02866983176713289
+      ]
+    },
+    {
+      "event_id": 289,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000035906,
+        0.029616264583997937
+      ]
+    },
+    {
+      "event_id": 290,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007247416473886494,
+        0.06450915850309147
+      ]
+    },
+    {
+      "event_id": 291,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999892856,
+        0.03016800564249064
+      ]
+    },
+    {
+      "event_id": 292,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999908204,
+        0.027777388535961862
+      ]
+    },
+    {
+      "event_id": 293,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999990873,
+        0.028167978810224228
+      ]
+    },
+    {
+      "event_id": 294,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000014699,
+        0.02958017548142984
+      ]
+    },
+    {
+      "event_id": 295,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999927794,
+        0.03018850518121267
+      ]
+    },
+    {
+      "event_id": 296,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999933596,
+        0.03111251010098823
+      ]
+    },
+    {
+      "event_id": 297,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999951317,
+        0.030112418776726588
+      ]
+    },
+    {
+      "event_id": 298,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0035513199167930393,
+        0.02823842029866593
+      ]
+    },
+    {
+      "event_id": 299,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009801355758483277,
+        0.08546482476300934
+      ]
+    },
+    {
+      "event_id": 300,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999958277,
+        0.033347279469688594
+      ]
+    },
+    {
+      "event_id": 301,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000116323,
+        0.029773021569573947
+      ]
+    },
+    {
+      "event_id": 302,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004264678936498868,
+        0.03800007877957561
+      ]
+    },
+    {
+      "event_id": 303,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003492300104797119,
+        0.03532070395973831
+      ]
+    },
+    {
+      "event_id": 304,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0041415605249154434,
+        0.04077831423915891
+      ]
+    },
+    {
+      "event_id": 305,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00319999999998648,
+        0.02866623279096303
+      ]
+    },
+    {
+      "event_id": 306,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999995884,
+        0.028274069497500873
+      ]
+    },
+    {
+      "event_id": 307,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0073521744233328796,
+        0.07011320828200551
+      ]
+    },
+    {
+      "event_id": 308,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999957236,
+        0.03138273094658424
+      ]
+    },
+    {
+      "event_id": 309,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999985919,
+        0.030424168603385027
+      ]
+    },
+    {
+      "event_id": 310,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00319999999999762,
+        0.030858334395574765
+      ]
+    },
+    {
+      "event_id": 311,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000008107,
+        0.0276639150237158
+      ]
+    },
+    {
+      "event_id": 312,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000174085,
+        0.029656982516971693
+      ]
+    },
+    {
+      "event_id": 313,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008575662676753337,
+        0.07814010729612281
+      ]
+    },
+    {
+      "event_id": 314,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008954373788100182,
+        0.08235144696032615
+      ]
+    },
+    {
+      "event_id": 315,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999987109,
+        0.027980336587778903
+      ]
+    },
+    {
+      "event_id": 316,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00496068538988201,
+        0.048102954830514216
+      ]
+    },
+    {
+      "event_id": 317,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0162165762109292,
+        0.16819914261557686
+      ]
+    },
+    {
+      "event_id": 318,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0049319368039443135,
+        0.047803296464348756
+      ]
+    },
+    {
+      "event_id": 319,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0051819036464374945,
+        0.04906758642493997
+      ]
+    },
+    {
+      "event_id": 320,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008381211879349043,
+        0.08422619002252184
+      ]
+    },
+    {
+      "event_id": 321,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000056094,
+        0.02954543123658318
+      ]
+    },
+    {
+      "event_id": 322,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0076161119302222855,
+        0.06773605855642552
+      ]
+    },
+    {
+      "event_id": 323,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00808202211575272,
+        0.0707332936825352
+      ]
+    },
+    {
+      "event_id": 324,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999927507,
+        0.027641057547611345
+      ]
+    },
+    {
+      "event_id": 325,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005271376562086269,
+        0.04663748291319375
+      ]
+    },
+    {
+      "event_id": 326,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000007413,
+        0.028900310065589088
+      ]
+    },
+    {
+      "event_id": 327,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004306809681004676,
+        0.041999486330475004
+      ]
+    },
+    {
+      "event_id": 328,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999862724,
+        0.030470311339068246
+      ]
+    },
+    {
+      "event_id": 329,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999846912,
+        0.02691592838619387
+      ]
+    },
+    {
+      "event_id": 330,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003934384438500659,
+        0.03880318669735974
+      ]
+    },
+    {
+      "event_id": 331,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0035803019107367553,
+        0.033100165077906744
+      ]
+    },
+    {
+      "event_id": 332,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999808787,
+        0.030188499991168957
+      ]
+    },
+    {
+      "event_id": 333,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004579726435102758,
+        0.04506917632937889
+      ]
+    },
+    {
+      "event_id": 334,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999863826,
+        0.0295137987316381
+      ]
+    },
+    {
+      "event_id": 335,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005277724892057966,
+        0.037348765088494884
+      ]
+    },
+    {
+      "event_id": 336,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005728050674514088,
+        0.05474061959449498
+      ]
+    },
+    {
+      "event_id": 337,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00882979211170648,
+        0.08800546077008603
+      ]
+    },
+    {
+      "event_id": 338,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00581859681122428,
+        0.05630452422431331
+      ]
+    },
+    {
+      "event_id": 339,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.020298845680478565,
+        0.21406022133227834
+      ]
+    },
+    {
+      "event_id": 340,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0034306302771894095,
+        0.03324378013906503
+      ]
+    },
+    {
+      "event_id": 341,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00938802969344371,
+        0.09125876218899154
+      ]
+    },
+    {
+      "event_id": 342,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0033924246566567643,
+        0.03272160729017055
+      ]
+    },
+    {
+      "event_id": 343,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0036936151172373725,
+        0.03556641475365758
+      ]
+    },
+    {
+      "event_id": 344,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.011569915313711343,
+        0.11365466943505287
+      ]
+    },
+    {
+      "event_id": 345,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007955245946193472,
+        0.08269821007646252
+      ]
+    },
+    {
+      "event_id": 346,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0125243873292714,
+        0.12223493970295476
+      ]
+    },
+    {
+      "event_id": 347,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006453639943506494,
+        0.052910825158967605
+      ]
+    },
+    {
+      "event_id": 348,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007360653274350661,
+        0.06749711287642249
+      ]
+    },
+    {
+      "event_id": 349,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004762412652060589,
+        0.046971634835023944
+      ]
+    },
+    {
+      "event_id": 350,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004230675737724838,
+        0.04219299672018858
+      ]
+    },
+    {
+      "event_id": 351,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999793973,
+        0.029069186178823248
+      ]
+    },
+    {
+      "event_id": 352,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005890387122898784,
+        0.059917734252324995
+      ]
+    },
+    {
+      "event_id": 353,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004851560873481141,
+        0.043126520874281316
+      ]
+    },
+    {
+      "event_id": 354,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008906988928436877,
+        0.08589559794791404
+      ]
+    },
+    {
+      "event_id": 355,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999996186,
+        0.03327038897037594
+      ]
+    },
+    {
+      "event_id": 356,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0037196871337377875,
+        0.035817845133125484
+      ]
+    },
+    {
+      "event_id": 357,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999796206,
+        0.029924129226726725
+      ]
+    },
+    {
+      "event_id": 358,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.019003493450771146,
+        0.19111979817358235
+      ]
+    },
+    {
+      "event_id": 359,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000090463,
+        0.027294219966394046
+      ]
+    },
+    {
+      "event_id": 360,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999995383,
+        0.03039972442730316
+      ]
+    },
+    {
+      "event_id": 361,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004058006623510122,
+        0.03752485606815747
+      ]
+    },
+    {
+      "event_id": 362,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999996058,
+        0.03215475761492733
+      ]
+    },
+    {
+      "event_id": 363,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000030697,
+        0.028839901306571773
+      ]
+    },
+    {
+      "event_id": 364,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000017206,
+        0.03219846772519096
+      ]
+    },
+    {
+      "event_id": 365,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000008277,
+        0.026849541673296742
+      ]
+    },
+    {
+      "event_id": 366,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000009273,
+        0.03215558321962071
+      ]
+    },
+    {
+      "event_id": 367,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000006633,
+        0.03037268337426703
+      ]
+    },
+    {
+      "event_id": 368,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.010944630556336127,
+        0.09566913589041104
+      ]
+    },
+    {
+      "event_id": 369,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005013040427487559,
+        0.044712033274735004
+      ]
+    },
+    {
+      "event_id": 370,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006557223299286159,
+        0.060773150326220854
+      ]
+    },
+    {
+      "event_id": 371,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032701202354285114,
+        0.027422766498528563
+      ]
+    },
+    {
+      "event_id": 372,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005696531326454352,
+        0.0544294160672739
+      ]
+    },
+    {
+      "event_id": 373,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000121562,
+        0.03074920913201851
+      ]
+    },
+    {
+      "event_id": 374,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000055044,
+        0.029653636252465157
+      ]
+    },
+    {
+      "event_id": 375,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999992854,
+        0.030843895895523152
+      ]
+    },
+    {
+      "event_id": 376,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003406491035786056,
+        0.028296736166035955
+      ]
+    },
+    {
+      "event_id": 377,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005482392434312074,
+        0.04845156918387867
+      ]
+    },
+    {
+      "event_id": 378,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.021990172146714237,
+        0.23617490154123555
+      ]
+    },
+    {
+      "event_id": 379,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004656438568767302,
+        0.04725747166363511
+      ]
+    },
+    {
+      "event_id": 380,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004141473766805442,
+        0.03900645217971164
+      ]
+    },
+    {
+      "event_id": 381,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00320000000000156,
+        0.028671244384545953
+      ]
+    },
+    {
+      "event_id": 382,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00684959843351233,
+        0.06525182361230213
+      ]
+    },
+    {
+      "event_id": 383,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007525052095144745,
+        0.06757787100108126
+      ]
+    },
+    {
+      "event_id": 384,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003695494593667759,
+        0.03607715081875573
+      ]
+    },
+    {
+      "event_id": 385,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000123267,
+        0.028644044921914583
+      ]
+    },
+    {
+      "event_id": 387,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999890254,
+        0.03238974576914892
+      ]
+    },
+    {
+      "event_id": 388,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000014224,
+        0.03160383140884165
+      ]
+    },
+    {
+      "event_id": 389,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003912023583562036,
+        0.032196047020504784
+      ]
+    },
+    {
+      "event_id": 390,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000006967,
+        0.031783424661304585
+      ]
+    },
+    {
+      "event_id": 391,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.02442833991896364,
+        0.26366674030391757
+      ]
+    },
+    {
+      "event_id": 392,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000001082,
+        0.02593363248451492
+      ]
+    },
+    {
+      "event_id": 393,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01602886507244609,
+        0.1609708408018635
+      ]
+    },
+    {
+      "event_id": 394,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004280345330339788,
+        0.04053010633603519
+      ]
+    },
+    {
+      "event_id": 395,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003393545096931502,
+        0.029728960093510785
+      ]
+    },
+    {
+      "event_id": 396,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01074767051495816,
+        0.10967297254856016
+      ]
+    },
+    {
+      "event_id": 397,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004455356373906952,
+        0.0414939708608672
+      ]
+    },
+    {
+      "event_id": 398,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.02275054405207872,
+        0.24532689587118736
+      ]
+    },
+    {
+      "event_id": 399,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999976275,
+        0.02878133197875687
+      ]
+    },
+    {
+      "event_id": 400,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007815788432904057,
+        0.07502329827729909
+      ]
+    },
+    {
+      "event_id": 401,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003624220758480209,
+        0.03322779362726396
+      ]
+    },
+    {
+      "event_id": 402,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004723885229361192,
+        0.04531460536596452
+      ]
+    },
+    {
+      "event_id": 403,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000039,
+        0.030008537988015505
+      ]
+    },
+    {
+      "event_id": 404,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006376772674560372,
+        0.06246453166658023
+      ]
+    },
+    {
+      "event_id": 405,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0065074923357910895,
+        0.058142077645722136
+      ]
+    },
+    {
+      "event_id": 406,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999995833,
+        0.029443751562117704
+      ]
+    },
+    {
+      "event_id": 407,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005787782305075744,
+        0.04873016935600696
+      ]
+    },
+    {
+      "event_id": 408,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.011412912314376364,
+        0.11563126930107775
+      ]
+    },
+    {
+      "event_id": 409,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000000516,
+        0.029798648551499766
+      ]
+    },
+    {
+      "event_id": 410,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.011610662731869696,
+        0.1147219884309802
+      ]
+    },
+    {
+      "event_id": 411,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999799125,
+        0.030220486721481463
+      ]
+    },
+    {
+      "event_id": 412,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000056788,
+        0.026134562421858725
+      ]
+    },
+    {
+      "event_id": 413,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000004015,
+        0.027060446953647097
+      ]
+    },
+    {
+      "event_id": 414,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000000897,
+        0.030010272909598186
+      ]
+    },
+    {
+      "event_id": 415,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000002993,
+        0.028548140472051144
+      ]
+    },
+    {
+      "event_id": 416,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0034274146551592634,
+        0.03513704616870784
+      ]
+    },
+    {
+      "event_id": 417,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.023411678006794782,
+        0.2515400540658413
+      ]
+    },
+    {
+      "event_id": 418,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00589088384462581,
+        0.05946562187502693
+      ]
+    },
+    {
+      "event_id": 419,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.010123716554387652,
+        0.0842487553489057
+      ]
+    },
+    {
+      "event_id": 420,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007614430390670096,
+        0.07618464319165966
+      ]
+    },
+    {
+      "event_id": 421,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999981874,
+        0.029257095509094295
+      ]
+    },
+    {
+      "event_id": 422,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.010879499632031187,
+        0.10694440894776819
+      ]
+    },
+    {
+      "event_id": 423,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.010807391738451995,
+        0.09794305925451466
+      ]
+    },
+    {
+      "event_id": 424,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.02031429517425933,
+        0.21797523318624212
+      ]
+    },
+    {
+      "event_id": 425,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004068053698184479,
+        0.038128397641403265
+      ]
+    },
+    {
+      "event_id": 426,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008569139633003122,
+        0.08097368499896893
+      ]
+    },
+    {
+      "event_id": 427,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0036913659305223144,
+        0.03290081677074437
+      ]
+    },
+    {
+      "event_id": 428,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00860138098874339,
+        0.08659411747766674
+      ]
+    },
+    {
+      "event_id": 429,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999968256,
+        0.031412180921184384
+      ]
+    },
+    {
+      "event_id": 430,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.021628216367468516,
+        0.2328580678761421
+      ]
+    },
+    {
+      "event_id": 431,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005764407357345393,
+        0.05093588662673498
+      ]
+    },
+    {
+      "event_id": 432,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007546588769370949,
+        0.07181474004889624
+      ]
+    },
+    {
+      "event_id": 433,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000022614,
+        0.032851744373387635
+      ]
+    },
+    {
+      "event_id": 434,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999928197,
+        0.0316818285873204
+      ]
+    },
+    {
+      "event_id": 435,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0062474425346895355,
+        0.060855116302243245
+      ]
+    },
+    {
+      "event_id": 436,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999966673,
+        0.03229548271972691
+      ]
+    },
+    {
+      "event_id": 437,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0059483538823647784,
+        0.05296828661237335
+      ]
+    },
+    {
+      "event_id": 438,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000004305,
+        0.03097270924792818
+      ]
+    },
+    {
+      "event_id": 439,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008220362973031152,
+        0.0792241062622377
+      ]
+    },
+    {
+      "event_id": 440,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004825047412080968,
+        0.04707383256714736
+      ]
+    },
+    {
+      "event_id": 441,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000000603,
+        0.03076830816358437
+      ]
+    },
+    {
+      "event_id": 442,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0034894437366135293,
+        0.03259167910999098
+      ]
+    },
+    {
+      "event_id": 443,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999990384,
+        0.028739386292800335
+      ]
+    },
+    {
+      "event_id": 444,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00443411568100364,
+        0.04070531019922866
+      ]
+    },
+    {
+      "event_id": 445,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999876567,
+        0.03161453200143599
+      ]
+    },
+    {
+      "event_id": 446,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000016013,
+        0.03020087873514447
+      ]
+    },
+    {
+      "event_id": 447,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.010015818964651993,
+        0.10512714270607276
+      ]
+    },
+    {
+      "event_id": 448,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009543066403782073,
+        0.09073664256671539
+      ]
+    },
+    {
+      "event_id": 449,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009341987343434536,
+        0.08156350357977137
+      ]
+    },
+    {
+      "event_id": 450,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.010133261100652548,
+        0.1016464680102426
+      ]
+    },
+    {
+      "event_id": 451,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000010968,
+        0.02874565302561665
+      ]
+    },
+    {
+      "event_id": 452,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000002489,
+        0.029747959003731145
+      ]
+    },
+    {
+      "event_id": 453,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999895966,
+        0.03166720580444894
+      ]
+    },
+    {
+      "event_id": 454,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000108873,
+        0.029135402203159706
+      ]
+    },
+    {
+      "event_id": 455,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01864006025577745,
+        0.1752520446413212
+      ]
+    },
+    {
+      "event_id": 456,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003831808746258548,
+        0.03775996498029617
+      ]
+    },
+    {
+      "event_id": 457,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.014213004057434928,
+        0.13722546170660335
+      ]
+    },
+    {
+      "event_id": 458,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00319999999999953,
+        0.03042729339415068
+      ]
+    },
+    {
+      "event_id": 459,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003931021929382653,
+        0.03548175058727622
+      ]
+    },
+    {
+      "event_id": 460,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009366950918376927,
+        0.09288714521200202
+      ]
+    },
+    {
+      "event_id": 461,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0104266768104366,
+        0.08211389750826775
+      ]
+    },
+    {
+      "event_id": 462,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009451343832023028,
+        0.09431953830458067
+      ]
+    },
+    {
+      "event_id": 463,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999980265,
+        0.031231762263139565
+      ]
+    },
+    {
+      "event_id": 464,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.013660670239984176,
+        0.13637569076324807
+      ]
+    },
+    {
+      "event_id": 465,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000084253,
+        0.02884179118773204
+      ]
+    },
+    {
+      "event_id": 466,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000005856,
+        0.030039972643550066
+      ]
+    },
+    {
+      "event_id": 467,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004381720268833398,
+        0.03827977997689598
+      ]
+    },
+    {
+      "event_id": 468,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000024283,
+        0.031661945617246987
+      ]
+    },
+    {
+      "event_id": 469,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999894335,
+        0.03159007370178755
+      ]
+    },
+    {
+      "event_id": 470,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.014108324165906945,
+        0.13479890805689632
+      ]
+    },
+    {
+      "event_id": 471,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000136884,
+        0.031203238674233923
+      ]
+    },
+    {
+      "event_id": 472,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004776227459018233,
+        0.04776284451246403
+      ]
+    },
+    {
+      "event_id": 473,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999991765,
+        0.029897926640629086
+      ]
+    },
+    {
+      "event_id": 474,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000016906,
+        0.02945088241199783
+      ]
+    },
+    {
+      "event_id": 475,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000046926,
+        0.029208068643201746
+      ]
+    },
+    {
+      "event_id": 476,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007567916356469033,
+        0.07822384114131467
+      ]
+    },
+    {
+      "event_id": 477,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999911045,
+        0.031281565434370946
+      ]
+    },
+    {
+      "event_id": 478,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.022481594236375406,
+        0.24814226043363208
+      ]
+    },
+    {
+      "event_id": 479,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999999524,
+        0.029392076199190383
+      ]
+    },
+    {
+      "event_id": 480,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.011159462491453599,
+        0.1127619960407438
+      ]
+    },
+    {
+      "event_id": 481,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009814606878954264,
+        0.10001604423811222
+      ]
+    },
+    {
+      "event_id": 482,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999982755,
+        0.03203996903521137
+      ]
+    },
+    {
+      "event_id": 483,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0114739579223631,
+        0.10796987549005542
+      ]
+    },
+    {
+      "event_id": 484,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007986723132422583,
+        0.08104801594562781
+      ]
+    },
+    {
+      "event_id": 485,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009311840355165904,
+        0.07578264832569226
+      ]
+    },
+    {
+      "event_id": 486,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005510718160535308,
+        0.05205498828599982
+      ]
+    },
+    {
+      "event_id": 487,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0036154834690114244,
+        0.03480425522431662
+      ]
+    },
+    {
+      "event_id": 488,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0053525355628704155,
+        0.04667813359559346
+      ]
+    },
+    {
+      "event_id": 489,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0037982740892918325,
+        0.03697021904093244
+      ]
+    },
+    {
+      "event_id": 490,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00587178668052678,
+        0.062079743129538865
+      ]
+    },
+    {
+      "event_id": 491,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005093509011493834,
+        0.04590752421152197
+      ]
+    },
+    {
+      "event_id": 492,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0036987963033163866,
+        0.03769547734137851
+      ]
+    },
+    {
+      "event_id": 493,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000008929,
+        0.03379806052116714
+      ]
+    },
+    {
+      "event_id": 494,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000055157,
+        0.030283959351636153
+      ]
+    },
+    {
+      "event_id": 495,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005095763642415221,
+        0.0484835162600607
+      ]
+    },
+    {
+      "event_id": 496,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0033621708598149083,
+        0.031328998878507514
+      ]
+    },
+    {
+      "event_id": 497,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000155697,
+        0.027936002012596124
+      ]
+    },
+    {
+      "event_id": 498,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008957935956541421,
+        0.08626265555765159
+      ]
+    },
+    {
+      "event_id": 499,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000009888,
+        0.031673902851754844
+      ]
+    },
+    {
+      "event_id": 500,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0037553370867575335,
+        0.03588947434696468
+      ]
+    },
+    {
+      "event_id": 501,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999977586,
+        0.027889655440957412
+      ]
+    },
+    {
+      "event_id": 502,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003292525279590255,
+        0.02958293600052322
+      ]
+    },
+    {
+      "event_id": 503,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006254943994876273,
+        0.05604896883625921
+      ]
+    },
+    {
+      "event_id": 504,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999889725,
+        0.026486920618192616
+      ]
+    },
+    {
+      "event_id": 505,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006068935536592567,
+        0.0545628802638753
+      ]
+    },
+    {
+      "event_id": 506,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.019864681622857,
+        0.20390887587685239
+      ]
+    },
+    {
+      "event_id": 507,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006974548168207557,
+        0.06817543375942607
+      ]
+    },
+    {
+      "event_id": 508,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.014647290800216227,
+        0.14438957802140592
+      ]
+    },
+    {
+      "event_id": 509,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004354007306553855,
+        0.04214279563855633
+      ]
+    },
+    {
+      "event_id": 510,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999876155,
+        0.027676775901719245
+      ]
+    },
+    {
+      "event_id": 511,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.013569045933086424,
+        0.12486367187536045
+      ]
+    },
+    {
+      "event_id": 512,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000007454,
+        0.03130530893950587
+      ]
+    },
+    {
+      "event_id": 513,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01136817927173747,
+        0.1112102541003023
+      ]
+    },
+    {
+      "event_id": 514,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004690580797188974,
+        0.04508874763926421
+      ]
+    },
+    {
+      "event_id": 515,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01071237488200208,
+        0.08953112540586186
+      ]
+    },
+    {
+      "event_id": 516,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004001583562885262,
+        0.040057112277121186
+      ]
+    },
+    {
+      "event_id": 517,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999991557,
+        0.030292625346142847
+      ]
+    },
+    {
+      "event_id": 518,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006435523382598615,
+        0.06252014388559006
+      ]
+    },
+    {
+      "event_id": 519,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008248541000028371,
+        0.0805981171325056
+      ]
+    },
+    {
+      "event_id": 520,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0035046700087763226,
+        0.031045410193456077
+      ]
+    },
+    {
+      "event_id": 521,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999988836,
+        0.02887570460988403
+      ]
+    },
+    {
+      "event_id": 522,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006211355606307614,
+        0.057884245187519265
+      ]
+    },
+    {
+      "event_id": 523,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999826733,
+        0.0325909676846078
+      ]
+    },
+    {
+      "event_id": 524,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0036776199381352266,
+        0.03506741926958623
+      ]
+    },
+    {
+      "event_id": 525,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006172390330557425,
+        0.0642066551076911
+      ]
+    },
+    {
+      "event_id": 526,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999931298,
+        0.029122605818950157
+      ]
+    },
+    {
+      "event_id": 527,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01554914946481029,
+        0.15306790575068968
+      ]
+    },
+    {
+      "event_id": 528,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999946845,
+        0.02786007913929043
+      ]
+    },
+    {
+      "event_id": 529,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005096082712787067,
+        0.048930890834000276
+      ]
+    },
+    {
+      "event_id": 530,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000034705,
+        0.03348512811562472
+      ]
+    },
+    {
+      "event_id": 531,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000007873,
+        0.032362441212414696
+      ]
+    },
+    {
+      "event_id": 532,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006293127346897692,
+        0.06277343584835356
+      ]
+    },
+    {
+      "event_id": 533,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005825764218048103,
+        0.05127254160013944
+      ]
+    },
+    {
+      "event_id": 534,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999998136,
+        0.027766519488992638
+      ]
+    },
+    {
+      "event_id": 535,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000050773,
+        0.02888773536614621
+      ]
+    },
+    {
+      "event_id": 536,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000045018,
+        0.02983310168721696
+      ]
+    },
+    {
+      "event_id": 537,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004280578035630283,
+        0.038398832527069916
+      ]
+    },
+    {
+      "event_id": 538,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000015727,
+        0.02777826843945686
+      ]
+    },
+    {
+      "event_id": 539,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999948025,
+        0.028228826106331976
+      ]
+    },
+    {
+      "event_id": 540,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005223626191290984,
+        0.05083202288927726
+      ]
+    },
+    {
+      "event_id": 541,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0043740898733095985,
+        0.039505167630564386
+      ]
+    },
+    {
+      "event_id": 542,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000006673,
+        0.031188536583718174
+      ]
+    },
+    {
+      "event_id": 543,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0065601817016379405,
+        0.061996127799487426
+      ]
+    },
+    {
+      "event_id": 544,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999911713,
+        0.029360095722781445
+      ]
+    },
+    {
+      "event_id": 545,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003294410794124476,
+        0.03109919402198377
+      ]
+    },
+    {
+      "event_id": 546,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000037346,
+        0.028402574080752044
+      ]
+    },
+    {
+      "event_id": 547,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999983396,
+        0.02697823836639012
+      ]
+    },
+    {
+      "event_id": 548,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0043639966767011614,
+        0.04472826077942282
+      ]
+    },
+    {
+      "event_id": 549,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999991461,
+        0.03054882200323878
+      ]
+    },
+    {
+      "event_id": 550,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.010185412675040905,
+        0.0946120125058088
+      ]
+    },
+    {
+      "event_id": 551,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007856846006784511,
+        0.06652857281537979
+      ]
+    },
+    {
+      "event_id": 552,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004750570971101072,
+        0.047609661535806876
+      ]
+    },
+    {
+      "event_id": 553,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005248240912391407,
+        0.04957793791481355
+      ]
+    },
+    {
+      "event_id": 554,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005574323266809748,
+        0.052847727024956284
+      ]
+    },
+    {
+      "event_id": 555,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999905776,
+        0.032756796789735705
+      ]
+    },
+    {
+      "event_id": 556,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999916366,
+        0.03330516761350382
+      ]
+    },
+    {
+      "event_id": 557,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003280064474619252,
+        0.02962991476878912
+      ]
+    },
+    {
+      "event_id": 558,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005052876852549915,
+        0.047291315293432445
+      ]
+    },
+    {
+      "event_id": 559,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0033518977005715512,
+        0.033718581923719994
+      ]
+    },
+    {
+      "event_id": 560,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999905043,
+        0.03219926745483496
+      ]
+    },
+    {
+      "event_id": 561,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004326387191573312,
+        0.04281193520412431
+      ]
+    },
+    {
+      "event_id": 562,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.019334779761705456,
+        0.2121066149157617
+      ]
+    },
+    {
+      "event_id": 563,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004114384578123258,
+        0.0383963905138286
+      ]
+    },
+    {
+      "event_id": 564,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01046115537906951,
+        0.10558043654617363
+      ]
+    },
+    {
+      "event_id": 565,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000011291,
+        0.030545475104849344
+      ]
+    },
+    {
+      "event_id": 566,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000086226,
+        0.02989216679691603
+      ]
+    },
+    {
+      "event_id": 567,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.011596706164554802,
+        0.10798977727448839
+      ]
+    },
+    {
+      "event_id": 568,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00551317902216917,
+        0.0527758143937952
+      ]
+    },
+    {
+      "event_id": 569,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008122525536274499,
+        0.07324317342094698
+      ]
+    },
+    {
+      "event_id": 570,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000005895,
+        0.03155596694986155
+      ]
+    },
+    {
+      "event_id": 571,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009362541070789442,
+        0.09030750497914108
+      ]
+    },
+    {
+      "event_id": 572,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004481868654249848,
+        0.040330617082061315
+      ]
+    },
+    {
+      "event_id": 573,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004010561892300591,
+        0.039433106141333045
+      ]
+    },
+    {
+      "event_id": 574,
+      "kind": "boulder",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.044854727690162535,
+        0.42423105358742497
+      ]
+    },
+    {
+      "event_id": 575,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999987256,
+        0.028242315089625755
+      ]
+    },
+    {
+      "event_id": 576,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008103916175609517,
+        0.08230713421920467
+      ]
+    },
+    {
+      "event_id": 577,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.014163603790385955,
+        0.15446324855072663
+      ]
+    },
+    {
+      "event_id": 578,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005867130113865521,
+        0.049767866758187465
+      ]
+    },
+    {
+      "event_id": 579,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0063153643449250845,
+        0.06120338394649954
+      ]
+    },
+    {
+      "event_id": 580,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005178181284660988,
+        0.04958720401499227
+      ]
+    },
+    {
+      "event_id": 581,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0064793956528101364,
+        0.05815779491648889
+      ]
+    },
+    {
+      "event_id": 582,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005161395441094976,
+        0.049907378869177316
+      ]
+    },
+    {
+      "event_id": 583,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999978325,
+        0.030150029286500325
+      ]
+    },
+    {
+      "event_id": 584,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0047988641038476726,
+        0.0506844742112164
+      ]
+    },
+    {
+      "event_id": 585,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999989922,
+        0.03177289026838035
+      ]
+    },
+    {
+      "event_id": 586,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.016947652169723236,
+        0.17097255740609127
+      ]
+    },
+    {
+      "event_id": 587,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007162767077377171,
+        0.059815179909804256
+      ]
+    },
+    {
+      "event_id": 588,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.011599612958918985,
+        0.11470127114330948
+      ]
+    },
+    {
+      "event_id": 589,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999839314,
+        0.032213862680863146
+      ]
+    },
+    {
+      "event_id": 590,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0054201257936171395,
+        0.05072843835360226
+      ]
+    },
+    {
+      "event_id": 591,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.013610446595823484,
+        0.13704588688730346
+      ]
+    },
+    {
+      "event_id": 592,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009475318595841442,
+        0.09401861616757849
+      ]
+    },
+    {
+      "event_id": 593,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007757034155860453,
+        0.06997725652799583
+      ]
+    },
+    {
+      "event_id": 594,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004164298393341891,
+        0.041505074723005
+      ]
+    },
+    {
+      "event_id": 595,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999997565,
+        0.028986327185674392
+      ]
+    },
+    {
+      "event_id": 596,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009641306893025024,
+        0.09169995124771455
+      ]
+    },
+    {
+      "event_id": 597,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000120387,
+        0.029362150435905017
+      ]
+    },
+    {
+      "event_id": 598,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.004089571648239195,
+        0.04296584034066643
+      ]
+    },
+    {
+      "event_id": 599,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01416594285753404,
+        0.13323478554843737
+      ]
+    },
+    {
+      "event_id": 600,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000098573,
+        0.029997330765634357
+      ]
+    },
+    {
+      "event_id": 601,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.008524653551279246,
+        0.0773127401157324
+      ]
+    },
+    {
+      "event_id": 602,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009069272272898698,
+        0.09154967530311084
+      ]
+    },
+    {
+      "event_id": 603,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0034064312398390775,
+        0.03310364889223573
+      ]
+    },
+    {
+      "event_id": 604,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009922782806361332,
+        0.10039409423233131
+      ]
+    },
+    {
+      "event_id": 605,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006716080654212728,
+        0.05167166950022692
+      ]
+    },
+    {
+      "event_id": 606,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003351854519821541,
+        0.03416637751653682
+      ]
+    },
+    {
+      "event_id": 607,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007889360360627396,
+        0.07937222329689275
+      ]
+    },
+    {
+      "event_id": 608,
+      "kind": "boulder",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.09261103236606899,
+        1.0442071958114088
+      ]
+    },
+    {
+      "event_id": 609,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000053687,
+        0.031483185702998344
+      ]
+    },
+    {
+      "event_id": 610,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006924108344299938,
+        0.0708619037573329
+      ]
+    },
+    {
+      "event_id": 611,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.012294685976823943,
+        0.11899235362034195
+      ]
+    },
+    {
+      "event_id": 612,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000072166,
+        0.03246812320855409
+      ]
+    },
+    {
+      "event_id": 613,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005790908383510427,
+        0.0566678557937511
+      ]
+    },
+    {
+      "event_id": 614,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000001224,
+        0.03133316271098704
+      ]
+    },
+    {
+      "event_id": 615,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00831595033890053,
+        0.07964029309128096
+      ]
+    },
+    {
+      "event_id": 616,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01709336978045211,
+        0.16339250624477392
+      ]
+    },
+    {
+      "event_id": 617,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999998219,
+        0.029474526210407793
+      ]
+    },
+    {
+      "event_id": 618,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009381787376108416,
+        0.09544912072963328
+      ]
+    },
+    {
+      "event_id": 619,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.011412295148004696,
+        0.11731357353741668
+      ]
+    },
+    {
+      "event_id": 620,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003200000000000637,
+        0.03125501325323009
+      ]
+    },
+    {
+      "event_id": 621,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01731093229155629,
+        0.18984847439958327
+      ]
+    },
+    {
+      "event_id": 622,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.019841091587151465,
+        0.206595874769434
+      ]
+    },
+    {
+      "event_id": 623,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007542415740642186,
+        0.06571704390605264
+      ]
+    },
+    {
+      "event_id": 624,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005933183919167269,
+        0.05920759760961168
+      ]
+    },
+    {
+      "event_id": 625,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.019297282273521146,
+        0.19356977025503344
+      ]
+    },
+    {
+      "event_id": 626,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0032000000000082162,
+        0.03148176892303349
+      ]
+    },
+    {
+      "event_id": 627,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009436082323284896,
+        0.09181161704750379
+      ]
+    },
+    {
+      "event_id": 628,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.03481606032926015,
+        0.38043956261604467
+      ]
+    },
+    {
+      "event_id": 629,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003447004274880144,
+        0.031982283516661936
+      ]
+    },
+    {
+      "event_id": 630,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007316183728509379,
+        0.07088840498969774
+      ]
+    },
+    {
+      "event_id": 631,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.015128663753446533,
+        0.14670286073950492
+      ]
+    },
+    {
+      "event_id": 632,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0033535562677923032,
+        0.030072389726215006
+      ]
+    },
+    {
+      "event_id": 633,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007766304694408016,
+        0.06694053535330047
+      ]
+    },
+    {
+      "event_id": 634,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0037839951983786764,
+        0.034685061061296284
+      ]
+    },
+    {
+      "event_id": 635,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005883571873276601,
+        0.049516774353281785
+      ]
+    },
+    {
+      "event_id": 636,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006822296754105346,
+        0.0629409292081859
+      ]
+    },
+    {
+      "event_id": 637,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005878968700192531,
+        0.053979502147342664
+      ]
+    },
+    {
+      "event_id": 638,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.005292755083896907,
+        0.05147983914114714
+      ]
+    },
+    {
+      "event_id": 639,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.009025430261156963,
+        0.07842648913494327
+      ]
+    },
+    {
+      "event_id": 640,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0034695953730442463,
+        0.030486066019800074
+      ]
+    },
+    {
+      "event_id": 641,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.00771084169374052,
+        0.06823037325452343
+      ]
+    },
+    {
+      "event_id": 642,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.006463820222351647,
+        0.06477777852220251
+      ]
+    },
+    {
+      "event_id": 643,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.01677407259331911,
+        0.15071947475359618
+      ]
+    },
+    {
+      "event_id": 644,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.013108415418841085,
+        0.13918286120755213
+      ]
+    },
+    {
+      "event_id": 645,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0035301504368257853,
+        0.03296862312418553
+      ]
+    },
+    {
+      "event_id": 646,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.017004758307582697,
+        0.1627272277722923
+      ]
+    },
+    {
+      "event_id": 647,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0037712986720699307,
+        0.030385173622954714
+      ]
+    },
+    {
+      "event_id": 648,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0031999999999965875,
+        0.029840355441503468
+      ]
+    },
+    {
+      "event_id": 649,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.003199999999989618,
+        0.030229560230842535
+      ]
+    },
+    {
+      "event_id": 650,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.007823948951046657,
+        0.08142613670433199
+      ]
+    },
+    {
+      "event_id": 651,
+      "kind": "rock",
+      "finite_vertices": true,
+      "valid_indices": true,
+      "watertight": true,
+      "grounded_anchor": true,
+      "contact_plane_range_m": [
+        -0.0036270130887481877,
+        0.036192010303172664
+      ]
+    }
+  ]
+}

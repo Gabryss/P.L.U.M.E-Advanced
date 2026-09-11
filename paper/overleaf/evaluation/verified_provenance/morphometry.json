@@ -1,0 +1,1078 @@
+{
+  "experiment": "morphometry",
+  "verified_records": 100,
+  "statuses": {
+    "complete": 100
+  },
+  "provenance": {
+    "git_commit": "0961a66e7c3e92f4f15d5866cfce224a85fff691",
+    "git_dirty": true,
+    "source_sha256": "d8bea8ed20c1c22d5c680f961715fc3e90f887c94bef9aa258e2e96009b3f1f8",
+    "python_version": "3.13.5",
+    "python_implementation": "CPython",
+    "python_executable": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/.venv/bin/python",
+    "platform": "Linux-6.8.0-60-generic-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "logical_cpu_count": 12,
+    "resolved_config_sha256": "65c02f23bb4dcaf83498d1447cbf7972ff2a2175efe4229aed71282f21a9c562",
+    "dependencies": {
+      "numpy": "2.5.1",
+      "scipy": "1.18.0",
+      "scikit-image": "0.26.0",
+      "trimesh": "4.12.2",
+      "matplotlib": "3.11.1",
+      "xatlas": "0.0.11",
+      "psutil": "7.2.2",
+      "pillow": "12.3.0",
+      "rocky": "0.1.0",
+      "laspy": "2.7.0"
+    },
+    "inputs": [
+      {
+        "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/config/project.toml",
+        "bytes": 11962,
+        "sha256": "bc0ac5aca9d9ae23676e6954c641697ff87fed26a74c04d7e2cbb87666e8ad76"
+      },
+      {
+        "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/paper/seeds/network_seeds.txt",
+        "bytes": 290,
+        "sha256": "6d506216aa5bad159f167e2535293b4e5ec8e1073b64449d30b66b460ebf6da0"
+      },
+      {
+        "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/paper/splits/pdc_evaluation_caves.txt",
+        "bytes": 556,
+        "sha256": "5cc337bf35fbbe42e40e3b0c020251bb5e45b0e333df5518d6f21077120c5013"
+      }
+    ],
+    "thread_environment": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "PLUME_EVALUATION_WORKERS": "4"
+    },
+    "identity_sha256": "9dcf8242503973baf0e7368597fdd05d791af85ee41c8410416cedf95f6adf65"
+  },
+  "verified_configurations": [
+    {
+      "run_id": "seed-000000-earth-sections",
+      "project_config_sha256": "6797177345f1572427291f691beae44b45f3fd995af9ce651c651fa49629d803",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000001-earth-sections",
+      "project_config_sha256": "b2fbc14729363b3eba396fd33ebdcd0a19c6055d1a9ea1837249e668636fac56",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000002-earth-sections",
+      "project_config_sha256": "61d9106c5c3b498e53e0664147a0ebe10240b74581b66648cd57d60a37e84a68",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000003-earth-sections",
+      "project_config_sha256": "63b3813fdb6f5073b6709e5364c8a4345f4dfe358638647417fc2a0e54d671e0",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000004-earth-sections",
+      "project_config_sha256": "995c44ccca513c6e40121ba8887d81f9d310479a94ae92e701e6edb31f946b9b",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000005-earth-sections",
+      "project_config_sha256": "8695230846831a37bee19939944336b879fcbdd060fedd295cb1a4114fd75ff5",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000006-earth-sections",
+      "project_config_sha256": "5bfa3f036a71ac5d8d15346de15e5a1977551b68de2468a81bbcd392dfd0abed",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000007-earth-sections",
+      "project_config_sha256": "6849516ce6e90b14a52e0f25868700a989c10d59dd406690e67e96b74a37f80d",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000008-earth-sections",
+      "project_config_sha256": "78b319eefd2ba9c6b97f31480ad4d0daeb54e9ac15dbc087ba8a5e4fac0d17ae",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000009-earth-sections",
+      "project_config_sha256": "b12f457360173e72519d929f2a9c5a6af00e0d684dec4b46f1cfc8e50de7d26d",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000010-earth-sections",
+      "project_config_sha256": "d792cb551c40e7ace0640e5eb1cc677ae9431c12c60eedb9b907d8904c8eb6b8",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000011-earth-sections",
+      "project_config_sha256": "a875800d692891d09ac620ea26e402dda46110208a6b12a252e207d5d71a2344",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000012-earth-sections",
+      "project_config_sha256": "25fa7b41ac8a271b099a9a6a2c9060bf527753538755dab2becb461ec87ef657",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000013-earth-sections",
+      "project_config_sha256": "ba1fdc087f92f6e66e441cc66e35f23b2cee6e1f5472aae86a5981814047d43d",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000014-earth-sections",
+      "project_config_sha256": "07705c9568736f7e829a1afae861bc6c94b7a6e8e5f5acd23b18f0a21627c9f2",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000015-earth-sections",
+      "project_config_sha256": "ce2ee5b7e0b4a5371022e9629890064c46223a19f291ab0180d350db466b41d4",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000016-earth-sections",
+      "project_config_sha256": "3f280b3bb5245359d8269929f2c830c56714d2703e66fa4336ce995bbc338166",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000017-earth-sections",
+      "project_config_sha256": "4789b697785377eefa9cdf649b649d562c2327ac694f243cc6421459c208e0f6",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000018-earth-sections",
+      "project_config_sha256": "24aa1217e146f1035e027df876708f76e364ea9f46a6ad4697dd8510ed4459e0",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000019-earth-sections",
+      "project_config_sha256": "58827405bf7d7a8c26bdb4881ec5529959cfbfd905c36a393e4f4a8618bfb1ae",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000020-earth-sections",
+      "project_config_sha256": "134837d27233f9f1c1cdea47ddf061efa19418027aae0697179c494e0008bd7d",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000021-earth-sections",
+      "project_config_sha256": "66fd6f865abbbb76cbafaacddf271b1592ee7b25e22d39cd97c5005d3dc770e9",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000022-earth-sections",
+      "project_config_sha256": "34835a02142068b93bdd41c13f9bc0efaf7079deecbe578722076ed5ad623697",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000023-earth-sections",
+      "project_config_sha256": "85708cffc3cc5a4140f733290f08e3b32d67335bb342306c410774378a062a1f",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000024-earth-sections",
+      "project_config_sha256": "1a7ff8f3173179d3835d6d2ce3eaea4c11edc623237d5ae6f3720f30b0420e85",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000025-earth-sections",
+      "project_config_sha256": "7eeee50c99fdba5391d140a90095f47a485cbbbb22dbee1b4549f9eaa76f2d77",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000026-earth-sections",
+      "project_config_sha256": "d91f217a2eaaa9654aeeea038d87710fc87ac99391aae2d43540efc4cecba9a0",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000027-earth-sections",
+      "project_config_sha256": "1fd5dd2698d7b9218da6638940ffdcf28f49c14a9b26327e558f3462abfd4a1c",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000028-earth-sections",
+      "project_config_sha256": "915b4702a9082a254b4ebdef3e4ef00f7352cf386670b07d054fd3ff5f18ad54",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000029-earth-sections",
+      "project_config_sha256": "be411b716f61ebca8ed1dad1fd132d211fe330b32916e119f147e31d770aac19",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000030-earth-sections",
+      "project_config_sha256": "8a3fe7692d2760c368e35ed887c3eb7eae4e4f9d900d15fd738a84eac05a7f3e",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000031-earth-sections",
+      "project_config_sha256": "b694155a9d1857b23051eaad6e5db0001a861b66763eb9dab04b0e890f25457d",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000032-earth-sections",
+      "project_config_sha256": "5a1563a035d74775bfa9326a2f3217fb1a63799eb66e037824ef9caaab1515fe",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000033-earth-sections",
+      "project_config_sha256": "481c1ce4848ce32178df8830472299e709b0dd5f885ea8d6a3deea751b74bc93",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000034-earth-sections",
+      "project_config_sha256": "206b7eb175ed8085552a204b18222a04fa9cec5bd3176ae4b8efdb705e05d9e8",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000035-earth-sections",
+      "project_config_sha256": "c48b2e1a1448c1b2a3f56551c810ed7786b0dd8dd6509fc9d004f55769efcd2f",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000036-earth-sections",
+      "project_config_sha256": "08d3de6161034e38222090991fc2278b4974559ddb34c270a1f59e81f07f640f",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000037-earth-sections",
+      "project_config_sha256": "94435cd3079c40d617c95c19f13294eaa528ce9eb39a22f8019b49d0369e8810",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000038-earth-sections",
+      "project_config_sha256": "c08897908b96a89341d6c8a8cfd22c53effabfe0eda018864f589673d0774ffa",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000039-earth-sections",
+      "project_config_sha256": "632f5e41d2b76d4374e3a2fc9d735175185a4b056bfae5b19b3afd3a5f0c43d1",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000040-earth-sections",
+      "project_config_sha256": "14b5fbbabbbb0674430ca9195f21a044ec8e49c19124283df45b949fb259e54a",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000041-earth-sections",
+      "project_config_sha256": "d196d510131f14e75aefdab1635f020d78910d462311374903bf3d13d646da99",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000042-earth-sections",
+      "project_config_sha256": "3bfd70f7a541fcd71dbb93d4b0b7362bdf4ef713f15ecc83b2e4659da1c6d9e1",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000043-earth-sections",
+      "project_config_sha256": "735b54efd7c319739d668e85984d5e867d852d25fb2ab1d1d142c461347a4972",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000044-earth-sections",
+      "project_config_sha256": "75bc7449157e14d0d7f45e70dc37baa138315c46cc864e43cb4cfe90960d05b6",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000045-earth-sections",
+      "project_config_sha256": "2137a958af6b727876ff5fc17ccf0932fca7657094c4037b77f662fd05f77c70",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000046-earth-sections",
+      "project_config_sha256": "f68f9ccb734c31e2a3e7a0228d858efd8cd9e167e5071d21d6fcf6961be9a42d",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000047-earth-sections",
+      "project_config_sha256": "0c4a04013c3d9ed67022c40a3a51652defd91b913d0aa97b2c59a0abe7b00419",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000048-earth-sections",
+      "project_config_sha256": "c02b2baa0a266508c1a40b2268d5ea9ada60dcae17205e9c5789612494ef1eb9",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000049-earth-sections",
+      "project_config_sha256": "b6b6cf842a8a2076b81ca17f03091d6c8c59a639cf62cdb7821c49bd0c800d0d",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000050-earth-sections",
+      "project_config_sha256": "6d4e1187e3e917c3d815db7004144ac5cc3359d81c5993aa148da58fbd28a183",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000051-earth-sections",
+      "project_config_sha256": "4c54eea1ede5ac7f81a7ad1bd2eee61a8e70ffa3d6241102958e9002276ad2c5",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000052-earth-sections",
+      "project_config_sha256": "a74d9af6e16eab518d3c404a4293d76101b2360c4f955b213df4e63811a82147",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000053-earth-sections",
+      "project_config_sha256": "efe5cadf8df52d80de30a9d871533ef1cdb8a6a4231c373a87cf9a11a86d47e5",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000054-earth-sections",
+      "project_config_sha256": "4fa36105cb37c7dccc98b1bb4f58dfbc3e87da26539e9691b10ea01f36435054",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000055-earth-sections",
+      "project_config_sha256": "55e840e71221a130af0820591ea62ca0de70a04c6980fb3e54124ab56e02d071",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000056-earth-sections",
+      "project_config_sha256": "1aa6a1d3138521b72b7cfefc856754fd8f78dbecbfd9778aa6858cf9a24c74b5",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000057-earth-sections",
+      "project_config_sha256": "bdb7a24c41b15defd17734f38f87616cbf1a29fe3e4cfea4ece5fa507dbe393b",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000058-earth-sections",
+      "project_config_sha256": "e245e20b6ea610f24bda8f2455031899cf7f821999c1b79c94a3a4a81880bca1",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000059-earth-sections",
+      "project_config_sha256": "011accea39200143e085ac4ac3b94baed2ca48ff64d45cebc05d130c38ea9b16",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000060-earth-sections",
+      "project_config_sha256": "346e2c79f48ff48a13279ee43b1a9a8c75eef3ad3946c425d13ccaa9762c7000",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000061-earth-sections",
+      "project_config_sha256": "7879d602cf93e374e8de3fa6a7e418c22edaa9523b2c11cf8f72c870dea0b9f8",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000062-earth-sections",
+      "project_config_sha256": "fd0df0fd061a18f49a6f3715715841e8d10a6b10af96f4582cd4368520552e93",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000063-earth-sections",
+      "project_config_sha256": "532c71e37f2e9715875a2930297a6b68672eff0c63b43d032a435b01274c0623",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000064-earth-sections",
+      "project_config_sha256": "6eabafad3c95e6980507fb28af7fd62e7ab4eea3da5321edee20abe3c2fccf4a",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000065-earth-sections",
+      "project_config_sha256": "a6611256a36a0cedacbc31cbd2540868ed964e2bd231a1bc23e8007fcf02b537",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000066-earth-sections",
+      "project_config_sha256": "01b53395ff600a4356ce7b75c61f116b31bf91806b40cc00bbbf86445b5e5a15",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000067-earth-sections",
+      "project_config_sha256": "7d5a2c93e53d1d7f04f46b99f817efcc96d490658d9494b6bf16ad9e3a7f8e40",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000068-earth-sections",
+      "project_config_sha256": "2cc82194987cd55bbf9a3b69c6f83c43143e0697a8290d3f8015796fcc0f5852",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000069-earth-sections",
+      "project_config_sha256": "cf94c483b62b31ec8d0a65ef8ed6a25a1b667ba5d8dd0f63215383515a3dc758",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000070-earth-sections",
+      "project_config_sha256": "c0941eb1145a7092b8a6e7763a13382de078f4fa39f210ec8fa9d6ebb40e210b",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000071-earth-sections",
+      "project_config_sha256": "3ca97a36bc0f1fb380bebdc3e0a1d002e78385ca2c5926d3bbf97c88fcb8686e",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000072-earth-sections",
+      "project_config_sha256": "1275313f774154fdc2aae003a78ca394fdfbd733489bf75aafcd88b6f9b0e771",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000073-earth-sections",
+      "project_config_sha256": "7cebe1c577d6447034b703b1d61222f672a27891a68c75d60b6082ec50667443",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000074-earth-sections",
+      "project_config_sha256": "a90ff48ff2e5d25b8c7c5dff7c4b03fa2e25c2696354c5ab2b70dc56246b25e8",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000075-earth-sections",
+      "project_config_sha256": "f397f1504b6cf9c2a7f0b90fb55dc2dd8cc7eaccf95d124cbe5db4bfc7f4b969",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000076-earth-sections",
+      "project_config_sha256": "e2d15cdb04786ae26b61e47afe930763fedd4a38b5a277c900686b9ca11ba274",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000077-earth-sections",
+      "project_config_sha256": "8f59fef86b19c08118f5d76fe7a184a8f599508e7aec192874ba544b521e8f1c",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000078-earth-sections",
+      "project_config_sha256": "f955dec033e0e26b303b03c183e4c0e6cde7d787cc70177ce197ad522df7738f",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000079-earth-sections",
+      "project_config_sha256": "a2a16a2ac4833e015e9561bedec9467efc52887646211aa3a57cc1c0020135f8",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000080-earth-sections",
+      "project_config_sha256": "dacac3e697a5b520b9f432b7adf40fc46c071488f80a336eccb199a00867c900",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000081-earth-sections",
+      "project_config_sha256": "9195624de52de00a96485ba4a890e70115e9c061ce85e0a17bb03f93fbdae048",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000082-earth-sections",
+      "project_config_sha256": "afdf7cee84585501139912a8c774fdf0d8f538e8d4a385ed15e12ae6c68ac403",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000083-earth-sections",
+      "project_config_sha256": "63435bb85761ae3b2d504cbd59ca8d4781c772dd69307c75b326e5f0864769ae",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000084-earth-sections",
+      "project_config_sha256": "a0480f3953aef67a46f510cbc7a3fcf5f49d9014cfdec603fbbc5ab8c6389d3a",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000085-earth-sections",
+      "project_config_sha256": "12e59dc1b9a9e92f7a694ed0b7916b123382325f223ce9e08f4eca20373900b1",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000086-earth-sections",
+      "project_config_sha256": "6052abc9a222cd52a103cecced5d49bf3aa488a86963f8a6f5d85c1647576375",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000087-earth-sections",
+      "project_config_sha256": "3be4f02df2d460cc422ddb5e5a990cc9e5bfb095135f2d7bce377b344a5746b8",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000088-earth-sections",
+      "project_config_sha256": "7c549211e5e8b48a359589861cd334e56f0210765c4821e4294aa357b40fc3aa",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000089-earth-sections",
+      "project_config_sha256": "b429a618e7970f3c2be7111d39a760a5c5c55ac50e308240a228ea8b7baef759",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000090-earth-sections",
+      "project_config_sha256": "2e8e45868049382148448ed91a13f054d3695a1001a91c5fac6a4cdfa17ee64b",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000091-earth-sections",
+      "project_config_sha256": "765afb35aac9014c7bd6ab47d75984d55ede0921b11c9050db8e0195c3970e68",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000092-earth-sections",
+      "project_config_sha256": "e40b8489de7e903971609db15505e7bebf514af2984392c5622a3d02a0927144",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000093-earth-sections",
+      "project_config_sha256": "c4dd5665701e6ead8101a9d9e0e828fb03975830b555945a8bb8bae278f41a36",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000094-earth-sections",
+      "project_config_sha256": "0d9e94bc2550d574417a1cd2aa761673e4b501ed617c7724b735495db0aa0471",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000095-earth-sections",
+      "project_config_sha256": "c88785fcd9a3b53b7be7bb02d491839acf8e473ce77458c7aaf1265ccbea7f0b",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000096-earth-sections",
+      "project_config_sha256": "7d401066e0bc3cd0647ae78ffe6588a937b526da45a4890250ff895806ac82c4",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000097-earth-sections",
+      "project_config_sha256": "ac058837ffc4b83229c247cfdf831f784127dfce3c9986d7ad89541f651fee35",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000098-earth-sections",
+      "project_config_sha256": "2be7c04eaf93a91c3cccdec3c8b14e02b4c281253163827921c6618d64b6d6bb",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000099-earth-sections",
+      "project_config_sha256": "8bf5c7862b10ae1bd0a9a3e6a5201138335c5a2260fa69da15021503fa39f28e",
+      "status": "complete"
+    }
+  ],
+  "resolved_base_configurations": {
+    "default": {
+      "schema_version": 3,
+      "procedural_seed": 1,
+      "stage_seeds": {
+        "host": 663506536,
+        "network": 3016166005,
+        "sections": 2865105769,
+        "events": 1067299897,
+        "geometry": 425729973
+      },
+      "world": {
+        "body": {
+          "name": "earth",
+          "gravity_m_s2": 9.80665,
+          "default_material": "terrestrial_basalt",
+          "maximum_passage_width_m": 10.0,
+          "maximum_room_width_m": 28.0,
+          "default_route_length_m": 5000.0,
+          "production_voxel_size_m": 0.5,
+          "host_horizontal_scale": 1.0,
+          "host_vertical_scale": 1.0,
+          "host_fracture_scale": 1.0,
+          "roof_safety_factor": 1.5
+        },
+        "material": {
+          "name": "terrestrial_basalt",
+          "bulk_density_kg_m3": 2900.0,
+          "intact_tensile_strength_mpa": 8.0,
+          "rock_mass_quality": 0.55,
+          "weathering": 0.3
+        },
+        "example_roof_demand_ratio": 0.13896623213742781
+      },
+      "flow_regime": {
+        "supply_rate_scale": 1.0,
+        "duration_scale": 1.0,
+        "inflation": 0.5,
+        "distributary_tendency": 0.65,
+        "cooling_rate_scale": 1.0
+      },
+      "run": {
+        "dev_mode": false,
+        "quality": "standard",
+        "dev_max_route_length_m": 1500.0,
+        "dev_max_braid_zones": 2,
+        "render_diagnostics": true,
+        "overwrite_outputs": false
+      },
+      "export": {
+        "target": "all",
+        "file_format": "auto",
+        "generate_collision": true
+      },
+      "host_field": {
+        "grid": {
+          "width": 1800.0,
+          "height": 6000.0,
+          "nx": 220,
+          "ny": 560
+        },
+        "random_seed": 663506536,
+        "body_spatial_scale": 1.0,
+        "body_vertical_scale": 1.0,
+        "body_fracture_scale": 1.0,
+        "target_route_length_m": 5000.0,
+        "seed_point": [
+          157.36809345794154,
+          -2688.8355658190867
+        ],
+        "high_side_elevation": 190.8603088684837,
+        "longitudinal_drop": 101.30322203353253,
+        "flow_angle_degrees": 94.61000853325967,
+        "corridor_depth": 15.455676677166911,
+        "corridor_width": 239.1737014695223,
+        "volcanic_layer_thickness": 61.26035596477713,
+        "minimum_stable_cover": 21.247500056588933,
+        "roof_competence_baseline": 0.7175009510058787,
+        "roof_competence_variation": 0.1779859915024763,
+        "fracture_zone_angle_degrees": 1.0647037597345808,
+        "fracture_zone_center_offset": 101.154199742858,
+        "fracture_zone_width": 214.32240409743088,
+        "gravity_m_s2": 9.80665,
+        "rock_density_kg_m3": 2900.0,
+        "effective_tensile_strength_pa": 3541999.9999999995,
+        "material_quality": 0.55,
+        "material_weathering": 0.3,
+        "characteristic_passage_span_m": 10.0,
+        "routing_weights": {
+          "slope": 0.12,
+          "cover": 0.1,
+          "fracture": 0.22,
+          "capacity": 0.28,
+          "stability": 0.28,
+          "normalize": true,
+          "enabled": true
+        },
+        "waves": [
+          {
+            "amplitude": 6.942514484930102,
+            "wavelength": 977.3416999881574,
+            "angle_degrees": 34.475065124727735,
+            "phase": 1.9136196578684146
+          },
+          {
+            "amplitude": 11.393576736073474,
+            "wavelength": 1182.497640714013,
+            "angle_degrees": 10.961674835033506,
+            "phase": -1.2981008946513535
+          },
+          {
+            "amplitude": 6.1416956340471485,
+            "wavelength": 1405.592712332288,
+            "angle_degrees": -49.23239235857338,
+            "phase": -1.5870540537060955
+          }
+        ]
+      },
+      "network": {
+        "random_seed": 3016166005,
+        "growth_model": "hybrid_lobe",
+        "network_density": 3.0,
+        "emplacement_backend": "internal",
+        "flowy_executable": null,
+        "flowy_timeout_s": 120.0,
+        "flowy_output_path": null,
+        "downflow_ensemble_size": 8,
+        "lobe_launch_rate": 1.0,
+        "loop_probability": 1.0,
+        "capture_probability": 1.0,
+        "chamber_gain": 1.0,
+        "braid_grammar": {
+          "zone_count": [
+            4,
+            8
+          ],
+          "center_fraction": [
+            0.14,
+            0.88
+          ],
+          "min_center_spacing": 0.1,
+          "half_length_fraction": [
+            0.045,
+            0.095
+          ],
+          "branches_per_zone": [
+            2,
+            4
+          ],
+          "lateral_offset_scale": [
+            0.35,
+            1.25
+          ],
+          "start_shift_fraction": [
+            -0.26,
+            0.26
+          ],
+          "end_shift_fraction": [
+            -0.26,
+            0.26
+          ],
+          "skew": [
+            -0.7,
+            0.7
+          ],
+          "wobble": [
+            0.08,
+            0.38
+          ],
+          "underpass_probability": 0.24,
+          "ladder_probability": 0.52,
+          "ladder_rung_count": [
+            1,
+            2
+          ],
+          "chamber_radius_scale": [
+            1.0,
+            1.6
+          ]
+        },
+        "lobe_growth": {
+          "path_count": [
+            9,
+            13
+          ],
+          "maximum_steps": [
+            42,
+            96
+          ],
+          "minimum_persistence_steps": 8,
+          "minimum_anchor_spacing_fraction": 0.055,
+          "terrain_perturbation_m": 2.4,
+          "perturbation_correlation_cells": 3.5,
+          "candidate_temperature": 0.38,
+          "inertia_weight": 1.35,
+          "perturbed_slope_weight": 2.1,
+          "downstream_potential_weight": 3.2,
+          "initial_divergence_weight": 2.4,
+          "channel_avoidance_weight": 1.8,
+          "channel_reuse_weight": 3.6,
+          "exposed_cooling_multiplier": 5.0,
+          "retirement_temperature_k": 1060.0,
+          "branch_flux_fraction": [
+            0.18,
+            0.58
+          ],
+          "retired_path_fraction": 0.24,
+          "breakout_capacity_weight": 2.4,
+          "breakout_confinement_weight": 1.65,
+          "breakout_curvature_weight": 1.1,
+          "breakout_blockage_weight": 1.35,
+          "minimum_viable_flux_fraction": 0.075,
+          "coalescence_flux_return_fraction": 0.72,
+          "deposition_feedback_m": 0.85,
+          "deposition_spread_cells": 1.75,
+          "backbone_curvature_fraction": 0.2,
+          "backbone_curvature_wavelength_fraction": 0.38,
+          "backbone_curvature_secondary_fraction": 0.35
+        },
+        "emplacement_history": {
+          "phase_count": [
+            3,
+            5
+          ],
+          "active_phase_span": [
+            1,
+            3
+          ],
+          "stacked_lobe_fraction": 0.34,
+          "maximum_absolute_level": 2,
+          "chamber_formation_probability": 0.28,
+          "vertical_capture_chamber_probability": 0.62,
+          "roof_failure_probability": 0.16,
+          "phase_flux_budget_fraction": 1.0,
+          "reoccupation_probability": 0.24,
+          "breakout_probability": 0.58,
+          "retirement_flux_threshold": 0.1,
+          "drained_pool_enabled": true,
+          "drained_pool_probability": 0.96,
+          "drained_pool_count": [
+            1,
+            3
+          ],
+          "drained_pool_min_spacing_m": 180.0,
+          "drained_pool_flux_quantile": 0.72,
+          "drained_pool_flux_weight": 1.0,
+          "drained_pool_grade_weight": 1.0,
+          "drained_pool_slope_break_weight": 0.8,
+          "drained_pool_length_m": [
+            35.0,
+            90.0
+          ],
+          "drained_pool_width_ratio": [
+            2.0,
+            4.5
+          ],
+          "drained_pool_max_width_m": 28.0,
+          "drained_pool_depth_m": [
+            5.0,
+            12.0
+          ]
+        },
+        "body_spatial_scale": 1.0,
+        "target_route_length_m": 5000.0,
+        "source_count": 8,
+        "source_flux": 1.0,
+        "source_temperature_k": 1450.0,
+        "cooling_k_per_m": 0.025,
+        "nominal_flow_speed_m_s": 0.35,
+        "source_band_length": 90.0,
+        "source_band_half_width": 180.0,
+        "sink_margin": 80.0,
+        "trace_max_steps": 460,
+        "max_uphill_step": 1.2,
+        "growth_cost_weight": 3.2,
+        "corridor_weight": 0.35,
+        "chamber_flux_quantile": 0.82,
+        "base_passage_radius": 3.8,
+        "minimum_passage_radius": 2.2,
+        "maximum_passage_radius": 5.0,
+        "chamber_radius": 10.0,
+        "chamber_radius_fraction": 0.675,
+        "minimum_branch_offset_widths": 1.25,
+        "paint_flux_chambers": false,
+        "occupancy_smoothing_passes": 2,
+        "spur_count": 5,
+        "spur_max_steps": 24,
+        "spur_lateral_bias": 1.3,
+        "spur_congestion_weight": 0.85,
+        "channel_count_samples": 28
+      },
+      "section_field": {
+        "random_seed": 2865105769,
+        "base_height_ratio": 0.66,
+        "minimum_height_ratio": 0.16,
+        "maximum_height_ratio": 1.65,
+        "width_scale_median": 0.84,
+        "width_scale_log_sigma": 0.6,
+        "width_longitudinal_variation": 0.18,
+        "height_ratio_variation": 0.18,
+        "height_ratio_longitudinal_variation": 0.07,
+        "minimum_tube_width": 0.5,
+        "minimum_tube_height": 0.35,
+        "maximum_tube_width": 10.0,
+        "chamber_max_tube_width": 28.0,
+        "minimum_sample_spacing": 4.0,
+        "maximum_sample_spacing": 16.0,
+        "sampling_policy": "adaptive",
+        "uniform_sample_spacing": 16.0,
+        "reference_sample_spacing": 2.0,
+        "curvature_spacing_weight": 120.0,
+        "width_gradient_spacing_weight": 34.0,
+        "junction_spacing_weight": 1.15,
+        "profile_resolution": 40,
+        "floor_flatness_base": 0.36,
+        "floor_flatness_width_weight": 0.12,
+        "floor_relief_base": 0.035,
+        "floor_relief_variation": 0.01,
+        "roof_arch_base": 1.08,
+        "roof_arch_roof_weight": 0.18,
+        "wall_roughness_base": 0.14,
+        "wall_roughness_variation": 0.045,
+        "morphology_gradient_strength": 0.32,
+        "morphology_correlation_length": 140.0,
+        "morphology_regime_strength": 0.72,
+        "morphology_family_spread": 0.82,
+        "morphology_flux_width_gain": 0.16,
+        "morphology_age_width_gain": 0.1,
+        "morphology_floor_relief_max": 0.42,
+        "morphology_wall_roughness_max": 0.3,
+        "profile_shape_variation": 0.92,
+        "lateral_skew_amplitude": 0.16,
+        "centerline_wobble_amplitude": 2.8,
+        "centerline_wobble_wavelength": 105.0,
+        "junction_pre_widen_gain": 0.1,
+        "junction_constant_envelope_gain": 0.03,
+        "chamber_widen_gain": 0.45,
+        "drained_pool_width_scale": 1.0,
+        "drained_pool_height_ratio_limit": 0.42,
+        "drained_pool_floor_flatness": 0.84,
+        "drained_pool_roof_arch": 1.04,
+        "drained_pool_transition_power": 1.35,
+        "minimum_roof_thickness": 6.5,
+        "maximum_centerline_depth": 26.0,
+        "preferred_cover_fraction": 0.34,
+        "vertical_level_spacing": 0.0,
+        "minimum_vertical_clearance": 2.0,
+        "maximum_uphill_grade": 0.015,
+        "level_transition_fraction": 0.18,
+        "gravity_m_s2": 9.80665,
+        "rock_density_kg_m3": 2900.0,
+        "effective_tensile_strength_pa": 3541999.9999999995,
+        "roof_safety_factor": 1.5,
+        "bench_strength": 0.6,
+        "floor_incision_ratio": 0.1
+      },
+      "floor_map": {
+        "lateral_spacing_m": 2.5,
+        "maximum_lateral_fraction": 0.72,
+        "plan_resolution_m": 2.0,
+        "minimum_clearance_m": 1.0
+      },
+      "events": {
+        "random_seed": 1067299897,
+        "enabled": true,
+        "include_rock_props": true,
+        "enabled_kinds": [
+          "rock",
+          "boulder",
+          "collapse",
+          "choke",
+          "infill"
+        ],
+        "rock_population_multiplier": 10.0,
+        "debris_density_basis": "floor_area",
+        "rock_density_per_100m": 2.0,
+        "boulder_density_per_100m": 0.18,
+        "rock_density_per_100m2": 0.45,
+        "boulder_density_per_100m2": 0.04,
+        "geological_event_density_per_100m": 0.12,
+        "collapse_event_fraction": 0.35,
+        "choke_event_fraction": 0.3,
+        "infill_event_fraction": 0.35,
+        "minimum_event_spacing": 22.0,
+        "minimum_rock_spacing": 0.1,
+        "minimum_boulder_spacing": 0.35,
+        "rock_radius_range": [
+          0.03,
+          0.75
+        ],
+        "boulder_radius_range": [
+          0.3,
+          4.0
+        ],
+        "rock_size_bias": 2.8,
+        "boulder_size_bias": 2.4,
+        "collapse_radius_range": [
+          4.0,
+          9.0
+        ],
+        "choke_radius_range": [
+          3.0,
+          7.0
+        ],
+        "infill_radius_range": [
+          5.0,
+          12.0
+        ],
+        "max_lateral_floor_fraction": 0.62,
+        "mesh_latitude_segments": 8,
+        "mesh_longitude_segments": 14,
+        "use_rocky_meshes": true,
+        "rocky_source_path": "",
+        "rocky_texture_dir": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures",
+        "rocky_output_dir": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/outputs/rocky_stage_e",
+        "rocky_resolution_scale": 1.0,
+        "rocky_max_subdivisions": 5,
+        "strict_optional_provider": true,
+        "gravity_m_s2": 9.80665,
+        "rock_density_kg_m3": 2900.0,
+        "effective_tensile_strength_pa": 3541999.9999999995,
+        "roof_safety_factor": 1.5,
+        "ground_embed_fraction": 0.08,
+        "clustered_debris_fraction": 0.45,
+        "collapse_cluster_radius_scale": 4.0,
+        "collapse_cluster_spacing_scale": 0.9,
+        "gallery_width_size_fraction": 0.3,
+        "gallery_clearance_size_fraction": 0.45,
+        "boulder_max_height_fraction": 0.6666666667,
+        "roof_block_size_fraction": 0.35,
+        "edge_accumulation_strength": 0.7,
+        "placement_jitter_m": 0.75,
+        "background_contact_spacing": 1.15,
+        "rover_width_m": 1.0,
+        "rover_side_margin_m": 0.1,
+        "rover_max_lateral_slope": 0.5,
+        "preserve_rover_route": true,
+        "enable_debris_families": true,
+        "clean_floor_fraction": 0.45,
+        "debris_patch_length_m": 30.0,
+        "wall_scree_fraction": 0.35,
+        "transported_lag_fraction": 0.15,
+        "boulder_satellite_count_range": [
+          25,
+          55
+        ],
+        "boulder_halo_radius_range_m": [
+          1.2,
+          4.5
+        ],
+        "collapse_fragment_count_range": [
+          50,
+          120
+        ],
+        "collapse_talus_radius_range_m": [
+          5.0,
+          15.0
+        ],
+        "minor_cluster_density_per_1000m2": 0.8,
+        "minor_cluster_count_range": [
+          8,
+          18
+        ],
+        "minor_cluster_radius_range_m": [
+          1.2,
+          3.0
+        ]
+      },
+      "geometry": {
+        "random_seed": 425729973,
+        "voxel_size": 0.6,
+        "resolution_policy": "body",
+        "resolution_quality": "standard",
+        "characteristic_passage_width_m": 10.0,
+        "target_samples_across_passage": 16.0,
+        "storage_mode": "auto",
+        "max_dense_voxels": 80000000,
+        "density_margin": 24.0,
+        "chunk_size": 64,
+        "iso_level": 0.0,
+        "tunnel_radius_scale": 1.0,
+        "chamber_radius_scale": 1.0,
+        "junction_radius_scale": 1.0,
+        "minimum_radius": 1.5,
+        "use_section_profiles": true,
+        "wall_roughness_amplitude": 0.28,
+        "wall_roughness_frequency": 0.18,
+        "wall_roughness_blend": 0.85,
+        "floor_roughness_scale": 0.25,
+        "roof_roughness_scale": 1.0,
+        "surface_wall_relief_m": 0.0,
+        "surface_roof_relief_m": 0.0,
+        "surface_floor_relief_m": 0.0,
+        "surface_crust_relief_m": 0.0,
+        "surface_feature_scale_m": 1.0,
+        "surface_normal_filter_voxels": 1.2,
+        "junction_irregularity_amplitude": 0.3,
+        "junction_irregularity_frequency": 0.095,
+        "structural_event_blend": 0.35,
+        "weld_tolerance": 1e-05,
+        "strict_texture_loading": true,
+        "embedded_texture_max_size": 1024,
+        "cave_normal_scale": 2.0,
+        "cave_smoothing_iterations": 4,
+        "cave_displacement_scale_m": 0.12,
+        "cave_displacement_midlevel": 0.5,
+        "cave_diffuse_texture": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg",
+        "cave_normal_texture": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr",
+        "cave_roughness_texture": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_rough_8k.exr",
+        "cave_displacement_texture": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_disp_8k.png"
+      },
+      "canonical_coordinates": {
+        "length_unit": "metre",
+        "handedness": "right",
+        "up_axis": "Z"
+      }
+    }
+  },
+  "scope": "Post-execution reconstruction, checked against every saved case identity. No generation or mutation of case records. Benchmark failed-case project hashes are reconstructed from frozen inputs; complete-case worker hashes also match."
+}

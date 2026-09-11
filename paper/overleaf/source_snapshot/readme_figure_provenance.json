@@ -1,0 +1,59 @@
+{
+  "body": "earth",
+  "seed": 4,
+  "voxel_size_m": 0.2,
+  "scope": "Current saved A-C artifacts and exported inspection images; historical controlled reach explicitly labeled.",
+  "inputs": [
+    {
+      "path": "outputs/earth_inspection_seed4/generation_config.toml",
+      "sha256": "ed3dcecaba69374f5e8f7660ae2faf3f30bffedbd2da14fb582871697aa7fcc6"
+    },
+    {
+      "path": "outputs/earth_inspection_seed4/network.json",
+      "sha256": "99f0832c37d7ca4632f5854b0fdd707a7c35c3bf470bf8ca4890b0e6818c55b9"
+    },
+    {
+      "path": "outputs/earth_inspection_seed4/sections.npz",
+      "sha256": "4229a5e2f0ee9dec9f809ece5f525c99eb25afb6f4e2403a3dd05bb25b87cc18"
+    },
+    {
+      "path": "outputs/earth_inspection_seed4/lava_tube_geometry.glb",
+      "sha256": "3ec70a2f4705a019012c9eea4b8bf3d8a3476fcdae05641fc54ed3e0627182fc"
+    },
+    {
+      "path": "outputs/earth_inspection_seed4/export_checks.json",
+      "sha256": "6db8c40bae860ada15408c3fa3aa6876a1e9cd20a0c7ec51d23a1c28e14b264f"
+    },
+    {
+      "path": "outputs/earth_inspection_seed4/inspection_cameras.json",
+      "sha256": "4077f27d376f0b833dc96b9acd86fdd88bcef59653e928bbdc756627662bd05c"
+    },
+    {
+      "path": "outputs/geometry_validation/surface_scales/summary.json",
+      "sha256": "9d4721c5f4c767552f646d5124f0c4c3eb9bb2a6fbb80e58c523772097b5bcce"
+    },
+    {
+      "path": "outputs/earth_inspection_seed4/inspection_views.png",
+      "sha256": "57f9e797a87815eb8fb1c1929d3dd90f930dbabb02cc9399dc725d369b03cbdc"
+    },
+    {
+      "path": "outputs/surface_relief_study/comparison.png",
+      "sha256": "acdf2f987764de4e692cc37629cac1a22fa1d5c08aaa52ebd0e0cc8e1014d931"
+    }
+  ],
+  "figures": [
+    "pipeline.png",
+    "host_fields.png",
+    "network.png",
+    "sections.png",
+    "roof_stability.png",
+    "reference_comparison.png",
+    "inspection_views.png",
+    "surface_relief.png"
+  ],
+  "illustrations": [
+    "pipeline.png",
+    "roof_stability.png"
+  ],
+  "figure_builder_sha256": "44ae7853ad0760fd41c01d0be195c66e9638e6af1286fe89cce938212cfef2a6"
+}

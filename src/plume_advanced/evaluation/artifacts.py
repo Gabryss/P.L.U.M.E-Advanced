@@ -38,8 +38,21 @@ def host_semantic_hash(host_field: HostField, *, tolerance: float = 1e-9) -> str
 
 
 def network_payload(network: CaveNetwork) -> dict[str, Any]:
+    from plume_advanced.stages.network_interconnected import spatial_metrics
+    from plume_advanced.stages.network_systems import system_summary
+    from plume_advanced.stages.network_topology import topology_metrics
+
     return {
         "schema": "plume.cave-network.v1",
+        **({"interconnection": {"controls": asdict(network.config.interconnection),
+                                  "metrics": spatial_metrics(network)}}
+           if network.config.topology.style == "interconnected" else {}),
+        **({"system_interactions": system_summary(network),
+            "system_provenance": network.backend_provenance} if network.config.systems.count > 1 and (network.config.topology.style == "general" or network.config.topology.generation_mode == "independent_growth") else {}),
+        **({"topology": {"controls": asdict(network.config.topology),
+                          "metrics": topology_metrics(network),
+                          "provenance": network.backend_provenance}}
+           if network.config.topology.style == "trunk_dominated" else {}),
         "nodes": [asdict(node) for node in sorted(network.nodes, key=lambda item: item.node_id)],
         "segments": [
             {
@@ -134,6 +147,12 @@ def section_semantic_payload(section_field: SectionField, *, tolerance: float = 
                             ),
                             tolerance,
                         ),
+                        "stability": {
+                            "maximum_width_m": sample.maximum_stable_width_m,
+                            "maximum_height_m": sample.maximum_stable_height_m,
+                            "demand_ratio": sample.roof_demand_ratio,
+                            "collapse_required": sample.collapse_required,
+                        },
                         "profile": quantized_array(sample.profile_points, tolerance),
                     }
                     for sample in segment_field.samples
@@ -187,6 +206,12 @@ def export_section_artifact(
         height_m=np.asarray([sample.tube_height for sample in samples]),
         floor_flatness=np.asarray([sample.floor_flatness for sample in samples]),
         roof_arch=np.asarray([sample.roof_arch for sample in samples]),
+        floor_world_z=np.asarray([sample.floor_world_z for sample in samples]),
+        roof_world_z=np.asarray([sample.roof_world_z for sample in samples]),
+        maximum_stable_width_m=np.asarray([sample.maximum_stable_width_m for sample in samples]),
+        maximum_stable_height_m=np.asarray([sample.maximum_stable_height_m for sample in samples]),
+        roof_demand_ratio=np.asarray([sample.roof_demand_ratio for sample in samples]),
+        collapse_required=np.asarray([sample.collapse_required for sample in samples]),
         lateral_skew=np.asarray([sample.lateral_skew for sample in samples]),
         junction_influence=np.asarray([sample.junction_blend_weight for sample in samples]),
         lava_flux=np.asarray([sample.lava_flux for sample in samples]),
@@ -276,6 +301,7 @@ def export_geometry_report(geometry: CaveGeometry, output_path: str | Path) -> P
         # Keep aggregate summary fields unchanged while exposing local
         # junction outliers and preserving unresolved ratios as null.
         "junction_records": junction_records,
+        "stability_records": [dict(record) for record in geometry.stability_records],
     }
     output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return output

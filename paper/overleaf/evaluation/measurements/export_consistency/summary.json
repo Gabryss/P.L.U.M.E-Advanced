@@ -1,0 +1,11 @@
+{
+  "all_collisions_present": true,
+  "all_packages_present": true,
+  "complete_n": 3,
+  "failed_n": 0,
+  "manual_import_protocol": "docs/paper/EXPORT_VERIFICATION_PROTOCOL.md",
+  "manual_imports_completed": 0,
+  "passed": true,
+  "planned_n": 3,
+  "schema": "plume.export-consistency-summary.v1"
+}

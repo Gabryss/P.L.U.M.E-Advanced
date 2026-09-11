@@ -144,6 +144,10 @@ class HostFieldConfig:
     flow_angle_degrees: float = 0.0
     corridor_depth: float = 12.0
     corridor_width: float = 520.0
+    corridor_count: int = 1
+    corridor_spacing: float = 60.0
+    corridor_lateral_variation: float = 25.0
+    corridor_correlation_length: float = 250.0
     volcanic_layer_thickness: float = 64.0
     minimum_stable_cover: float = 18.0
     roof_competence_baseline: float = 0.72
@@ -159,6 +163,14 @@ class HostFieldConfig:
     characteristic_passage_span_m: float = 10.0
     routing_weights: RoutingWeights = field(default_factory=RoutingWeights)
     waves: tuple[TerrainWave, ...] = field(default_factory=_default_waves)
+
+    def __post_init__(self):
+        if type(self.corridor_count) is not int or not 1 <= self.corridor_count <= 8:
+            raise ValueError("host_field.corridor_count must be an integer in [1, 8]")
+        for name in ("corridor_spacing", "corridor_lateral_variation", "corridor_correlation_length"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+                raise ValueError(f"host_field.{name} must be finite and positive")
 
 
 @dataclass(frozen=True)
@@ -546,9 +558,8 @@ class HostFieldGenerator:
         terrain = self.config.high_side_elevation - self.config.longitudinal_drop * normalized_flow
         corridor_width = self.config.corridor_width * variation["corridor_width_scale"]
         corridor_depth = self.config.corridor_depth * variation["corridor_depth_scale"]
-        terrain -= corridor_depth * np.exp(
-            -np.square(cross_projection / np.maximum(corridor_width, 1.0))
-        )
+        along = self._project_along_angle(relative_x, relative_y, self.config.flow_angle_degrees)
+        terrain -= corridor_depth * self._corridor_envelope(along, cross_projection, corridor_width)
 
         wave_phase_offsets = variation["wave_phase_offsets"]
         for index, wave in enumerate(self.config.waves):
@@ -564,6 +575,29 @@ class HostFieldGenerator:
             )
 
         return terrain
+
+    def _corridor_envelope(self, along, cross, width):
+        """One shared terrain/process field; corridors are not network paths.
+
+        The single-corridor expression is unchanged. Multiple broad, independently
+        varying troughs may overlap; a smooth bounded union avoids multiplying
+        excavation depth at a confluence. No network seed or event enters Stage A.
+        """
+        if self.config.corridor_count == 1:
+            return np.exp(-np.square(cross / np.maximum(width, 1.0)))
+        from scipy.interpolate import CubicSpline
+
+        cfg = self.config
+        lo, hi = float(along.min()), float(along.max())
+        knots = np.linspace(lo, hi, max(4, int(np.ceil((hi-lo) / cfg.corridor_correlation_length))+1))
+        complement = np.ones_like(cross)
+        for i in range(cfg.corridor_count):
+            rng = procedural_rng(cfg.random_seed, "host-corridor", i)
+            offsets = rng.uniform(-cfg.corridor_lateral_variation, cfg.corridor_lateral_variation, len(knots))
+            centre = (i - (cfg.corridor_count-1)/2) * cfg.corridor_spacing
+            centre = centre + CubicSpline(knots, offsets, bc_type="natural")(along)
+            complement *= 1 - np.exp(-np.square((cross-centre) / np.maximum(width, 1.0)))
+        return 1 - complement
 
     def _build_gradient(self, elevation: Array2D) -> tuple[Array2D, Array2D]:
         grid = self.config.grid
@@ -603,14 +637,8 @@ class HostFieldGenerator:
         )
         along_norm = self._normalize_percentile(along, lower=0.0, upper=100.0)
         edge_norm = np.clip(np.abs(cross) / max(0.5 * self.config.grid.width, 1.0), 0.0, 1.0)
-        corridor = np.exp(
-            -np.square(
-                cross
-                / np.maximum(
-                    self.config.corridor_width * variation["corridor_width_scale"],
-                    1.0,
-                )
-            )
+        corridor = self._corridor_envelope(
+            along, cross, self.config.corridor_width * variation["corridor_width_scale"]
         )
 
         emplacement_factor = np.clip(

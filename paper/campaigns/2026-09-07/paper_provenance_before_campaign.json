@@ -1,0 +1,308 @@
+{
+  "review_date": "2026-09-07",
+  "project_root": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced",
+  "base_git_commit": "0961a66e7c3e92f4f15d5866cfce224a85fff691",
+  "working_tree_contains_preexisting_uncommitted_changes": true,
+  "generator_modified_by_manuscript_review": false,
+  "quantitative_campaign_executed_by_manuscript_review": false,
+  "reviewed_source_sha256": {
+    "src/plume_advanced/procedural.py": "6d314ca0eeb7517de384f8bbe718c640fd9cbe6414d6300d3046dd2fe4a930db",
+    "src/plume_advanced/stability.py": "146c6cada09a52112bda3060afeaf96d984ac5396f4d4fefac81f5bdbab5dc28",
+    "src/plume_advanced/stages/host_field.py": "b24950daa27806b39e983c27fb40bd00e6a112ea978d4cacd10f35bf4829d749",
+    "src/plume_advanced/stages/network.py": "a081b0fd609e15a07efbf9076630cb2ff412f6777d7d1dd439fea7dff8645ff6",
+    "src/plume_advanced/stages/section_field.py": "cb31b38dba77c6a95f533fb994f8363081971b7377be034f875a044b55b42af0",
+    "src/plume_advanced/stages/geometry.py": "01e6e5d66d2ba1f5de2a579cd06ad2618c90ba62caea1f648b58398effe79ec2",
+    "src/plume_advanced/stages/events.py": "fe24c18d83c4331e06e52f8f2e9bbc10ee373c8a33bedf5ff4141133a2572432",
+    "src/plume_advanced/stages/floor_map.py": "e49ea890fa849e7a845339d2e5a08cb5b5dcfd1f8383fb94d30ab8835031e510",
+    "src/plume_advanced/stages/geometry_export.py": "8056bfca7dfde7b0c17a5da1382d91676934987e039e16bcbabcaf8c3b382677",
+    "src/plume_advanced/evaluation/experiments/morphometry.py": "144acf4f18a2fa1c3cac27eb184568086028d4f3ca9280f45b5ff91765363fcd",
+    "src/plume_advanced/evaluation/experiments/sampling_ablation.py": "b489a8791c7edb9a87b123dcd9768db086758e115f31cd0c1790124748a9b2c9",
+    "src/plume_advanced/evaluation/experiments/host_ablation.py": "4927d82801da9e96fb13036424d5fb0fa4be958f84b4a6107b7e86ecf964275f",
+    "src/plume_advanced/evaluation/metrics/sections.py": "b89f2537bae55b7ded538c4b7802c6b95d8f0c5e4ff070a34a33f5b22a19e6f0",
+    "src/plume_advanced/evaluation/metrics/morphometry.py": "8a12ea156013804057ac9f56fb80fd6a21011441fc6793b7da3a79a5e760197b",
+    "src/plume_advanced/evaluation/statistics.py": "485f307fd5dc8d146fd23a0f5daaf6e1077c7d42e55a93d6201d7205422f89dd",
+    "src/plume_advanced/evaluation/plotting.py": "3f2cf93736392a95b352f5b65d1579481ea2c57816b2d945e37c98d3b7f184bb",
+    "paper/experiments.toml": "3a378fb6eb5b2910131e8eee2501649dfec37852319b19430940bc7e671fcccf",
+    "config/project.toml": "bc0ac5aca9d9ae23676e6954c641697ff87fed26a74c04d7e2cbb87666e8ad76",
+    "paper/REALISM_CALIBRATION.md": "b0281bd9a954fef665e2b2b2dbe619f66b49e666c814a09c944d8ade031a2050",
+    "paper/splits/README.md": "03151a814d73ed6d9f5aae69cfd1901dc47e4a4fddc036d98f1342274975a364",
+    "paper/seeds/export_seeds.txt": "b78a1987bcbdc0903ba6ba29ee3e1f4e7cc1ca868a60889beb141e26e06cb005",
+    "paper/seeds/geometry_seeds.txt": "026d8ad3dfa1f2aa9da7964947ddedd4e83c6fc008206ebf898699dea80f9804",
+    "paper/seeds/network_seeds.txt": "6d506216aa5bad159f167e2535293b4e5ec8e1073b64449d30b66b460ebf6da0",
+    "paper/seeds/sampling_seeds.txt": "28578fd11254edba90213ffe4e58237e3784002e4a8ade08ac862ac05d67552b",
+    "paper/splits/pdc_calibration_caves.txt": "b90ef240be7d59d0978cb0bac9a4c93795e968857e10f1d3fe32cb74f13fce31",
+    "paper/splits/pdc_evaluation_caves.txt": "5cc337bf35fbbe42e40e3b0c020251bb5e45b0e333df5518d6f21077120c5013"
+  },
+  "original_manuscript_sha256": "240fa40f4d3e3089cdc3bcf55d8ddbc01a22b515b3715d87966c59689c529712",
+  "candidate_images": [
+    {
+      "included_file": "figure_candidates/earth_host.png",
+      "source": "docs/figures/celestial_bodies/earth/stage_a_host_field.png",
+      "sha256": "f8b13ec9565c67f8099470408694f62734eafaa1d9110e63f3b8cd26e0f00a9d",
+      "status": "unchanged legacy documentation image; generating run not revalidated"
+    },
+    {
+      "included_file": "figure_candidates/earth_network.png",
+      "source": "docs/figures/celestial_bodies/earth/stage_b_cave_network.png",
+      "sha256": "0646e54c0216cce7f1350c172035d2bce8de572fb0875a6f9cfb4924193017c1",
+      "status": "unchanged legacy documentation image; generating run not revalidated"
+    },
+    {
+      "included_file": "figure_candidates/earth_sections.png",
+      "source": "docs/figures/celestial_bodies/earth/stage_c_section_field.png",
+      "sha256": "a6e084a5b30d90efea3f3e4d0d75dfd197390844f7a6cb8ab2bdd7423615ac41",
+      "status": "unchanged legacy documentation image; generating run not revalidated"
+    },
+    {
+      "included_file": "figure_candidates/earth_geometry_diagnostics.png",
+      "source": "docs/figures/celestial_bodies/earth/stage_d_geometry.png",
+      "sha256": "e39f5cc94ddda3d6c82ee18be5657b2c84253eae9b81dd37fd2cd2e8ded18b98",
+      "status": "unchanged legacy documentation image; generating run not revalidated"
+    },
+    {
+      "included_file": "figure_candidates/earth_chunks.png",
+      "source": "docs/figures/celestial_bodies/earth/stage_d_geometry_chunks.png",
+      "sha256": "1fa4ece7e41693a2a8e7527a1b4db4065ef2a976f9667f10e12196164234f944",
+      "status": "unchanged legacy documentation image; generating run not revalidated"
+    },
+    {
+      "included_file": "figure_candidates/earth_events.png",
+      "source": "docs/figures/celestial_bodies/earth/stage_e_geological_events.png",
+      "sha256": "b542423e1ad5363afea02b1587b807e22210bbb5796feb34b563ba130dd6bf58",
+      "status": "unchanged legacy documentation image; generating run not revalidated"
+    },
+    {
+      "included_file": "figure_candidates/earth_floor_atlas.png",
+      "source": "docs/figures/celestial_bodies/earth/stage_c_floor_map.png",
+      "sha256": "161c18d5d28d631846da11eff90b839f154960f79526b57de42336c0f0e64eba",
+      "status": "unchanged legacy documentation image; generating run not revalidated"
+    },
+    {
+      "included_file": "figure_candidates/earth_geometry_legacy.png",
+      "source": "docs/figures/celestial_bodies/earth/stage_d_geometry_presentation.png",
+      "sha256": "22136a9ba1feb2797342ff434b61451cc222cc3290234fff3af38be4c94176ca",
+      "status": "unchanged legacy documentation image; generating run not revalidated"
+    },
+    {
+      "included_file": "figure_candidates/mars_geometry_legacy.png",
+      "source": "docs/figures/celestial_bodies/mars/stage_d_geometry_presentation.png",
+      "sha256": "4ed877a7939baf6982459fa34fcceee0abe1a5b105f2ac07d3f9bd5b7af9a8d2",
+      "status": "unchanged legacy documentation image; generating run not revalidated"
+    },
+    {
+      "included_file": "figure_candidates/moon_geometry_legacy.png",
+      "source": "docs/figures/celestial_bodies/moon/stage_d_geometry_presentation.png",
+      "sha256": "ce515d1bc4dd42d7489f3f515d78aaea8e1ba99f0b420b3073a8ccefd5981020",
+      "status": "unchanged legacy documentation image; generating run not revalidated"
+    }
+  ],
+  "original_figure": {
+    "file": "figures/f01_pipeline.pdf",
+    "source": "figures/f01_pipeline.tex",
+    "type": "original vector software-architecture schematic; not measured data"
+  },
+  "notes": [
+    "Seed counts in the manuscript are planned counts.",
+    "Calibration pilots are not confirmatory results.",
+    "Code and configuration were inspected in a modified working tree.",
+    "Snapshot files are review records and may contain paths relative to the original repository.",
+    "Documentation figure hashes establish file identity only, not generating-run provenance."
+  ],
+  "figure_revision": "Actual Rocky props added to current seed-4 event illustration; event figure includes exported geometry and measured sizes; floor atlas labels refreshed.",
+  "inserted_figures": [
+    {
+      "file": "figures/f01_pipeline.pdf",
+      "source": "figures/f01_pipeline.tex",
+      "status": "original schematic",
+      "sha256": "2c22b3a9f9e862f3d2937133b7ee66e8c17906135349e591d0d09d2d2513d208"
+    },
+    {
+      "file": "figures/f02_host_fields.png",
+      "source": "docs/figures/readme/host_fields.png",
+      "sha256": "8cf7b686083a5421f6168745b4f09149210580c076883daa957a3d437c9a873d",
+      "status": "regenerated current seed-4 illustration; overall title and subtitle omitted"
+    },
+    {
+      "file": "figures/f03_network.png",
+      "source": "docs/figures/readme/network.png",
+      "sha256": "7230e2cd7ae47eae0f1216c809a3ebb62531e5f644b947849e73b1ea008d2bff",
+      "status": "regenerated current seed-4 illustration; overall title and subtitle omitted"
+    },
+    {
+      "file": "figures/f04_sections.png",
+      "source": "docs/figures/readme/sections.png",
+      "sha256": "e67f04a01fc0b515545463145039681d13a4f6ced446d4c7d57865579a13563b",
+      "status": "regenerated current seed-4 illustration; overall title and subtitle omitted"
+    },
+    {
+      "file": "figures/f05_roof_screen.png",
+      "source": "docs/figures/readme/roof_stability.png",
+      "sha256": "1d7f2b1e69f17d336d224bdaf4ef599671bff2363316f977540300665b54d174",
+      "status": "unchanged supplied artifact; interpretation in manuscript caption"
+    },
+    {
+      "file": "figures/f06_events.png",
+      "source": "outputs/paper_events_rocks_seed4/f06_events.png",
+      "sha256": "10c3dd178daff8d738fe80353cd9525af7bb387bf32bebfafaaf27a28302bcbf",
+      "status": "Current optional-event scenario with 649 actual Rocky meshes; Figure 6 includes actual exported-scene render; not confirmatory evaluation."
+    },
+    {
+      "file": "figures/f07_floor_atlas.png",
+      "source": "outputs/paper_events_rocks_seed4/f07_floor_atlas.png",
+      "sha256": "74f25a2749aa7536419d4e6a4ef5d973e5fcd356b782b73ac58ad5f043907219",
+      "status": "Current optional-event scenario with 649 actual Rocky meshes; Figure 6 includes actual exported-scene render; not confirmatory evaluation."
+    },
+    {
+      "file": "figures/f08_surface_relief.png",
+      "source": "docs/figures/readme/surface_relief.png",
+      "sha256": "acdf2f987764de4e692cc37629cac1a22fa1d5c08aaa52ebd0e0cc8e1014d931",
+      "status": "unchanged supplied artifact; interpretation in manuscript caption"
+    }
+  ],
+  "validation": {
+    "compiler": "pdfLaTeX via latexmk",
+    "compiled_pages": 16,
+    "inserted_figures": 8,
+    "missing_figure_assets": 0,
+    "empty_figure_placeholders": 0,
+    "unresolved_references_or_citations": 0,
+    "overfull_boxes": 0,
+    "visual_review": "All 16 rendered pages checked in overview; Figures 6 and 7 checked at page size; three actual exported interior views inspected.",
+    "figure_builder_checks": "Generation completed, interior render completed, figure redraw completed; three changed scripts pass Ruff.",
+    "geometry_checks": {
+      "prop_nodes": 649,
+      "total_geometry_nodes": 650,
+      "cave_watertight": true,
+      "finite_vertices": true,
+      "prop_meshes_watertight": 649,
+      "cave_vertex_count": 1147804,
+      "cave_triangle_count": 2295648,
+      "sha256": "94243e2dbc50dd74ad5fa409b229f50a77ce53b3ecd5965ddea5f95faf37d9da",
+      "export_scope": "Neutral inspection geometry; no texture atlas or appearance displacement; separately editable rock nodes."
+    },
+    "original_inspection_glb": "SHA-256 unchanged.",
+    "standalone_zip_compile": "Passed: fresh extracted project; 16 pages, eight figures, no missing assets, unresolved references/citations, or overfull boxes."
+  },
+  "deliverable_sha256": {
+    "main.tex": "56fba63bbb905be86f7f0f61347154821ff53a94e472a2de3b7ccfee41f88fc7",
+    "references.tex": "fb2e36fdd3afaaa08e77743c2c86736cdb0b06dfd64d1190871528ca908f37ca",
+    "PLUME_Advanced_With_Figures.pdf": "d1b73ed1aba26e61cad30d3e85e802c131f3da6ccdefd3ab22a77fd71145b2e4",
+    "README.md": "6ec7d7d3bd56571601f7e13e46f8e7014b08789307281f77b3143e7b9378f12e",
+    "FIGURE_GUIDE.md": "71cc76135465749f44b0f4496eccf795933076d42f4554a24f0b6b2efb02ff91",
+    "REVIEW_NOTES.md": "183bbfc30f6e5645aaa6293b311f19fe070978bfbdc0776988b0bd3c98b2d54d"
+  },
+  "illustrative_event_run_executed": true,
+  "figure_revision_details": {
+    "date": "2026-09-07",
+    "body": "earth",
+    "seed": 4,
+    "voxel_size_m": 0.2,
+    "event_overrides": {
+      "enabled": true,
+      "include_rock_props": true,
+      "use_rocky_meshes": true,
+      "enabled_kinds": [
+        "collapse",
+        "choke",
+        "infill",
+        "rock",
+        "boulder"
+      ]
+    },
+    "applied_event_ids": [
+      208,
+      386
+    ],
+    "rock_count": 641,
+    "boulder_count": 8,
+    "separate_prop_meshes": 649,
+    "neutral_export": true,
+    "base_floor_cells": 635,
+    "final_floor_cells": 630,
+    "invalidated_cells": 5,
+    "segment_bands": 25,
+    "base_config_sha256": "ed3dcecaba69374f5e8f7660ae2faf3f30bffedbd2da14fb582871697aa7fcc6",
+    "base_checkpoint_sha256": "0b26fcde745ecdacab70abca60a1e0fc3ab0384bf6c0c9efb48085ff0e527160",
+    "unchanged_no_event_glb_sha256": "3ec70a2f4705a019012c9eea4b8bf3d8a3476fcdae05641fc54ed3e0627182fc",
+    "rock_scene_sha256": "94243e2dbc50dd74ad5fa409b229f50a77ce53b3ecd5965ddea5f95faf37d9da",
+    "builders": {
+      "scripts/generate_paper_event_figures.py": "fc3877c8eeaf8daeb5bb33da7b84b6f45a5e876de7f448ab77294b28727f011a",
+      "scripts/render_event_rocks.py": "6684e056ba3539bcc1d4ea4f13f22f19ae5566f2058c43d669ca27fac788ea2e",
+      "scripts/render_tube_views.py": "d3bd9c8c1104748d87d800c9f8e70f05441028176b7e49f70a8d34d47e115929"
+    },
+    "scope": "Separate optional-event illustration on the existing seed-4 base; original no-event GLB preserved; not a confirmatory campaign.",
+    "selected_interior_boulder_id": 608,
+    "snapshot_sha256": {
+      "source_snapshot/events_rocks_seed4/README.md": "a5348f38179242724cf35102a15e29d342dacca1b34752acef907c0f18d2f88e",
+      "source_snapshot/events_rocks_seed4/base_floor_atlas.json": "addf2d276e543b11df20e9b526ea1c6d8f4e6b1821e1a67f96903c6f8fa6438f",
+      "source_snapshot/events_rocks_seed4/base_floor_atlas.npz": "46fba98ef01b59130e82837c70662b529b5cad5df1bb809abaeabcb7d9e3b59c",
+      "source_snapshot/events_rocks_seed4/base_generation_config.toml": "ed3dcecaba69374f5e8f7660ae2faf3f30bffedbd2da14fb582871697aa7fcc6",
+      "source_snapshot/events_rocks_seed4/event_report.json": "322c5b90bb27ef211c01196ad08647247dfa5bd9307755e6508421308c7503ca",
+      "source_snapshot/events_rocks_seed4/event_section.npz": "0717a53de9f46d541cb96bb8c5934b3dec701bd87c04b3596f54295f035905ec",
+      "source_snapshot/events_rocks_seed4/export_checks.json": "a8e3b58eb67e1cd87032b92788f84ec7a5015116872fa07add025d9ca7d927b3",
+      "source_snapshot/events_rocks_seed4/final_floor_atlas.json": "cf29c2de719a8b5b880788ed5f1e9e727ff5da78bad46e8ed1369ac00e28f814",
+      "source_snapshot/events_rocks_seed4/final_floor_atlas.npz": "788c3a62465a95511e71eadb2875bb3f1e3070a3ed98e6414b1dd482db662d27",
+      "source_snapshot/events_rocks_seed4/generate_paper_event_figures.py": "fc3877c8eeaf8daeb5bb33da7b84b6f45a5e876de7f448ab77294b28727f011a",
+      "source_snapshot/events_rocks_seed4/geometry_report.json": "a056c3eef825cda37cb3ac4cdbc9b3d7749acb1a904bcea87d7fca2d591df10d",
+      "source_snapshot/events_rocks_seed4/render_event_rocks.py": "6684e056ba3539bcc1d4ea4f13f22f19ae5566f2058c43d669ca27fac788ea2e",
+      "source_snapshot/events_rocks_seed4/render_tube_views.py": "d3bd9c8c1104748d87d800c9f8e70f05441028176b7e49f70a8d34d47e115929",
+      "source_snapshot/events_rocks_seed4/resolved_config.json": "9ff738b5399e96df156cb3163e0b6c0c22ef3324fc7770d669f583ccdc4aa7ee",
+      "source_snapshot/events_rocks_seed4/rock_interior.png": "010a8893edd475d42d10e3608c7c4f7bfa83a83c25ebdb073f907f6144fa67d7",
+      "source_snapshot/events_rocks_seed4/rock_mesh_validation.json": "cd5d92dfd519df4dba886d7586f1ec733cd261eb906f1346fc0e41777964d3dd",
+      "source_snapshot/events_rocks_seed4/rock_render_report.json": "861a5663d519eb4f812725de512595d086b245a6482d682fcffb0273f1b51f3d",
+      "source_snapshot/events_rocks_seed4/study.json": "eaf1d1f3979a6baac40d68795415511e445beac3d354a96650914ea24f58c333"
+    },
+    "source_pdf_sha256": "3d33b9814414821d827570df779037baee0cd963c171804fbeb6ce254e7b16bb"
+  },
+  "figure_revision_history": [
+    {
+      "revision": "Current seed-4 structural-event and floor-atlas replacement (Figures 6\u20137); overall headings/subtitles removed from Figures 2\u20134.",
+      "details": {
+        "date": "2026-09-07",
+        "body": "earth",
+        "seed": 4,
+        "voxel_size_m": 0.2,
+        "source_pdf_sha256": "6edfd9911bbe2c1def351ad5f5301631a18c064a0c84275ec5684b3b78fd2eb0",
+        "event_overrides": {
+          "enabled": true,
+          "include_rock_props": false,
+          "use_rocky_meshes": false,
+          "enabled_kinds": [
+            "collapse",
+            "choke",
+            "infill"
+          ]
+        },
+        "applied_event_ids": [
+          0,
+          2
+        ],
+        "base_floor_cells": 635,
+        "final_floor_cells": 630,
+        "invalidated_cells": 5,
+        "segment_bands": 25,
+        "base_config_sha256": "ed3dcecaba69374f5e8f7660ae2faf3f30bffedbd2da14fb582871697aa7fcc6",
+        "base_checkpoint_sha256": "0b26fcde745ecdacab70abca60a1e0fc3ab0384bf6c0c9efb48085ff0e527160",
+        "unchanged_no_event_glb_sha256": "3ec70a2f4705a019012c9eea4b8bf3d8a3476fcdae05641fc54ed3e0627182fc",
+        "builder_source": "scripts/generate_paper_event_figures.py",
+        "builder_sha256": "103f797a2bc89d7508f8414b663268800f8efec82cd7106dafa213a5fc9c3e0a",
+        "scope": "Separate structural-event illustration on the existing seed-4 base; not the original no-event GLB or a confirmatory campaign.",
+        "snapshot_sha256": {
+          "source_snapshot/event_atlas_seed4/README.md": "9cdb3727460b32edc4fbab09e40e3fe158d9c5fb84695737014db08d21de8fec",
+          "source_snapshot/event_atlas_seed4/base_floor_atlas.json": "addf2d276e543b11df20e9b526ea1c6d8f4e6b1821e1a67f96903c6f8fa6438f",
+          "source_snapshot/event_atlas_seed4/base_floor_atlas.npz": "46fba98ef01b59130e82837c70662b529b5cad5df1bb809abaeabcb7d9e3b59c",
+          "source_snapshot/event_atlas_seed4/base_generation_config.toml": "ed3dcecaba69374f5e8f7660ae2faf3f30bffedbd2da14fb582871697aa7fcc6",
+          "source_snapshot/event_atlas_seed4/event_report.json": "56fee179dab210d634033bf56c20e5f46ac64d423ceac4c1b6654597c76cf9f7",
+          "source_snapshot/event_atlas_seed4/event_section.npz": "0717a53de9f46d541cb96bb8c5934b3dec701bd87c04b3596f54295f035905ec",
+          "source_snapshot/event_atlas_seed4/final_floor_atlas.json": "2e4394dfa307a55a2e9210efbb20e0bf18dce6c1059d6ed0b32db49ec8f95001",
+          "source_snapshot/event_atlas_seed4/final_floor_atlas.npz": "32d1ba3656ab05ac89b75e45d501fc5753de8ea2b7e3bac305f88896818168db",
+          "source_snapshot/event_atlas_seed4/generate_paper_event_figures.py": "103f797a2bc89d7508f8414b663268800f8efec82cd7106dafa213a5fc9c3e0a",
+          "source_snapshot/event_atlas_seed4/geometry_report.json": "49b9efebae2133c9d69933f6a25b505a4862596ea262c1b14fc3ac53781cb853",
+          "source_snapshot/event_atlas_seed4/resolved_config.json": "eae8f129afa40e029bab32a60dc91727209bd46454ee68a593e6b0f51e705979",
+          "source_snapshot/event_atlas_seed4/study.json": "a933cb9ca6bd60ef4459ee0d847253f952b37309e1050eb05a6b3e4286e1650f"
+        }
+      }
+    }
+  ],
+  "illustrative_rock_run_executed": true
+}

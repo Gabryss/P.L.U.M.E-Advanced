@@ -1,0 +1,74 @@
+{
+  "500": {
+    "realized_route_range_m": [
+      520.7596773151823,
+      661.0740251799538
+    ],
+    "faces_range": [
+      365722.0,
+      542784.0
+    ],
+    "underresolved_fraction_range": [
+      0.5211505922165821,
+      0.7435897435897436
+    ]
+  },
+  "1000": {
+    "realized_route_range_m": [
+      1140.1339570725663,
+      1235.96322115748
+    ],
+    "faces_range": [
+      546362.0,
+      657016.0
+    ],
+    "underresolved_fraction_range": [
+      0.43843843843843844,
+      0.6832298136645962
+    ]
+  },
+  "2000": {
+    "realized_route_range_m": [
+      2121.2117228119278,
+      2315.356615967904
+    ],
+    "faces_range": [
+      809130.0,
+      953850.0
+    ],
+    "underresolved_fraction_range": [
+      0.5850840336134454,
+      0.6338495575221239
+    ]
+  },
+  "5000": {
+    "realized_route_range_m": [
+      5174.472904970496,
+      5486.704111104898
+    ],
+    "faces_range": [
+      1307542.0,
+      1530682.0
+    ],
+    "underresolved_fraction_range": [
+      0.37791199309749784,
+      0.6758832565284179
+    ]
+  },
+  "all_tiled": {
+    "profile_count": 17634,
+    "underresolved_profile_count": 10248
+  },
+  "completed_mesh_components": [
+    1.0,
+    3.0,
+    4.0
+  ],
+  "completed_void_voxel_components": [
+    1.0,
+    2.0,
+    4.0,
+    5.0
+  ],
+  "completed_roof_screen_collapses": 0.0
+}

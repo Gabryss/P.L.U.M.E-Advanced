@@ -2,6 +2,15 @@
 *.pdf
 # Generated cave artifacts are local inspection/build products.
 outputs/
+# Local experiments and generated manuscript build/distribution products.
+tmp/
+paper/review_build/
+paper/*.zip
+paper/overleaf/*.aux
+paper/overleaf/*.out
+paper/overleaf/*.toc
+paper/overleaf/*.fls
+paper/overleaf/*.fdb_latexmk
 paper/outputs/**
 !paper/outputs/.gitkeep
 paper/data/**

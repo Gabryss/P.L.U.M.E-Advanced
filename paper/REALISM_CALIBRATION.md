@@ -29,3 +29,12 @@ variation, smooth longitudinal modulation, multi-harmonic wall relief, floor
 relief, and a broader asymmetry field. Height variation is tapered at segment
 endpoints, and absolute width/height limits preserve connected voxel and mesh
 geometry.
+
+
+## Subsequent evaluation campaign
+
+The frozen 7 September 2026 campaign has now been completed. Its [results](campaigns/2026-09-07/REPORT.md)
+use 100 Earth worlds and the 19-cave evaluation partition. They do not change the
+historical calibration results above. Selected shape distances improve against
+matched ellipses, while absolute sizes and variability remain mismatched. No
+parameters were retuned using the evaluation outcomes.

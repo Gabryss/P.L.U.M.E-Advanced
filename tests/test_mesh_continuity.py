@@ -115,6 +115,21 @@ def test_welding_cancels_opposite_internal_chunk_faces():
     assert faces == ()
 
 
+def test_cross_chunk_bridge_cannot_delete_a_thin_triangle():
+    first = GeometryChunkMesh(
+        0, (0, 1, 0, 1, 0, 1),
+        ((0., 0., 0.), (.01, 0., 0.), (0., 1., 0.)), ((0, 1, 2),),
+    )
+    second = GeometryChunkMesh(
+        1, (1, 2, 0, 1, 0, 1),
+        ((0., 0., 0.), (0., 1., 0.), (0., 0., 1.)), ((0, 1, 2),),
+    )
+    vertices, faces = GeometryGenerator(GeometryConfig(voxel_size=1.))._assemble_chunks([first, second])
+    assert len(vertices) == 4
+    assert len(faces) == 2
+    assert all(len(set(face)) == 3 for face in faces)
+
+
 @pytest.mark.parametrize("voxel", [0.5, 0.6])
 @pytest.mark.parametrize("chunk_size", [8, 13])
 def test_translated_nonbinary_chunks_are_closed_after_smoothing(voxel, chunk_size):
@@ -147,6 +162,7 @@ def test_connected_branches_share_a_floor_and_blend_gradually():
     # A nearby grade-separated passage has different node IDs.
     underpass = tuple(replace(s, segment_id=2, z=-8.0) for s in second)
     network = SimpleNamespace(
+        config=SimpleNamespace(quality=SimpleNamespace(enabled=True)),
         segments=[
             SimpleNamespace(segment_id=0, start_node_id=0, end_node_id=1),
             SimpleNamespace(segment_id=1, start_node_id=1, end_node_id=2),
@@ -281,7 +297,7 @@ def test_connected_split_merge_get_finite_transition_stamp_and_report():
             blend_length=18.0,
         ),)
     )
-    generator = GeometryGenerator(GeometryConfig(voxel_size=0.6, wall_roughness_amplitude=0.0))
+    generator = GeometryGenerator(GeometryConfig(voxel_size=0.6, wall_roughness_amplitude=0.0, use_section_profiles=False))
     stamps = generator._junction_stamp_points({0: parent, 1: daughter}, network)
     assert len(stamps) == 1
     stamp = stamps[0]
@@ -404,7 +420,7 @@ def test_drained_pool_honors_independent_dimensions_and_flow_orientation():
             "process_cause": "drainback",
         },
     )
-    stamp = GeometryGenerator(GeometryConfig(minimum_radius=1.0))._junction_stamp_points(
+    stamp = GeometryGenerator(GeometryConfig(minimum_radius=1.0, use_section_profiles=False))._junction_stamp_points(
         {0: samples}, SimpleNamespace(junctions=(junction,), segments=())
     )[0]
     assert 2.0 * stamp.radius_long == pytest.approx(30.0)

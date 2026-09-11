@@ -119,6 +119,16 @@ channel_count_samples = 28
 # Process-based Stage-B growth. Active lobes follow a correlated perturbation
 # of the host terrain, diverge under local pressure, coalesce into downstream
 # channels, or retire when their exposed thermal budget is exhausted.
+[network.quality]
+# Deterministic morphology screening before meshing. Exhaustion stops the run.
+enabled = true
+max_attempts = 8
+repair_passes = 3
+
+# Set count above 1 for interacting arterial systems; see docs/network_systems.md.
+[network.systems]
+count = 1
+
 [network.lobe_growth]
 path_count = [8, 12]
 maximum_steps = [42, 96]
@@ -201,8 +211,8 @@ chamber_radius_scale = [1.0, 1.60]
 [section_field]
 sampling_policy = "adaptive"
 base_height_ratio = 0.66
-minimum_height_ratio = 0.34
-maximum_height_ratio = 0.96
+minimum_height_ratio = 0.16
+maximum_height_ratio = 1.65
 width_scale_median = 0.84
 width_scale_log_sigma = 0.60
 width_longitudinal_variation = 0.18
@@ -216,8 +226,8 @@ junction_spacing_weight = 1.15
 profile_resolution = 40
 floor_flatness_base = 0.36
 floor_flatness_width_weight = 0.12
-floor_relief_base = 0.13
-floor_relief_variation = 0.035
+floor_relief_base = 0.035
+floor_relief_variation = 0.010
 roof_arch_base = 1.08
 roof_arch_roof_weight = 0.18
 wall_roughness_base = 0.14

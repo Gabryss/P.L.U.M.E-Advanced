@@ -18,8 +18,11 @@ from scipy.ndimage import distance_transform_edt, gaussian_filter, gaussian_filt
 
 from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.host_field import HostField
-
-SegmentMetadataValue = str | int | float | bool | None
+from plume_advanced.stages.network_interconnected import InterconnectionConfig
+from plume_advanced.stages.network_metadata import SegmentMetadataValue, metadata_float
+from plume_advanced.stages.network_quality import NetworkQualityConfig
+from plume_advanced.stages.network_systems import NetworkSystemsConfig
+from plume_advanced.stages.network_topology import NetworkTopologyConfig
 
 
 @dataclass(frozen=True)
@@ -120,6 +123,10 @@ class CaveNetworkConfig:
     """Parameters controlling the host-driven lava-tube network generator."""
 
     random_seed: int | None = None
+    quality: NetworkQualityConfig = NetworkQualityConfig()
+    systems: NetworkSystemsConfig = NetworkSystemsConfig()
+    topology: NetworkTopologyConfig = NetworkTopologyConfig()
+    interconnection: InterconnectionConfig = InterconnectionConfig()
     growth_model: str = "hybrid_lobe"
     network_density: float = 1.0
     emplacement_backend: str = "internal"
@@ -259,10 +266,13 @@ class CaveNetwork:
     slice_channel_counts: tuple[int, ...]
     slice_visible_channel_counts: tuple[int, ...]
     backend_provenance: dict[str, SegmentMetadataValue] = field(default_factory=dict)
+    quality_report: dict = field(default_factory=dict)
 
     def summary(self) -> dict[str, float]:
         """Return scalar summaries for quick inspection."""
 
+        from plume_advanced.stages.network_systems import system_summary
+        from plume_advanced.stages.network_topology import topology_metrics
         occupied_area = float(self.occupancy.sum())
         segment_lengths = [segment.total_length for segment in self.segments]
         point_widths = [point.width for segment in self.segments for point in segment.points]
@@ -338,24 +348,24 @@ class CaveNetwork:
             if path_id is not None and segment.metadata.get("branching_process") is not None:
                 breakout_records.setdefault(str(path_id), segment.metadata)
         breakout_scores = [
-            float(metadata.get("breakout_score", 0.0)) for metadata in breakout_records.values()
+            metadata_float(metadata, "breakout_score") for metadata in breakout_records.values()
         ]
         breakout_fractions = [
-            float(metadata.get("branch_flux_fraction", 0.0))
+            metadata_float(metadata, "branch_flux_fraction")
             for metadata in breakout_records.values()
         ]
         allocated_flux = sum(
-            float(metadata.get("initial_flux", 0.0)) for metadata in breakout_records.values()
+            metadata_float(metadata, "initial_flux") for metadata in breakout_records.values()
         )
         returned_flux = sum(
-            float(metadata.get("coalescence_returned_flux", 0.0))
+            metadata_float(metadata, "coalescence_returned_flux")
             for metadata in breakout_records.values()
         )
         phase_utilization: dict[int, float] = {}
         for metadata in breakout_records.values():
-            phase = int(metadata.get("birth_phase", 0) or 0)
-            budget = float(metadata.get("phase_flux_budget", 0.0) or 0.0)
-            allocated = float(metadata.get("phase_flux_allocated", 0.0) or 0.0)
+            phase = int(metadata_float(metadata, "birth_phase"))
+            budget = metadata_float(metadata, "phase_flux_budget")
+            allocated = metadata_float(metadata, "phase_flux_allocated")
             if budget > 0.0:
                 phase_utilization[phase] = max(
                     phase_utilization.get(phase, 0.0),
@@ -366,16 +376,18 @@ class CaveNetwork:
             for segment in self.segments
             if segment.metadata.get("chamber_type") == "drained_lava_pool"
         }
-        pool_widths = [float(item.get("pool_width_m", 0.0)) for item in pool_records.values()]
-        pool_aspects = [float(item.get("pool_aspect_ratio", 0.0)) for item in pool_records.values()]
+        pool_widths = [metadata_float(item, "pool_width_m") for item in pool_records.values()]
+        pool_aspects = [metadata_float(item, "pool_aspect_ratio") for item in pool_records.values()]
         pool_outlet_ratios = [
-            float(item.get("pool_outlet_ratio", 0.0)) for item in pool_records.values()
+            metadata_float(item, "pool_outlet_ratio") for item in pool_records.values()
         ]
 
         return {
             "node_count": float(len(self.nodes)),
             "segment_count": float(len(self.segments)),
             "entry_count": float(sum(node.kind == "entry" for node in self.nodes)),
+            **(system_summary(self) if self.config.systems.count > 1 and (self.config.topology.style == "general" or self.config.topology.generation_mode == "independent_growth") else {}),
+            **(topology_metrics(self) if self.config.topology.style == "trunk_dominated" else {}),
             "junction_count": float(len(self.junctions)),
             "loop_count": loop_count,
             "network_density": self.config.network_density,
@@ -630,6 +642,7 @@ def export_network_report(
 
     report = {
         "schema": "plume.cave-network-diagnostics.v1",
+        "quality": cave_network.quality_report,
         "summary": cave_network.summary(),
         "emplacement_backend": cave_network.backend_provenance,
         "body_spatial_scale": cave_network.config.body_spatial_scale,
@@ -1052,7 +1065,30 @@ class CaveNetworkGenerator:
     def __init__(self, config: CaveNetworkConfig | None = None) -> None:
         self.config = config or CaveNetworkConfig()
 
-    def generate(self, host_field: HostField) -> CaveNetwork:
+    def generate(self, host_field: HostField, *, section_config=None,
+                 quality_report_path=None, quality_progress=None) -> CaveNetwork:
+        """Return the first deterministically accepted candidate, or fail closed.
+
+        Supplying section_config also screens the post-blend 3D profiles during
+        candidate selection. The CLI uses this before starting any meshing.
+        """
+        if not self.config.quality.enabled:
+            return self._generate_candidate(host_field)
+        from plume_advanced.stages.network_acceptance import generate_accepted_network
+        return generate_accepted_network(self, host_field, section_config=section_config,
+                                         report_path=quality_report_path,
+                                         progress=quality_progress)
+
+    def _generate_candidate(self, host_field: HostField) -> CaveNetwork:
+        if self.config.topology.style == "interconnected":
+            from plume_advanced.stages.network_gallery_growth import generate_gallery_growth
+            return generate_gallery_growth(self, host_field)
+        if self.config.topology.style == "trunk_dominated":
+            from plume_advanced.stages.network_topology import generate_trunk_network
+            return generate_trunk_network(self, host_field)
+        if self.config.systems.count > 1:
+            from plume_advanced.stages.network_systems import generate_system_network
+            return generate_system_network(self, host_field)
         geometry = self._build_flow_geometry(host_field)
         # Match Stage A's baseline semantics: an unspecified seed produces a
         # stable canonical network, while configured seeds select variations.
@@ -1173,7 +1209,9 @@ class CaveNetworkGenerator:
                 ),
             )
         ]
-        selected_paths[0].metadata.update(backend_provenance)
+        backbone_metadata = selected_paths[0].metadata
+        assert backbone_metadata is not None
+        backbone_metadata.update(backend_provenance)
         occupied_cells = set(backbone_path)
         backbone_alongs, backbone_crosses = self._build_backbone_profile(backbone_path, geometry)
         for source_cell in source_cells:
@@ -1192,8 +1230,7 @@ class CaveNetworkGenerator:
                 geometry,
                 join_along,
             )
-            feeder = self._simplify_path(
-                self._build_connector_path(
+            feeder = self._build_connector_path(
                     host_field=host_field,
                     geometry=geometry,
                     support_field=support_field,
@@ -1201,8 +1238,25 @@ class CaveNetworkGenerator:
                     end_cell=join_cell,
                     backbone_alongs=backbone_alongs,
                     backbone_crosses=backbone_crosses,
-                )
             )
+            if self.config.quality.enabled:
+                # A feeder coalesces at its first contact with an existing
+                # route. Continuing to a remote prescribed junction used to
+                # create crossings absent from the graph's topology.
+                occupied = sorted(occupied_cells)
+                occupied_xy = np.asarray([self._cell_to_world(host_field, cell)
+                                          for cell in occupied])
+                for i, cell in enumerate(feeder[1:], start=1):
+                    xy = np.asarray(self._cell_to_world(host_field, cell))
+                    distance = np.linalg.norm(occupied_xy-xy, axis=1)
+                    nearest = int(np.argmin(distance))
+                    contact = occupied[nearest]
+                    if (distance[nearest] <= 1.1*geometry.cell_scale and
+                        float(geometry.along_grid[contact]) > source_along+geometry.cell_scale):
+                        feeder = feeder[:i]+[contact]
+                        break
+            occupied_cells.update(feeder[:-1])
+            feeder = self._simplify_path(feeder)
             if len(feeder) < 2:
                 continue
             selected_paths.append(
@@ -1218,7 +1272,6 @@ class CaveNetworkGenerator:
                     ),
                 )
             )
-            occupied_cells.update(feeder[:-1])
         if self.config.growth_model == "hybrid_lobe":
             selected_paths.extend(
                 self._build_lobe_growth_paths(
@@ -1285,7 +1338,7 @@ class CaveNetworkGenerator:
                         )
                     )
 
-        selected_paths = self._annotate_drained_pool_chambers(
+        annotated_paths = self._annotate_drained_pool_chambers(
             host_field=host_field,
             geometry=geometry,
             selected_paths=tuple(selected_paths),
@@ -1293,19 +1346,34 @@ class CaveNetworkGenerator:
         )
         skeleton_mask, selected_flux, _ = self._build_representative_fields(
             shape=host_field.growth_cost.shape,
-            selected_paths=tuple(selected_paths),
+            selected_paths=annotated_paths,
         )
 
         nodes, segments, _dominant_route_node_ids = self._extract_graph_from_paths(
             host_field=host_field,
             geometry=geometry,
-            selected_paths=tuple(selected_paths),
+            selected_paths=annotated_paths,
             total_flux=selected_flux,
         )
-        segments = self._smooth_graph_routes(host_field, segments)
+        return self._finish_network(
+            host_field, geometry, nodes, segments, backend_provenance=backend_provenance,
+            skeleton_mask=skeleton_mask, total_flux=selected_flux,
+        )
+
+    def _finish_network(self, host_field, geometry, nodes, segments, *,
+                        backend_provenance, skeleton_mask, total_flux):
+        """Apply the common geometry, flow, junction and raster stages."""
+        if self.config.topology.style == "interconnected":
+            from plume_advanced.stages.network_interconnected import smooth_routes
+            segments = smooth_routes(host_field, segments, [geometry.flow_x, geometry.flow_y])
+        else:
+            segments = self._smooth_graph_routes(host_field, segments)
         segments = self._orient_segments_for_flow(nodes, segments)
         segments = self._repair_source_reachability(nodes, segments)
         segments = self._assign_conserved_flow(nodes, segments)
+        if self.config.topology.generation_mode == "independent_growth":
+            from plume_advanced.stages.network_gallery_growth import refresh_phase_discharge
+            segments = refresh_phase_discharge(self, nodes, segments)
         segments = self._annotate_emplacement_flux_history(segments)
         dominant_route_node_ids = self._dominant_route(nodes, segments)
         self._validate_generated_graph(nodes, segments, dominant_route_node_ids)
@@ -1570,8 +1638,8 @@ class CaveNetworkGenerator:
         chosen_by_path = {item[1]: item for item in chosen}
         annotated: list[_SelectedPath] = []
         for path_index, selected_path in enumerate(selected_paths):
-            candidate = chosen_by_path.get(path_index)
-            if candidate is None:
+            chosen_candidate = chosen_by_path.get(path_index)
+            if chosen_candidate is None:
                 annotated.append(selected_path)
                 continue
             (
@@ -1582,7 +1650,7 @@ class CaveNetworkGenerator:
                 cause,
                 local_flux,
                 low_grade_score,
-            ) = candidate
+            ) = chosen_candidate
             # Use the configured local passage envelope as the reference so
             # pool widening remains an auditable 2--5x morphological change,
             # independent of raster flux units.
@@ -1846,7 +1914,7 @@ class CaveNetworkGenerator:
             if (selected_path.metadata or {}).get("lobe_path_id") is not None
         }
         reusable_path_orders = {
-            cell: int((selected_path.metadata or {}).get("branch_order", 0))
+            cell: int(metadata_float(selected_path.metadata or {}, "branch_order"))
             for selected_path in initial_paths
             if selected_path.kind not in {"backbone", "source_feeder"}
             for cell in selected_path.path
@@ -2479,7 +2547,7 @@ class CaveNetworkGenerator:
                 replace(
                     site,
                     score=float(sum(components.values()) + 0.18 * float(support_field[site.cell])),
-                    trigger=max(components, key=components.get),
+                    trigger=max(components, key=components.__getitem__),
                 )
             )
         density_scale = math.sqrt(max(self.config.network_density, 0.05))
@@ -2573,7 +2641,7 @@ class CaveNetworkGenerator:
             "bend_overflow": controls.breakout_curvature_weight * curvature,
             "seeded_blockage": controls.breakout_blockage_weight * blockage,
         }
-        trigger = max(components, key=components.get)
+        trigger = max(components, key=components.__getitem__)
         score = float(sum(components.values()) + 0.18 * float(support_field[cell]))
         return _BreakoutSite(
             cell=cell,
@@ -3651,10 +3719,13 @@ class CaveNetworkGenerator:
         family_flux = {label: np.zeros(shape, dtype=float) for label in self.FAMILY_LABELS}
         for selected_path in selected_paths:
             family_label = self._family_label_for_kind(selected_path.kind)
+            metadata = selected_path.metadata or {}
+            weight = (float(metadata.get("phase_weighted_flux", 1.0))
+                      if metadata.get("network_process") == "independent_gallery_v1" else 1.0)
             for cell in selected_path.path:
                 mask[cell] = True
-                flux[cell] += 1.0
-                family_flux[family_label][cell] += 1.0
+                flux[cell] += weight
+                family_flux[family_label][cell] += weight
         return mask, flux, family_flux
 
     @staticmethod
@@ -4213,6 +4284,7 @@ class CaveNetworkGenerator:
                 replace(
                     point,
                     width=float(
+                        point.width if self.config.topology.style in {"trunk_dominated", "interconnected"} else
                         np.clip(
                             point.width * flow_scale,
                             2.0 * self.config.minimum_passage_radius,
@@ -4231,6 +4303,9 @@ class CaveNetworkGenerator:
                 for point in segment.points
             )
             resolved.append(replace(segment, points=points))
+        if self.config.systems.count > 1 or self.config.topology.style == "trunk_dominated":
+            from plume_advanced.stages.network_systems import annotate_source_lineage
+            resolved = annotate_source_lineage(nodes, resolved, self._topological_node_ids(nodes, resolved))
         return resolved
 
     @staticmethod
@@ -4259,6 +4334,8 @@ class CaveNetworkGenerator:
                 int(death_value) if isinstance(death_value, (int, float)) else phase_count - 1
             )
             active_count = max(death_phase - birth_phase + 1, 1)
+            if "active_phases" in metadata:
+                active_count = len(metadata["active_phases"])
             duty_cycle = active_count / phase_count
             peak_flux = segment.mean_flux * (1.0 + 0.22 * (1.0 - duty_cycle))
             uphill_distance = 0.0
@@ -4297,6 +4374,10 @@ class CaveNetworkGenerator:
                     "grade_profile": grade_profile,
                 }
             )
+            if "phase_fluxes" in metadata:
+                flows = metadata["phase_fluxes"]
+                metadata.update(phase_weighted_flux=float(np.mean(flows)),
+                    peak_formation_flux=float(max(flows)), peak_flux_phase=int(np.argmax(flows)))
             resolved.append(replace(segment, metadata=metadata))
         return resolved
 
@@ -4546,6 +4627,8 @@ class CaveNetworkGenerator:
                 scores[neighbor_id] = next_score
                 predecessor[neighbor_id] = node_id
 
+        if self.config.systems.count > 1:
+            exit_node = max(exits or nodes, key=lambda node: (scores[node.node_id], node.along_position, -node.node_id))
         if not math.isfinite(scores[exit_node.node_id]):
             return ()
 
@@ -4570,7 +4653,9 @@ class CaveNetworkGenerator:
         exits = {node.node_id for node in nodes if node.kind == "exit"}
         if not entries:
             raise ValueError("Cave network has no entry nodes")
-        if len(exits) != 1:
+        if self.config.systems.count > 1 and not exits:
+            raise ValueError("Cave network has no exit nodes")
+        if self.config.systems.count == 1 and len(exits) != 1:
             raise ValueError(f"Cave network must have exactly one exit node, found {len(exits)}")
 
         outgoing: defaultdict[int, list[CaveSegment]] = defaultdict(list)
@@ -4615,9 +4700,8 @@ class CaveNetworkGenerator:
             missing = sorted(node_ids - reachable)
             raise ValueError(f"Cave network contains source-unreachable nodes {missing}")
 
-        exit_id = next(iter(exits))
-        can_reach_exit = {exit_id}
-        pending = [exit_id]
+        can_reach_exit = set(exits)
+        pending = sorted(exits)
         while pending:
             for upstream in reverse.get(pending.pop(), set()):
                 if upstream not in can_reach_exit:
@@ -4630,7 +4714,7 @@ class CaveNetworkGenerator:
         if (
             len(dominant_route_node_ids) < 2
             or dominant_route_node_ids[0] not in entries
-            or dominant_route_node_ids[-1] != exit_id
+            or dominant_route_node_ids[-1] not in exits
         ):
             raise ValueError("Cave network has no valid directed dominant route")
         route_edges = {(segment.start_node_id, segment.end_node_id) for segment in segments}
@@ -4885,8 +4969,8 @@ class CaveNetworkGenerator:
                     ),
                     dtype=float,
                 )
-            length = float(metadata.get("pool_length_m", 0.0) or 0.0)
-            width = float(metadata.get("pool_width_m", 0.0) or 0.0)
+            length = metadata_float(metadata, "pool_length_m")
+            width = metadata_float(metadata, "pool_width_m")
             self._paint_ellipse(
                 host_field=host_field,
                 occupancy=occupancy,

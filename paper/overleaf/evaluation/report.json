@@ -1,0 +1,1280 @@
+{
+  "schema": "plume.campaign-report.v1",
+  "inventory": {
+    "morphometry": {
+      "planned": 100,
+      "statuses": {
+        "complete": 100
+      },
+      "failures": {},
+      "summary_sha256": "b3df3ef4b1714b1adba923c38aedebde3cdd6640929e292c349d261117897292"
+    },
+    "controllability": {
+      "planned": 1200,
+      "statuses": {
+        "complete": 1200
+      },
+      "failures": {},
+      "summary_sha256": "e858acd69ac2e812f9ff2aba72ba8a586249d557dbd51e649b94eefe81ee1e24"
+    },
+    "host_ablation": {
+      "planned": 700,
+      "statuses": {
+        "complete": 700
+      },
+      "failures": {},
+      "summary_sha256": "f9a174b94102267422a2b95ff694b8341572fc496f97bd76ad7da059695ae683"
+    },
+    "sampling_ablation": {
+      "planned": 30,
+      "statuses": {
+        "complete": 30
+      },
+      "failures": {},
+      "summary_sha256": "2d5a333dd5485f54d819c4d00775065fec3d53867ade2b1b19aedcafc6c9d821"
+    },
+    "scalability": {
+      "planned": 40,
+      "statuses": {
+        "complete": 35,
+        "failed": 5
+      },
+      "failures": {
+        "memory_limit": 5
+      },
+      "summary_sha256": "e5a493bc3896c4f9881cdcd892e89eabcd6e7eb1cd6bb7bd7c7b9d82b291b7dc"
+    },
+    "export_consistency": {
+      "planned": 3,
+      "statuses": {
+        "complete": 3
+      },
+      "failures": {},
+      "summary_sha256": "5d9f0655ad3ab87f6a3d948266d5b20b754ffcf6243b8b95f6c1c9d9ab3d69d9"
+    },
+    "determinism": {
+      "planned": 3,
+      "statuses": {
+        "complete": 3
+      },
+      "failures": {},
+      "summary_sha256": "47cf280d430b6fe7c44fcd36becf8c13d392a06c4f79c5871890a082d2b51ec3"
+    }
+  },
+  "source_freeze_sha256": "985011be995430320281772e3b149adb59e998471605f3381b2dea8dac85f051",
+  "control_evaluator_amendment": {
+    "schema": "plume.campaign-amendment.v1",
+    "frozen_at_utc": "2026-09-07T09:40:16.576679+00:00",
+    "applies_to": [
+      "controllability"
+    ],
+    "reason": "Static inspection found that the old partial derived-setting edits skipped current consumers (including lobe path counts) and shrank the duration grid without preserving the source location. Controls now pass through the actual project loader, exactly as TOML edits do. No control-sweep results had been generated or examined. No generator parameter was fitted to evaluation data.",
+    "changed_executing_files": [
+      "src/plume_advanced/config.py",
+      "src/plume_advanced/evaluation/experiments/controllability.py"
+    ],
+    "default_config_hash_check": {
+      "original": "596264775dd5efbb1a443af82758e0cd0ade6751f4b4b75b0dff2a69f9b266ce",
+      "corrected": "596264775dd5efbb1a443af82758e0cd0ade6751f4b4b75b0dff2a69f9b266ce"
+    },
+    "files": {
+      "config/earth_tube_only.toml": "cc11f2778325291d67c9766d23d2c40eef2a99ca38f6b6a73a7815b489ccd614",
+      "config/project.toml": "bc0ac5aca9d9ae23676e6954c641697ff87fed26a74c04d7e2cbb87666e8ad76",
+      "paper/experiments.toml": "b7e0ca5d0ddb0c35fa3f9f121fa5899335da53b12f28b33eb1f86a729309e390",
+      "paper/seeds/export_seeds.txt": "b78a1987bcbdc0903ba6ba29ee3e1f4e7cc1ca868a60889beb141e26e06cb005",
+      "paper/seeds/geometry_seeds.txt": "026d8ad3dfa1f2aa9da7964947ddedd4e83c6fc008206ebf898699dea80f9804",
+      "paper/seeds/network_seeds.txt": "6d506216aa5bad159f167e2535293b4e5ec8e1073b64449d30b66b460ebf6da0",
+      "paper/seeds/sampling_seeds.txt": "28578fd11254edba90213ffe4e58237e3784002e4a8ade08ac862ac05d67552b",
+      "paper/splits/README.md": "03151a814d73ed6d9f5aae69cfd1901dc47e4a4fddc036d98f1342274975a364",
+      "paper/splits/pdc_calibration_caves.txt": "b90ef240be7d59d0978cb0bac9a4c93795e968857e10f1d3fe32cb74f13fce31",
+      "paper/splits/pdc_evaluation_caves.txt": "5cc337bf35fbbe42e40e3b0c020251bb5e45b0e333df5518d6f21077120c5013",
+      "pyproject.toml": "b2421e6003ebe0225162b075c86e229f80c21c9b370e8e846ec9f1dba3705a15",
+      "src/PLUME_Advanced.egg-info/PKG-INFO": "ac1da7cf22b32c6c5b690cd580f61ca52cd47352537b35891202abc2f7606fce",
+      "src/PLUME_Advanced.egg-info/SOURCES.txt": "d12aae214a522ebe79554a176b58397057bd5be3621691b4cb93e9a5500362dd",
+      "src/PLUME_Advanced.egg-info/dependency_links.txt": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "src/PLUME_Advanced.egg-info/entry_points.txt": "8ad0ca1901cdd8843f555b6d5d74a864f84101d392b39a184e10c0b96a790a8d",
+      "src/PLUME_Advanced.egg-info/requires.txt": "3b2a36241b8a96ba48efe0b25cbd45d3270e0591889d258a0e577ad35413c720",
+      "src/PLUME_Advanced.egg-info/top_level.txt": "5641e0e934c08f1a0cf774b4e90c7103e75f7cf4107564d8eb00a5710efed766",
+      "src/plume_advanced/__init__.py": "66905de1e925c2ca2804da425db3c30241cd6ffb04e9daf67102c3e91e9910c0",
+      "src/plume_advanced/cli.py": "8bd9db5f1d41016e688ef47cff93a03f75510ba30290a141e23305a2e5b98126",
+      "src/plume_advanced/config.py": "89533eeca74e425a382988bddaf66c8aa131b1b7b8a414dfd56a8ff1067ff8e9",
+      "src/plume_advanced/default_project.toml": "1615f88c87e665af892008114d3bf16c699f05870d0ecb62400264fbb6f2afa3",
+      "src/plume_advanced/evaluation/__init__.py": "5eafe354125fadcd039dce1adc550a2deae753e3af76085483de1c3ac78f94c9",
+      "src/plume_advanced/evaluation/_common.py": "575c10e42a90c43b8665b62a16f04ef0cfbdd87c337172657406d9612eae994e",
+      "src/plume_advanced/evaluation/aggregate.py": "f02aa009b12c018ffd9c63b03320826dee686f2efdb93fd0a120b67ad2b2f14d",
+      "src/plume_advanced/evaluation/artifacts.py": "5e3689f22fa540ae7e6c5a175f8ac13a06de05f31d73da373c0c77287ce0dd52",
+      "src/plume_advanced/evaluation/cli.py": "b958d52bbb0a4eed4b4a2b142e0614abaed1d67ed2c2a40e4f820b936d26672e",
+      "src/plume_advanced/evaluation/config.py": "8f9da26fdaf70c4bcb6e12c1156ac478ec40d48fb7970a4b2434bdd1e51a1b72",
+      "src/plume_advanced/evaluation/continuity.py": "bbac761d03266897966646806cc61ec85b417d40a14cc2ab02410449944c298e",
+      "src/plume_advanced/evaluation/datasets/__init__.py": "d054fa2e2fa960fb3e1b0a98cdb5e09b401cd9bee39333d137cf1eaa12549ea5",
+      "src/plume_advanced/evaluation/datasets/pdc.py": "28524bceab83f24a6b910a47059a0f645b0eebd903b137cafaafde8e16a21754",
+      "src/plume_advanced/evaluation/experiments/__init__.py": "0d139693c24f7e38e2302eb95e21ead07362a954bcce4c6a6f3d923313df0f26",
+      "src/plume_advanced/evaluation/experiments/common.py": "d63ae4a8fe379cb9778c68cd6253f31de4cf32931cb49f25f432a54fef5f0768",
+      "src/plume_advanced/evaluation/experiments/controllability.py": "75fe321ff909393b8662f9d86e9eb8c12c41f704dc76b5f76328dfe304a053c9",
+      "src/plume_advanced/evaluation/experiments/determinism.py": "57bfcc09bc52c87cda098912c0c9b0430be5e26b65dadd79aa55cd957dce594d",
+      "src/plume_advanced/evaluation/experiments/export_consistency.py": "3bf91b3e2bad511954f5dfab17b07f3cd7887a22e0e9acc158167ce3c62b4674",
+      "src/plume_advanced/evaluation/experiments/host_ablation.py": "8071244bfe9a5ec376e99d399a531a640534983d76eb1e4223e279c9bf26e83c",
+      "src/plume_advanced/evaluation/experiments/morphometry.py": "5577a547f017c9c05d47103e606c6d59ac08bf9e6c950fb0bd20327c8ac203ff",
+      "src/plume_advanced/evaluation/experiments/sampling_ablation.py": "fe90d8217b6ee70b0ed86301ada362b4a7e95b6e6c8c53012c2e0c6c2b797828",
+      "src/plume_advanced/evaluation/experiments/scalability.py": "edc9768b7658b227944101d6d3bda3fc0d834219cd060f976de2dc32cf19035f",
+      "src/plume_advanced/evaluation/experiments/scalability_worker.py": "17b644ae8225f785d3ee054cc1bac48ebc85b4c5d9157974daf70d4626c42ea3",
+      "src/plume_advanced/evaluation/latex.py": "a8feeefccbd2fb40e8f2d36dfc816ee05c3568f0ff899d21a4a3a259507c8a26",
+      "src/plume_advanced/evaluation/local_geometry.py": "a951840a98e3ab1ae2cbdccb413dbc78701f45775e0d5940114a062a6f5fa77f",
+      "src/plume_advanced/evaluation/metrics/__init__.py": "6bcbfd0ba62cd643220fdf4ca7b7b7ef1ab506de9f712280e862af59d9893a63",
+      "src/plume_advanced/evaluation/metrics/continuity.py": "1e53a0b231ca0f2b91ac9a3281ff0240abc3d4e38b319f53f508e0638f8335d1",
+      "src/plume_advanced/evaluation/metrics/contours.py": "b64f344fa85d5ceefb521caa4ba1f167c92b1ecf49efe00dd870a7adbf46dd08",
+      "src/plume_advanced/evaluation/metrics/emplacement.py": "79da2dd2e8681a63f89f0f643c58bfdec0bb3b9de212ccffa323064d96f62b44",
+      "src/plume_advanced/evaluation/metrics/morphometry.py": "8a12ea156013804057ac9f56fb80fd6a21011441fc6793b7da3a79a5e760197b",
+      "src/plume_advanced/evaluation/metrics/network.py": "b9d3ed0c0618d20fa72b6da7a77c9ff5b8b0579af5763b4297979cc85a1c5cda",
+      "src/plume_advanced/evaluation/metrics/sections.py": "b89f2537bae55b7ded538c4b7802c6b95d8f0c5e4ff070a34a33f5b22a19e6f0",
+      "src/plume_advanced/evaluation/morphology_bootstrap.py": "4c46b84111bd7a9eae2d923e2195e73ff82f264b813768ac2c17e5c998908563",
+      "src/plume_advanced/evaluation/plotting.py": "3f2cf93736392a95b352f5b65d1579481ea2c57816b2d945e37c98d3b7f184bb",
+      "src/plume_advanced/evaluation/provenance.py": "fee13343ebb01639d908efffcecd9dc9e0350fa446dd968bdafcfc01eee561d3",
+      "src/plume_advanced/evaluation/runner.py": "a03686898ec885a08eeae8e48ce3b72b16bd7254c2c1aef2494c08441809b9f2",
+      "src/plume_advanced/evaluation/schema.py": "703658787afbb53056a465d7b83e2b5271a3daf39127009ffd2abee758c8b24e",
+      "src/plume_advanced/evaluation/serialization.py": "cfc22b32e461982bae8de031b9568c578853f30359bf36590fb06ed5a2f601ef",
+      "src/plume_advanced/evaluation/statistics.py": "485f307fd5dc8d146fd23a0f5daaf6e1077c7d42e55a93d6201d7205422f89dd",
+      "src/plume_advanced/evaluation/visualization/__init__.py": "7385caf62c89403c38e589cbf13b8ee948b61535b70ef707398a985f402cb446",
+      "src/plume_advanced/evaluation/visualization/dashboard.py": "d0b2bbd42eea161576435c6168ad6144142282a3839f48e0b659b675e50848d1",
+      "src/plume_advanced/evaluation/visualization/emplacement.py": "e340c899b63ab240f6e4d82e00d0b9051b6ecc6bbc4ce050811ee74a2c5747b3",
+      "src/plume_advanced/exporters/__init__.py": "4dc5fb372c4011192f0eefa3032c8cc26f40e858816e62c4d53950202be4c935",
+      "src/plume_advanced/exporters/atomic.py": "e2554dbf074e620913541c9c21018574452de0f62c1c3da94576804be8e55087",
+      "src/plume_advanced/exporters/scene.py": "a8e6b6dda027416fca198804478b988789d2c559f3f0b3236e720481f0894a75",
+      "src/plume_advanced/exporters/targets.py": "a2eb9709bf0d78b33692f450f1b910dd9925c24e4e56f9f6ff8b10c86f386e18",
+      "src/plume_advanced/media/__init__.py": "1a9944ec6c7acd33cf30f541109b28cf9a9e56d98dd70e7f879a7f6cc3b1a17f",
+      "src/plume_advanced/media/manim_data.py": "5e8aa4cb57a09e131e0af218605fe99890fe4efbf4a54929bfddf84fb3f4a164",
+      "src/plume_advanced/media/manim_typography.py": "fabfa62f97f0bf6bc3acf71e2f8145b73e27970c9c58e9238c8bb38237accd26",
+      "src/plume_advanced/output_guard.py": "7ef8d43aab71acd286f7edce3eb3889ce1f3276782f51310db90c5b5b892f89e",
+      "src/plume_advanced/pipeline/__init__.py": "e476058131b5455831f40c811011091dd9f4b9a12f30b6d72c7880cc9cfc1c29",
+      "src/plume_advanced/pipeline/checkpoints.py": "7d70385b322a41ce8dcb25e68322cf340cce41c32b430a32df33eb60e23a4dc6",
+      "src/plume_advanced/procedural.py": "6d314ca0eeb7517de384f8bbe718c640fd9cbe6414d6300d3046dd2fe4a930db",
+      "src/plume_advanced/run_manifest.py": "aeb01fc402ba5ab6c2bb39873a0a0f1fb71b1467bafbfc415512f4a91733afbe",
+      "src/plume_advanced/stability.py": "146c6cada09a52112bda3060afeaf96d984ac5396f4d4fefac81f5bdbab5dc28",
+      "src/plume_advanced/stages/__init__.py": "44965def89a5da7f821ba3acc31f919c16b9cbd634e07e3d4caa3ed32b29b80a",
+      "src/plume_advanced/stages/events.py": "fe24c18d83c4331e06e52f8f2e9bbc10ee373c8a33bedf5ff4141133a2572432",
+      "src/plume_advanced/stages/floor_map.py": "e49ea890fa849e7a845339d2e5a08cb5b5dcfd1f8383fb94d30ab8835031e510",
+      "src/plume_advanced/stages/geometry.py": "01e6e5d66d2ba1f5de2a579cd06ad2618c90ba62caea1f648b58398effe79ec2",
+      "src/plume_advanced/stages/geometry_export.py": "8056bfca7dfde7b0c17a5da1382d91676934987e039e16bcbabcaf8c3b382677",
+      "src/plume_advanced/stages/geometry_types.py": "1987a67514b8e4c76ce199a54d3793489d2a27ee5f6882843bd592eb0228093a",
+      "src/plume_advanced/stages/host_field.py": "b24950daa27806b39e983c27fb40bd00e6a112ea978d4cacd10f35bf4829d749",
+      "src/plume_advanced/stages/network.py": "a081b0fd609e15a07efbf9076630cb2ff412f6777d7d1dd439fea7dff8645ff6",
+      "src/plume_advanced/stages/network_metadata.py": "a73b5fa75f56c634b85197fc74d202e6806fffa7635a4636f69495bbe57459a9",
+      "src/plume_advanced/stages/section_field.py": "cb31b38dba77c6a95f533fb994f8363081971b7377be034f875a044b55b42af0",
+      "src/plume_advanced/stages/surface_relief.py": "2b9998316c6eb97df874630eb4265529dd34ec06bbb351516e5fcb1ce20c75a7",
+      "src/plume_advanced/validation.py": "33b228536d28ea07709d093aa65590e9eee990cc27a7fe4716a2b05f0a11d696",
+      "src/plume_advanced/visualization/__init__.py": "d1132359c9be7894f38b22f1b654ffbc5862ce56f75ad080aaa64903deb5ac02",
+      "src/plume_advanced/visualization/drained_pools.py": "12ed90f9d76268b2379c0df1fda6fe5c0e38cff7bc933dec6a81732aaedd0534",
+      "src/plume_advanced/visualization/events.py": "06360b9043909e522a44f1bbb94954557e2802282b27787d8b65b72e67680618",
+      "src/plume_advanced/visualization/floor_map.py": "72f565b258a5421a9a47008c266bce0bb10a2c332a9630fb28416d11461681ea",
+      "src/plume_advanced/visualization/geometry.py": "5e095c20095b6b25259ac9c335d64deb9066db429f5774dfa1c671423e2ceec9",
+      "src/plume_advanced/visualization/host_field.py": "863bd6fa1289832b427cb51ecd6e3ab514fa98c437af68884f04325b02b55632",
+      "src/plume_advanced/visualization/network.py": "d07d401d1d8cfa914dd0c116bb6dd798e8f594920841e308471df44556bda575",
+      "src/plume_advanced/visualization/section_field.py": "6972fa5990cd6c00fdc4cee7a06aaa07d3197b7f5ab1f977e1abf4bb90c9d24b",
+      "src/plume_advanced/world.py": "760992e962ec42111cbf8e456436fc08c92701776b82ac96fd39ab3ef8f0732c",
+      "tests/test_checkpoints.py": "94979f16e2c4b2d76c3b6bc33c11b89f7337c8a88f80fdc17e48bc5c43df1140",
+      "tests/test_cli.py": "67bb0a80ef587adb403c9c9bb2bf0e9f177f64e082f9a80d5e55169864fc4fe5",
+      "tests/test_config.py": "bdd75e947987f730602597fea62eaafaa0269f0f061c4b717635caca740234a0",
+      "tests/test_diagnostic_dashboard.py": "58eeaf2cd2fc6db4e6db63ecc698f6047017d405d50a53d066d28d0b60e63cf9",
+      "tests/test_emplacement_backend_benchmark.py": "12fdc9e33e1bc275895c546db9758ed4b8b355080112f518e5baf3af8616940a",
+      "tests/test_evaluation_campaign.py": "60e1b3e404604472a71725f231ceaf2dc5a1df739bda518339aff57f16f3ec42",
+      "tests/test_evaluation_config.py": "98a77f4db5261e2434ae1b72bc3a29a76189d9638d82b0015d2898cc69038edd",
+      "tests/test_evaluation_contours.py": "934659057d9e1559293387971926ef886e2e7861fec2a49b80b8f221a35495e7",
+      "tests/test_evaluation_control_resolution.py": "4105eebaa4f5508debee4765fad353c4cb49517a82417a27c8537e2236edb367",
+      "tests/test_evaluation_diagnostics.py": "87c26a6edbeccc45db2b94d7e4d7f7322b91b4cea7a7fd8f555922e94bc8754c",
+      "tests/test_evaluation_emplacement.py": "8eea580464df2fb8a9d1fa361956747e14f254a93e02c8d9010c59d8a28b20ce",
+      "tests/test_evaluation_export_consistency.py": "0d09a63cb3c08d441eb97f266438028d16796281c9796c38ebefccff2a0dffc2",
+      "tests/test_evaluation_geometry_report.py": "34b1c5d3225f7b51c7fa4ae068367c6fcfe7ea2f5b0554f810fca69208e3223a",
+      "tests/test_evaluation_network_metrics.py": "8832ad9b0812bc85fe912538ff827f9ad37168753e93e2eabb18346b546192ff",
+      "tests/test_evaluation_reporting.py": "0552f2ee84fb051bd1855ab6cb569a0b5987b12fd746af79d81c6c5dd61f7f1a",
+      "tests/test_evaluation_runner.py": "d766429f3d5b5d7ff3b32e78c041b99ecfe4ccd51e868b09c60b148f351be1b3",
+      "tests/test_evaluation_statistics.py": "c6ff441a3251d0894b0baa14132edfcb29a24f5aedecb4ba790c9073edfc8411",
+      "tests/test_events.py": "5ce281db3e4822dea5259150c55fc032c3c456cad5a2f66e4ed75e61807147d4",
+      "tests/test_export_targets.py": "adac2da055a695c08fa61f8c4a768373bbff88789ab24a59229b88c11b01c0d0",
+      "tests/test_floor_map.py": "bb45912568d6a545440433158ae52b32fd0114df44b68d4bde593adcac7a7598",
+      "tests/test_geometry.py": "fc2c863c313d6efb6fb0ec3c3c0ccc7f34d10bd5bfabada50dcf6cf62dc8055b",
+      "tests/test_geometry_export.py": "238f01c33c89d2435ce7910c6b5f3daf0de1717d99538ad77e62042b13e6db6a",
+      "tests/test_host_field.py": "70ab7ce3e0a32dfdd90126d649103cd52232af01ed8b795d2c5850c29d727e97",
+      "tests/test_local_geometry.py": "ee00080ec599a8d54ed814ef3e8b8634ef5479823568ae9546c2d2e711e6755f",
+      "tests/test_manim_data.py": "f963881c72a39139e046a2b4826f95a8343e6de1388569c1c300b872cc07d9fb",
+      "tests/test_manim_typography.py": "529a57917b9fdaef1ec97c985684aaddc25178426b5c73db6bbd324265a0950a",
+      "tests/test_mesh_continuity.py": "7cf1799b74e5c0be3a4ac9b1b8232092d03c06bd4193380f625abe602256fc49",
+      "tests/test_network.py": "d0f8563d7779196cc73ec2199a7d83c29e0cf307011c52192fcde493c3bc5324",
+      "tests/test_output_guard.py": "a05275b409798d707914ebadacc626ef6f9b873e10a6bb6ab9c0ed616c905e28",
+      "tests/test_pdc_loader.py": "58c32298a165f509c805457245c1299527b0d24294cdcc4a8eb0fde0faf5499e",
+      "tests/test_performance_regressions.py": "ad34ef9937a99ca0cdabb17e22268f9c7e24cfb1ea6578da7b520facb824580f",
+      "tests/test_run_manifest.py": "85e674922ea33aeaf97c0164eaa965a3f010456156b786b6ddac6e499afceb26",
+      "tests/test_sampling_policy.py": "529193c1f915153c8256b8765ef835d48ac4b7b3cf041d90b6c371f087ced14c",
+      "tests/test_section_field.py": "667659600a87eda0121302e8e2ef530e4ee7005db5a9ebf8d92dac3cd433de5b",
+      "tests/test_stability.py": "254ca4859399e896979aed1924d27143d31785cc6689b0c5b805008c0e6bb3be",
+      "tests/test_surface_morphology.py": "753b34f1481f4c1e0acd1ea0a7765dc2b6b99ccc5ed082f485b914a31c44493c",
+      "tests/test_surface_normals.py": "c689f6f4ebb544dd504d22aefe9baf37427994641b8218a2341059b8d858b4f1",
+      "tests/test_surface_relief.py": "0b9a476b978a5ca6d934e4ce0f43b7b150a5765a6e8eb7dea47c84112201e971",
+      "tests/test_tiled_geometry.py": "6efb134e76a2f68c6aa5205b5f813e78400ab8c86230bbf9cd90b71f0b8ac87c",
+      "tests/test_validation.py": "f3af6e9179a7f65f96f000bf34925466e4544a835e187428e484b13bbcc60b51",
+      "tests/test_visualization.py": "238c6205169d3df8b1599b4523b03c845e1c777eb13ce5d91b2068b48bc957e1",
+      "tests/test_voxel_queries.py": "8d297774be49b7141e9c29467a63c49a7b03db13481dcbd4c834c581cd95f759",
+      "tests/test_world_contracts.py": "c581f3b4a26592d7d69a0d9c881ba1731598f6e4208a2c6f6af48c494b33b2b9",
+      "uv.lock": "58553b567f655b1585f5d59992943c7c686a9d72a75a02e0b51d6f638663aed6"
+    },
+    "file_manifest_sha256": "c367e048207f0e4972d7cce3735f1d1bc69b56484837b16f44fbb46b976b2a91",
+    "validation": "34 targeted tests passed, including all 12 control settings against literal TOML edits, source containment, unknown-key validation and current lobe consumer response. Type checking passed.",
+    "network_workers": 6,
+    "other_experiments": "Continue to use the original frozen package and four-worker setting; scalability remains sequential.",
+    "revised_driver_sha256": "1bc846b3a8a6ae87b92e7de33d6679e30704e9e36fd3f2ff9b2a9679699e4918",
+    "executing_package_sha256": "70dec45a913eaf371437775956831433f52e8e07ab63e8f1f67e65942d168b06"
+  },
+  "supplementary_effects": {
+    "controllability": {
+      "distributary": {
+        "primary_metric": "cyclomatic_number",
+        "low_level": 0.2,
+        "high_level": 0.8,
+        "level_medians": {
+          "0.2": 12.0,
+          "0.5": 12.0,
+          "0.8": 12.0
+        },
+        "paired_high_minus_low": {
+          "valid_pairs": 100,
+          "median_delta": 0.0,
+          "ci_lower": 0.0,
+          "ci_upper": 0.0
+        }
+      },
+      "duration": {
+        "primary_metric": "main_route_length_m",
+        "low_level": 0.5,
+        "high_level": 1.5,
+        "level_medians": {
+          "0.5": 2665.601518585767,
+          "1.0": 5397.192858314671,
+          "1.5": 6495.821029458502
+        },
+        "paired_high_minus_low": {
+          "valid_pairs": 100,
+          "median_delta": 3809.8544967384687,
+          "ci_lower": 3682.2869684084053,
+          "ci_upper": 4928.820385793784
+        }
+      },
+      "inflation": {
+        "primary_metric": "junction_to_passage_width_ratio",
+        "low_level": 0.2,
+        "high_level": 0.8,
+        "level_medians": {
+          "0.2": 1.1883714661888516,
+          "0.5": 1.2121011563923272,
+          "0.8": 1.2209217504878362
+        },
+        "paired_high_minus_low": {
+          "valid_pairs": 100,
+          "median_delta": 0.031757214660466215,
+          "ci_lower": 0.01620805465141384,
+          "ci_upper": 0.049025808524744564
+        }
+      },
+      "supply": {
+        "primary_metric": "host_horizontal_scale",
+        "low_level": 0.7,
+        "high_level": 1.3,
+        "level_medians": {
+          "0.7": 0.8366600265340756,
+          "1.0": 1.0,
+          "1.3": 1.140175425099138
+        },
+        "paired_high_minus_low": {
+          "valid_pairs": 100,
+          "median_delta": 0.3035153985650625,
+          "ci_lower": 0.3035153985650625,
+          "ci_upper": 0.3035153985650625
+        }
+      }
+    },
+    "sampling": {
+      "error_mean_m": {
+        "valid_pairs": 30,
+        "median_delta": 0.43921369505140295,
+        "ci_lower": 0.4322956494995308,
+        "ci_upper": 0.4540755326773581
+      },
+      "error_p95_m": {
+        "valid_pairs": 30,
+        "median_delta": 2.107129234383689,
+        "ci_lower": 2.0659646806458842,
+        "ci_upper": 2.1685796641648896
+      },
+      "section_count": {
+        "valid_pairs": 30,
+        "median_delta": -29.5,
+        "ci_lower": -32.0,
+        "ci_upper": -27.0
+      }
+    },
+    "scalability": {
+      "500": {
+        "valid_pairs": 5,
+        "median_tiled_over_dense_time": 1.1963585457080814,
+        "median_tiled_over_dense_rss": 0.2962148393908914,
+        "fidelity_scope": "Resource ratios do not establish equivalent final geometry."
+      },
+      "1000": {
+        "valid_pairs": 5,
+        "median_tiled_over_dense_time": 1.1284700340209095,
+        "median_tiled_over_dense_rss": 0.19126263580221464,
+        "fidelity_scope": "Resource ratios do not establish equivalent final geometry."
+      },
+      "2000": {
+        "valid_pairs": 5,
+        "median_tiled_over_dense_time": 1.0160283501014753,
+        "median_tiled_over_dense_rss": 0.09276301662145424,
+        "fidelity_scope": "Resource ratios do not establish equivalent final geometry."
+      },
+      "5000": {
+        "valid_pairs": 0,
+        "median_tiled_over_dense_time": null,
+        "median_tiled_over_dense_rss": null,
+        "fidelity_scope": "Resource ratios do not establish equivalent final geometry."
+      }
+    },
+    "geometry_diagnostics": {
+      "1000m-dense": {
+        "completed_cases": 5,
+        "realized_main_route_m": {
+          "minimum": 1140.1339570725663,
+          "median": 1213.8271198760115,
+          "maximum": 1235.96322115748
+        },
+        "total_network_length_m": {
+          "minimum": 3739.660706726088,
+          "median": 4275.839873752785,
+          "maximum": 4696.58901645603
+        },
+        "mesh_faces": {
+          "minimum": 546332.0,
+          "median": 599752.0,
+          "maximum": 657016.0
+        },
+        "mesh_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 1.0
+        },
+        "void_voxel_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 1.0
+        },
+        "bounding_grid_voxels": {
+          "minimum": 202524476.0,
+          "median": 249769008.0,
+          "maximum": 264451275.0
+        },
+        "voxel_size_m": {
+          "minimum": 0.6,
+          "median": 0.6,
+          "maximum": 0.6
+        },
+        "input_under_resolved_fraction": {
+          "minimum": 0.43843843843843844,
+          "median": 0.6248534583821805,
+          "maximum": 0.6832298136645962
+        },
+        "roof_screen_collapse_count": {
+          "minimum": 0.0,
+          "median": 0.0,
+          "maximum": 0.0
+        },
+        "scope": "Recorded mesh and volume counts plus input-profile resolution screening; not local mesh cuts or a convergence test."
+      },
+      "1000m-tiled": {
+        "completed_cases": 5,
+        "realized_main_route_m": {
+          "minimum": 1140.1339570725663,
+          "median": 1213.8271198760115,
+          "maximum": 1235.96322115748
+        },
+        "total_network_length_m": {
+          "minimum": 3739.660706726088,
+          "median": 4275.839873752785,
+          "maximum": 4696.58901645603
+        },
+        "mesh_faces": {
+          "minimum": 546362.0,
+          "median": 602928.0,
+          "maximum": 657016.0
+        },
+        "mesh_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 4.0
+        },
+        "void_voxel_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 4.0
+        },
+        "bounding_grid_voxels": {
+          "minimum": 202524476.0,
+          "median": 249769008.0,
+          "maximum": 264451275.0
+        },
+        "voxel_size_m": {
+          "minimum": 0.6,
+          "median": 0.6,
+          "maximum": 0.6
+        },
+        "input_under_resolved_fraction": {
+          "minimum": 0.43843843843843844,
+          "median": 0.6248534583821805,
+          "maximum": 0.6832298136645962
+        },
+        "roof_screen_collapse_count": {
+          "minimum": 0.0,
+          "median": 0.0,
+          "maximum": 0.0
+        },
+        "scope": "Recorded mesh and volume counts plus input-profile resolution screening; not local mesh cuts or a convergence test."
+      },
+      "2000m-dense": {
+        "completed_cases": 5,
+        "realized_main_route_m": {
+          "minimum": 2121.2117228119278,
+          "median": 2214.960735454996,
+          "maximum": 2315.356615967904
+        },
+        "total_network_length_m": {
+          "minimum": 5812.935047688374,
+          "median": 5927.071839892746,
+          "maximum": 6454.535972056808
+        },
+        "mesh_faces": {
+          "minimum": 809092.0,
+          "median": 851814.0,
+          "maximum": 953850.0
+        },
+        "mesh_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 1.0
+        },
+        "void_voxel_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 1.0
+        },
+        "bounding_grid_voxels": {
+          "minimum": 482317200.0,
+          "median": 633663932.0,
+          "maximum": 756412416.0
+        },
+        "voxel_size_m": {
+          "minimum": 0.6,
+          "median": 0.6,
+          "maximum": 0.6
+        },
+        "input_under_resolved_fraction": {
+          "minimum": 0.5850840336134454,
+          "median": 0.6147278548559232,
+          "maximum": 0.6338495575221239
+        },
+        "roof_screen_collapse_count": {
+          "minimum": 0.0,
+          "median": 0.0,
+          "maximum": 0.0
+        },
+        "scope": "Recorded mesh and volume counts plus input-profile resolution screening; not local mesh cuts or a convergence test."
+      },
+      "2000m-tiled": {
+        "completed_cases": 5,
+        "realized_main_route_m": {
+          "minimum": 2121.2117228119278,
+          "median": 2214.960735454996,
+          "maximum": 2315.356615967904
+        },
+        "total_network_length_m": {
+          "minimum": 5812.935047688374,
+          "median": 5927.071839892746,
+          "maximum": 6454.535972056808
+        },
+        "mesh_faces": {
+          "minimum": 809130.0,
+          "median": 851814.0,
+          "maximum": 953850.0
+        },
+        "mesh_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 4.0
+        },
+        "void_voxel_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 5.0
+        },
+        "bounding_grid_voxels": {
+          "minimum": 482317200.0,
+          "median": 633663932.0,
+          "maximum": 756412416.0
+        },
+        "voxel_size_m": {
+          "minimum": 0.6,
+          "median": 0.6,
+          "maximum": 0.6
+        },
+        "input_under_resolved_fraction": {
+          "minimum": 0.5850840336134454,
+          "median": 0.6147278548559232,
+          "maximum": 0.6338495575221239
+        },
+        "roof_screen_collapse_count": {
+          "minimum": 0.0,
+          "median": 0.0,
+          "maximum": 0.0
+        },
+        "scope": "Recorded mesh and volume counts plus input-profile resolution screening; not local mesh cuts or a convergence test."
+      },
+      "5000m-dense": {
+        "completed_cases": 0
+      },
+      "5000m-tiled": {
+        "completed_cases": 5,
+        "realized_main_route_m": {
+          "minimum": 5174.472904970496,
+          "median": 5396.601304027975,
+          "maximum": 5486.704111104898
+        },
+        "total_network_length_m": {
+          "minimum": 9306.825838929779,
+          "median": 9886.713638707362,
+          "maximum": 10167.35595360716
+        },
+        "mesh_faces": {
+          "minimum": 1307542.0,
+          "median": 1484800.0,
+          "maximum": 1530682.0
+        },
+        "mesh_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 1.0
+        },
+        "void_voxel_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 2.0
+        },
+        "bounding_grid_voxels": {
+          "minimum": 1905014700.0,
+          "median": 3345225728.0,
+          "maximum": 3727547910.0
+        },
+        "voxel_size_m": {
+          "minimum": 0.6,
+          "median": 0.6,
+          "maximum": 0.6
+        },
+        "input_under_resolved_fraction": {
+          "minimum": 0.37791199309749784,
+          "median": 0.5419303797468354,
+          "maximum": 0.6758832565284179
+        },
+        "roof_screen_collapse_count": {
+          "minimum": 0.0,
+          "median": 0.0,
+          "maximum": 0.0
+        },
+        "scope": "Recorded mesh and volume counts plus input-profile resolution screening; not local mesh cuts or a convergence test."
+      },
+      "500m-dense": {
+        "completed_cases": 5,
+        "realized_main_route_m": {
+          "minimum": 520.7596773151823,
+          "median": 632.1732247511536,
+          "maximum": 661.0740251799538
+        },
+        "total_network_length_m": {
+          "minimum": 2773.8120343425435,
+          "median": 2879.9763852126184,
+          "maximum": 4070.113616892356
+        },
+        "mesh_faces": {
+          "minimum": 365722.0,
+          "median": 394636.0,
+          "maximum": 542784.0
+        },
+        "mesh_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 1.0
+        },
+        "void_voxel_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 1.0
+        },
+        "bounding_grid_voxels": {
+          "minimum": 92285160.0,
+          "median": 106302105.0,
+          "maximum": 131765040.0
+        },
+        "voxel_size_m": {
+          "minimum": 0.6,
+          "median": 0.6,
+          "maximum": 0.6
+        },
+        "input_under_resolved_fraction": {
+          "minimum": 0.5211505922165821,
+          "median": 0.6132596685082873,
+          "maximum": 0.7435897435897436
+        },
+        "roof_screen_collapse_count": {
+          "minimum": 0.0,
+          "median": 0.0,
+          "maximum": 0.0
+        },
+        "scope": "Recorded mesh and volume counts plus input-profile resolution screening; not local mesh cuts or a convergence test."
+      },
+      "500m-tiled": {
+        "completed_cases": 5,
+        "realized_main_route_m": {
+          "minimum": 520.7596773151823,
+          "median": 632.1732247511536,
+          "maximum": 661.0740251799538
+        },
+        "total_network_length_m": {
+          "minimum": 2773.8120343425435,
+          "median": 2879.9763852126184,
+          "maximum": 4070.113616892356
+        },
+        "mesh_faces": {
+          "minimum": 365722.0,
+          "median": 394636.0,
+          "maximum": 542784.0
+        },
+        "mesh_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 1.0
+        },
+        "void_voxel_components": {
+          "minimum": 1.0,
+          "median": 1.0,
+          "maximum": 1.0
+        },
+        "bounding_grid_voxels": {
+          "minimum": 92285160.0,
+          "median": 106302105.0,
+          "maximum": 131765040.0
+        },
+        "voxel_size_m": {
+          "minimum": 0.6,
+          "median": 0.6,
+          "maximum": 0.6
+        },
+        "input_under_resolved_fraction": {
+          "minimum": 0.5211505922165821,
+          "median": 0.6132596685082873,
+          "maximum": 0.7435897435897436
+        },
+        "roof_screen_collapse_count": {
+          "minimum": 0.0,
+          "median": 0.0,
+          "maximum": 0.0
+        },
+        "scope": "Recorded mesh and volume counts plus input-profile resolution screening; not local mesh cuts or a convergence test."
+      }
+    },
+    "export_diagnostics": {
+      "blender": {
+        "checked_packages": 3,
+        "visual_present": 3,
+        "collision_present": 3,
+        "parsed_bounds_n": 3,
+        "maximum_relative_extent_error": 0.001740434710262522,
+        "scope": "Automatic presence and sorted-extent diagnostics comparing base mesh with prepared visual surface, including possible smoothing/displacement; no inverse-pose, materials or simulator-contact certification. USD and Gazebo package bounds are not parsed."
+      },
+      "gazebo": {
+        "checked_packages": 3,
+        "visual_present": 3,
+        "collision_present": 3,
+        "parsed_bounds_n": 0,
+        "maximum_relative_extent_error": null,
+        "scope": "Automatic presence and sorted-extent diagnostics comparing base mesh with prepared visual surface, including possible smoothing/displacement; no inverse-pose, materials or simulator-contact certification. USD and Gazebo package bounds are not parsed."
+      },
+      "omniverse": {
+        "checked_packages": 3,
+        "visual_present": 3,
+        "collision_present": 3,
+        "parsed_bounds_n": 0,
+        "maximum_relative_extent_error": null,
+        "scope": "Automatic presence and sorted-extent diagnostics comparing base mesh with prepared visual surface, including possible smoothing/displacement; no inverse-pose, materials or simulator-contact certification. USD and Gazebo package bounds are not parsed."
+      },
+      "ue5": {
+        "checked_packages": 3,
+        "visual_present": 3,
+        "collision_present": 3,
+        "parsed_bounds_n": 3,
+        "maximum_relative_extent_error": 0.001740434710262522,
+        "scope": "Automatic presence and sorted-extent diagnostics comparing base mesh with prepared visual surface, including possible smoothing/displacement; no inverse-pose, materials or simulator-contact certification. USD and Gazebo package bounds are not parsed."
+      },
+      "unity": {
+        "checked_packages": 3,
+        "visual_present": 3,
+        "collision_present": 3,
+        "parsed_bounds_n": 3,
+        "maximum_relative_extent_error": 0.001740434710262522,
+        "scope": "Automatic presence and sorted-extent diagnostics comparing base mesh with prepared visual surface, including possible smoothing/displacement; no inverse-pose, materials or simulator-contact certification. USD and Gazebo package bounds are not parsed."
+      }
+    }
+  },
+  "summaries": {
+    "morphometry": {
+      "aggregate_baseline_normalized_w1": 0.8401469349905806,
+      "aggregate_ci_lower": 0.22673346907230615,
+      "aggregate_ci_upper": 0.4171572635487116,
+      "aggregate_generated_normalized_w1": 0.25366659873599173,
+      "aggregate_normalized_w1": 0.25366659873599173,
+      "aggregate_relative_improvement_vs_baseline": 0.6980687684841274,
+      "complete_worlds": 100,
+      "excluded_self_intersecting_sections": 0,
+      "failed_worlds": 0,
+      "generated_sections": 118257,
+      "metrics": [
+        {
+          "baseline": {
+            "iqr": 2.4119529005612623,
+            "median": 8.157251441163073,
+            "q1": 7.006482569718157,
+            "q3": 9.41843547027942
+          },
+          "baseline_normalized_w1": 0.3535625990413132,
+          "generated": {
+            "iqr": 2.4119529005612623,
+            "median": 8.157251441163073,
+            "q1": 7.006482569718157,
+            "q3": 9.41843547027942
+          },
+          "generated_ks": 0.4223229068892328,
+          "generated_normalized_w1": 0.3535625990413132,
+          "generated_w1": 2.792387023748515,
+          "metric": "width_m",
+          "normalized_w1_ci_lower": 0.32600111440430707,
+          "normalized_w1_ci_upper": 0.6948750919310337,
+          "reference": {
+            "iqr": 7.897857497710692,
+            "median": 5.967263986507135,
+            "q1": 3.478546166227545,
+            "q3": 11.376403663938238
+          },
+          "reference_iqr_near_zero": false
+        },
+        {
+          "baseline": {
+            "iqr": 1.865456086749476,
+            "median": 4.638536508251027,
+            "q1": 3.737554185247671,
+            "q3": 5.603010271997147
+          },
+          "baseline_normalized_w1": 0.41753114103068945,
+          "generated": {
+            "iqr": 1.865456086749476,
+            "median": 4.638536508251027,
+            "q1": 3.737554185247671,
+            "q3": 5.603010271997147
+          },
+          "generated_ks": 0.3267525389617529,
+          "generated_normalized_w1": 0.41753114103068945,
+          "generated_w1": 1.372878860303939,
+          "metric": "height_m",
+          "normalized_w1_ci_lower": 0.2907456241151188,
+          "normalized_w1_ci_upper": 0.7956354721249184,
+          "reference": {
+            "iqr": 3.288087343413337,
+            "median": 3.4996538813388147,
+            "q1": 2.158509583104504,
+            "q3": 5.446596926517841
+          },
+          "reference_iqr_near_zero": false
+        },
+        {
+          "baseline": {
+            "iqr": 0.5615361231996461,
+            "median": 1.7486885432571373,
+            "q1": 1.527077841418419,
+            "q3": 2.088613964618065
+          },
+          "baseline_normalized_w1": 0.2572135079434492,
+          "generated": {
+            "iqr": 0.5615361231996461,
+            "median": 1.7486885432571373,
+            "q1": 1.527077841418419,
+            "q3": 2.088613964618065
+          },
+          "generated_ks": 0.1705917620098599,
+          "generated_normalized_w1": 0.2572135079434492,
+          "generated_w1": 0.2982864138791997,
+          "metric": "aspect_ratio",
+          "normalized_w1_ci_lower": 0.22868458994121602,
+          "normalized_w1_ci_upper": 0.35207769140779804,
+          "reference": {
+            "iqr": 1.1596840938259771,
+            "median": 1.793737921979154,
+            "q1": 1.2697923869340593,
+            "q3": 2.4294764807600364
+          },
+          "reference_iqr_near_zero": false
+        },
+        {
+          "baseline": {
+            "iqr": 19.62552164161314,
+            "median": 29.440654870215063,
+            "q1": 20.789085656333967,
+            "q3": 40.41460729794711
+          },
+          "baseline_normalized_w1": 0.5539917811434402,
+          "generated": {
+            "iqr": 18.320361576632337,
+            "median": 27.51705809300592,
+            "q1": 19.371677570562944,
+            "q3": 37.69203914719528
+          },
+          "generated_ks": 0.39655940028920067,
+          "generated_normalized_w1": 0.5378730406271237,
+          "generated_w1": 15.881857874546853,
+          "metric": "area_m2",
+          "normalized_w1_ci_lower": 0.320162777584751,
+          "normalized_w1_ci_upper": 1.1420181204659476,
+          "reference": {
+            "iqr": 29.527149856831784,
+            "median": 13.953103429157636,
+            "q1": 5.9420554607995655,
+            "q3": 35.46920531763135
+          },
+          "reference_iqr_near_zero": false
+        },
+        {
+          "baseline": {
+            "iqr": 0.1124722640188639,
+            "median": 0.891527703236801,
+            "q1": 0.8227477971013013,
+            "q3": 0.9352200611201652
+          },
+          "baseline_normalized_w1": 0.9808482059395588,
+          "generated": {
+            "iqr": 0.09565908265910184,
+            "median": 0.7794279400912107,
+            "q1": 0.7174790100162828,
+            "q3": 0.8131380926753846
+          },
+          "generated_ks": 0.3723118716016811,
+          "generated_normalized_w1": 0.44092847803528845,
+          "generated_w1": 0.08857722717071843,
+          "metric": "compactness",
+          "normalized_w1_ci_lower": 0.34537816198748367,
+          "normalized_w1_ci_upper": 0.7019106869477716,
+          "reference": {
+            "iqr": 0.20088797068723108,
+            "median": 0.6825700762222522,
+            "q1": 0.5730000641486036,
+            "q3": 0.7738880348358347
+          },
+          "reference_iqr_near_zero": false
+        },
+        {
+          "baseline": {
+            "iqr": 6.938893903907228e-18,
+            "median": 0.06053614209947651,
+            "q1": 0.060536142099476505,
+            "q3": 0.06053614209947651
+          },
+          "baseline_normalized_w1": 1.0572504800747986,
+          "generated": {
+            "iqr": 0.008666041682222674,
+            "median": 0.04850704401413816,
+            "q1": 0.04445679807648285,
+            "q3": 0.05312283975870552
+          },
+          "generated_ks": 0.18125015855298204,
+          "generated_normalized_w1": 0.2319612912658249,
+          "generated_w1": 0.003058506007355154,
+          "metric": "floor_residual_norm",
+          "normalized_w1_ci_lower": 0.16738634210984232,
+          "normalized_w1_ci_upper": 0.4586810176185377,
+          "reference": {
+            "iqr": 0.013185415509047768,
+            "median": 0.04621860112038467,
+            "q1": 0.041002793832551336,
+            "q3": 0.054188209341599104
+          },
+          "reference_iqr_near_zero": false
+        },
+        {
+          "baseline": {
+            "iqr": 1.195378773412663e-17,
+            "median": 2.5496308403407004e-17,
+            "q1": 1.9515834265584412e-17,
+            "q3": 3.146962199971104e-17
+          },
+          "baseline_normalized_w1": 1.065275546004516,
+          "generated": {
+            "iqr": 0.028575935277622734,
+            "median": 0.018009793846434547,
+            "q1": 0.007927817499292849,
+            "q3": 0.03650375277691558
+          },
+          "generated_ks": 0.07660882653880954,
+          "generated_normalized_w1": 0.08456311769940432,
+          "generated_w1": 0.002301876993175588,
+          "metric": "roof_asymmetry_norm",
+          "normalized_w1_ci_lower": 0.0729385222295091,
+          "normalized_w1_ci_upper": 0.39093168339606243,
+          "reference": {
+            "iqr": 0.02722081512365766,
+            "median": 0.0152188106955982,
+            "q1": 0.006309529896020402,
+            "q3": 0.03353034501967806
+          },
+          "reference_iqr_near_zero": false
+        }
+      ],
+      "planned_worlds": 100,
+      "reference_caves": 19,
+      "reference_partition": "evaluation",
+      "reference_sections": 200,
+      "schema": "plume.morphometry-summary.v2",
+      "uncertainty_method": "joint cave/world cluster bootstrap; percentile 95% intervals; section-weighted distances"
+    },
+    "controllability": {
+      "complete_n": 1200,
+      "controls": {
+        "distributary": {
+          "n": 300,
+          "primary_metric": "cyclomatic_number",
+          "spearman_rho": -0.005004809652024063
+        },
+        "duration": {
+          "n": 300,
+          "primary_metric": "main_route_length_m",
+          "spearman_rho": 0.7822058669487797
+        },
+        "inflation": {
+          "n": 300,
+          "primary_metric": "junction_to_passage_width_ratio",
+          "spearman_rho": 0.13472816053393674
+        },
+        "supply": {
+          "n": 300,
+          "primary_metric": "host_horizontal_scale",
+          "spearman_rho": 1.0
+        }
+      },
+      "failed_n": 0,
+      "intervention_policy": "Override the declared flow control before resolving every stage, exactly as a project TOML edit would do.",
+      "planned_n": 1200,
+      "schema": "plume.controllability-summary.v2"
+    },
+    "host_ablation": {
+      "complete_n": 700,
+      "conditions": {
+        "full": {
+          "median_centerline_displacement_m": 0.0,
+          "median_cyclomatic_number": 12.0,
+          "n": 100
+        },
+        "no_capacity": {
+          "median_centerline_displacement_m": 6.9289330256512045,
+          "median_cyclomatic_number": 11.5,
+          "n": 100
+        },
+        "no_cover": {
+          "median_centerline_displacement_m": 4.792747135686879,
+          "median_cyclomatic_number": 12.0,
+          "n": 100
+        },
+        "no_fracture": {
+          "median_centerline_displacement_m": 8.336311037452187,
+          "median_cyclomatic_number": 11.0,
+          "n": 100
+        },
+        "no_slope": {
+          "median_centerline_displacement_m": 8.004691344909684,
+          "median_cyclomatic_number": 13.0,
+          "n": 100
+        },
+        "no_stability": {
+          "median_centerline_displacement_m": 5.706467313704833,
+          "median_cyclomatic_number": 12.0,
+          "n": 100
+        },
+        "unconditioned": {
+          "median_centerline_displacement_m": 12.391672418402354,
+          "median_cyclomatic_number": 14.0,
+          "n": 100
+        }
+      },
+      "failed_n": 0,
+      "invalid_n": 0,
+      "paired_effects": {
+        "full": {
+          "effects": {
+            "centerline_displacement_mean_m": {
+              "ci_lower": 0.0,
+              "ci_upper": 0.0,
+              "median_delta": 0.0
+            },
+            "cyclomatic_number": {
+              "ci_lower": 0.0,
+              "ci_upper": 0.0,
+              "median_delta": 0.0
+            }
+          },
+          "valid_pairs": 100
+        },
+        "no_capacity": {
+          "effects": {
+            "centerline_displacement_mean_m": {
+              "ci_lower": 5.865221361637147,
+              "ci_upper": 8.269225446373861,
+              "median_delta": 6.9289330256512045
+            },
+            "cyclomatic_number": {
+              "ci_lower": -1.0,
+              "ci_upper": 0.0,
+              "median_delta": 0.0
+            }
+          },
+          "valid_pairs": 100
+        },
+        "no_cover": {
+          "effects": {
+            "centerline_displacement_mean_m": {
+              "ci_lower": 4.0418019891345285,
+              "ci_upper": 5.436129930685425,
+              "median_delta": 4.792747135686879
+            },
+            "cyclomatic_number": {
+              "ci_lower": 0.0,
+              "ci_upper": 0.0,
+              "median_delta": 0.0
+            }
+          },
+          "valid_pairs": 100
+        },
+        "no_fracture": {
+          "effects": {
+            "centerline_displacement_mean_m": {
+              "ci_lower": 7.5721467824395035,
+              "ci_upper": 9.594878911615066,
+              "median_delta": 8.336311037452187
+            },
+            "cyclomatic_number": {
+              "ci_lower": -1.0,
+              "ci_upper": 0.0,
+              "median_delta": -1.0
+            }
+          },
+          "valid_pairs": 100
+        },
+        "no_slope": {
+          "effects": {
+            "centerline_displacement_mean_m": {
+              "ci_lower": 7.188788815226195,
+              "ci_upper": 8.856237768064343,
+              "median_delta": 8.004691344909684
+            },
+            "cyclomatic_number": {
+              "ci_lower": 0.0,
+              "ci_upper": 2.0,
+              "median_delta": 1.0
+            }
+          },
+          "valid_pairs": 100
+        },
+        "no_stability": {
+          "effects": {
+            "centerline_displacement_mean_m": {
+              "ci_lower": 4.996627273154058,
+              "ci_upper": 6.55419737995048,
+              "median_delta": 5.706467313704833
+            },
+            "cyclomatic_number": {
+              "ci_lower": -1.0,
+              "ci_upper": 0.0,
+              "median_delta": 0.0
+            }
+          },
+          "valid_pairs": 100
+        },
+        "unconditioned": {
+          "effects": {
+            "centerline_displacement_mean_m": {
+              "ci_lower": 11.439500583188048,
+              "ci_upper": 12.988779348686677,
+              "median_delta": 12.391672418402354
+            },
+            "cyclomatic_number": {
+              "ci_lower": 1.0,
+              "ci_upper": 2.0,
+              "median_delta": 1.5
+            }
+          },
+          "valid_pairs": 100
+        }
+      },
+      "planned_n": 700,
+      "schema": "plume.host-ablation-summary.v1"
+    },
+    "sampling_ablation": {
+      "complete_n": 30,
+      "failed_n": 0,
+      "median_adaptive_count": 1198.5,
+      "median_adaptive_error_m": 2.295831211075231,
+      "median_uniform_count": 1227.0,
+      "median_uniform_error_m": 1.8614626019740586,
+      "planned_n": 30,
+      "schema": "plume.sampling-ablation-summary.v1"
+    },
+    "scalability": {
+      "complete_n": 35,
+      "conditions": {
+        "1000m-dense": {
+          "complete_n": 5,
+          "failed_n": 0,
+          "median_peak_rss_gib": 3.9786109924316406,
+          "median_wall_time_s": 48.996469795005396,
+          "planned_n": 5
+        },
+        "1000m-tiled": {
+          "complete_n": 5,
+          "failed_n": 0,
+          "median_peak_rss_gib": 0.7352638244628906,
+          "median_wall_time_s": 51.47281892699539,
+          "planned_n": 5
+        },
+        "2000m-dense": {
+          "complete_n": 5,
+          "failed_n": 0,
+          "median_peak_rss_gib": 10.899879455566406,
+          "median_wall_time_s": 73.31992492999416,
+          "planned_n": 5
+        },
+        "2000m-tiled": {
+          "complete_n": 5,
+          "failed_n": 0,
+          "median_peak_rss_gib": 1.02764892578125,
+          "median_wall_time_s": 73.7230369639874,
+          "planned_n": 5
+        },
+        "5000m-dense": {
+          "complete_n": 0,
+          "failed_n": 5,
+          "median_peak_rss_gib": null,
+          "median_wall_time_s": null,
+          "planned_n": 5
+        },
+        "5000m-tiled": {
+          "complete_n": 5,
+          "failed_n": 0,
+          "median_peak_rss_gib": 1.6497268676757812,
+          "median_wall_time_s": 126.73922400400625,
+          "planned_n": 5
+        },
+        "500m-dense": {
+          "complete_n": 5,
+          "failed_n": 0,
+          "median_peak_rss_gib": 1.7164955139160156,
+          "median_wall_time_s": 29.20745451300172,
+          "planned_n": 5
+        },
+        "500m-tiled": {
+          "complete_n": 5,
+          "failed_n": 0,
+          "median_peak_rss_gib": 0.497344970703125,
+          "median_wall_time_s": 34.94258780500968,
+          "planned_n": 5
+        }
+      },
+      "environment": {
+        "dependencies": {
+          "laspy": "2.7.0",
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.1",
+          "pillow": "12.3.0",
+          "psutil": "7.2.2",
+          "rocky": "0.1.0",
+          "scikit-image": "0.26.0",
+          "scipy": "1.18.0",
+          "trimesh": "4.12.2",
+          "xatlas": "0.0.11"
+        },
+        "git_commit": "0961a66e7c3e92f4f15d5866cfce224a85fff691",
+        "git_dirty": true,
+        "identity_sha256": "6846a0bd88076f727d1805857a5352f61f79df0f46eb112e4991b3996bd6dedb",
+        "inputs": [
+          {
+            "bytes": 11962,
+            "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/config/project.toml",
+            "sha256": "bc0ac5aca9d9ae23676e6954c641697ff87fed26a74c04d7e2cbb87666e8ad76"
+          },
+          {
+            "bytes": 10,
+            "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/paper/seeds/geometry_seeds.txt",
+            "sha256": "026d8ad3dfa1f2aa9da7964947ddedd4e83c6fc008206ebf898699dea80f9804"
+          }
+        ],
+        "logical_cpu_count": 12,
+        "machine": "x86_64",
+        "platform": "Linux-6.8.0-60-generic-x86_64-with-glibc2.39",
+        "processor": "x86_64",
+        "python_executable": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/.venv/bin/python",
+        "python_implementation": "CPython",
+        "python_version": "3.13.5",
+        "resolved_config_sha256": "732d3998882b255c39691818e1494a252f9490ce9fed31cb69ca0942a9da6aa2",
+        "source_sha256": "d8bea8ed20c1c22d5c680f961715fc3e90f887c94bef9aa258e2e96009b3f1f8",
+        "thread_environment": {
+          "MKL_NUM_THREADS": "1",
+          "NUMEXPR_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1",
+          "PLUME_EVALUATION_WORKERS": "4"
+        }
+      },
+      "failed_n": 5,
+      "memory_limit_gib": 12.0,
+      "planned_n": 40,
+      "schema": "plume.scalability-summary.v1",
+      "timeout_s": 7200.0,
+      "timing_scope": "host through finalized cave mesh; excludes optional events, appearance and export"
+    },
+    "export_consistency": {
+      "all_collisions_present": true,
+      "all_packages_present": true,
+      "complete_n": 3,
+      "failed_n": 0,
+      "manual_import_protocol": "docs/paper/EXPORT_VERIFICATION_PROTOCOL.md",
+      "manual_imports_completed": 0,
+      "passed": true,
+      "planned_n": 3,
+      "schema": "plume.export-consistency-summary.v1"
+    },
+    "determinism": {
+      "checks": {
+        "events_off_host_equal": true,
+        "events_off_network_equal": true,
+        "events_off_sections_equal": true,
+        "export_changed_host_equal": true,
+        "export_changed_network_equal": true,
+        "export_changed_sections_equal": true,
+        "resume_checkpoint_reused": true,
+        "resume_sections_equal": true,
+        "same_run_host_equal": true,
+        "same_run_network_equal": true,
+        "same_run_sections_equal": true
+      },
+      "complete_n": 3,
+      "failed_n": 0,
+      "planned_n": 3,
+      "schema": "plume.determinism-summary.v1"
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "config": {
+    "lateral_spacing_m": 2.5,
+    "maximum_lateral_fraction": 0.72,
+    "minimum_clearance_m": 1.0,
+    "plan_resolution_m": 2.0
+  },
+  "coordinate_system": {
+    "intrinsic": [
+      "segment_id",
+      "distance_along_m",
+      "lateral_offset_m"
+    ],
+    "note": "World XY is a preview projection and is not unique where passages overlap vertically.",
+    "world": "right-handed, metres, Z-up"
+  },
+  "generation_stage": "final",
+  "geology_class_codes": {
+    "bare_basalt": 0,
+    "breakdown": 2,
+    "constriction": 4,
+    "debris": 3,
+    "sediment": 1
+  },
+  "invalidated_cell_ids": [
+    44,
+    47,
+    390,
+    450,
+    453
+  ],
+  "npz_file": "final_floor_atlas.npz",
+  "schema": "plume.floor-atlas.v2",
+  "segment_band_offsets_m": {
+    "0": 3.689364311214902,
+    "1": 21.66295709850478,
+    "2": 40.7223471551047,
+    "3": 59.451773209759295,
+    "4": 77.80418061537301,
+    "5": 96.59621051639348,
+    "6": 115.56190515451102,
+    "7": 134.80793344339065,
+    "8": 153.56290810995688,
+    "9": 180.65553270131818,
+    "10": 216.67927379150535,
+    "11": 246.26404147709886,
+    "12": 267.035066426961,
+    "13": 285.17939378115943,
+    "14": 303.6247451778646,
+    "15": 322.21793039399483,
+    "16": 340.20549908007865,
+    "17": 358.28380327789745,
+    "18": 377.1302832369868,
+    "19": 395.1772076969472,
+    "20": 413.534381951541,
+    "21": 433.42967707954995,
+    "22": 452.9248189984135,
+    "23": 474.43617773092393,
+    "24": 504.38759933994675
+  },
+  "source_cell_count": 635,
+  "summary": {
+    "bare_basalt_cell_count": 594.0,
+    "breakdown_cell_count": 5.0,
+    "cell_count": 630.0,
+    "chamber_cell_count": 69.0,
+    "constriction_cell_count": 1.0,
+    "debris_cell_count": 0.0,
+    "geologically_influenced_cell_count": 36.0,
+    "grounded_cell_count": 630.0,
+    "invalidated_cell_count": 5.0,
+    "mean_clearance_m": 1.7494883502641325,
+    "sediment_cell_count": 30.0,
+    "segment_count": 25.0,
+    "terminus_cell_count": 28.0,
+    "vertical_overlap_pixel_count": 36.0
+  }
+}

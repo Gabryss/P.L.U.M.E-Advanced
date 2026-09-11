@@ -1,0 +1,4616 @@
+{
+  "source_glb_sha256": "94243e2dbc50dd74ad5fa409b229f50a77ce53b3ecd5965ddea5f95faf37d9da",
+  "scope": "Actual exported scene; camera-headlight shading; ochre marks props and neutral gray marks cave, independent of material textures.",
+  "nodes": [
+    {
+      "name": "event_0651_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0650_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0649_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0648_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0647_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0646_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0645_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0644_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0643_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0642_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0641_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0640_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0639_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0638_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0637_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0636_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0635_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0634_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0633_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0632_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0631_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0630_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0629_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0628_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0627_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0626_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0625_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0624_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0623_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0622_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0621_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0620_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0619_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0618_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0617_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0616_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0615_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0614_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0613_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0612_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0611_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0610_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0609_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0608_boulder",
+      "vertices": 642,
+      "faces": 1280,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0607_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0606_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0605_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0604_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0603_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0602_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0601_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0600_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0599_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0598_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0597_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0596_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0595_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0594_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0593_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0592_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0591_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0590_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0589_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0588_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0587_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0586_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0585_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0584_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0583_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0582_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0581_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0580_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0579_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0578_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0577_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0576_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0575_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0574_boulder",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0573_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0572_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0571_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0570_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0569_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0568_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0567_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0566_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0565_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0564_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0563_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0562_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0561_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0560_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0559_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0558_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0557_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0556_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0555_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0554_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0553_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0552_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0551_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0550_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0549_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0548_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0547_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0546_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0545_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0544_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0543_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0542_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0541_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0540_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0539_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0538_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0537_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0536_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0535_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0534_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0533_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0532_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0531_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0530_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0529_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0528_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0527_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0526_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0525_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0524_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0523_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0522_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0521_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0520_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0519_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0518_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0517_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0516_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0515_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0514_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0513_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0512_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0511_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0510_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0509_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0508_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0507_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0506_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0505_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0504_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0503_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0502_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0501_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0500_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0499_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0498_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0497_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0496_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0495_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0494_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0493_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0492_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0491_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0490_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0489_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0488_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0487_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0486_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0485_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0484_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0483_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0482_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0481_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0480_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0479_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0478_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0477_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0476_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0475_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0474_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0473_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0472_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0471_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0470_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0469_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0468_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0467_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0466_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0465_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0464_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0463_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0462_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0461_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0460_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0459_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0458_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0457_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0456_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0455_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0454_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0453_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0452_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0451_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0450_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0449_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0448_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0447_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0446_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0445_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0444_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0443_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0442_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0441_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0440_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0439_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0438_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0437_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0436_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0435_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0434_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0433_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0432_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0431_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0430_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0429_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0428_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0427_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0426_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0425_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0424_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0423_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0422_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0421_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0420_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0419_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0418_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0417_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0416_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0415_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0414_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0413_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0412_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0411_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0410_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0409_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0408_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0407_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0406_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0405_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0404_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0403_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0402_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0401_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0400_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0399_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0398_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0397_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0396_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0395_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0394_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0393_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0392_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0391_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0390_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0389_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0388_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0387_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0385_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0384_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0383_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0382_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0381_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0380_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0379_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0378_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0377_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0376_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0375_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0374_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0373_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0372_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0371_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0370_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0369_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0368_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0367_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0366_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0365_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0364_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0363_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0362_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0361_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0360_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0359_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0358_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0357_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0356_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0355_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0354_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0353_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0352_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0351_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0350_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0349_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0348_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0347_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0346_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0345_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0344_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0343_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0342_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0341_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0340_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0339_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0338_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0337_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0336_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0335_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0334_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0333_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0332_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0331_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0330_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0329_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0328_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0327_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0326_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0325_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0324_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0323_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0322_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0321_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0320_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0319_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0318_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0317_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0316_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0315_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0314_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0313_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0312_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0311_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0310_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0309_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0308_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0307_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0306_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0305_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0304_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0303_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0302_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0301_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0300_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0299_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0298_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0297_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0296_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0295_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0294_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0293_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0292_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0291_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0290_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0289_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0288_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0287_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0286_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0285_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0284_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0283_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0282_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0281_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0280_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0279_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0278_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0277_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0276_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0275_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0274_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0273_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0272_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0271_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0270_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0269_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0268_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0267_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0266_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0265_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0264_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0263_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0262_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0261_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0260_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0259_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0258_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0257_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0256_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0255_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0254_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0253_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0252_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0251_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0250_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0249_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0248_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0247_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0246_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0245_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0244_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0243_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0242_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0241_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0240_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0239_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0238_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0237_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0236_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0235_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0234_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0233_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0232_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0231_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0230_boulder",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0229_boulder",
+      "vertices": 642,
+      "faces": 1280,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0228_boulder",
+      "vertices": 642,
+      "faces": 1280,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0227_boulder",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0225_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0224_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0223_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0222_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0221_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0220_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0219_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0218_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0217_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0216_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0215_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0214_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0213_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0212_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0211_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0210_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0209_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0207_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0206_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0205_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0204_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0203_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0202_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0201_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0200_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0199_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0198_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0197_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0196_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0195_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0194_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0193_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0192_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0191_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0190_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0189_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0188_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0187_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0186_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0185_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0184_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0183_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0182_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0181_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0180_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0179_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0178_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0177_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0176_boulder",
+      "vertices": 642,
+      "faces": 1280,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0175_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0174_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0173_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0172_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0171_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0170_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0169_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0168_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0167_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0166_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0165_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0164_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0163_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0162_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0161_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0160_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0159_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0158_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0157_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0156_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0155_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0154_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0153_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0152_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0151_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0150_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0149_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0148_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0147_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0146_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0145_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0144_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0143_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0142_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0141_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0140_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0139_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0138_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0137_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0136_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0135_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0134_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0133_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0132_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0131_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0130_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0129_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0128_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0127_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0126_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0125_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0124_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0123_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0122_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0121_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0120_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0119_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0118_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0117_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0116_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0115_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0114_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0113_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0112_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0111_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0110_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0109_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0108_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0107_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0106_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0105_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0104_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0103_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0102_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0101_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0100_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0099_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0098_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0097_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0096_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0095_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0094_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0093_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0092_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0091_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0090_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0089_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0088_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0087_boulder",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0086_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0085_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0084_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0083_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0082_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0081_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0080_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0079_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0078_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0077_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0076_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0075_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0074_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0073_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0072_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0071_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0070_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0069_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0068_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0067_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0066_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0065_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0064_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0063_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0062_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0061_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0060_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0059_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0058_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0057_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0056_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0055_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0054_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0053_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0052_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0051_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0050_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0049_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0048_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0047_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0046_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0045_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0044_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0043_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0042_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0041_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0040_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0039_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0038_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0037_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0036_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0035_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0034_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0033_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0032_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0031_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0030_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0029_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0028_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0027_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0026_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0025_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0024_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0023_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0022_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0021_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0020_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0019_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0018_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0017_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0016_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0015_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0014_rock",
+      "vertices": 162,
+      "faces": 320,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0013_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0012_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0011_rock",
+      "vertices": 26,
+      "faces": 48,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0010_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0009_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0008_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0007_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0006_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0005_rock",
+      "vertices": 98,
+      "faces": 192,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0004_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0003_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0002_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0001_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "event_0000_rock",
+      "vertices": 42,
+      "faces": 80,
+      "is_prop": true,
+      "finite": true
+    },
+    {
+      "name": "cave_wall",
+      "vertices": 1147804,
+      "faces": 2295648,
+      "is_prop": false,
+      "finite": true
+    }
+  ],
+  "cameras": [
+    {
+      "candidate": 0,
+      "boulder_event_id": 608,
+      "segment_id": 24,
+      "nearby_props_within_6m": 44,
+      "image": "rock_interior_candidate_0.png",
+      "eye": [
+        -202.1061032348927,
+        -308.6130243565861,
+        116.9996609052052
+      ],
+      "target": [
+        -210.34145998751808,
+        -308.2544168205745,
+        115.77567369066804
+      ],
+      "visible_fraction": 1.0,
+      "rasterized_triangles": 38618
+    },
+    {
+      "candidate": 1,
+      "boulder_event_id": 87,
+      "segment_id": 4,
+      "nearby_props_within_6m": 33,
+      "image": "rock_interior_candidate_1.png",
+      "eye": [
+        -184.65011149918607,
+        -508.6614804359723,
+        121.8863602982219
+      ],
+      "target": [
+        -187.66056659215332,
+        -503.8690819799887,
+        119.87642265860502
+      ],
+      "visible_fraction": 0.9996909090909091,
+      "rasterized_triangles": 67136
+    },
+    {
+      "candidate": 2,
+      "boulder_event_id": 574,
+      "segment_id": 23,
+      "nearby_props_within_6m": 23,
+      "image": "rock_interior_candidate_2.png",
+      "eye": [
+        -260.1866189194581,
+        -232.81622410431368,
+        114.69635333958642
+      ],
+      "target": [
+        -259.67139782003073,
+        -227.34785079684656,
+        113.92817480445196
+      ],
+      "visible_fraction": 0.9893857142857143,
+      "rasterized_triangles": 55722
+    }
+  ],
+  "selected_candidate": 0
+}

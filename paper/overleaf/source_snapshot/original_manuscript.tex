@@ -1,0 +1,373 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{url}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{PLUME-Advanced: Host-Conditioned Procedural Generation of Planetary Lava-Tube Environments for Robotics Simulation}
+
+% Restore the author block for the final version if required by the venue.
+% Anonymous for double-blind submission.
+\author{Anonymous Authors}
+
+\maketitle
+
+\begin{abstract}
+Lava tubes are compelling targets for planetary robotic exploration, yet the development and evaluation of autonomous systems require large sets of diverse three-dimensional environments whose geometry and topology can be systematically controlled. Existing procedural underground generators primarily target geometric diversity or simulator integration, while recent lava-tube modelling approaches emphasize parametric reconstruction from terrestrial morphometry. This paper presents \emph{PLUME-Advanced}, a continuation of the Procedural Layer Underground Modeling Engine (PLUME), designed to generate topology-rich planetary lava-tube environments. The framework introduces a deterministic staged pipeline in which explicit host-environment fields describing terrain, emplacement, fracture, flow capacity, and structural stability condition the growth of a multi-source cave network. The resulting directed graph supports persistent splits and merges, chambers, and vertically separated passages while propagating procedural flow-state variables. Adaptive three-dimensional cross-sections transform the network into a sparse volumetric representation, which can subsequently be modified by collapse, choke, infill, and debris events. A topology-aware intrinsic floor atlas preserves local clearance and vertical-level information for downstream robotics applications, while a canonical scene representation enables export to multiple simulation ecosystems. We evaluate the framework in terms of morphometric plausibility, causal controllability, component ablation, computational scalability, and cross-target consistency. Quantitative results will be inserted after completion of the experimental campaign.
+\end{abstract}
+
+\begin{IEEEkeywords}
+procedural generation, planetary robotics, lava tubes, subterranean environments, simulation, synthetic environments
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+Planetary subsurface environments are increasingly considered relevant targets for robotic and human exploration. On the Moon and Mars, lava tubes may preserve geological records while providing naturally shielded environments against several surface hazards. Terrestrial observations and comparative planetology suggest that extraterrestrial lava tubes may reach dimensions substantially larger than common terrestrial examples \cite{sauro2020}, while structural analyses indicate that large lunar cavities can remain mechanically plausible under suitable combinations of span, roof thickness, material properties, and stress state \cite{blair2017,chwala2024}. These environments are therefore of considerable interest for reconnaissance, mapping, scientific investigation, and future infrastructure \cite{feng2024,daedalus2021}.
+
+Their exploration, however, presents a difficult robotics problem. Subterranean systems combine poor illumination, absence of global positioning, uncertain terrain, repeated geometric structures, constrained passages, vertical transitions, and potentially hazardous collapse or debris regions. These properties complicate localization, navigation, traversability estimation, communication, and autonomous decision making \cite{cano_navigation}. Testing algorithms across the diversity of conditions that may be encountered is correspondingly difficult, particularly for planetary environments for which no direct interior survey is currently available.
+
+Simulation can address part of this limitation by providing repeatable and controllable environments. However, a useful synthetic cave generator must satisfy requirements that are not always compatible. It should generate sufficient geometric diversity to avoid overfitting to a small number of hand-modelled scenes; preserve interpretable parameters so that specific hypotheses can be tested; produce topology that is meaningful for exploration and navigation; scale to long underground systems; and remain portable between simulation and visualization tools.
+
+Procedural approaches have previously been used to generate cave-like and underground environments using cellular automata, graph methods, volumetric terrain synthesis, L-systems, and other procedural representations \cite{johnson2010,santamaria2014,antoniuk2016,paris2021,cano_gazebo}. PLUME \cite{plume2025} introduced a graph-based procedural framework motivated by the need for diverse underground environments for space-robotics simulation. Its abstraction made environment generation inexpensive and controllable, but its graph morphology was intentionally generic and the generated topology was only weakly conditioned by an explicit model of the geological host.
+
+At the other end of the spectrum, Pyroduct \cite{pyroduct2026} introduced a parametric lava-tube generator grounded in a large collection of terrestrial cross-sections. Its associated Pyroduct Digital Catalog contains more than 1,200 digitized cross-sections from more than 94 terrestrial lava tubes \cite{pdc2025}, providing an empirical basis for morphometric modelling.
+
+This work investigates a complementary question: can an explicitly conditioned procedural model generate diverse lava-tube environments in which large-scale topology, local geometry, structural events, and planetary scale remain interpretable and controllable while retaining the computational properties required by robotics simulation?
+
+To address this question, PLUME-Advanced organizes generation as the causal sequence
+\begin{equation}
+\mathcal{H} \rightarrow \mathcal{G} \rightarrow \mathcal{S} \rightarrow \mathcal{V} \rightarrow \mathcal{E} \rightarrow \mathcal{A},
+\label{eq:pipeline}
+\end{equation}
+where $\mathcal{H}$ denotes an explicit host field, $\mathcal{G}$ a directed cave-network skeleton, $\mathcal{S}$ an adaptive cross-section field, $\mathcal{V}$ the volumetric cave representation, $\mathcal{E}$ structural and depositional events, and $\mathcal{A}$ the final simulator-independent scene asset.
+
+The principal contributions are: (1) a process-informed host representation that separately models terrain, emplacement, lithological quality, fracture intensity, flow capacity, and gravity-aware structural stability while exposing their influence on routing; (2) a topology-rich directed lava-tube representation supporting multiple sources, persistent splits and merges, chambers, and vertically separated passages, coupled to adaptive three-dimensional cross-sections and volumetric reconstruction; and (3) a deterministic and scalable environment pipeline incorporating topology-changing geological events, a topology-aware floor atlas, and a canonical representation designed for export across multiple robotics and visualization ecosystems.
+
+The framework is not intended to replace thermofluid or geomechanical simulation. Instead, its objective is to provide a computationally tractable, process-informed environment prior whose parameters and causal influences remain explicit and experimentally testable.
+
+\section{Related Work}
+
+\subsection{Planetary Lava Tubes}
+
+Lava tubes, or pyroducts, are roofed conduits created during volcanic emplacement. Terrestrial tubes provide the principal direct analogues available for interpreting candidate subsurface structures on other planetary bodies. Sauro \emph{et al.} \cite{sauro2020} reviewed terrestrial, lunar, and Martian morphologies and highlighted the potentially much larger scale of extraterrestrial examples. The possible scientific and infrastructure value of lunar tubes has subsequently motivated extensive work on exploration and utilization concepts \cite{feng2024,daedalus2021}.
+
+The dimensions of candidate lunar tubes should nevertheless not be interpreted from gravity alone. Blair \emph{et al.} \cite{blair2017} demonstrated through finite-element analysis that stability depends strongly on span, roof thickness, and stress assumptions. Chwala \emph{et al.} \cite{chwala2024} further showed that variable cross-sectional geometry can materially alter stability estimates. For this reason, the planetary presets used in PLUME-Advanced are treated as configurable operating envelopes rather than estimates of maximum physically stable tube dimensions.
+
+\subsection{Procedural Underground Environment Generation}
+
+Procedural cave generation has been studied extensively in computer graphics and game-oriented content generation. Cellular automata can efficiently create complex cave-like spaces \cite{johnson2010}, while volumetric approaches support the generation of free-form terrain and cavities \cite{santamaria2014}. Graph-, grammar-, and L-system-based methods provide greater control over connectivity and high-level cave structure \cite{antoniuk2016,paris2021}.
+
+For robotics, Cano \emph{et al.} \cite{cano_gazebo} presented a scalable framework for producing randomized underground environments for Gazebo, motivated explicitly by the need to evaluate navigation algorithms over diverse environments. Their later work demonstrated the usefulness of simple topological representations for robot navigation in tunnel systems \cite{cano_navigation}. PLUME \cite{plume2025} pursued the same general need in the context of planetary exploration using a probabilistic graph followed by three-dimensional mesh construction and procedural appearance generation.
+
+\subsection{Parametric Lava-Tube Modelling}
+
+The closest domain-specific reference to the present work is Pyroduct \cite{pyroduct2026}, a parametric software framework for constructing terrestrial, lunar, and Martian lava-tube geometries. Its morphological basis is derived from a large catalog of terrestrial lava-tube sections. PLUME-Advanced addresses a complementary objective: stochastic generation of networked environments whose topology is conditioned by a spatial host representation and whose intermediate representations remain available to robotics tooling.
+
+\begin{table}[t]
+\caption{High-level positioning of representative approaches.}
+\label{tab:related}
+\centering
+\small
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Method & Proc. & Lava & Network & Host
+\tabularnewline
+\midrule
+Cellular automata \cite{johnson2010} & Yes & No & Implicit & No
+\tabularnewline
+Cano \emph{et al.} \cite{cano_gazebo} & Yes & No & Yes & No
+\tabularnewline
+PLUME \cite{plume2025} & Yes & No & Yes & No
+\tabularnewline
+Pyroduct \cite{pyroduct2026} & Yes & Yes & Limited & No
+\tabularnewline
+PLUME-Advanced & Yes & Yes & Yes & Yes
+\tabularnewline
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{PLUME-Advanced}
+
+\subsection{System Overview}
+
+PLUME-Advanced is implemented as a deterministic staged generator. A global seed is decomposed into named stage-specific seeds such that changes in a downstream component do not modify earlier stages. The canonical coordinate system is right-handed, Z-up, and expressed in metres.
+
+Stage A produces a low-frequency representation of the geological host. Stage B generates a directed network conditioned by that host. Stage C constructs geometry-ready cross-sections along every graph segment. Stage D carves these sections into a volumetric field and extracts the cave surface. Stage E modifies the volume through structural events and adds grounded debris. Stage F prepares surface information and serializes one canonical scene for simulator-specific exporters.
+
+\subsection{Host-Conditioned Environment Representation}
+
+The host field $\mathcal{H}(x,y)$ consists of terrain elevation, local slope, emplacement and cover thickness, lithological quality, fracture intensity, flow capacity, deposit thickness, erosion, roof competence, and a gravity-aware roof-stability surrogate. The objective is not to solve volcanic emplacement directly. Instead, each field represents a low-frequency process prior with an explicit downstream consumer.
+
+A dimensionless structural-demand proxy is computed as
+\begin{equation}
+D(x,y)=\frac{\rho g W_c^2}{\max(H_c(x,y),\epsilon)\sigma_{\mathrm{eff}}},
+\label{eq:demand}
+\end{equation}
+where $\rho$ denotes rock density, $g$ gravitational acceleration, $W_c$ a characteristic passage span, $H_c$ local cover thickness, and $\sigma_{\mathrm{eff}}$ an effective tensile-strength parameter. The normalized roof-stability field is
+\begin{equation}
+S_r(x,y)=\mathrm{clip}\left(\frac{Q_r(x,y)}{1+D(x,y)},0,1\right),
+\label{eq:stability}
+\end{equation}
+where $Q_r$ is the local roof-competence field. Equation~\eqref{eq:stability} is a procedural surrogate rather than a replacement for finite-element stability analysis.
+
+Network growth queries an explicit routing cost
+\begin{equation}
+C=0.12C_s+0.10C_c+0.22C_f+0.28C_q+0.28C_r,
+\label{eq:routing}
+\end{equation}
+where $C_s$, $C_c$, $C_f$, $C_q$, and $C_r$ denote slope, cover, fracture, capacity, and stability penalties respectively. Each term is normalized to $[0,1]$. The implementation records the statistics of each contribution, enabling direct ablation.
+
+\subsection{Directed Braided Cave Network}
+
+Stage B constructs a directed graph $\mathcal{G}=(V,E)$, where vertices correspond to entries, junctions, chambers, exits, and terminal structures, while edges represent persistent conduit segments. The grammar allows source feeders, split-and-merge braids, bypasses, chambers, spurs, and underpasses.
+
+Each conduit carries procedural state variables including lava flux $q$, temperature $T$, age $\tau$, grade, and vertical level. At split and merge nodes, flux is conserved according to
+\begin{equation}
+\sum_{e\in E^{-}(v)}q_e=\sum_{e\in E^{+}(v)}q_e.
+\label{eq:flux}
+\end{equation}
+Temperature and lava age evolve monotonically along the directed network according to configurable propagation parameters. These quantities are used as procedural state, not as a thermofluid solution.
+
+Vertical levels are represented explicitly. When passages cross in the horizontal plane, an underpass can assign sufficient vertical separation to prevent unintended volumetric merging. This is relevant both geometrically and for downstream mapping because two traversable locations may occupy similar horizontal coordinates while belonging to different graph levels.
+
+\subsection{Adaptive Three-Dimensional Section Field}
+
+Stage C samples each conduit using local cross-sections positioned in a continuously varying three-dimensional frame. The local sampling step is
+\begin{equation}
+\Delta s=\mathrm{clip}\left(\frac{\Delta s_{\max}}{1+w_{\kappa}\kappa+w_wG_w+w_jJ},\Delta s_{\min},\Delta s_{\max}\right),
+\label{eq:adaptive}
+\end{equation}
+where $\kappa$ is local centerline curvature, $G_w$ is a width-gradient measure, $J$ represents proximity to a junction, and the $w$ terms are configurable weights.
+
+Each sample defines an underground center, a local frame, passage width and height, floor position, and profile-shape controls. At split and merge regions, neighboring section parameters are blended to reduce discontinuities between graph semantics and the volumetric representation.
+
+\subsection{Sparse Volumetric Reconstruction}
+
+Stage D converts the section field into a density-like volumetric representation. Conduit sections are stamped as locally oriented tunnel primitives, while junction and chamber regions receive additional volumetric support. The zero level set is subsequently polygonized to obtain the cave surface.
+
+A dense volume covering a multi-kilometre environment scales poorly. PLUME-Advanced therefore supports tiled sparse storage. When the estimated dense-volume budget exceeds a configured threshold, only tiles intersecting active conduit or event bounds are allocated. Neighbor overlap is retained during sampling and meshing to preserve continuity across tile boundaries.
+
+After polygonization, processing chunks are globally welded to produce a continuous render surface. Collision geometry can be prepared independently from the visual surface so that simulation complexity does not have to match rendering complexity.
+
+\subsection{Geological Events}
+
+Stage E introduces parameterized geological hazard scenarios. Collapse, choke, and infill events modify the cave density field itself and can therefore change local free volume, clearance, connectivity, and collision geometry. Loose rocks and boulders are generated after the base cave exists and are grounded through queries against the cave surface.
+
+For robotics experiments, event generation can optionally maintain a minimum route clearance. This mode is interpreted as a controlled scenario-generation constraint rather than as a geological formation process.
+
+\subsection{Topology-Aware Floor Atlas}
+
+A conventional two-dimensional floor projection becomes ambiguous when passages overlap horizontally. PLUME-Advanced therefore represents traversable floor samples using intrinsic coordinates
+\begin{equation}
+\mathbf{u}=(e,s,l),
+\label{eq:intrinsic}
+\end{equation}
+where $e$ identifies the graph segment, $s$ is longitudinal arc length, and $l$ is lateral displacement relative to its local frame.
+
+Each floor cell additionally stores world coordinates, graph vertical level, measured clearance, and the inward surface normal. The representation can therefore distinguish vertically separated passages even if their XY projections overlap. The atlas is not itself a path planner or SLAM representation; it exposes a topology-aware interface from which downstream robotics representations can be constructed.
+
+\subsection{Canonical Scene and Export}
+
+The final environment is represented once in a canonical metric scene. Export adapters change axes, units, packaging, collision conventions, and material representation, but do not regenerate the cave. The same canonical environment can therefore be packaged for different simulation or visualization ecosystems without modifying its underlying topology or geometry.
+
+\section{Experimental Methodology}
+\label{sec:experiments}
+
+We organize evaluation around four research questions. RQ1 asks whether generated sections reproduce relevant statistical properties of measured terrestrial lava-tube morphology. RQ2 asks whether changes to host and flow parameters produce measurable and interpretable changes in network topology and cave geometry. RQ3 asks whether the host-conditioning and adaptive-representation components provide measurable effects relative to ablated alternatives. RQ4 asks whether multi-kilometre environments can be generated with bounded computational resources and exported consistently to different targets.
+
+\subsection{Morphometric Reference Data}
+
+Terrestrial validation uses the Pyroduct Digital Catalog \cite{pdc2025}. For each reference and generated cross-section, we compute width $W$, height $H$, aspect ratio $W/H$, cross-sectional area $A$, perimeter $P$, and compactness
+\begin{equation}
+Q=\frac{4\pi A}{P^2}.
+\label{eq:compactness}
+\end{equation}
+Additional descriptors will quantify floor flatness, roof asymmetry, and normalized section shape. Distribution similarity will be evaluated using Wasserstein distance and two-sample Kolmogorov--Smirnov statistics over matched experimental configurations.
+
+Because direct interior surveys of lunar and Martian tubes are unavailable, distribution-level validation is performed primarily against terrestrial examples. Planetary configurations are treated as controlled extrapolations rather than empirical reconstructions of known extraterrestrial cave interiors.
+
+\subsection{Controllability and Ablation}
+
+We vary one parameter family at a time while holding random seeds fixed. Evaluated factors include distributary tendency, source count, characteristic passage scale, fracture intensity, roof-stability conditions, flow capacity, and planetary-body presets. For every generated network we measure total centerline length, node and edge count, branching factor, number of split and merge junctions, chamber count, cyclomatic number, vertically separated crossings, and route sinuosity.
+
+The full host model is additionally compared with five ablations in which slope, cover, fracture, capacity, or stability influence is removed independently. Matched-seed comparisons isolate each component's effect from stochastic variation.
+
+\subsection{Adaptive Sampling Ablation}
+
+The adaptive sampling strategy in Eq.~\eqref{eq:adaptive} is compared with uniform section sampling. Both approaches reconstruct identical network realizations. At comparable geometric reconstruction error, we compare the number of required cross-sections, processing time, final mesh complexity, and local error around high-curvature and junction regions.
+
+\subsection{Scalability and Cross-Target Consistency}
+
+Scalability will be evaluated over increasing route extents and multiple voxel-quality settings. We record wall-clock generation time, peak resident memory, processed voxel count, final triangle count, and serialized asset size. Dense and sparse/tiled geometry modes are compared wherever the dense representation remains feasible.
+
+A fixed set of canonical scenes will also be exported to at least three target ecosystems. For each target we verify physical bounds, one-metre reference scale, transformation conventions, geometry count, and collision availability. If $\mathbf{d}(\mathcal{A})$ denotes the three-dimensional bounding-box extent of the canonical scene and $\mathbf{d}(\mathcal{A}*k)$ the corresponding imported asset, dimensional consistency is measured by
+\begin{equation}
+\epsilon*{\mathrm{bbox}}=\frac{\left|\mathbf{d}(\mathcal{A}_k)-\mathbf{d}(\mathcal{A})\right|_2}{\left|\mathbf{d}(\mathcal{A})\right|_2}.
+\end{equation}
+
+\section{Results}
+
+This section is intentionally left as a structured template until the experimental campaign is complete. No numerical values should be added before they are measured.
+
+\subsection{Morphometric Plausibility}
+
+Across XX generated environments and XX generated cross-sections, PLUME-Advanced achieved an aggregate morphometric Wasserstein distance of XX against the terrestrial reference dataset. Relative to the selected baseline, this corresponds to an improvement of XX percent. The closest agreement was observed for XX, while the largest discrepancy occurred for XX.
+
+\begin{table}[t]
+\caption{Morphometric comparison with terrestrial reference sections. Replace XX with measured values.}
+\label{tab:morph}
+\centering
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Metric & Baseline & Advanced & Change
+\tabularnewline
+\midrule
+Aspect ratio & XX & XX & XX%
+\tabularnewline
+Area & XX & XX & XX%
+\tabularnewline
+Compactness & XX & XX & XX%
+\tabularnewline
+Floor metric & XX & XX & XX%
+\tabularnewline
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Controllability and Host-Field Ablation}
+
+Matched-seed parameter sweeps produced systematic changes in the generated topology. Increasing distributary tendency from XX to XX changed the mean cyclomatic number from XX to XX and changed persistent branch count by XX percent. Removing XX from the routing model produced the largest measurable change, whereas removing XX produced the smallest effect.
+
+If one host component produces no statistically meaningful effect, that result should be reported rather than hidden and the corresponding term should be reconsidered in the final model.
+
+\subsection{Adaptive Sampling}
+
+At comparable geometric reconstruction error, adaptive section sampling required XX percent fewer cross-sections than uniform sampling and reduced Stage-C processing time by XX percent. The largest reduction in local reconstruction error was observed near XX.
+
+\subsection{Scalability and Export}
+
+A 1 km environment required XX seconds and XX GB of peak memory at the selected quality setting, while a 5 km environment required XX seconds and XX GB. Sparse/tiled processing reduced peak memory by XX percent relative to dense processing for the largest case in which both modes remained feasible.
+
+The same canonical scenes were exported to XX target ecosystems. Maximum normalized bounding-box error after unit conversion was XX. All evaluated packages preserved XX.
+
+\section{Discussion}
+
+The experiments evaluate PLUME-Advanced as a procedural environment generator rather than as a predictive model of lava-tube formation. This distinction is central to interpreting the results.
+
+First, the host representation introduces causal structure into procedural generation. Network topology is no longer sampled independently of its surrounding environment: route selection can be traced to explicit slope, cover, fracture, capacity, and stability terms. The ablation study is therefore more important than visual inspection. A generated cave may appear plausible even when one or more nominally geological inputs have no measurable effect.
+
+Second, PLUME-Advanced separates topology from local geometry without making the two independent. The directed network provides persistent semantic structure useful for splits, merges, chambers, vertical crossings, and state propagation, whereas the section field controls local three-dimensional morphology. This separation is useful for robotics because experiments can modify one class of properties while approximately holding another fixed.
+
+Third, the volumetric representation allows structural events to alter free space and collision geometry. This is relevant for autonomous exploration experiments in which constrictions, partial collapses, debris fields, or alternative routes should have actual geometric consequences. Nevertheless, these events remain parameterized scenarios rather than simulations of fracture propagation or dynamic collapse mechanics.
+
+\subsection{Relation to Empirical Lava-Tube Modelling}
+
+PLUME-Advanced and Pyroduct address complementary requirements. The principal strength of Pyroduct is the empirical morphometric basis provided by a large database of real terrestrial cross-sections \cite{pyroduct2026,pdc2025}. The principal focus of PLUME-Advanced is the generation of stochastic network-scale environments conditioned by spatial host variables and intended to preserve simulation semantics.
+
+The PDC comparison therefore provides an external reference for evaluating the geometric priors used by PLUME-Advanced and identifies discrepancies that can guide future calibration. A promising future direction is to replace or augment the current procedural profile family with a statistical model derived directly from PDC sections while retaining PLUME-Advanced's network and host-field architecture.
+
+\subsection{Planetary Extrapolation and Limitations}
+
+Direct validation of lunar or Martian lava-tube interiors is currently impossible. Consequently, the Earth, Mars, and Moon presets should not be interpreted as digital replicas of known extraterrestrial caves. They define controlled parameter regimes informed by comparative planetology and body-specific gravity.
+
+The host field is process-informed rather than physically simulated, and several weights and parameter ranges require empirical calibration. The current cross-section model cannot reproduce the full diversity of real lava-tube morphology. Geological events represent static scenarios rather than dynamic mechanical processes. Simulator portability also does not imply identical sensor rendering or contact dynamics across engines; it establishes a common underlying environment asset.
+
+\subsection{Relevance to Robotics}
+
+PLUME-Advanced deliberately stops before autonomy. It does not prescribe a SLAM system, traversability estimator, planner, or exploration policy. Instead, it attempts to provide an environment representation rich enough to test such algorithms under controlled variations.
+
+The intrinsic floor atlas is particularly relevant in this context. A purely planar map can collapse vertically separated passages onto the same coordinates, whereas the intrinsic $(e,s,l)$ representation retains segment identity and graph level. Potential downstream applications include topological planning, traversability-map construction, communication-aware exploration, synthetic perception-data generation, and controlled evaluation of multi-robot exploration.
+
+\section{Conclusion}
+
+This paper presented PLUME-Advanced, a host-conditioned procedural framework for generating planetary lava-tube environments for robotics simulation. The method extends graph-based underground generation by introducing an explicit process-informed host representation, a directed multi-source cave network with persistent split and merge topology, adaptive three-dimensional cross-sections, scalable volumetric reconstruction, topology-changing geological events, and an intrinsic floor atlas that preserves vertically overlapping passages.
+
+Unlike approaches in which cave topology is generated independently of its surroundings, PLUME-Advanced exposes the spatial fields that influence routing and enables their effects to be measured through ablation. Unlike a mesh-only generator, it retains intermediate semantic representations that can be reused for environment analysis and downstream robotics tooling. The canonical scene architecture additionally separates environment generation from simulator-specific export.
+
+The final manuscript will replace the current result placeholders with quantitative morphometric, ablation, scalability, and cross-target measurements. Future work will focus on direct statistical calibration from larger terrestrial lava-tube datasets, improved material and surface modelling, physically stronger event priors, explicit entrances and skylights, and evaluation of autonomous exploration algorithms across systematically varied generated environments.
+
+\begin{thebibliography}{99}
+
+\bibitem{plume2025}
+G. M. Garcia, A. Richard, and M. A. Olivares-Mendez,
+``PLUME: Procedural Layer Underground Modeling Engine,''
+in \emph{International Conference on Space Robotics (iSpaRo)}, 2025.
+
+\bibitem{sauro2020}
+F. Sauro, R. Pozzobon, M. Massironi, P. De Berardinis, T. Santagata, and J. De Waele,
+``Lava tubes on Earth, Moon and Mars: A review on their size and morphology revealed by comparative planetology,''
+\emph{Earth-Science Reviews}, vol. 209, 2020, Art. no. 103288.
+
+\bibitem{feng2024}
+Y. Feng, P.-Z. Pan, X. Tang, Z. Wang, Y. Li, and A. Hussain,
+``A comprehensive review of lunar lava tube base construction and field research on a potential Earth test site,''
+\emph{International Journal of Mining Science and Technology}, vol. 34, no. 9, pp. 1201--1216, 2024.
+
+\bibitem{blair2017}
+D. M. Blair, L. Chappaz, R. Sood, C. Milbury, H. J. Melosh, K. C. Howell, and A. M. Freed,
+``The structural stability of lunar lava tubes,''
+\emph{Icarus}, vol. 282, pp. 47--55, 2017.
+
+\bibitem{chwala2024}
+M. Chwala, G. Komatsu, and J. Haruyama,
+``Structural stability of lunar lava tubes with consideration of variable cross-section geometry,''
+\emph{Icarus}, vol. 411, 2024, Art. no. 115928.
+
+\bibitem{daedalus2021}
+A. P. Rossi, F. Maurelli, V. Unnithan, \emph{et al.},
+``DAEDALUS---Descent And Exploration in Deep Autonomy of Lava Underground Structures,''
+Wurzburger Forschungsberichte in Robotik und Telematik, no. 21, Universitat Wurzburg, 2021.
+
+\bibitem{cano_gazebo}
+L. Cano, D. Tardioli, and A. R. Mosteo,
+``Procedural generation of underground environments for Gazebo,''
+in \emph{ROBOT2022: Fifth Iberian Robotics Conference}, 2023.
+
+\bibitem{cano_navigation}
+L. Cano, A. R. Mosteo, and D. Tardioli,
+``Navigating underground environments using simple topological representations,''
+in \emph{2022 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)}, 2022, pp. 1717--1724.
+
+\bibitem{santamaria2014}
+A. Santamaria-Ibirika, X. Cantero, M. Salazar, \emph{et al.},
+``Procedural approach to volumetric terrain generation,''
+\emph{The Visual Computer}, vol. 30, no. 9, pp. 997--1007, 2014.
+
+\bibitem{paris2021}
+A. Paris, E. Guerin, A. Peytavie, P. Collon, and E. Galin,
+``Synthesizing geologically coherent cave networks,''
+\emph{Computer Graphics Forum}, vol. 40, no. 7, pp. 277--287, 2021.
+
+\bibitem{johnson2010}
+L. Johnson, G. N. Yannakakis, and J. Togelius,
+``Cellular automata for real-time generation of infinite cave levels,''
+in \emph{Proceedings of the Workshop on Procedural Content Generation in Games}, 2010.
+
+\bibitem{antoniuk2016}
+I. Antoniuk and P. Rokita,
+``Procedural generation of underground systems with terrain features using schematic maps and L-systems,''
+\emph{Challenges of Modern Technology}, vol. 7, no. 3, pp. 8--15, 2016.
+
+\bibitem{pyroduct2026}
+F. A. P. Romio, G. Lobosco, F. Sauro, R. Pozzobon, and A. Marraffa,
+``Pyroduct: A novel parametric software for the simulation of terrestrial, lunar, and Martian lava tubes,''
+\emph{Icarus}, vol. 447, 2026, Art. no. 116904.
+
+\bibitem{pdc2025}
+F. A. P. Romio, G. Lobosco, A. Marraffa, L. Pisani, and I. Tomasi,
+``Pyroduct Digital Catalog (2.0),'' Zenodo, 2025.
+
+\end{thebibliography}
+
+\end{document}

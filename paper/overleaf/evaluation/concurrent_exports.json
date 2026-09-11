@@ -1,0 +1,24 @@
+{
+  "started_at_utc": "2026-09-07T11:35:55.637747+00:00",
+  "argv": [
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/.venv/bin/python",
+    "-m",
+    "plume_advanced.evaluation.cli",
+    "--config",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/paper/experiments.toml",
+    "export-consistency"
+  ],
+  "package_source": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/src",
+  "thread_environment": {
+    "PLUME_EVALUATION_WORKERS": "4",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1"
+  },
+  "reason": "Overlap sequential non-benchmark exports with controllability after all isolated resource measurements have finished. Matching completed records will be reused by the main driver; no case is forced or replaced.",
+  "log": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/logs/exports-concurrent.log",
+  "returncode": 0,
+  "elapsed_s": 1194.3017668789835,
+  "finished_at_utc": "2026-09-07T11:55:49.939944+00:00"
+}

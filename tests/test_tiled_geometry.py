@@ -3,6 +3,7 @@
 import math
 
 import numpy as np
+import pytest
 
 from plume_advanced.stages.geometry import GeometryGenerator
 from plume_advanced.stages.geometry_types import GeometryConfig, TiledVoxelGrid
@@ -13,6 +14,7 @@ from plume_advanced.stages.network import (
     CavePoint,
     CaveSegment,
 )
+from plume_advanced.stages.network_quality import NetworkQualityConfig
 from plume_advanced.stages.section_field import (
     SectionField,
     SectionFieldConfig,
@@ -30,6 +32,35 @@ def _profile(width: float, height: float) -> tuple[tuple[float, float], ...]:
         for angle in np.linspace(0.0, 2.0 * math.pi, 17)
     )
     return points
+
+
+@pytest.mark.parametrize('missing_primary', [False, True])
+def test_shared_tile_samples_match_density_queries(missing_primary: bool) -> None:
+    tiles = {key: np.full((5, 5, 5), i, dtype=np.float32)
+             for i, key in enumerate(np.ndindex(2, 2, 2))}
+    if missing_primary:
+        del tiles[(1, 1, 1)]
+    grid = TiledVoxelGrid((0., 0., 0.), 1., (9, 9, 9), 0., 4, tiles)
+    expected = {index: grid._density_at(np.asarray(index)) for index in np.ndindex(grid.shape)}
+    grid.synchronize_halos()
+    for key, tile in tiles.items():
+        for local in np.ndindex(tile.shape):
+            index = tuple(k * 4 + i for k, i in zip(key, local, strict=True))
+            assert tile[local] == expected[index]
+
+
+def test_inconsistent_tile_halos_still_produce_a_closed_surface() -> None:
+    xyz = np.indices((17, 17, 17), dtype=float)
+    density = (5.3 - np.linalg.norm(xyz - 8., axis=0)).astype(np.float32)
+    tiles = {key: density[tuple(slice(k * 8, k * 8 + 9) for k in key)].copy()
+             for key in np.ndindex(2, 2, 2)}
+    # The earlier tile has a different interpolation value at its shared face.
+    tiles[(0, 0, 0)][-1] += .15
+    grid = TiledVoxelGrid((0., 0., 0.), 1., density.shape, 0., 8, tiles)
+    generator = GeometryGenerator(GeometryConfig(voxel_size=1., chunk_size=8))
+    chunks = generator._march_chunks(grid, None)
+    _, faces = generator._assemble_chunks(chunks)
+    assert faces and generator._mesh_is_closed_manifold(faces)
 
 
 def test_forced_tiled_geometry_builds_connected_watertight_mesh() -> None:
@@ -61,7 +92,9 @@ def test_forced_tiled_geometry_builds_connected_watertight_mesh() -> None:
         metadata={},
     )
     network = CaveNetwork(
-        config=CaveNetworkConfig(),
+        # Synthetic one-segment voxel fixture: morphology acceptance is tested
+        # separately; this is not a full-length morphology scenario.
+        config=CaveNetworkConfig(quality=NetworkQualityConfig(enabled=False)),
         nodes=(
             CaveNode(0, 0.0, 0.0, 0.0, 0.0, "entry"),
             CaveNode(1, 10.0, 0.0, 10.0, 0.0, "exit"),

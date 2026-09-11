@@ -1,0 +1,11 @@
+{
+  "prop_nodes": 649,
+  "total_geometry_nodes": 650,
+  "cave_watertight": true,
+  "finite_vertices": true,
+  "prop_meshes_watertight": 649,
+  "cave_vertex_count": 1147804,
+  "cave_triangle_count": 2295648,
+  "sha256": "94243e2dbc50dd74ad5fa409b229f50a77ce53b3ecd5965ddea5f95faf37d9da",
+  "export_scope": "Neutral inspection geometry; no texture atlas or appearance displacement; separately editable rock nodes."
+}

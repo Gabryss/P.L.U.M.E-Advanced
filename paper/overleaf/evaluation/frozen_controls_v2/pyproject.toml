@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PLUME-Advanced"
+version = "0.1.0"
+description = "Stage-oriented procedural lava tube prototype"
+requires-python = ">=3.12"
+dependencies = [
+  "matplotlib>=3.8",
+  "numpy>=1.26",
+  "pillow>=10.0",
+  "rich>=13.7",
+  "scikit-image>=0.23",
+  "scipy>=1.12",
+  "trimesh>=4.4",
+  "xatlas>=0.0.11",
+]
+
+[project.optional-dependencies]
+rocks = [
+  "rocky @ git+https://github.com/Gabryss/Rocky.git@03c1db59ba45c9da74ab0859ebb547e81e552529",
+]
+paper = [
+  "laspy[lazrs]>=2.6",
+  "psutil>=6.0",
+  "openpyxl>=3.1",
+]
+video = [
+  "manim>=0.21,<0.22",
+]
+
+[project.scripts]
+plume-generate = "plume_advanced.cli:main"
+plume-validate = "plume_advanced.validation:main"
+plume-evaluate = "plume_advanced.evaluation.cli:main"
+
+[dependency-groups]
+dev = [
+  "mypy>=1.15",
+  "pytest>=8.0",
+  "pytest-cov>=6.0",
+  "ruff>=0.11",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+plume_advanced = ["default_project.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+markers = [
+  "integration: slower end-to-end generation and exporter tests",
+  "performance: bounded regression checks with deliberately generous CI budgets",
+  "paper: scientific paper experiment smoke tests only",
+]
+filterwarnings = [
+  "ignore:Setting the shape on a NumPy array has been deprecated:DeprecationWarning:skimage.*",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+ignore = ["E402"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true

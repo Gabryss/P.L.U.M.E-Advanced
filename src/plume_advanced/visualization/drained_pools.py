@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from plume_advanced.stages.network import CaveJunction, CaveNetwork
+from plume_advanced.stages.network_metadata import metadata_float
 from plume_advanced.stages.section_field import SectionField, SectionSample
 
 
@@ -78,8 +79,10 @@ class DrainedPoolPlotter:
                     default=0.0,
                 )
                 if room_weight > 0.0:
-                    distance = math.hypot(sample.x - pool.center_x, sample.y - pool.center_y)
-                    records.append((sample, math.copysign(distance, sample.segment_arc_length)))
+                    tangent = np.asarray(sample.tangent[:2], dtype=float)
+                    tangent /= max(float(np.linalg.norm(tangent)), 1e-9)
+                    distance = float(np.dot([sample.x-pool.center_x, sample.y-pool.center_y], tangent))
+                    records.append((sample, distance))
         return tuple(records)
 
     @staticmethod
@@ -131,8 +134,8 @@ class DrainedPoolPlotter:
             metadata = pool.metadata
             patch = Ellipse(
                 (pool.center_x, pool.center_y),
-                width=float(metadata.get("pool_length_m", 0.0)),
-                height=float(metadata.get("pool_width_m", 0.0)),
+                width=metadata_float(metadata, "pool_length_m"),
+                height=metadata_float(metadata, "pool_width_m"),
                 angle=self._pool_angle(network, pool),
                 facecolor="#fb923c33",
                 edgecolor="#ea580c",
@@ -157,7 +160,7 @@ class DrainedPoolPlotter:
             for branch_index, segment_id in enumerate(segment_ids):
                 ordered = sorted(
                     (record for record in records if record[0].segment_id == segment_id),
-                    key=lambda item: item[1],
+                    key=lambda item: item[0].segment_arc_length,
                 )
                 distance = [item[1] for item in ordered]
                 label_prefix = (
@@ -181,7 +184,7 @@ class DrainedPoolPlotter:
                     label=f"{label_prefix} height",
                 )
         axis.set_title("Branch-wise graded section transitions")
-        axis.set_xlabel("Plan distance from room centre (m)")
+        axis.set_xlabel("Signed distance along passage from room centre (m)")
         axis.set_ylabel("Section size (m)")
         if pools:
             axis.legend(fontsize=7)
@@ -226,7 +229,7 @@ class DrainedPoolPlotter:
         ):
             axis.bar(
                 positions + offset,
-                [float(pool.metadata.get(key, 0.0)) for pool in pools],
+                [metadata_float(pool.metadata, key) for pool in pools],
                 width,
                 label=label,
                 color=color,
@@ -236,7 +239,7 @@ class DrainedPoolPlotter:
                 index,
                 0.2,
                 f"{pool.metadata.get('process_cause', 'unknown')}\n"
-                f"outlet ratio {float(pool.metadata.get('pool_outlet_ratio', 0.0)):.1f}×",
+                f"outlet ratio {metadata_float(pool.metadata, 'pool_outlet_ratio'):.1f}×",
                 rotation=90,
                 va="bottom",
                 ha="center",

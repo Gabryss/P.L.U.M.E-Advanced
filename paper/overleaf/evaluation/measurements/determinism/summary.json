@@ -1,0 +1,19 @@
+{
+  "checks": {
+    "events_off_host_equal": true,
+    "events_off_network_equal": true,
+    "events_off_sections_equal": true,
+    "export_changed_host_equal": true,
+    "export_changed_network_equal": true,
+    "export_changed_sections_equal": true,
+    "resume_checkpoint_reused": true,
+    "resume_sections_equal": true,
+    "same_run_host_equal": true,
+    "same_run_network_equal": true,
+    "same_run_sections_equal": true
+  },
+  "complete_n": 3,
+  "failed_n": 0,
+  "planned_n": 3,
+  "schema": "plume.determinism-summary.v1"
+}

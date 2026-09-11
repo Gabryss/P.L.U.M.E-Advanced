@@ -1,0 +1,10 @@
+{
+  "complete_n": 30,
+  "failed_n": 0,
+  "median_adaptive_count": 1198.5,
+  "median_adaptive_error_m": 2.295831211075231,
+  "median_uniform_count": 1227.0,
+  "median_uniform_error_m": 1.8614626019740586,
+  "planned_n": 30,
+  "schema": "plume.sampling-ablation-summary.v1"
+}

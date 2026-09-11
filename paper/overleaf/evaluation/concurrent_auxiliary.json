@@ -1,0 +1,39 @@
+{
+  "reason": "Independent sampling and A-C repeatability cases overlap the remaining control sweep after all isolated resource benchmarks and export generation finish. The main driver later reuses matching completed cases.",
+  "package_source": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/src",
+  "commands": {
+    "sampling-ablation": {
+      "started_at_utc": "2026-09-07T11:57:54.165477+00:00",
+      "argv": [
+        "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/.venv/bin/python",
+        "-m",
+        "plume_advanced.evaluation.cli",
+        "--config",
+        "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/paper/experiments.toml",
+        "sampling-ablation"
+      ],
+      "configured_workers": 4,
+      "log": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/logs/sampling-ablation-concurrent.log",
+      "returncode": 0,
+      "elapsed_s": 654.1617938699783,
+      "finished_at_utc": "2026-09-07T12:08:48.327399+00:00"
+    },
+    "determinism": {
+      "started_at_utc": "2026-09-07T12:08:48.327731+00:00",
+      "argv": [
+        "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/.venv/bin/python",
+        "-m",
+        "plume_advanced.evaluation.cli",
+        "--config",
+        "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/paper/experiments.toml",
+        "determinism"
+      ],
+      "configured_workers": 4,
+      "log": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/logs/determinism-concurrent.log",
+      "returncode": 0,
+      "elapsed_s": 62.35656852001557,
+      "finished_at_utc": "2026-09-07T12:09:50.685557+00:00"
+    }
+  },
+  "finished_at_utc": "2026-09-07T12:09:50.685778+00:00"
+}

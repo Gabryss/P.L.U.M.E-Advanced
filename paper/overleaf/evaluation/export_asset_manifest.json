@@ -1,0 +1,562 @@
+{
+  "scope": "File identity of the completed emitted packages; not an application-import, rendering or simulator-contact test.",
+  "file_count": 111,
+  "bytes": 2046034810,
+  "files": [
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/blender/README_IMPORT_BLENDER.txt",
+      "bytes": 459,
+      "sha256": "71ed94424556b9c5c1775eb0a55f623ab0bba3157e09c9108e3607b4af49d53c"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/blender/plume_seed_000000.blender.json",
+      "bytes": 679,
+      "sha256": "2b4813be08cce0321894ce4d20e79e123e5dcc6c045c5834efb1e4180172c4e9"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/blender/plume_seed_000000.blender_validation.json",
+      "bytes": 360,
+      "sha256": "3f1a8ea56b5fd80322c37d423a2834ade6a42b4117d68e751081b21116323149"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/blender/plume_seed_000000.glb",
+      "bytes": 35093440,
+      "sha256": "6771fb09d58476f3e3635399d5c83a16c872e1f97fba7d37054e462220f23951"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/blender/plume_seed_000000.manifest.json",
+      "bytes": 2867,
+      "sha256": "4a700476131579c7311e919763a0780d2cf918386efaaabb54ae01a14d847948"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/blender/plume_seed_000000_collision.obj",
+      "bytes": 32443387,
+      "sha256": "91dd54c2c82892cd02815c5459cf5be8c62ac0b25549d38f84db1ff02a4ea09a"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/blender/plume_seed_000000_fallback.mtl",
+      "bytes": 492,
+      "sha256": "5b9aae8c14630eb8ae6be48f722f277635f171599d6175adb2b6c8fdf0dd2439"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/blender/plume_seed_000000_fallback.obj",
+      "bytes": 98430407,
+      "sha256": "e37e194fb26c19e49b6183fe8d497d7bae374642f62ae7ddff8b69a1e3e9ed1d"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/blender/plume_seed_000000_import_blender.py",
+      "bytes": 1120,
+      "sha256": "65f1d303062f8d2e34b521fd2f30bd1563987a5e4275ea56f84507034afcc400"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/gazebo/README_RUN_GAZEBO.txt",
+      "bytes": 358,
+      "sha256": "c7f4cfdfe497f95173290fe189f201eac016fbafdb58dd31be8facb4944b736c"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/gazebo/plume_seed_000000/materials/textures/dark_rock_diff_8k.jpg",
+      "bytes": 29081536,
+      "sha256": "ad427905d3be95dfeae0d26c33838a110c1e2a15f29d18c111ec3ff6f8d738ea"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/gazebo/plume_seed_000000/materials/textures/dark_rock_nor_gl_8k.exr",
+      "bytes": 114545497,
+      "sha256": "11e40bcdc3823f6023a0f4f6a41b429a764514f822c56e2ea5180c0665648642"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/gazebo/plume_seed_000000/materials/textures/dark_rock_rough_8k.exr",
+      "bytes": 30510371,
+      "sha256": "f9eca3e3ba35746af7d6bb860bae1e0affa417dba5dcb0926da0211a371c2ac5"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/gazebo/plume_seed_000000/meshes/plume_seed_000000.mtl",
+      "bytes": 420,
+      "sha256": "e463e8d4bd3d5b22e7b2fb2223ce55f0fd529e47e931e40875b2e71cd5c25385"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/gazebo/plume_seed_000000/meshes/plume_seed_000000.obj",
+      "bytes": 98430398,
+      "sha256": "766cab5dace6585692b31bb137393894bcbf7ed4f96b343b1d4e148d1487b424"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/gazebo/plume_seed_000000/meshes/plume_seed_000000_collision.obj",
+      "bytes": 32443387,
+      "sha256": "91dd54c2c82892cd02815c5459cf5be8c62ac0b25549d38f84db1ff02a4ea09a"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/gazebo/plume_seed_000000/model.config",
+      "bytes": 191,
+      "sha256": "add456d2fe35376bd06d9fdd459150ba85a5997a30b1f56c708fec77a579ef17"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/gazebo/plume_seed_000000/model.sdf",
+      "bytes": 522,
+      "sha256": "392b5d9799dfcda8fec17d490a8b0e4463f089715a7a827c186e660a144b0d4e"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/gazebo/plume_seed_000000/plume_export.json",
+      "bytes": 341,
+      "sha256": "d66adf5b480f30d63e8d2c01741e8add322ada3acc16c57962978e0aa403a775"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/gazebo/plume_seed_000000.world.sdf",
+      "bytes": 174,
+      "sha256": "fa1b929745de49fb7840663796f03adf4a0fb790cd0209da73053f2c061c82af"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/omniverse/README_IMPORT_OMNIVERSE.txt",
+      "bytes": 436,
+      "sha256": "755166b871316df7bfb3f96ce2c0c960a11f7911e9239d7f7e78eedab2bd93ba"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/omniverse/plume_seed_000000.omniverse.json",
+      "bytes": 341,
+      "sha256": "2671ff3c0ada24a0ebc9193bdd10ec1c443062eb41e14b57da82f7ab89c05869"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/omniverse/plume_seed_000000.usd",
+      "bytes": 113510065,
+      "sha256": "f8cef70e80fb73542cb2d99f246a91b946272bdffc8f7731c9b8ee2b1ccae52c"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/omniverse/plume_seed_000000_textures/cave_base_color.png",
+      "bytes": 1506630,
+      "sha256": "1027aea8880bc7bfcbd4e0c511d828053c6f602c59253d09b819a3482cfca98e"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/omniverse/plume_seed_000000_textures/cave_metallic_roughness.png",
+      "bytes": 821134,
+      "sha256": "38f5764e6c2cef89f4bfd0218495bad2b71c71208453ba56a918faf7c8628b87"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/omniverse/plume_seed_000000_textures/cave_normal.png",
+      "bytes": 2198735,
+      "sha256": "6610b1ca8a92d30c1779e8a2d13e4754c6d25c4951c39fa2ddf6a90340d4c0c8"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/plume_seed_000000.all_exports.json",
+      "bytes": 2651,
+      "sha256": "428e887d0a09c35c79bc7ff5e3902f90b403569dafc022b0467db30f2d8226a9"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/ue5/README_IMPORT_UE5.txt",
+      "bytes": 552,
+      "sha256": "7e2e341f11421bfc7bd348bc49fa1041a7aa3ed40beac90a472ee1dbde226f55"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/ue5/plume_seed_000000.glb",
+      "bytes": 35093440,
+      "sha256": "6771fb09d58476f3e3635399d5c83a16c872e1f97fba7d37054e462220f23951"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/ue5/plume_seed_000000.manifest.json",
+      "bytes": 2867,
+      "sha256": "4a700476131579c7311e919763a0780d2cf918386efaaabb54ae01a14d847948"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/ue5/plume_seed_000000.ue5.json",
+      "bytes": 637,
+      "sha256": "9c64c16d595da8cc878a4b4155ce3633f80bc49567c5db9a7846137ae3d72ee0"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/ue5/plume_seed_000000_collision.obj",
+      "bytes": 32443387,
+      "sha256": "91dd54c2c82892cd02815c5459cf5be8c62ac0b25549d38f84db1ff02a4ea09a"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/unity/README_IMPORT_UNITY.txt",
+      "bytes": 560,
+      "sha256": "153f9a2067d2c6d72319c3edc1484e23ed746ca8b0af8d334b195b7fd00b0a66"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/unity/plume_seed_000000.glb",
+      "bytes": 35093440,
+      "sha256": "6771fb09d58476f3e3635399d5c83a16c872e1f97fba7d37054e462220f23951"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/unity/plume_seed_000000.manifest.json",
+      "bytes": 2867,
+      "sha256": "4a700476131579c7311e919763a0780d2cf918386efaaabb54ae01a14d847948"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/unity/plume_seed_000000.unity.json",
+      "bytes": 629,
+      "sha256": "a47ede181419153e9928b680abd7cd26e67538f05799a9edbe31f55d0712af21"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000000/unity/plume_seed_000000_collision.obj",
+      "bytes": 32443387,
+      "sha256": "91dd54c2c82892cd02815c5459cf5be8c62ac0b25549d38f84db1ff02a4ea09a"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/blender/README_IMPORT_BLENDER.txt",
+      "bytes": 459,
+      "sha256": "3a3b1fcae3410f2403709a9a624bea8e2d83c075228402ab2d96e3db3b43c861"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/blender/plume_seed_000001.blender.json",
+      "bytes": 679,
+      "sha256": "2fbc956a6a283afdb12ed4c7af5edf10d473a1c69ab013853ff071962431cf48"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/blender/plume_seed_000001.blender_validation.json",
+      "bytes": 362,
+      "sha256": "f49dac9fc13042e075597034a2224784e2fd5608131f8a7f97aa55bcfa3e88ef"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/blender/plume_seed_000001.glb",
+      "bytes": 31003332,
+      "sha256": "3ff8a13a57979d5b8b5e9136a7c3bfbbe46214a842d58e3f8ad77adddceff164"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/blender/plume_seed_000001.manifest.json",
+      "bytes": 2869,
+      "sha256": "ae3759768e151fcbba7b8c1d8b4066d1fdb3b18a46d9de447ea719a4b1e7cd33"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/blender/plume_seed_000001_collision.obj",
+      "bytes": 28057575,
+      "sha256": "a6f8b071cb7b140887773c5c0c8337a9a9b8def71891ab8e03f45d28eff5f2d4"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/blender/plume_seed_000001_fallback.mtl",
+      "bytes": 492,
+      "sha256": "5b9aae8c14630eb8ae6be48f722f277635f171599d6175adb2b6c8fdf0dd2439"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/blender/plume_seed_000001_fallback.obj",
+      "bytes": 85178298,
+      "sha256": "8f7e19671e8a5299392a3f303d728f2dc1c8a07708ca98d15b0158566cf6e8ee"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/blender/plume_seed_000001_import_blender.py",
+      "bytes": 1120,
+      "sha256": "66f94c2019aca662078392c94ff0a2b25209d4b255ba22161bcdfeb887507125"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/gazebo/README_RUN_GAZEBO.txt",
+      "bytes": 358,
+      "sha256": "8bec85adedaccb73f8a99e3b065a2e6ae95a29fbe8737e9fcfe62a434f42e759"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/gazebo/plume_seed_000001/materials/textures/dark_rock_diff_8k.jpg",
+      "bytes": 29081536,
+      "sha256": "ad427905d3be95dfeae0d26c33838a110c1e2a15f29d18c111ec3ff6f8d738ea"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/gazebo/plume_seed_000001/materials/textures/dark_rock_nor_gl_8k.exr",
+      "bytes": 114545497,
+      "sha256": "11e40bcdc3823f6023a0f4f6a41b429a764514f822c56e2ea5180c0665648642"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/gazebo/plume_seed_000001/materials/textures/dark_rock_rough_8k.exr",
+      "bytes": 30510371,
+      "sha256": "f9eca3e3ba35746af7d6bb860bae1e0affa417dba5dcb0926da0211a371c2ac5"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/gazebo/plume_seed_000001/meshes/plume_seed_000001.mtl",
+      "bytes": 420,
+      "sha256": "e463e8d4bd3d5b22e7b2fb2223ce55f0fd529e47e931e40875b2e71cd5c25385"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/gazebo/plume_seed_000001/meshes/plume_seed_000001.obj",
+      "bytes": 85178289,
+      "sha256": "13ff22f58022601b58aa90037e233295989cae5ff6bcb4176149127752fa6827"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/gazebo/plume_seed_000001/meshes/plume_seed_000001_collision.obj",
+      "bytes": 28057575,
+      "sha256": "a6f8b071cb7b140887773c5c0c8337a9a9b8def71891ab8e03f45d28eff5f2d4"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/gazebo/plume_seed_000001/model.config",
+      "bytes": 191,
+      "sha256": "c365ca100d2fb4831d805fba359ec63e1e45e389f175a92b2030f3e9fb397f16"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/gazebo/plume_seed_000001/model.sdf",
+      "bytes": 522,
+      "sha256": "9b759a1abc361e3a5a1203081c7849a4c040e7eaadba4c5546c215e9b8576436"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/gazebo/plume_seed_000001/plume_export.json",
+      "bytes": 341,
+      "sha256": "d66adf5b480f30d63e8d2c01741e8add322ada3acc16c57962978e0aa403a775"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/gazebo/plume_seed_000001.world.sdf",
+      "bytes": 174,
+      "sha256": "fa5a6e4cb20919df60909bdbc8c46d2004259bb30470df4c9d068cdb8e0df7ca"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/omniverse/README_IMPORT_OMNIVERSE.txt",
+      "bytes": 436,
+      "sha256": "1e86f7c0c1aff68c5d34f2519d501ef2e93c20eda814454cf77fe03e32dee89d"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/omniverse/plume_seed_000001.omniverse.json",
+      "bytes": 341,
+      "sha256": "76ba7a856a0cf7c56af5672e780ce46e1fe822f37f6dc365336fb39104c07eed"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/omniverse/plume_seed_000001.usd",
+      "bytes": 98339507,
+      "sha256": "ef5d502bf112d2ea38f6e585ac96abdbf40c7adf68e3c55ddbaf7972035953a5"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/omniverse/plume_seed_000001_textures/cave_base_color.png",
+      "bytes": 1506630,
+      "sha256": "1027aea8880bc7bfcbd4e0c511d828053c6f602c59253d09b819a3482cfca98e"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/omniverse/plume_seed_000001_textures/cave_metallic_roughness.png",
+      "bytes": 821134,
+      "sha256": "38f5764e6c2cef89f4bfd0218495bad2b71c71208453ba56a918faf7c8628b87"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/omniverse/plume_seed_000001_textures/cave_normal.png",
+      "bytes": 2198735,
+      "sha256": "6610b1ca8a92d30c1779e8a2d13e4754c6d25c4951c39fa2ddf6a90340d4c0c8"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/plume_seed_000001.all_exports.json",
+      "bytes": 2651,
+      "sha256": "c87daf3b4a9ebb903a837e27c05db4a46c8de67d3ac5856cfa7517982a8aaca5"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/ue5/README_IMPORT_UE5.txt",
+      "bytes": 552,
+      "sha256": "7293d180d7cc3a22d0a7c935ec411dadff75962ebe653062b9401f7ff5d270b3"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/ue5/plume_seed_000001.glb",
+      "bytes": 31003332,
+      "sha256": "3ff8a13a57979d5b8b5e9136a7c3bfbbe46214a842d58e3f8ad77adddceff164"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/ue5/plume_seed_000001.manifest.json",
+      "bytes": 2869,
+      "sha256": "ae3759768e151fcbba7b8c1d8b4066d1fdb3b18a46d9de447ea719a4b1e7cd33"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/ue5/plume_seed_000001.ue5.json",
+      "bytes": 637,
+      "sha256": "4e3a969138b4cc0de3001340a9d55590ad102f14eae5f162a27f87dabe6d887a"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/ue5/plume_seed_000001_collision.obj",
+      "bytes": 28057575,
+      "sha256": "a6f8b071cb7b140887773c5c0c8337a9a9b8def71891ab8e03f45d28eff5f2d4"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/unity/README_IMPORT_UNITY.txt",
+      "bytes": 560,
+      "sha256": "93e5cce6fafedb6d598289dfae29ef4428e51a7741104e954180320d493f4aed"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/unity/plume_seed_000001.glb",
+      "bytes": 31003332,
+      "sha256": "3ff8a13a57979d5b8b5e9136a7c3bfbbe46214a842d58e3f8ad77adddceff164"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/unity/plume_seed_000001.manifest.json",
+      "bytes": 2869,
+      "sha256": "ae3759768e151fcbba7b8c1d8b4066d1fdb3b18a46d9de447ea719a4b1e7cd33"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/unity/plume_seed_000001.unity.json",
+      "bytes": 629,
+      "sha256": "65e94f0769848f14db6b2d6eb663f257df6d5d51340a7bee7b35d295d13838ab"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000001/unity/plume_seed_000001_collision.obj",
+      "bytes": 28057575,
+      "sha256": "a6f8b071cb7b140887773c5c0c8337a9a9b8def71891ab8e03f45d28eff5f2d4"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/blender/README_IMPORT_BLENDER.txt",
+      "bytes": 459,
+      "sha256": "f0ee9fbe73fd1381ce47b1d9704dc843be7536ecc4c68146516b15568aea9b19"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/blender/plume_seed_000002.blender.json",
+      "bytes": 679,
+      "sha256": "0fbd5d231dab9f69b800a64286f286fd3d90e9a02c924b88e88adc9ba745d3e1"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/blender/plume_seed_000002.blender_validation.json",
+      "bytes": 364,
+      "sha256": "72943c91acf01b86d247d1f58f7ea01c2d1b6d54b539a1a6effacff7cb76bf20"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/blender/plume_seed_000002.glb",
+      "bytes": 31801348,
+      "sha256": "6cc3e5dab392ea1638b22f628e5d948996e601cc4e577fafda27623665ec22f8"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/blender/plume_seed_000002.manifest.json",
+      "bytes": 2843,
+      "sha256": "788a554117741357f76d3721b8587499813affccc470d82d1d74bbb53af7fdda"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/blender/plume_seed_000002_collision.obj",
+      "bytes": 29309292,
+      "sha256": "26cd2c4ebaa9ef63dab40ba997b66bbf0b71bb4a87d65c5673733a3977cbaf2d"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/blender/plume_seed_000002_fallback.mtl",
+      "bytes": 492,
+      "sha256": "5b9aae8c14630eb8ae6be48f722f277635f171599d6175adb2b6c8fdf0dd2439"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/blender/plume_seed_000002_fallback.obj",
+      "bytes": 88046792,
+      "sha256": "139f891f8ad4d02aa1badb75066668fb52984285a59a61bb1658c7c067d5ffc2"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/blender/plume_seed_000002_import_blender.py",
+      "bytes": 1120,
+      "sha256": "70154bde625905933e87ebdb1d00b4c7e11bfa3bd5e6abc3d88cc5b879050005"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/gazebo/README_RUN_GAZEBO.txt",
+      "bytes": 358,
+      "sha256": "ada3b7755ac7550fec6eecc2b9340c73d3cae8ad90871c0ffd292dd672f4da7f"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/gazebo/plume_seed_000002/materials/textures/dark_rock_diff_8k.jpg",
+      "bytes": 29081536,
+      "sha256": "ad427905d3be95dfeae0d26c33838a110c1e2a15f29d18c111ec3ff6f8d738ea"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/gazebo/plume_seed_000002/materials/textures/dark_rock_nor_gl_8k.exr",
+      "bytes": 114545497,
+      "sha256": "11e40bcdc3823f6023a0f4f6a41b429a764514f822c56e2ea5180c0665648642"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/gazebo/plume_seed_000002/materials/textures/dark_rock_rough_8k.exr",
+      "bytes": 30510371,
+      "sha256": "f9eca3e3ba35746af7d6bb860bae1e0affa417dba5dcb0926da0211a371c2ac5"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/gazebo/plume_seed_000002/meshes/plume_seed_000002.mtl",
+      "bytes": 420,
+      "sha256": "e463e8d4bd3d5b22e7b2fb2223ce55f0fd529e47e931e40875b2e71cd5c25385"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/gazebo/plume_seed_000002/meshes/plume_seed_000002.obj",
+      "bytes": 88046783,
+      "sha256": "6214bbbb8788cc34e644b60deddddb0bf49453ee6d932b866441c2bd877d938f"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/gazebo/plume_seed_000002/meshes/plume_seed_000002_collision.obj",
+      "bytes": 29309292,
+      "sha256": "26cd2c4ebaa9ef63dab40ba997b66bbf0b71bb4a87d65c5673733a3977cbaf2d"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/gazebo/plume_seed_000002/model.config",
+      "bytes": 191,
+      "sha256": "0a4089210025f64e3284777dcc1c53de368bca60e664d80c66e7cb2807a2094d"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/gazebo/plume_seed_000002/model.sdf",
+      "bytes": 522,
+      "sha256": "975e696e80e8b3813fdd9ea7bbcf628991e04e7d8978ebb13d337856f1344d2a"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/gazebo/plume_seed_000002/plume_export.json",
+      "bytes": 341,
+      "sha256": "d66adf5b480f30d63e8d2c01741e8add322ada3acc16c57962978e0aa403a775"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/gazebo/plume_seed_000002.world.sdf",
+      "bytes": 174,
+      "sha256": "3327e84bc918771c0cb6255c1a458305ecdafb58d7d3b75609597337ab1b6827"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/omniverse/README_IMPORT_OMNIVERSE.txt",
+      "bytes": 436,
+      "sha256": "d4995b5fb3f7f3bd08725df44fe05ec781d9c75fb3307b36709d7b48d60ca8c4"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/omniverse/plume_seed_000002.omniverse.json",
+      "bytes": 341,
+      "sha256": "e247fd5ae9c6160a418c3cc469535d44e3474edbac012e8eb763b12e5264799b"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/omniverse/plume_seed_000002.usd",
+      "bytes": 101888677,
+      "sha256": "97c2d2a7f1012d758c86810bac670df7a1ced95ae4babdac3bc3ea5853315152"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/omniverse/plume_seed_000002_textures/cave_base_color.png",
+      "bytes": 1506630,
+      "sha256": "1027aea8880bc7bfcbd4e0c511d828053c6f602c59253d09b819a3482cfca98e"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/omniverse/plume_seed_000002_textures/cave_metallic_roughness.png",
+      "bytes": 821134,
+      "sha256": "38f5764e6c2cef89f4bfd0218495bad2b71c71208453ba56a918faf7c8628b87"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/omniverse/plume_seed_000002_textures/cave_normal.png",
+      "bytes": 2198735,
+      "sha256": "6610b1ca8a92d30c1779e8a2d13e4754c6d25c4951c39fa2ddf6a90340d4c0c8"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/plume_seed_000002.all_exports.json",
+      "bytes": 2651,
+      "sha256": "0750dbb9fe22e07527ede9e00efe6acb0b70f1b24b5219d691b907e0faf66ca2"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/ue5/README_IMPORT_UE5.txt",
+      "bytes": 552,
+      "sha256": "1d32027b0ebaa1cc4cdb65c9ace839ced57ccec9d045b6e3e306a3f37d82102e"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/ue5/plume_seed_000002.glb",
+      "bytes": 31801348,
+      "sha256": "6cc3e5dab392ea1638b22f628e5d948996e601cc4e577fafda27623665ec22f8"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/ue5/plume_seed_000002.manifest.json",
+      "bytes": 2843,
+      "sha256": "788a554117741357f76d3721b8587499813affccc470d82d1d74bbb53af7fdda"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/ue5/plume_seed_000002.ue5.json",
+      "bytes": 637,
+      "sha256": "0b91f333e8e248b0e729409bff22cb3bf0417e2150e1fcac7d8e7a155b2a0625"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/ue5/plume_seed_000002_collision.obj",
+      "bytes": 29309292,
+      "sha256": "26cd2c4ebaa9ef63dab40ba997b66bbf0b71bb4a87d65c5673733a3977cbaf2d"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/unity/README_IMPORT_UNITY.txt",
+      "bytes": 560,
+      "sha256": "63e69b29cf5882dc7d53971b75661aafb5cd00fb53bdc826d38210b610158777"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/unity/plume_seed_000002.glb",
+      "bytes": 31801348,
+      "sha256": "6cc3e5dab392ea1638b22f628e5d948996e601cc4e577fafda27623665ec22f8"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/unity/plume_seed_000002.manifest.json",
+      "bytes": 2843,
+      "sha256": "788a554117741357f76d3721b8587499813affccc470d82d1d74bbb53af7fdda"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/unity/plume_seed_000002.unity.json",
+      "bytes": 629,
+      "sha256": "4d2670d28b3a809da4e3906c0886bff27b5d5c936ee0666c972c06f2b03a85ad"
+    },
+    {
+      "path": "paper/outputs/export_consistency/packages/seed-000002/unity/plume_seed_000002_collision.obj",
+      "bytes": 29309292,
+      "sha256": "26cd2c4ebaa9ef63dab40ba997b66bbf0b71bb4a87d65c5673733a3977cbaf2d"
+    }
+  ]
+}

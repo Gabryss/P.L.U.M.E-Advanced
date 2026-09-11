@@ -1,0 +1,588 @@
+{
+  "experiment": "export_consistency",
+  "verified_records": 3,
+  "statuses": {
+    "complete": 3
+  },
+  "provenance": {
+    "git_commit": "0961a66e7c3e92f4f15d5866cfce224a85fff691",
+    "git_dirty": true,
+    "source_sha256": "d8bea8ed20c1c22d5c680f961715fc3e90f887c94bef9aa258e2e96009b3f1f8",
+    "python_version": "3.13.5",
+    "python_implementation": "CPython",
+    "python_executable": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/.venv/bin/python",
+    "platform": "Linux-6.8.0-60-generic-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "logical_cpu_count": 12,
+    "resolved_config_sha256": "659b8da89d2b6402e4292ff02a09edfab4030a04c7eb022797eb15d37e906445",
+    "dependencies": {
+      "numpy": "2.5.1",
+      "scipy": "1.18.0",
+      "scikit-image": "0.26.0",
+      "trimesh": "4.12.2",
+      "matplotlib": "3.11.1",
+      "xatlas": "0.0.11",
+      "psutil": "7.2.2",
+      "pillow": "12.3.0",
+      "rocky": "0.1.0",
+      "laspy": "2.7.0"
+    },
+    "inputs": [
+      {
+        "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/config/project.toml",
+        "bytes": 11962,
+        "sha256": "bc0ac5aca9d9ae23676e6954c641697ff87fed26a74c04d7e2cbb87666e8ad76"
+      },
+      {
+        "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/paper/seeds/export_seeds.txt",
+        "bytes": 6,
+        "sha256": "b78a1987bcbdc0903ba6ba29ee3e1f4e7cc1ca868a60889beb141e26e06cb005"
+      }
+    ],
+    "thread_environment": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "PLUME_EVALUATION_WORKERS": "4"
+    },
+    "identity_sha256": "c964a1977580eb4332d41723bf01a6c367b5683fb781a744948bd042fafdd1cb"
+  },
+  "verified_configurations": [
+    {
+      "run_id": "seed-000000-all-targets",
+      "project_config_sha256": "e498b4a4db8363c457b199bb5cfd0ce034350d0147db2a77c6a1bf205d391d88",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000001-all-targets",
+      "project_config_sha256": "332adf21233604713706828088379e87b32d3ecd65bbe71dc42f55aa055030f3",
+      "status": "complete"
+    },
+    {
+      "run_id": "seed-000002-all-targets",
+      "project_config_sha256": "6690ade40e824616df56a070e39d1e70d7906ff5574e95285e48d3e78645da3b",
+      "status": "complete"
+    }
+  ],
+  "resolved_base_configurations": {
+    "default": {
+      "schema_version": 3,
+      "procedural_seed": 1,
+      "stage_seeds": {
+        "host": 663506536,
+        "network": 3016166005,
+        "sections": 2865105769,
+        "events": 1067299897,
+        "geometry": 425729973
+      },
+      "world": {
+        "body": {
+          "name": "earth",
+          "gravity_m_s2": 9.80665,
+          "default_material": "terrestrial_basalt",
+          "maximum_passage_width_m": 10.0,
+          "maximum_room_width_m": 28.0,
+          "default_route_length_m": 5000.0,
+          "production_voxel_size_m": 0.5,
+          "host_horizontal_scale": 1.0,
+          "host_vertical_scale": 1.0,
+          "host_fracture_scale": 1.0,
+          "roof_safety_factor": 1.5
+        },
+        "material": {
+          "name": "terrestrial_basalt",
+          "bulk_density_kg_m3": 2900.0,
+          "intact_tensile_strength_mpa": 8.0,
+          "rock_mass_quality": 0.55,
+          "weathering": 0.3
+        },
+        "example_roof_demand_ratio": 0.13896623213742781
+      },
+      "flow_regime": {
+        "supply_rate_scale": 1.0,
+        "duration_scale": 1.0,
+        "inflation": 0.5,
+        "distributary_tendency": 0.65,
+        "cooling_rate_scale": 1.0
+      },
+      "run": {
+        "dev_mode": true,
+        "quality": "standard",
+        "dev_max_route_length_m": 1500.0,
+        "dev_max_braid_zones": 2,
+        "render_diagnostics": true,
+        "overwrite_outputs": false
+      },
+      "export": {
+        "target": "all",
+        "file_format": "auto",
+        "generate_collision": true
+      },
+      "host_field": {
+        "grid": {
+          "width": 1800.0,
+          "height": 1500.0,
+          "nx": 220,
+          "ny": 141
+        },
+        "random_seed": 663506536,
+        "body_spatial_scale": 1.0,
+        "body_vertical_scale": 1.0,
+        "body_fracture_scale": 1.0,
+        "target_route_length_m": 5000.0,
+        "seed_point": [
+          157.36809345794154,
+          -660.0
+        ],
+        "high_side_elevation": 190.8603088684837,
+        "longitudinal_drop": 101.30322203353253,
+        "flow_angle_degrees": 94.61000853325967,
+        "corridor_depth": 15.455676677166911,
+        "corridor_width": 239.1737014695223,
+        "volcanic_layer_thickness": 61.26035596477713,
+        "minimum_stable_cover": 21.247500056588933,
+        "roof_competence_baseline": 0.7175009510058787,
+        "roof_competence_variation": 0.1779859915024763,
+        "fracture_zone_angle_degrees": 1.0647037597345808,
+        "fracture_zone_center_offset": 101.154199742858,
+        "fracture_zone_width": 214.32240409743088,
+        "gravity_m_s2": 9.80665,
+        "rock_density_kg_m3": 2900.0,
+        "effective_tensile_strength_pa": 3541999.9999999995,
+        "material_quality": 0.55,
+        "material_weathering": 0.3,
+        "characteristic_passage_span_m": 10.0,
+        "routing_weights": {
+          "slope": 0.12,
+          "cover": 0.1,
+          "fracture": 0.22,
+          "capacity": 0.28,
+          "stability": 0.28,
+          "normalize": true,
+          "enabled": true
+        },
+        "waves": [
+          {
+            "amplitude": 6.942514484930102,
+            "wavelength": 977.3416999881574,
+            "angle_degrees": 34.475065124727735,
+            "phase": 1.9136196578684146
+          },
+          {
+            "amplitude": 11.393576736073474,
+            "wavelength": 1182.497640714013,
+            "angle_degrees": 10.961674835033506,
+            "phase": -1.2981008946513535
+          },
+          {
+            "amplitude": 6.1416956340471485,
+            "wavelength": 1405.592712332288,
+            "angle_degrees": -49.23239235857338,
+            "phase": -1.5870540537060955
+          }
+        ]
+      },
+      "network": {
+        "random_seed": 3016166005,
+        "growth_model": "hybrid_lobe",
+        "network_density": 3.0,
+        "emplacement_backend": "internal",
+        "flowy_executable": null,
+        "flowy_timeout_s": 120.0,
+        "flowy_output_path": null,
+        "downflow_ensemble_size": 8,
+        "lobe_launch_rate": 1.0,
+        "loop_probability": 1.0,
+        "capture_probability": 1.0,
+        "chamber_gain": 1.0,
+        "braid_grammar": {
+          "zone_count": [
+            2,
+            2
+          ],
+          "center_fraction": [
+            0.14,
+            0.88
+          ],
+          "min_center_spacing": 0.1,
+          "half_length_fraction": [
+            0.045,
+            0.095
+          ],
+          "branches_per_zone": [
+            2,
+            4
+          ],
+          "lateral_offset_scale": [
+            0.35,
+            1.25
+          ],
+          "start_shift_fraction": [
+            -0.26,
+            0.26
+          ],
+          "end_shift_fraction": [
+            -0.26,
+            0.26
+          ],
+          "skew": [
+            -0.7,
+            0.7
+          ],
+          "wobble": [
+            0.08,
+            0.38
+          ],
+          "underpass_probability": 0.24,
+          "ladder_probability": 0.52,
+          "ladder_rung_count": [
+            1,
+            2
+          ],
+          "chamber_radius_scale": [
+            1.0,
+            1.6
+          ]
+        },
+        "lobe_growth": {
+          "path_count": [
+            6,
+            6
+          ],
+          "maximum_steps": [
+            42,
+            96
+          ],
+          "minimum_persistence_steps": 8,
+          "minimum_anchor_spacing_fraction": 0.055,
+          "terrain_perturbation_m": 2.4,
+          "perturbation_correlation_cells": 3.5,
+          "candidate_temperature": 0.38,
+          "inertia_weight": 1.35,
+          "perturbed_slope_weight": 2.1,
+          "downstream_potential_weight": 3.2,
+          "initial_divergence_weight": 2.4,
+          "channel_avoidance_weight": 1.8,
+          "channel_reuse_weight": 3.6,
+          "exposed_cooling_multiplier": 5.0,
+          "retirement_temperature_k": 1060.0,
+          "branch_flux_fraction": [
+            0.18,
+            0.58
+          ],
+          "retired_path_fraction": 0.24,
+          "breakout_capacity_weight": 2.4,
+          "breakout_confinement_weight": 1.65,
+          "breakout_curvature_weight": 1.1,
+          "breakout_blockage_weight": 1.35,
+          "minimum_viable_flux_fraction": 0.075,
+          "coalescence_flux_return_fraction": 0.72,
+          "deposition_feedback_m": 0.85,
+          "deposition_spread_cells": 1.75,
+          "backbone_curvature_fraction": 0.2,
+          "backbone_curvature_wavelength_fraction": 0.38,
+          "backbone_curvature_secondary_fraction": 0.35
+        },
+        "emplacement_history": {
+          "phase_count": [
+            3,
+            5
+          ],
+          "active_phase_span": [
+            1,
+            3
+          ],
+          "stacked_lobe_fraction": 0.34,
+          "maximum_absolute_level": 2,
+          "chamber_formation_probability": 0.28,
+          "vertical_capture_chamber_probability": 0.62,
+          "roof_failure_probability": 0.16,
+          "phase_flux_budget_fraction": 1.0,
+          "reoccupation_probability": 0.24,
+          "breakout_probability": 0.58,
+          "retirement_flux_threshold": 0.1,
+          "drained_pool_enabled": true,
+          "drained_pool_probability": 0.96,
+          "drained_pool_count": [
+            1,
+            3
+          ],
+          "drained_pool_min_spacing_m": 180.0,
+          "drained_pool_flux_quantile": 0.72,
+          "drained_pool_flux_weight": 1.0,
+          "drained_pool_grade_weight": 1.0,
+          "drained_pool_slope_break_weight": 0.8,
+          "drained_pool_length_m": [
+            35.0,
+            90.0
+          ],
+          "drained_pool_width_ratio": [
+            2.0,
+            4.5
+          ],
+          "drained_pool_max_width_m": 28.0,
+          "drained_pool_depth_m": [
+            5.0,
+            12.0
+          ]
+        },
+        "body_spatial_scale": 1.0,
+        "target_route_length_m": 1500.0,
+        "source_count": 8,
+        "source_flux": 1.0,
+        "source_temperature_k": 1450.0,
+        "cooling_k_per_m": 0.025,
+        "nominal_flow_speed_m_s": 0.35,
+        "source_band_length": 90.0,
+        "source_band_half_width": 180.0,
+        "sink_margin": 80.0,
+        "trace_max_steps": 141,
+        "max_uphill_step": 1.2,
+        "growth_cost_weight": 3.2,
+        "corridor_weight": 0.35,
+        "chamber_flux_quantile": 0.82,
+        "base_passage_radius": 3.8,
+        "minimum_passage_radius": 2.2,
+        "maximum_passage_radius": 5.0,
+        "chamber_radius": 10.0,
+        "chamber_radius_fraction": 0.675,
+        "minimum_branch_offset_widths": 1.25,
+        "paint_flux_chambers": false,
+        "occupancy_smoothing_passes": 2,
+        "spur_count": 2,
+        "spur_max_steps": 24,
+        "spur_lateral_bias": 1.3,
+        "spur_congestion_weight": 0.85,
+        "channel_count_samples": 28
+      },
+      "section_field": {
+        "random_seed": 2865105769,
+        "base_height_ratio": 0.66,
+        "minimum_height_ratio": 0.16,
+        "maximum_height_ratio": 1.65,
+        "width_scale_median": 0.84,
+        "width_scale_log_sigma": 0.6,
+        "width_longitudinal_variation": 0.18,
+        "height_ratio_variation": 0.18,
+        "height_ratio_longitudinal_variation": 0.07,
+        "minimum_tube_width": 0.5,
+        "minimum_tube_height": 0.35,
+        "maximum_tube_width": 10.0,
+        "chamber_max_tube_width": 28.0,
+        "minimum_sample_spacing": 4.0,
+        "maximum_sample_spacing": 16.0,
+        "sampling_policy": "adaptive",
+        "uniform_sample_spacing": 16.0,
+        "reference_sample_spacing": 2.0,
+        "curvature_spacing_weight": 120.0,
+        "width_gradient_spacing_weight": 34.0,
+        "junction_spacing_weight": 1.15,
+        "profile_resolution": 40,
+        "floor_flatness_base": 0.36,
+        "floor_flatness_width_weight": 0.12,
+        "floor_relief_base": 0.035,
+        "floor_relief_variation": 0.01,
+        "roof_arch_base": 1.08,
+        "roof_arch_roof_weight": 0.18,
+        "wall_roughness_base": 0.14,
+        "wall_roughness_variation": 0.045,
+        "morphology_gradient_strength": 0.32,
+        "morphology_correlation_length": 140.0,
+        "morphology_regime_strength": 0.72,
+        "morphology_family_spread": 0.82,
+        "morphology_flux_width_gain": 0.16,
+        "morphology_age_width_gain": 0.1,
+        "morphology_floor_relief_max": 0.42,
+        "morphology_wall_roughness_max": 0.3,
+        "profile_shape_variation": 0.92,
+        "lateral_skew_amplitude": 0.16,
+        "centerline_wobble_amplitude": 2.8,
+        "centerline_wobble_wavelength": 105.0,
+        "junction_pre_widen_gain": 0.1,
+        "junction_constant_envelope_gain": 0.03,
+        "chamber_widen_gain": 0.45,
+        "drained_pool_width_scale": 1.0,
+        "drained_pool_height_ratio_limit": 0.42,
+        "drained_pool_floor_flatness": 0.84,
+        "drained_pool_roof_arch": 1.04,
+        "drained_pool_transition_power": 1.35,
+        "minimum_roof_thickness": 6.5,
+        "maximum_centerline_depth": 26.0,
+        "preferred_cover_fraction": 0.34,
+        "vertical_level_spacing": 0.0,
+        "minimum_vertical_clearance": 2.0,
+        "maximum_uphill_grade": 0.015,
+        "level_transition_fraction": 0.18,
+        "gravity_m_s2": 9.80665,
+        "rock_density_kg_m3": 2900.0,
+        "effective_tensile_strength_pa": 3541999.9999999995,
+        "roof_safety_factor": 1.5,
+        "bench_strength": 0.6,
+        "floor_incision_ratio": 0.1
+      },
+      "floor_map": {
+        "lateral_spacing_m": 2.5,
+        "maximum_lateral_fraction": 0.72,
+        "plan_resolution_m": 2.0,
+        "minimum_clearance_m": 1.0
+      },
+      "events": {
+        "random_seed": 1067299897,
+        "enabled": true,
+        "include_rock_props": true,
+        "enabled_kinds": [
+          "rock",
+          "boulder",
+          "collapse",
+          "choke",
+          "infill"
+        ],
+        "rock_population_multiplier": 10.0,
+        "debris_density_basis": "floor_area",
+        "rock_density_per_100m": 2.0,
+        "boulder_density_per_100m": 0.18,
+        "rock_density_per_100m2": 0.45,
+        "boulder_density_per_100m2": 0.04,
+        "geological_event_density_per_100m": 0.12,
+        "collapse_event_fraction": 0.35,
+        "choke_event_fraction": 0.3,
+        "infill_event_fraction": 0.35,
+        "minimum_event_spacing": 22.0,
+        "minimum_rock_spacing": 0.1,
+        "minimum_boulder_spacing": 0.35,
+        "rock_radius_range": [
+          0.03,
+          0.75
+        ],
+        "boulder_radius_range": [
+          0.3,
+          4.0
+        ],
+        "rock_size_bias": 2.8,
+        "boulder_size_bias": 2.4,
+        "collapse_radius_range": [
+          4.0,
+          9.0
+        ],
+        "choke_radius_range": [
+          3.0,
+          7.0
+        ],
+        "infill_radius_range": [
+          5.0,
+          12.0
+        ],
+        "max_lateral_floor_fraction": 0.62,
+        "mesh_latitude_segments": 8,
+        "mesh_longitude_segments": 14,
+        "use_rocky_meshes": true,
+        "rocky_source_path": "",
+        "rocky_texture_dir": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures",
+        "rocky_output_dir": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/outputs/rocky_stage_e",
+        "rocky_resolution_scale": 1.0,
+        "rocky_max_subdivisions": 5,
+        "strict_optional_provider": true,
+        "gravity_m_s2": 9.80665,
+        "rock_density_kg_m3": 2900.0,
+        "effective_tensile_strength_pa": 3541999.9999999995,
+        "roof_safety_factor": 1.5,
+        "ground_embed_fraction": 0.08,
+        "clustered_debris_fraction": 0.45,
+        "collapse_cluster_radius_scale": 4.0,
+        "collapse_cluster_spacing_scale": 0.9,
+        "gallery_width_size_fraction": 0.3,
+        "gallery_clearance_size_fraction": 0.45,
+        "boulder_max_height_fraction": 0.6666666667,
+        "roof_block_size_fraction": 0.35,
+        "edge_accumulation_strength": 0.7,
+        "placement_jitter_m": 0.75,
+        "background_contact_spacing": 1.15,
+        "rover_width_m": 1.0,
+        "rover_side_margin_m": 0.1,
+        "rover_max_lateral_slope": 0.5,
+        "preserve_rover_route": true,
+        "enable_debris_families": true,
+        "clean_floor_fraction": 0.45,
+        "debris_patch_length_m": 30.0,
+        "wall_scree_fraction": 0.35,
+        "transported_lag_fraction": 0.15,
+        "boulder_satellite_count_range": [
+          25,
+          55
+        ],
+        "boulder_halo_radius_range_m": [
+          1.2,
+          4.5
+        ],
+        "collapse_fragment_count_range": [
+          50,
+          120
+        ],
+        "collapse_talus_radius_range_m": [
+          5.0,
+          15.0
+        ],
+        "minor_cluster_density_per_1000m2": 0.8,
+        "minor_cluster_count_range": [
+          8,
+          18
+        ],
+        "minor_cluster_radius_range_m": [
+          1.2,
+          3.0
+        ]
+      },
+      "geometry": {
+        "random_seed": 425729973,
+        "voxel_size": 0.6,
+        "resolution_policy": "body",
+        "resolution_quality": "standard",
+        "characteristic_passage_width_m": 10.0,
+        "target_samples_across_passage": 16.0,
+        "storage_mode": "auto",
+        "max_dense_voxels": 80000000,
+        "density_margin": 24.0,
+        "chunk_size": 64,
+        "iso_level": 0.0,
+        "tunnel_radius_scale": 1.0,
+        "chamber_radius_scale": 1.0,
+        "junction_radius_scale": 1.0,
+        "minimum_radius": 1.5,
+        "use_section_profiles": true,
+        "wall_roughness_amplitude": 0.28,
+        "wall_roughness_frequency": 0.18,
+        "wall_roughness_blend": 0.85,
+        "floor_roughness_scale": 0.25,
+        "roof_roughness_scale": 1.0,
+        "surface_wall_relief_m": 0.0,
+        "surface_roof_relief_m": 0.0,
+        "surface_floor_relief_m": 0.0,
+        "surface_crust_relief_m": 0.0,
+        "surface_feature_scale_m": 1.0,
+        "surface_normal_filter_voxels": 1.2,
+        "junction_irregularity_amplitude": 0.3,
+        "junction_irregularity_frequency": 0.095,
+        "structural_event_blend": 0.35,
+        "weld_tolerance": 1e-05,
+        "strict_texture_loading": true,
+        "embedded_texture_max_size": 1024,
+        "cave_normal_scale": 2.0,
+        "cave_smoothing_iterations": 4,
+        "cave_displacement_scale_m": 0.12,
+        "cave_displacement_midlevel": 0.5,
+        "cave_diffuse_texture": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg",
+        "cave_normal_texture": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr",
+        "cave_roughness_texture": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_rough_8k.exr",
+        "cave_displacement_texture": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_disp_8k.png"
+      },
+      "canonical_coordinates": {
+        "length_unit": "metre",
+        "handedness": "right",
+        "up_axis": "Z"
+      }
+    }
+  },
+  "scope": "Post-execution reconstruction, checked against every saved case identity. No generation or mutation of case records. Benchmark failed-case project hashes are reconstructed from frozen inputs; complete-case worker hashes also match."
+}

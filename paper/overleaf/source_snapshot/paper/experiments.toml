@@ -1,0 +1,63 @@
+schema_version = 1
+
+[general]
+output_root = "outputs"
+project_config = "../config/project.toml"
+bootstrap_iterations = 2000
+confidence_level = 0.95
+bootstrap_seed = 20260101
+
+[datasets.pdc]
+title = "Pyroduct Digital Catalog"
+version = "2.0"
+zenodo_record = "17750755"
+doi = "10.5281/zenodo.17750755"
+recommended_citation_doi = "10.5281/zenodo.14535885"
+source_archive_md5 = "cccad95bbf3ef56d1bd48ac75273682c"
+path_env = "PLUME_PDC_ROOT"
+calibration_caves = "splits/pdc_calibration_caves.txt"
+evaluation_caves = "splits/pdc_evaluation_caves.txt"
+
+[morphometry]
+body = "earth"
+seed_file = "seeds/network_seeds.txt"
+reference_partition = "evaluation"
+exclude_self_intersections = true
+stop_after_stage = "sections"
+baseline = "ellipse"
+metrics = ["width_m", "height_m", "aspect_ratio", "area_m2", "compactness", "floor_residual_norm", "roof_asymmetry_norm"]
+aggregate_metrics = ["aspect_ratio", "compactness", "floor_residual_norm", "roof_asymmetry_norm"]
+
+[controllability]
+body = "earth"
+seed_file = "seeds/network_seeds.txt"
+distributary_values = [0.20, 0.50, 0.80]
+duration_values = [0.50, 1.00, 1.50]
+inflation_values = [0.20, 0.50, 0.80]
+supply_values = [0.70, 1.00, 1.30]
+
+[host_ablation]
+body = "earth"
+seed_file = "seeds/network_seeds.txt"
+conditions = ["full", "no_slope", "no_cover", "no_fracture", "no_capacity", "no_stability", "unconditioned"]
+
+[sampling_ablation]
+body = "earth"
+seed_file = "seeds/sampling_seeds.txt"
+reference_spacing_m = 1.0
+
+[scalability]
+body = "earth"
+seed_file = "seeds/geometry_seeds.txt"
+route_lengths_m = [500, 1000, 2000, 5000]
+quality = "standard"
+storage_modes = ["dense", "tiled"]
+timeout_s = 7200
+
+[export_consistency]
+seed_file = "seeds/export_seeds.txt"
+targets = ["blender", "ue5", "unity", "gazebo", "omniverse"]
+
+[determinism]
+body = "earth"
+seed_file = "seeds/export_seeds.txt"

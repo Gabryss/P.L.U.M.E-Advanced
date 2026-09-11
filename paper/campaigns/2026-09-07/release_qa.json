@@ -1,0 +1,22 @@
+{
+  "compiler": "latexmk / pdfLaTeX",
+  "compiled_pages": 18,
+  "inserted_figures": 10,
+  "missing_figure_assets": 0,
+  "empty_figure_placeholders": 0,
+  "unresolved_references_or_citations": 0,
+  "overfull_boxes": 0,
+  "visual_review_completed": true,
+  "visual_review": "Every page reviewed in overview; result pages 14\u201318 reviewed individually at page size. The final pages 1\u201313 were re-rendered and are pixel-identical to their reviewed versions. The unnecessary final reference page break was removed.",
+  "verified_case_configurations": 2076,
+  "evaluation_test_runs": [
+    "32 focused evaluation tests passed before original freeze",
+    "34 focused tests passed for the control-resolution amendment"
+  ],
+  "reporting_checks": "Changed plotter passes Ruff and mypy; reporting scripts compile and execute on saved records.",
+  "standalone_zip_compile": "Passed: fresh extracted package; 18 pages; identical extracted page text; no missing assets, unresolved references/citations or overfull boxes.",
+  "pdf_sha256": "3ab9b74aa76fa88215470fbbd2098a2b05d076a163c664c7987cc31429e8a7d2",
+  "main_tex_sha256": "e895ec15e49ecb161a8130f0e1f911984990f396604c17c1d5c3e66d9649416a",
+  "verified_bundled_evidence_files": 407,
+  "standalone_main_tex_sha256": "e895ec15e49ecb161a8130f0e1f911984990f396604c17c1d5c3e66d9649416a"
+}

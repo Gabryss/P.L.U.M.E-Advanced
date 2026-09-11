@@ -1,0 +1,397 @@
+{
+  "all_collisions_present": true,
+  "all_targets_present": true,
+  "canonical_bbox_m": [
+    [
+      -67.18288103200643,
+      -668.6005488804409,
+      37.90595399434471
+    ],
+    [
+      220.878780095762,
+      753.4381233760288,
+      139.7039993434658
+    ]
+  ],
+  "canonical_scene_hash": "484ae68673b58416d1f4f4d4af479c6c0e5c479c407db8d2f8d173a4692c85ed",
+  "condition_id": "all_targets",
+  "elapsed_s": 430.3152117099962,
+  "experiment_name": "export_consistency",
+  "experiment_schema_version": 1,
+  "failure_reason": "",
+  "git_commit": "0961a66e7c3e92f4f15d5866cfce224a85fff691",
+  "git_dirty": true,
+  "input_dataset_id": "",
+  "input_dataset_sha256_or_version": "",
+  "model_schema_version": 1,
+  "platform": "Linux-6.8.0-60-generic-x86_64-with-glibc2.39",
+  "provenance_sha256": "c964a1977580eb4332d41723bf01a6c367b5683fb781a744948bd042fafdd1cb",
+  "python_version": "3.13.5",
+  "resolved_config_sha256": "6690ade40e824616df56a070e39d1e70d7906ff5574e95285e48d3e78645da3b",
+  "run_id": "seed-000002-all-targets",
+  "seed": 2,
+  "started_at_utc": "2026-09-07T11:48:39.499070+00:00",
+  "status": "complete",
+  "target_checks": [
+    {
+      "bbox_relative_extent_error": 0.001740434710262522,
+      "collision_present": true,
+      "exported_bbox_m": [
+        [
+          -67.14749145507812,
+          38.01190948486328,
+          -753.3399658203125
+        ],
+        [
+          220.9164276123047,
+          139.63278198242188,
+          668.5648193359375
+        ]
+      ],
+      "primary_asset": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/outputs/export_consistency/packages/seed-000002/blender/plume_seed_000002.glb",
+      "target": "blender",
+      "target_descriptor": {
+        "cave": {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TANGENT",
+            "TEXCOORD_0"
+          ],
+          "material": {
+            "diffuse": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg",
+            "displacement": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_disp_8k.png",
+            "displacement_baked": true,
+            "displacement_midlevel": 0.5,
+            "displacement_range_m": [
+              -0.10266949768979168,
+              0.1166977126648047
+            ],
+            "displacement_scale_m": 0.12,
+            "double_sided": false,
+            "normal": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr",
+            "normal_scale": 2.0,
+            "roughness": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_rough_8k.exr",
+            "surface_order": [
+              "visual_smoothing",
+              "xatlas_chart_generation",
+              "metric_uv_rescaling",
+              "seam_consistent_vertex_displacement",
+              "final_normals_and_tangents",
+              "material_binding"
+            ],
+            "uv_projection": "xatlas_metric_charts",
+            "uv_scale_m": 8.0,
+            "visual_smoothing_iterations": 4
+          },
+          "node": "cave_wall",
+          "primitive_count": 1,
+          "processing_chunk_count": 135
+        },
+        "coordinates": {
+          "asset": "glTF right-handed Y-up metres",
+          "source": "right-handed Z-up metres"
+        },
+        "events": [],
+        "schema": "plume.geometry_manifest.v2",
+        "structural_event_ids": [],
+        "summary": {
+          "active_tile_count": 135.0,
+          "carved_voxel_count": 640274.0,
+          "characteristic_passage_samples": 16.666666666666668,
+          "chunk_mesh_count": 135.0,
+          "component_count": 1.0,
+          "density_memory_mib": 138.05904388427734,
+          "event_face_count": 0.0,
+          "event_mesh_count": 0.0,
+          "event_vertex_count": 0.0,
+          "export_face_count": 694136.0,
+          "export_vertex_count": 347036.0,
+          "face_count": 694136.0,
+          "junction_count": 22.0,
+          "junction_daughter_parent_area_ratio": 1.4056463478720906,
+          "junction_floor_continuity_m": 2.1907074851979758,
+          "junction_incident_max_width_m": 28.0,
+          "junction_max_width_m": 28.0,
+          "junction_median_incident_width_m": 8.923629361923153,
+          "junction_record_count": 22.0,
+          "junction_refinement_sample_count": 22.0,
+          "mesh_count": 135.0,
+          "minimum_section_width_samples": 8.980299617785342,
+          "minimum_throat_clearance_m": 6.324902343749997,
+          "preserved_pillar_column_count": 54038.0,
+          "stability_assessment_count": 2306.0,
+          "stability_collapse_count": 0.0,
+          "stamped_sample_count": 2284.0,
+          "stamped_segment_count": 55.0,
+          "structural_event_count": 0.0,
+          "unresolved_sub_two_voxel_features": 0.0,
+          "vertex_count": 347036.0,
+          "voxel_component_count": 1.0,
+          "voxel_count": 323450424.0,
+          "voxel_size_m": 0.6
+        }
+      },
+      "target_descriptor_present": true,
+      "visual_asset_present": true,
+      "warnings": []
+    },
+    {
+      "bbox_relative_extent_error": 0.001740434710262522,
+      "collision_present": true,
+      "exported_bbox_m": [
+        [
+          -67.14749145507812,
+          38.01190948486328,
+          -753.3399658203125
+        ],
+        [
+          220.9164276123047,
+          139.63278198242188,
+          668.5648193359375
+        ]
+      ],
+      "primary_asset": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/outputs/export_consistency/packages/seed-000002/ue5/plume_seed_000002.glb",
+      "target": "ue5",
+      "target_descriptor": {
+        "cave": {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TANGENT",
+            "TEXCOORD_0"
+          ],
+          "material": {
+            "diffuse": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg",
+            "displacement": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_disp_8k.png",
+            "displacement_baked": true,
+            "displacement_midlevel": 0.5,
+            "displacement_range_m": [
+              -0.10266949768979168,
+              0.1166977126648047
+            ],
+            "displacement_scale_m": 0.12,
+            "double_sided": false,
+            "normal": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr",
+            "normal_scale": 2.0,
+            "roughness": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_rough_8k.exr",
+            "surface_order": [
+              "visual_smoothing",
+              "xatlas_chart_generation",
+              "metric_uv_rescaling",
+              "seam_consistent_vertex_displacement",
+              "final_normals_and_tangents",
+              "material_binding"
+            ],
+            "uv_projection": "xatlas_metric_charts",
+            "uv_scale_m": 8.0,
+            "visual_smoothing_iterations": 4
+          },
+          "node": "cave_wall",
+          "primitive_count": 1,
+          "processing_chunk_count": 135
+        },
+        "coordinates": {
+          "asset": "glTF right-handed Y-up metres",
+          "source": "right-handed Z-up metres"
+        },
+        "events": [],
+        "schema": "plume.geometry_manifest.v2",
+        "structural_event_ids": [],
+        "summary": {
+          "active_tile_count": 135.0,
+          "carved_voxel_count": 640274.0,
+          "characteristic_passage_samples": 16.666666666666668,
+          "chunk_mesh_count": 135.0,
+          "component_count": 1.0,
+          "density_memory_mib": 138.05904388427734,
+          "event_face_count": 0.0,
+          "event_mesh_count": 0.0,
+          "event_vertex_count": 0.0,
+          "export_face_count": 694136.0,
+          "export_vertex_count": 347036.0,
+          "face_count": 694136.0,
+          "junction_count": 22.0,
+          "junction_daughter_parent_area_ratio": 1.4056463478720906,
+          "junction_floor_continuity_m": 2.1907074851979758,
+          "junction_incident_max_width_m": 28.0,
+          "junction_max_width_m": 28.0,
+          "junction_median_incident_width_m": 8.923629361923153,
+          "junction_record_count": 22.0,
+          "junction_refinement_sample_count": 22.0,
+          "mesh_count": 135.0,
+          "minimum_section_width_samples": 8.980299617785342,
+          "minimum_throat_clearance_m": 6.324902343749997,
+          "preserved_pillar_column_count": 54038.0,
+          "stability_assessment_count": 2306.0,
+          "stability_collapse_count": 0.0,
+          "stamped_sample_count": 2284.0,
+          "stamped_segment_count": 55.0,
+          "structural_event_count": 0.0,
+          "unresolved_sub_two_voxel_features": 0.0,
+          "vertex_count": 347036.0,
+          "voxel_component_count": 1.0,
+          "voxel_count": 323450424.0,
+          "voxel_size_m": 0.6
+        }
+      },
+      "target_descriptor_present": true,
+      "visual_asset_present": true,
+      "warnings": []
+    },
+    {
+      "bbox_relative_extent_error": 0.001740434710262522,
+      "collision_present": true,
+      "exported_bbox_m": [
+        [
+          -67.14749145507812,
+          38.01190948486328,
+          -753.3399658203125
+        ],
+        [
+          220.9164276123047,
+          139.63278198242188,
+          668.5648193359375
+        ]
+      ],
+      "primary_asset": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/outputs/export_consistency/packages/seed-000002/unity/plume_seed_000002.glb",
+      "target": "unity",
+      "target_descriptor": {
+        "cave": {
+          "attributes": [
+            "POSITION",
+            "NORMAL",
+            "TANGENT",
+            "TEXCOORD_0"
+          ],
+          "material": {
+            "diffuse": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg",
+            "displacement": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_disp_8k.png",
+            "displacement_baked": true,
+            "displacement_midlevel": 0.5,
+            "displacement_range_m": [
+              -0.10266949768979168,
+              0.1166977126648047
+            ],
+            "displacement_scale_m": 0.12,
+            "double_sided": false,
+            "normal": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr",
+            "normal_scale": 2.0,
+            "roughness": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_rough_8k.exr",
+            "surface_order": [
+              "visual_smoothing",
+              "xatlas_chart_generation",
+              "metric_uv_rescaling",
+              "seam_consistent_vertex_displacement",
+              "final_normals_and_tangents",
+              "material_binding"
+            ],
+            "uv_projection": "xatlas_metric_charts",
+            "uv_scale_m": 8.0,
+            "visual_smoothing_iterations": 4
+          },
+          "node": "cave_wall",
+          "primitive_count": 1,
+          "processing_chunk_count": 135
+        },
+        "coordinates": {
+          "asset": "glTF right-handed Y-up metres",
+          "source": "right-handed Z-up metres"
+        },
+        "events": [],
+        "schema": "plume.geometry_manifest.v2",
+        "structural_event_ids": [],
+        "summary": {
+          "active_tile_count": 135.0,
+          "carved_voxel_count": 640274.0,
+          "characteristic_passage_samples": 16.666666666666668,
+          "chunk_mesh_count": 135.0,
+          "component_count": 1.0,
+          "density_memory_mib": 138.05904388427734,
+          "event_face_count": 0.0,
+          "event_mesh_count": 0.0,
+          "event_vertex_count": 0.0,
+          "export_face_count": 694136.0,
+          "export_vertex_count": 347036.0,
+          "face_count": 694136.0,
+          "junction_count": 22.0,
+          "junction_daughter_parent_area_ratio": 1.4056463478720906,
+          "junction_floor_continuity_m": 2.1907074851979758,
+          "junction_incident_max_width_m": 28.0,
+          "junction_max_width_m": 28.0,
+          "junction_median_incident_width_m": 8.923629361923153,
+          "junction_record_count": 22.0,
+          "junction_refinement_sample_count": 22.0,
+          "mesh_count": 135.0,
+          "minimum_section_width_samples": 8.980299617785342,
+          "minimum_throat_clearance_m": 6.324902343749997,
+          "preserved_pillar_column_count": 54038.0,
+          "stability_assessment_count": 2306.0,
+          "stability_collapse_count": 0.0,
+          "stamped_sample_count": 2284.0,
+          "stamped_segment_count": 55.0,
+          "structural_event_count": 0.0,
+          "unresolved_sub_two_voxel_features": 0.0,
+          "vertex_count": 347036.0,
+          "voxel_component_count": 1.0,
+          "voxel_count": 323450424.0,
+          "voxel_size_m": 0.6
+        }
+      },
+      "target_descriptor_present": true,
+      "visual_asset_present": true,
+      "warnings": []
+    },
+    {
+      "bbox_relative_extent_error": null,
+      "collision_present": true,
+      "exported_bbox_m": null,
+      "primary_asset": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/outputs/export_consistency/packages/seed-000002/gazebo/plume_seed_000002/model.sdf",
+      "target": "gazebo",
+      "target_descriptor": {
+        "coordinates": "right-handed Z-up metres",
+        "gazebo_release": "Jetty",
+        "gazebo_sim_major": 10,
+        "requirements": {
+          "file_format": "obj",
+          "generate_collision": true,
+          "target": "gazebo"
+        },
+        "schema": "plume.target_export.v1",
+        "sdf_specification": "1.12",
+        "sdformat_major": 16,
+        "target": "gazebo",
+        "warnings": []
+      },
+      "target_descriptor_present": true,
+      "visual_asset_present": true,
+      "warnings": []
+    },
+    {
+      "bbox_relative_extent_error": null,
+      "collision_present": true,
+      "exported_bbox_m": null,
+      "primary_asset": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/outputs/export_consistency/packages/seed-000002/omniverse/plume_seed_000002.usd",
+      "target": "omniverse",
+      "target_descriptor": {
+        "coordinates": "right-handed Z-up metres",
+        "primary_asset": "plume_seed_000002.usd",
+        "requirements": {
+          "file_format": "usd",
+          "generate_collision": true,
+          "target": "omniverse"
+        },
+        "schema": "plume.target_export.v1",
+        "target": "omniverse",
+        "usd": {
+          "metersPerUnit": 1.0,
+          "upAxis": "Z"
+        },
+        "warnings": []
+      },
+      "target_descriptor_present": true,
+      "visual_asset_present": true,
+      "warnings": []
+    }
+  ]
+}

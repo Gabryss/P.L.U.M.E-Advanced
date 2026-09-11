@@ -27,6 +27,10 @@ from plume_advanced.stages.network import (
     EmplacementHistoryConfig,
     LobeGrowthConfig,
 )
+from plume_advanced.stages.network_interconnected import InterconnectionConfig
+from plume_advanced.stages.network_quality import NetworkQualityConfig
+from plume_advanced.stages.network_systems import NetworkSystemsConfig
+from plume_advanced.stages.network_topology import NetworkTopologyConfig
 from plume_advanced.stages.section_field import SectionFieldConfig
 from plume_advanced.world import (
     SUPPORTED_EVENT_KINDS,
@@ -101,11 +105,14 @@ def load_project_config(
     *,
     world_body: str | None = None,
     dev_mode: bool | None = None,
+    flow_regime_overrides: dict[str, float] | None = None,
 ) -> ProjectConfig:
     """Load the project TOML configuration file.
 
     ``world_body`` is a CLI-oriented override. When supplied, the body's
     default material replaces any material selected for the original body.
+    ``flow_regime_overrides`` applies experimental controls before resolving
+    any stage, with the same validation and consumers as edited TOML values.
     """
 
     config_path = Path(path)
@@ -132,6 +139,11 @@ def load_project_config(
         run_data = dict(raw_config.get("run", {}))
         run_data["dev_mode"] = dev_mode
         raw_config["run"] = run_data
+    if flow_regime_overrides:
+        raw_config["flow_regime"] = {
+            **raw_config.get("flow_regime", {}),
+            **flow_regime_overrides,
+        }
 
     schema_version = CURRENT_SCHEMA_VERSION
     procedural_seed = raw_config.get("procedural_seed")
@@ -537,7 +549,7 @@ def _apply_body_host_scaling(
         float(seed_point[1]) * scaled_height / max(base_height, 1e-6),
     )
 
-    for key in ("corridor_width",):
+    for key in ("corridor_width", "corridor_spacing", "corridor_lateral_variation", "corridor_correlation_length"):
         config_data[key] = (
             float(config_data.get(key, getattr(HostFieldConfig, key))) * horizontal_scale
         )
@@ -580,6 +592,18 @@ def _build_network_config(
 ) -> CaveNetworkConfig:
     _reject_unknown_keys("network", raw_config, CaveNetworkConfig)
     config_data = dict(raw_config)
+    quality_data = config_data.pop("quality", {})
+    _reject_unknown_keys("network.quality", quality_data, NetworkQualityConfig)
+    config_data["quality"] = NetworkQualityConfig(**quality_data)
+    systems_data = config_data.pop("systems", {})
+    _reject_unknown_keys("network.systems", systems_data, NetworkSystemsConfig)
+    config_data["systems"] = NetworkSystemsConfig(**systems_data)
+    topology_data = config_data.pop("topology", {})
+    _reject_unknown_keys("network.topology", topology_data, NetworkTopologyConfig)
+    config_data["topology"] = NetworkTopologyConfig(**topology_data)
+    interconnection_data = config_data.pop("interconnection", {})
+    _reject_unknown_keys("network.interconnection", interconnection_data, InterconnectionConfig)
+    config_data["interconnection"] = InterconnectionConfig(**interconnection_data)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
     maximum_width = world.body.maximum_passage_width_m
@@ -724,12 +748,16 @@ def _build_section_field_config(
     )
     config_data.setdefault(
         "minimum_tube_width",
-        0.44 * world.body.maximum_passage_width_m,
+        0.5,
     )
     config_data.setdefault(
         "minimum_tube_height",
-        0.30 * world.body.maximum_passage_width_m,
+        0.35,
     )
+    config_data.setdefault("gravity_m_s2", world.body.gravity_m_s2)
+    config_data.setdefault("rock_density_kg_m3", world.material.bulk_density_kg_m3)
+    config_data.setdefault("effective_tensile_strength_pa", world.material.effective_tensile_strength_pa)
+    config_data.setdefault("roof_safety_factor", world.body.roof_safety_factor)
     config_data.setdefault(
         "chamber_max_tube_width",
         world.body.maximum_room_width_m,
@@ -870,6 +898,7 @@ def _build_event_config(
 ) -> GeologicalEventConfig:
     _reject_unknown_keys("events", raw_config, GeologicalEventConfig)
     config_data = dict(raw_config)
+    config_data.setdefault("roof_safety_factor", world.body.roof_safety_factor)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
     if "enabled_kinds" in config_data:
@@ -1088,6 +1117,17 @@ def _validate_pipeline_configs(
         raise ValueError("network.downflow_ensemble_size must be positive")
     if network.emplacement_backend == "flowy" and not network.flowy_executable:
         raise ValueError("network.flowy_executable is required when emplacement_backend='flowy'")
+    if network.topology.style == "trunk_dominated" and network.emplacement_backend != "internal":
+        raise ValueError("trunk_dominated topology requires internal emplacement")
+    if network.topology.generation_mode == "independent_growth":
+        if network.systems.count < 2:
+            raise ValueError("independent_growth requires at least two systems")
+        if network.emplacement_history.stacked_lobe_fraction != 0:
+            raise ValueError("independent_growth currently requires stacked_lobe_fraction = 0 (one layer)")
+    if network.systems.count > 1 and (
+        network.emplacement_backend != "internal" or network.growth_model != "hybrid_lobe"
+    ):
+        raise ValueError("network.systems.count > 1 requires internal emplacement and hybrid_lobe growth")
     if not 0.0 <= network.network_density <= 3.0:
         raise ValueError("network.network_density must be in [0, 3]")
     if network.lobe_launch_rate < 0.0:
@@ -1254,6 +1294,11 @@ def _validate_pipeline_configs(
         )
     if section_field.minimum_tube_height <= 0.0:
         raise ValueError("section_field.minimum_tube_height must be positive")
+    section_field.roof_stability_model  # validates finite physical inputs
+    for name in ("bench_strength", "floor_incision_ratio"):
+        value = getattr(section_field, name)
+        if not math.isfinite(value) or not 0.0 <= value <= 1.0:
+            raise ValueError(f"section_field.{name} must be finite and in [0, 1]")
     if not (
         0.0
         < section_field.minimum_height_ratio
@@ -1327,14 +1372,8 @@ def _validate_pipeline_configs(
         <= 0.0
     ):
         raise ValueError("section_field sample spacings must be positive")
-    if (
-        min(
-            section_field.vertical_level_spacing,
-            section_field.minimum_vertical_clearance,
-        )
-        <= 0.0
-    ):
-        raise ValueError("section_field vertical separation values must be positive")
+    if section_field.vertical_level_spacing < 0.0 or section_field.minimum_vertical_clearance <= 0.0:
+        raise ValueError("section_field level spacing must be nonnegative and clearance positive")
     if floor_map.lateral_spacing_m <= 0.0:
         raise ValueError("floor_map.lateral_spacing_m must be positive")
     if floor_map.plan_resolution_m <= 0.0:
@@ -1449,8 +1488,19 @@ def _validate_pipeline_configs(
     if not 1 <= events.rocky_max_subdivisions <= 6:
         raise ValueError("events.rocky_max_subdivisions must be in [1, 6]")
 
+    if type(geometry.density_closing_voxels) is not int or geometry.density_closing_voxels not in (0, 1):
+        raise ValueError("geometry.density_closing_voxels must be 0 or 1")
     if geometry.voxel_size <= 0.0:
         raise ValueError("geometry.voxel_size must be positive")
+    for name in ("floor_roughness_scale", "roof_roughness_scale", "surface_wall_relief_m",
+                 "surface_roof_relief_m", "surface_floor_relief_m", "surface_crust_relief_m"):
+        value = getattr(geometry, name)
+        if not math.isfinite(value) or value < 0.0:
+            raise ValueError(f"geometry.{name} must be finite and non-negative")
+    for name in ("surface_feature_scale_m", "surface_normal_filter_voxels"):
+        value = getattr(geometry, name)
+        if not math.isfinite(value) or value <= 0.0:
+            raise ValueError(f"geometry.{name} must be finite and positive")
     if geometry.storage_mode not in {"auto", "dense", "tiled"}:
         raise ValueError("geometry.storage_mode must be auto, dense, or tiled")
     if geometry.max_dense_voxels <= 0:

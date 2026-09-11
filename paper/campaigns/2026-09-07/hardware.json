@@ -1,0 +1,8 @@
+{
+  "cpu_model": "12th Gen Intel(R) Core(TM) i5-12400F",
+  "logical_cpu_count": 12,
+  "physical_cpu_count": 6,
+  "ram_gib": 31.155452728271484,
+  "platform": "Linux-6.8.0-60-generic-x86_64-with-glibc2.39",
+  "scope": "Shared user workstation; benchmark cases are sequential within this campaign, not an otherwise idle-machine guarantee."
+}

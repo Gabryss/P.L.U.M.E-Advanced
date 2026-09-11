@@ -1,0 +1,2945 @@
+{
+  "bbox_m": [
+    [
+      -44.54794520547932,
+      -299.0,
+      30.40858847683515
+    ],
+    [
+      293.2520547945207,
+      266.79999999999995,
+      161.80858847683515
+    ]
+  ],
+  "condition_id": "500m-dense",
+  "elapsed_s": 31.97258078798768,
+  "experiment_name": "scalability",
+  "experiment_schema_version": 1,
+  "failure_reason": "",
+  "geometry": {
+    "active_tile_count": 1.0,
+    "carved_voxel_count": 410057.0,
+    "characteristic_passage_samples": 16.666666666666668,
+    "chunk_mesh_count": 70.0,
+    "component_count": 1.0,
+    "density_memory_mib": 446.8212890625,
+    "event_face_count": 0.0,
+    "event_mesh_count": 0.0,
+    "event_vertex_count": 0.0,
+    "export_face_count": 457142.0,
+    "export_vertex_count": 228519.0,
+    "face_count": 457142.0,
+    "junction_count": 12.0,
+    "junction_daughter_parent_area_ratio": 0.8948220326165733,
+    "junction_floor_continuity_m": 5.491677019501907,
+    "junction_incident_max_width_m": 13.98534158041581,
+    "junction_max_width_m": 13.98534158041581,
+    "junction_median_incident_width_m": 10.49388439223942,
+    "junction_record_count": 12.0,
+    "junction_refinement_sample_count": 12.0,
+    "mesh_count": 70.0,
+    "minimum_section_width_samples": 6.5030704636042564,
+    "minimum_throat_clearance_m": 5.893835449218747,
+    "preserved_pillar_column_count": 19127.0,
+    "stability_assessment_count": 1652.0,
+    "stability_collapse_count": 0.0,
+    "stamped_sample_count": 1640.0,
+    "stamped_segment_count": 59.0,
+    "structural_event_count": 0.0,
+    "unresolved_sub_two_voxel_features": 0.0,
+    "vertex_count": 228519.0,
+    "voxel_component_count": 1.0,
+    "voxel_count": 117131520.0,
+    "voxel_size_m": 0.6
+  },
+  "git_commit": "0961a66e7c3e92f4f15d5866cfce224a85fff691",
+  "git_dirty": true,
+  "input_dataset_id": "",
+  "input_dataset_sha256_or_version": "",
+  "memory_limit_gib": 12.0,
+  "model_schema_version": 1,
+  "network": {
+    "anastomosis_count": 13.0,
+    "breakout_event_count": 14.0,
+    "coalescence_flux_return_ratio": 0.43449503910899834,
+    "dominant_route_length": 632.1732247511536,
+    "drained_lava_pool_count": 0.0,
+    "drained_lava_pool_mean_aspect_ratio": 0.0,
+    "drained_lava_pool_mean_outlet_ratio": 0.0,
+    "drained_lava_pool_mean_width_m": 0.0,
+    "emplacement_phase_count": 5.0,
+    "entry_count": 8.0,
+    "flux_starved_retired_count": 0.0,
+    "junction_count": 14.0,
+    "length_weighted_mean_sinuosity": 1.0388791455106043,
+    "lobe_path_count": 14.0,
+    "loop_count": 14.0,
+    "max_flow_conservation_error": 3.2730923298408225e-16,
+    "max_parallel_channels": 6.0,
+    "max_phase_budget_utilization": 1.0,
+    "max_segment_width": 10.0,
+    "max_visible_parallel_channels": 6.0,
+    "maximum_flux": 3.6756847379643878,
+    "mean_branch_flux_fraction": 0.35825464724126166,
+    "mean_branch_persistence_widths": 8.862834373291898,
+    "mean_breakout_score": 3.353039316057509,
+    "mean_phase_budget_utilization": 0.7796130223184032,
+    "mean_segment_width": 8.685850472571671,
+    "mean_temperature_k": 1442.996261234105,
+    "min_segment_width": 5.901530131824512,
+    "network_density": 3.0,
+    "node_count": 46.0,
+    "occupied_cell_count": 319.0,
+    "piracy_event_count": 2.0,
+    "primary_branch_count": 13.0,
+    "process_chamber_count": 6.0,
+    "reoccupied_path_count": 2.0,
+    "retired_lobe_count": 10.0,
+    "segment_count": 59.0,
+    "short_branch_fraction": 0.23076923076923078,
+    "skylight_prone_segment_count": 5.0,
+    "spur_count": 10.0,
+    "stacked_segment_count": 5.0,
+    "sustained_uphill_step_count": 8.0,
+    "terminal_count": 14.0,
+    "total_length": 3225.41881884685,
+    "uphill_distance_m": 22.404792650327654,
+    "vertical_capture_count": 5.0,
+    "vertical_level_count": 3.0
+  },
+  "peak_rss_bytes": 2060689408,
+  "peak_rss_gib": 1.9191665649414062,
+  "platform": "Linux-6.8.0-60-generic-x86_64-with-glibc2.39",
+  "project_config_sha256": "c86e00b2f7ca4e30afef219d50b4403e3798222a5a02a4d5c22325d0e1d098da",
+  "provenance_sha256": "6846a0bd88076f727d1805857a5352f61f79df0f46eb112e4991b3996bd6dedb",
+  "python_version": "3.13.5",
+  "quality": "standard",
+  "resolved_config_sha256": "732d3998882b255c39691818e1494a252f9490ce9fed31cb69ca0942a9da6aa2",
+  "route_length_requested_m": 500.0,
+  "run_id": "seed-000001-000500m-dense",
+  "section_resolution": {
+    "minimum_samples": 8,
+    "scope": "Input profile envelopes before relief. Eight samples is an initial screening heuristic; actual mesh clearances require local convergence checks.",
+    "section_count": 591,
+    "under_resolved_count": 308,
+    "under_resolved_sections": [
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.442168671837872,
+        "initial_local_voxel_size_m": 0.555271083979734,
+        "samples_across_smallest_dimension": 7.4036144530631205,
+        "segment_id": 0,
+        "under_resolved": true,
+        "width_m": 6.977429422191369
+      },
+      {
+        "arc_length_m": 13.017514930268606,
+        "height_m": 2.5583942452437065,
+        "initial_local_voxel_size_m": 0.3197992806554633,
+        "samples_across_smallest_dimension": 4.263990408739511,
+        "segment_id": 0,
+        "under_resolved": true,
+        "width_m": 5.973077221074569
+      },
+      {
+        "arc_length_m": 17.017514930268604,
+        "height_m": 2.155936974696314,
+        "initial_local_voxel_size_m": 0.26949212183703924,
+        "samples_across_smallest_dimension": 3.5932282911605236,
+        "segment_id": 0,
+        "under_resolved": true,
+        "width_m": 5.8812294569076204
+      },
+      {
+        "arc_length_m": 21.017514930268604,
+        "height_m": 1.835392736818874,
+        "initial_local_voxel_size_m": 0.22942409210235926,
+        "samples_across_smallest_dimension": 3.0589878946981237,
+        "segment_id": 0,
+        "under_resolved": true,
+        "width_m": 6.002320528726503
+      },
+      {
+        "arc_length_m": 25.017514930268604,
+        "height_m": 1.7068487303830544,
+        "initial_local_voxel_size_m": 0.2133560912978818,
+        "samples_across_smallest_dimension": 2.8447478839717575,
+        "segment_id": 0,
+        "under_resolved": true,
+        "width_m": 6.347087000661078
+      },
+      {
+        "arc_length_m": 29.50862557702021,
+        "height_m": 1.844872187427264,
+        "initial_local_voxel_size_m": 0.230609023428408,
+        "samples_across_smallest_dimension": 3.0747869790454403,
+        "segment_id": 0,
+        "under_resolved": true,
+        "width_m": 7.018975510422857
+      },
+      {
+        "arc_length_m": 35.73025305017484,
+        "height_m": 2.837157624390663,
+        "initial_local_voxel_size_m": 0.3546447030488329,
+        "samples_across_smallest_dimension": 4.728596040651105,
+        "segment_id": 0,
+        "under_resolved": true,
+        "width_m": 8.781899122797606
+      },
+      {
+        "arc_length_m": 42.787097056725315,
+        "height_m": 4.4985959476946284,
+        "initial_local_voxel_size_m": 0.5623244934618286,
+        "samples_across_smallest_dimension": 7.497659912824381,
+        "segment_id": 0,
+        "under_resolved": true,
+        "width_m": 11.125564843295088
+      },
+      {
+        "arc_length_m": 10.784313725490193,
+        "height_m": 4.664274566256808,
+        "initial_local_voxel_size_m": 0.583034320782101,
+        "samples_across_smallest_dimension": 7.773790943761347,
+        "segment_id": 1,
+        "under_resolved": true,
+        "width_m": 10.823943051696062
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.664274566256808,
+        "initial_local_voxel_size_m": 0.583034320782101,
+        "samples_across_smallest_dimension": 7.773790943761347,
+        "segment_id": 2,
+        "under_resolved": true,
+        "width_m": 10.823943051696062
+      },
+      {
+        "arc_length_m": 7.441860465116279,
+        "height_m": 3.786511871582559,
+        "initial_local_voxel_size_m": 0.47331398394781987,
+        "samples_across_smallest_dimension": 6.310853119304265,
+        "segment_id": 6,
+        "under_resolved": true,
+        "width_m": 12.585612999533451
+      },
+      {
+        "arc_length_m": 6.587756079803394,
+        "height_m": 4.473880213810837,
+        "initial_local_voxel_size_m": 0.5592350267263546,
+        "samples_across_smallest_dimension": 7.456467023018062,
+        "segment_id": 7,
+        "under_resolved": true,
+        "width_m": 10.750203288154328
+      },
+      {
+        "arc_length_m": 13.197687276969507,
+        "height_m": 3.28776358357984,
+        "initial_local_voxel_size_m": 0.41097044794748,
+        "samples_across_smallest_dimension": 5.479605972633067,
+        "segment_id": 7,
+        "under_resolved": true,
+        "width_m": 9.294574327376571
+      },
+      {
+        "arc_length_m": 20.20977294418734,
+        "height_m": 3.658172730429376,
+        "initial_local_voxel_size_m": 0.457271591303672,
+        "samples_across_smallest_dimension": 6.096954550715627,
+        "segment_id": 7,
+        "under_resolved": true,
+        "width_m": 10.979870600126974
+      },
+      {
+        "arc_length_m": 7.441860465116279,
+        "height_m": 3.6189952372585386,
+        "initial_local_voxel_size_m": 0.4523744046573173,
+        "samples_across_smallest_dimension": 6.031658728764231,
+        "segment_id": 8,
+        "under_resolved": true,
+        "width_m": 12.160001708768602
+      },
+      {
+        "arc_length_m": 21.568627450980387,
+        "height_m": 4.496775022092699,
+        "initial_local_voxel_size_m": 0.5620968777615873,
+        "samples_across_smallest_dimension": 7.494625036821165,
+        "segment_id": 9,
+        "under_resolved": true,
+        "width_m": 8.16927522404608
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.496775022092699,
+        "initial_local_voxel_size_m": 0.5620968777615873,
+        "samples_across_smallest_dimension": 7.494625036821165,
+        "segment_id": 10,
+        "under_resolved": true,
+        "width_m": 8.16927522404608
+      },
+      {
+        "arc_length_m": 21.568627450980387,
+        "height_m": 3.5691627344445394,
+        "initial_local_voxel_size_m": 0.4461453418055674,
+        "samples_across_smallest_dimension": 5.948604557407566,
+        "segment_id": 10,
+        "under_resolved": true,
+        "width_m": 6.576233550016103
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.5691627344445394,
+        "initial_local_voxel_size_m": 0.4461453418055674,
+        "samples_across_smallest_dimension": 5.948604557407566,
+        "segment_id": 11,
+        "under_resolved": true,
+        "width_m": 6.576233550016103
+      },
+      {
+        "arc_length_m": 7.423677393609886,
+        "height_m": 4.79315317067962,
+        "initial_local_voxel_size_m": 0.5991441463349525,
+        "samples_across_smallest_dimension": 7.988588617799367,
+        "segment_id": 11,
+        "under_resolved": true,
+        "width_m": 8.599738221065241
+      },
+      {
+        "arc_length_m": 13.9768226402714,
+        "height_m": 4.718025855786075,
+        "initial_local_voxel_size_m": 0.5897532319732594,
+        "samples_across_smallest_dimension": 7.863376426310125,
+        "segment_id": 12,
+        "under_resolved": true,
+        "width_m": 10.752693899830408
+      },
+      {
+        "arc_length_m": 18.141414168609487,
+        "height_m": 4.783595838718249,
+        "initial_local_voxel_size_m": 0.5979494798397811,
+        "samples_across_smallest_dimension": 7.972659731197082,
+        "segment_id": 12,
+        "under_resolved": true,
+        "width_m": 11.336338238099282
+      },
+      {
+        "arc_length_m": 13.64446862710929,
+        "height_m": 3.9427477182732646,
+        "initial_local_voxel_size_m": 0.4928434647841581,
+        "samples_across_smallest_dimension": 6.571246197122108,
+        "segment_id": 14,
+        "under_resolved": true,
+        "width_m": 8.590149506798195
+      },
+      {
+        "arc_length_m": 17.64446862710929,
+        "height_m": 3.1815540935647766,
+        "initial_local_voxel_size_m": 0.3976942616955971,
+        "samples_across_smallest_dimension": 5.302590155941295,
+        "segment_id": 14,
+        "under_resolved": true,
+        "width_m": 8.063572094995424
+      },
+      {
+        "arc_length_m": 22.081820102188153,
+        "height_m": 3.519279922077365,
+        "initial_local_voxel_size_m": 0.43990999025967065,
+        "samples_across_smallest_dimension": 5.8654665367956085,
+        "segment_id": 14,
+        "under_resolved": true,
+        "width_m": 7.279748936961461
+      },
+      {
+        "arc_length_m": 26.081820102188153,
+        "height_m": 3.9282965368982143,
+        "initial_local_voxel_size_m": 0.4910370671122768,
+        "samples_across_smallest_dimension": 6.547160894830357,
+        "segment_id": 14,
+        "under_resolved": true,
+        "width_m": 7.211673111043394
+      },
+      {
+        "arc_length_m": 27.400835089451608,
+        "height_m": 3.9384103103562156,
+        "initial_local_voxel_size_m": 0.49230128879452695,
+        "samples_across_smallest_dimension": 6.564017183927026,
+        "segment_id": 14,
+        "under_resolved": true,
+        "width_m": 7.216568779906278
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.9384103103562156,
+        "initial_local_voxel_size_m": 0.49230128879452695,
+        "samples_across_smallest_dimension": 6.564017183927026,
+        "segment_id": 15,
+        "under_resolved": true,
+        "width_m": 7.216568779906278
+      },
+      {
+        "arc_length_m": 6.750184102628312,
+        "height_m": 4.474421695701686,
+        "initial_local_voxel_size_m": 0.5593027119627108,
+        "samples_across_smallest_dimension": 7.457369492836143,
+        "segment_id": 15,
+        "under_resolved": true,
+        "width_m": 11.901652602414924
+      },
+      {
+        "arc_length_m": 20.74516724265748,
+        "height_m": 4.40830475271718,
+        "initial_local_voxel_size_m": 0.5510380940896475,
+        "samples_across_smallest_dimension": 7.347174587861968,
+        "segment_id": 15,
+        "under_resolved": true,
+        "width_m": 10.531008078703694
+      },
+      {
+        "arc_length_m": 21.568627450980387,
+        "height_m": 4.4156428511890695,
+        "initial_local_voxel_size_m": 0.5519553563986337,
+        "samples_across_smallest_dimension": 7.359404751981783,
+        "segment_id": 15,
+        "under_resolved": true,
+        "width_m": 10.49388439223942
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.4156428511890695,
+        "initial_local_voxel_size_m": 0.5519553563986337,
+        "samples_across_smallest_dimension": 7.359404751981783,
+        "segment_id": 16,
+        "under_resolved": true,
+        "width_m": 10.49388439223942
+      },
+      {
+        "arc_length_m": 7.407369600628475,
+        "height_m": 2.498685536863909,
+        "initial_local_voxel_size_m": 0.3123356921079886,
+        "samples_across_smallest_dimension": 4.164475894773182,
+        "segment_id": 16,
+        "under_resolved": true,
+        "width_m": 8.09200046881788
+      },
+      {
+        "arc_length_m": 10.784313725490165,
+        "height_m": 4.153112038297001,
+        "initial_local_voxel_size_m": 0.5191390047871252,
+        "samples_across_smallest_dimension": 6.921853397161669,
+        "segment_id": 16,
+        "under_resolved": true,
+        "width_m": 8.278034623674346
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.153112038297001,
+        "initial_local_voxel_size_m": 0.5191390047871252,
+        "samples_across_smallest_dimension": 6.921853397161669,
+        "segment_id": 17,
+        "under_resolved": true,
+        "width_m": 8.278034623674346
+      },
+      {
+        "arc_length_m": 5.794927345203148,
+        "height_m": 4.73065117552782,
+        "initial_local_voxel_size_m": 0.5913313969409775,
+        "samples_across_smallest_dimension": 7.8844186258797,
+        "segment_id": 17,
+        "under_resolved": true,
+        "width_m": 9.186088541596355
+      },
+      {
+        "arc_length_m": 10.784313725490222,
+        "height_m": 3.4560531261101044,
+        "initial_local_voxel_size_m": 0.43200664076376305,
+        "samples_across_smallest_dimension": 5.760088543516841,
+        "segment_id": 17,
+        "under_resolved": true,
+        "width_m": 6.080739702597401
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.4560531261101044,
+        "initial_local_voxel_size_m": 0.43200664076376305,
+        "samples_across_smallest_dimension": 5.760088543516841,
+        "segment_id": 18,
+        "under_resolved": true,
+        "width_m": 6.080739702597401
+      },
+      {
+        "arc_length_m": 24.57281938591353,
+        "height_m": 4.234614830503359,
+        "initial_local_voxel_size_m": 0.5293268538129199,
+        "samples_across_smallest_dimension": 7.057691384172266,
+        "segment_id": 18,
+        "under_resolved": true,
+        "width_m": 9.2235343349136
+      },
+      {
+        "arc_length_m": 27.4008350894516,
+        "height_m": 4.107648041519244,
+        "initial_local_voxel_size_m": 0.5134560051899055,
+        "samples_across_smallest_dimension": 6.846080069198741,
+        "segment_id": 18,
+        "under_resolved": true,
+        "width_m": 9.04314807286254
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.107648041519244,
+        "initial_local_voxel_size_m": 0.5134560051899055,
+        "samples_across_smallest_dimension": 6.846080069198741,
+        "segment_id": 19,
+        "under_resolved": true,
+        "width_m": 9.04314807286254
+      },
+      {
+        "arc_length_m": 7.346727025335462,
+        "height_m": 4.449640312788642,
+        "initial_local_voxel_size_m": 0.5562050390985802,
+        "samples_across_smallest_dimension": 7.41606718798107,
+        "segment_id": 19,
+        "under_resolved": true,
+        "width_m": 8.783045476907867
+      },
+      {
+        "arc_length_m": 45.55815234839366,
+        "height_m": 4.131918686491739,
+        "initial_local_voxel_size_m": 0.5164898358114673,
+        "samples_across_smallest_dimension": 6.886531144152898,
+        "segment_id": 19,
+        "under_resolved": true,
+        "width_m": 5.569661611636858
+      },
+      {
+        "arc_length_m": 54.46256338209448,
+        "height_m": 2.969191818197036,
+        "initial_local_voxel_size_m": 0.3711489772746295,
+        "samples_across_smallest_dimension": 4.948653030328393,
+        "segment_id": 19,
+        "under_resolved": true,
+        "width_m": 5.4478561606381435
+      },
+      {
+        "arc_length_m": 55.67761679781797,
+        "height_m": 2.9611709177340373,
+        "initial_local_voxel_size_m": 0.37014636471675466,
+        "samples_across_smallest_dimension": 4.935284862890063,
+        "segment_id": 19,
+        "under_resolved": true,
+        "width_m": 5.447227437188955
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 2.9611709177340373,
+        "initial_local_voxel_size_m": 0.37014636471675466,
+        "samples_across_smallest_dimension": 4.935284862890063,
+        "segment_id": 20,
+        "under_resolved": true,
+        "width_m": 5.447227437188955
+      },
+      {
+        "arc_length_m": 10.784313725490165,
+        "height_m": 3.6355445491866183,
+        "initial_local_voxel_size_m": 0.4544430686483273,
+        "samples_across_smallest_dimension": 6.0592409153110305,
+        "segment_id": 20,
+        "under_resolved": true,
+        "width_m": 6.663063747231876
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.1233518945700105,
+        "initial_local_voxel_size_m": 0.5154189868212513,
+        "samples_across_smallest_dimension": 6.872253157616685,
+        "segment_id": 21,
+        "under_resolved": true,
+        "width_m": 7.683323613309862
+      },
+      {
+        "arc_length_m": 54.472395578587054,
+        "height_m": 4.582055567063397,
+        "initial_local_voxel_size_m": 0.5727569458829246,
+        "samples_across_smallest_dimension": 7.636759278438995,
+        "segment_id": 21,
+        "under_resolved": true,
+        "width_m": 7.193888708890856
+      },
+      {
+        "arc_length_m": 60.03523878643644,
+        "height_m": 4.403337426717284,
+        "initial_local_voxel_size_m": 0.5504171783396605,
+        "samples_across_smallest_dimension": 7.338895711195474,
+        "segment_id": 21,
+        "under_resolved": true,
+        "width_m": 7.133599702824894
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.403337426717284,
+        "initial_local_voxel_size_m": 0.5504171783396605,
+        "samples_across_smallest_dimension": 7.338895711195474,
+        "segment_id": 22,
+        "under_resolved": true,
+        "width_m": 7.133599702824894
+      },
+      {
+        "arc_length_m": 7.227789957890998,
+        "height_m": 4.698693827764785,
+        "initial_local_voxel_size_m": 0.5873367284705981,
+        "samples_across_smallest_dimension": 7.831156379607975,
+        "segment_id": 22,
+        "under_resolved": true,
+        "width_m": 7.620403738533165
+      },
+      {
+        "arc_length_m": 11.227789957890998,
+        "height_m": 4.495224250480983,
+        "initial_local_voxel_size_m": 0.5619030313101229,
+        "samples_across_smallest_dimension": 7.4920404174683055,
+        "segment_id": 22,
+        "under_resolved": true,
+        "width_m": 7.775611755072246
+      },
+      {
+        "arc_length_m": 15.227789957890998,
+        "height_m": 4.073138110986123,
+        "initial_local_voxel_size_m": 0.5091422638732653,
+        "samples_across_smallest_dimension": 6.788563518310204,
+        "segment_id": 22,
+        "under_resolved": true,
+        "width_m": 8.084306922132868
+      },
+      {
+        "arc_length_m": 19.227789957890998,
+        "height_m": 3.7528749281840046,
+        "initial_local_voxel_size_m": 0.4691093660230006,
+        "samples_across_smallest_dimension": 6.254791546973341,
+        "segment_id": 22,
+        "under_resolved": true,
+        "width_m": 8.388875094805368
+      },
+      {
+        "arc_length_m": 23.227789957890998,
+        "height_m": 3.9863909450612254,
+        "initial_local_voxel_size_m": 0.49829886813265317,
+        "samples_across_smallest_dimension": 6.6439849084353755,
+        "segment_id": 22,
+        "under_resolved": true,
+        "width_m": 8.605628331402489
+      },
+      {
+        "arc_length_m": 27.227789957890998,
+        "height_m": 4.65944573310014,
+        "initial_local_voxel_size_m": 0.5824307166375176,
+        "samples_across_smallest_dimension": 7.765742888500235,
+        "segment_id": 22,
+        "under_resolved": true,
+        "width_m": 8.698218871491594
+      },
+      {
+        "arc_length_m": 7.2411773166390025,
+        "height_m": 1.266364585348041,
+        "initial_local_voxel_size_m": 0.15829557316850512,
+        "samples_across_smallest_dimension": 2.1106076422467352,
+        "segment_id": 23,
+        "under_resolved": true,
+        "width_m": 6.7885455333643385
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.7695782988616564,
+        "initial_local_voxel_size_m": 0.47119728735770705,
+        "samples_across_smallest_dimension": 6.282630498102761,
+        "segment_id": 25,
+        "under_resolved": true,
+        "width_m": 6.898183539499241
+      },
+      {
+        "arc_length_m": 37.7678880342247,
+        "height_m": 3.743850514742384,
+        "initial_local_voxel_size_m": 0.467981314342798,
+        "samples_across_smallest_dimension": 6.2397508579039735,
+        "segment_id": 25,
+        "under_resolved": true,
+        "width_m": 10.0
+      },
+      {
+        "arc_length_m": 47.04552987951004,
+        "height_m": 3.559977526332033,
+        "initial_local_voxel_size_m": 0.4449971907915041,
+        "samples_across_smallest_dimension": 5.933295877220055,
+        "segment_id": 25,
+        "under_resolved": true,
+        "width_m": 9.396893624804427
+      },
+      {
+        "arc_length_m": 59.403384626580895,
+        "height_m": 4.5464412550693245,
+        "initial_local_voxel_size_m": 0.5683051568836656,
+        "samples_across_smallest_dimension": 7.577402091782208,
+        "segment_id": 25,
+        "under_resolved": true,
+        "width_m": 10.0
+      },
+      {
+        "arc_length_m": 99.77721962075292,
+        "height_m": 4.5552622610328015,
+        "initial_local_voxel_size_m": 0.5694077826291002,
+        "samples_across_smallest_dimension": 7.592103768388003,
+        "segment_id": 25,
+        "under_resolved": true,
+        "width_m": 7.622016930589629
+      },
+      {
+        "arc_length_m": 103.77721962075292,
+        "height_m": 4.431177235891454,
+        "initial_local_voxel_size_m": 0.5538971544864317,
+        "samples_across_smallest_dimension": 7.385295393152424,
+        "segment_id": 25,
+        "under_resolved": true,
+        "width_m": 7.609019643195818
+      },
+      {
+        "arc_length_m": 104.40407228390002,
+        "height_m": 4.430551978306929,
+        "initial_local_voxel_size_m": 0.5538189972883661,
+        "samples_across_smallest_dimension": 7.3842532971782155,
+        "segment_id": 25,
+        "under_resolved": true,
+        "width_m": 7.608915075985765
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.430551978306929,
+        "initial_local_voxel_size_m": 0.5538189972883661,
+        "samples_across_smallest_dimension": 7.3842532971782155,
+        "segment_id": 26,
+        "under_resolved": true,
+        "width_m": 7.608915075985765
+      },
+      {
+        "arc_length_m": 7.84235784340133,
+        "height_m": 4.711705236729358,
+        "initial_local_voxel_size_m": 0.5889631545911698,
+        "samples_across_smallest_dimension": 7.852842061215597,
+        "segment_id": 26,
+        "under_resolved": true,
+        "width_m": 8.447109242081517
+      },
+      {
+        "arc_length_m": 8.269873271308906,
+        "height_m": 4.686164038590246,
+        "initial_local_voxel_size_m": 0.5857705048237808,
+        "samples_across_smallest_dimension": 7.810273397650411,
+        "segment_id": 26,
+        "under_resolved": true,
+        "width_m": 8.388182216737755
+      },
+      {
+        "arc_length_m": 6.10342186907508,
+        "height_m": 4.51470697048299,
+        "initial_local_voxel_size_m": 0.5643383713103738,
+        "samples_across_smallest_dimension": 7.524511617471651,
+        "segment_id": 27,
+        "under_resolved": true,
+        "width_m": 7.674501277311521
+      },
+      {
+        "arc_length_m": 8.269873271308917,
+        "height_m": 4.686164038590246,
+        "initial_local_voxel_size_m": 0.5857705048237808,
+        "samples_across_smallest_dimension": 7.810273397650411,
+        "segment_id": 27,
+        "under_resolved": true,
+        "width_m": 8.388182216737755
+      },
+      {
+        "arc_length_m": 18.78388973583533,
+        "height_m": 4.420838151191244,
+        "initial_local_voxel_size_m": 0.5526047688989055,
+        "samples_across_smallest_dimension": 7.36806358531874,
+        "segment_id": 28,
+        "under_resolved": true,
+        "width_m": 7.191714345902228
+      },
+      {
+        "arc_length_m": 19.71391725595755,
+        "height_m": 4.403337426717284,
+        "initial_local_voxel_size_m": 0.5504171783396605,
+        "samples_across_smallest_dimension": 7.338895711195474,
+        "segment_id": 28,
+        "under_resolved": true,
+        "width_m": 7.133599702824894
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.403337426717284,
+        "initial_local_voxel_size_m": 0.5504171783396605,
+        "samples_across_smallest_dimension": 7.338895711195474,
+        "segment_id": 29,
+        "under_resolved": true,
+        "width_m": 7.133599702824894
+      },
+      {
+        "arc_length_m": 7.433021490551376,
+        "height_m": 4.6777351739400554,
+        "initial_local_voxel_size_m": 0.5847168967425069,
+        "samples_across_smallest_dimension": 7.796225289900093,
+        "segment_id": 29,
+        "under_resolved": true,
+        "width_m": 7.82692844115162
+      },
+      {
+        "arc_length_m": 11.433021490551376,
+        "height_m": 4.681299067589611,
+        "initial_local_voxel_size_m": 0.5851623834487014,
+        "samples_across_smallest_dimension": 7.8021651126493525,
+        "segment_id": 29,
+        "under_resolved": true,
+        "width_m": 8.543688291334162
+      },
+      {
+        "arc_length_m": 17.967952367862505,
+        "height_m": 4.429094360653277,
+        "initial_local_voxel_size_m": 0.5536367950816596,
+        "samples_across_smallest_dimension": 7.381823934422129,
+        "segment_id": 29,
+        "under_resolved": true,
+        "width_m": 9.35892680355663
+      },
+      {
+        "arc_length_m": 21.967952367862505,
+        "height_m": 4.4404153967405495,
+        "initial_local_voxel_size_m": 0.5550519245925687,
+        "samples_across_smallest_dimension": 7.4006923279009165,
+        "segment_id": 29,
+        "under_resolved": true,
+        "width_m": 9.526973383854509
+      },
+      {
+        "arc_length_m": 26.48203808178837,
+        "height_m": 4.6051634367173575,
+        "initial_local_voxel_size_m": 0.5756454295896697,
+        "samples_across_smallest_dimension": 7.675272394528929,
+        "segment_id": 29,
+        "under_resolved": true,
+        "width_m": 9.909101531215658
+      },
+      {
+        "arc_length_m": 30.48203808178837,
+        "height_m": 4.678684421359145,
+        "initial_local_voxel_size_m": 0.5848355526698932,
+        "samples_across_smallest_dimension": 7.79780736893191,
+        "segment_id": 29,
+        "under_resolved": true,
+        "width_m": 10.0
+      },
+      {
+        "arc_length_m": 34.482038081788374,
+        "height_m": 4.74533370371995,
+        "initial_local_voxel_size_m": 0.5931667129649938,
+        "samples_across_smallest_dimension": 7.908889506199918,
+        "segment_id": 29,
+        "under_resolved": true,
+        "width_m": 9.75910849516966
+      },
+      {
+        "arc_length_m": 11.441860465116278,
+        "height_m": 4.49718670650839,
+        "initial_local_voxel_size_m": 0.5621483383135487,
+        "samples_across_smallest_dimension": 7.495311177513983,
+        "segment_id": 30,
+        "under_resolved": true,
+        "width_m": 9.54291917374849
+      },
+      {
+        "arc_length_m": 15.441860465116278,
+        "height_m": 4.520362790586555,
+        "initial_local_voxel_size_m": 0.5650453488233194,
+        "samples_across_smallest_dimension": 7.533937984310925,
+        "segment_id": 30,
+        "under_resolved": true,
+        "width_m": 10.344494644530073
+      },
+      {
+        "arc_length_m": 23.2477799138458,
+        "height_m": 4.6991445511396055,
+        "initial_local_voxel_size_m": 0.5873930688924507,
+        "samples_across_smallest_dimension": 7.831907585232676,
+        "segment_id": 30,
+        "under_resolved": true,
+        "width_m": 11.190585969134123
+      },
+      {
+        "arc_length_m": 27.2477799138458,
+        "height_m": 4.6016669652544415,
+        "initial_local_voxel_size_m": 0.5752083706568052,
+        "samples_across_smallest_dimension": 7.6694449420907365,
+        "segment_id": 30,
+        "under_resolved": true,
+        "width_m": 10.999134208214958
+      },
+      {
+        "arc_length_m": 31.2477799138458,
+        "height_m": 3.994564107220862,
+        "initial_local_voxel_size_m": 0.49932051340260775,
+        "samples_across_smallest_dimension": 6.657606845368104,
+        "segment_id": 30,
+        "under_resolved": true,
+        "width_m": 10.118836198118217
+      },
+      {
+        "arc_length_m": 35.247779913845804,
+        "height_m": 3.8745910893427076,
+        "initial_local_voxel_size_m": 0.48432388616783845,
+        "samples_across_smallest_dimension": 6.45765181557118,
+        "segment_id": 30,
+        "under_resolved": true,
+        "width_m": 10.025571498883872
+      },
+      {
+        "arc_length_m": 39.247779913845804,
+        "height_m": 4.394725531536359,
+        "initial_local_voxel_size_m": 0.5493406914420449,
+        "samples_across_smallest_dimension": 7.324542552560599,
+        "segment_id": 30,
+        "under_resolved": true,
+        "width_m": 10.764197290114486
+      },
+      {
+        "arc_length_m": 15.623383578287735,
+        "height_m": 3.4352915516573956,
+        "initial_local_voxel_size_m": 0.42941144395717445,
+        "samples_across_smallest_dimension": 5.725485919428993,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 7.948218329478599
+      },
+      {
+        "arc_length_m": 29.13364020787285,
+        "height_m": 3.446303217474709,
+        "initial_local_voxel_size_m": 0.4307879021843386,
+        "samples_across_smallest_dimension": 5.743838695791181,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 6.930493841999642
+      },
+      {
+        "arc_length_m": 43.165012542430674,
+        "height_m": 3.550878115554931,
+        "initial_local_voxel_size_m": 0.44385976444436637,
+        "samples_across_smallest_dimension": 5.918130192591552,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 5.121560755659957
+      },
+      {
+        "arc_length_m": 67.3947695453213,
+        "height_m": 4.529716501305996,
+        "initial_local_voxel_size_m": 0.5662145626632495,
+        "samples_across_smallest_dimension": 7.549527502176661,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 6.042989016858482
+      },
+      {
+        "arc_length_m": 78.9641701588628,
+        "height_m": 4.214654842030194,
+        "initial_local_voxel_size_m": 0.5268318552537743,
+        "samples_across_smallest_dimension": 7.024424736716991,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 6.62573118217247
+      },
+      {
+        "arc_length_m": 88.94683923211232,
+        "height_m": 3.631872866401671,
+        "initial_local_voxel_size_m": 0.45398410830020886,
+        "samples_across_smallest_dimension": 6.053121444002785,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 6.174154117394298
+      },
+      {
+        "arc_length_m": 95.25419493067817,
+        "height_m": 3.379342013172968,
+        "initial_local_voxel_size_m": 0.422417751646621,
+        "samples_across_smallest_dimension": 5.632236688621614,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 5.622189012760855
+      },
+      {
+        "arc_length_m": 99.53874877847808,
+        "height_m": 3.404516086619009,
+        "initial_local_voxel_size_m": 0.4255645108273761,
+        "samples_across_smallest_dimension": 5.674193477698348,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 5.581326078526084
+      },
+      {
+        "arc_length_m": 103.64816218240247,
+        "height_m": 3.57246315070702,
+        "initial_local_voxel_size_m": 0.4465578938383775,
+        "samples_across_smallest_dimension": 5.954105251178367,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 5.87393168468933
+      },
+      {
+        "arc_length_m": 108.42832769622427,
+        "height_m": 3.858380094667768,
+        "initial_local_voxel_size_m": 0.482297511833471,
+        "samples_across_smallest_dimension": 6.430633491112947,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 6.503008145582796
+      },
+      {
+        "arc_length_m": 114.31697472094963,
+        "height_m": 4.2957875580467775,
+        "initial_local_voxel_size_m": 0.5369734447558472,
+        "samples_across_smallest_dimension": 7.1596459300779625,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 7.396351706177824
+      },
+      {
+        "arc_length_m": 121.25157963132096,
+        "height_m": 4.394571274187287,
+        "initial_local_voxel_size_m": 0.5493214092734109,
+        "samples_across_smallest_dimension": 7.324285456978812,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 7.671719787949714
+      },
+      {
+        "arc_length_m": 125.55739151153043,
+        "height_m": 4.430551978306929,
+        "initial_local_voxel_size_m": 0.5538189972883661,
+        "samples_across_smallest_dimension": 7.3842532971782155,
+        "segment_id": 31,
+        "under_resolved": true,
+        "width_m": 7.608915075985765
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.686164038590246,
+        "initial_local_voxel_size_m": 0.5857705048237808,
+        "samples_across_smallest_dimension": 7.810273397650411,
+        "segment_id": 32,
+        "under_resolved": true,
+        "width_m": 8.388182216737755
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.25350270565116,
+        "initial_local_voxel_size_m": 0.531687838206395,
+        "samples_across_smallest_dimension": 7.089171176085267,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 7.0702701262799685
+      },
+      {
+        "arc_length_m": 14.37845229634338,
+        "height_m": 3.9957496113934505,
+        "initial_local_voxel_size_m": 0.4994687014241813,
+        "samples_across_smallest_dimension": 6.659582685655751,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 7.874029872095051
+      },
+      {
+        "arc_length_m": 18.792504163574232,
+        "height_m": 3.9304331917759145,
+        "initial_local_voxel_size_m": 0.4913041489719893,
+        "samples_across_smallest_dimension": 6.550721986293191,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 7.869999330470454
+      },
+      {
+        "arc_length_m": 22.792504163574232,
+        "height_m": 3.797633209494373,
+        "initial_local_voxel_size_m": 0.47470415118679665,
+        "samples_across_smallest_dimension": 6.329388682490622,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 7.508228702354746
+      },
+      {
+        "arc_length_m": 26.792504163574232,
+        "height_m": 3.649116575766188,
+        "initial_local_voxel_size_m": 0.4561395719707735,
+        "samples_across_smallest_dimension": 6.081860959610314,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 7.120830343277235
+      },
+      {
+        "arc_length_m": 30.792504163574232,
+        "height_m": 3.5839671653829765,
+        "initial_local_voxel_size_m": 0.44799589567287207,
+        "samples_across_smallest_dimension": 5.973278608971627,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 6.971152160005583
+      },
+      {
+        "arc_length_m": 34.792504163574236,
+        "height_m": 3.5348449569539575,
+        "initial_local_voxel_size_m": 0.4418556196192447,
+        "samples_across_smallest_dimension": 5.8914082615899295,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 6.962170488516738
+      },
+      {
+        "arc_length_m": 39.88044277339752,
+        "height_m": 3.200613683144765,
+        "initial_local_voxel_size_m": 0.4000767103930956,
+        "samples_across_smallest_dimension": 5.334356138574608,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 6.6380636947654965
+      },
+      {
+        "arc_length_m": 48.38248677514834,
+        "height_m": 2.386281086322703,
+        "initial_local_voxel_size_m": 0.2982851357903379,
+        "samples_across_smallest_dimension": 3.977135143871172,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 6.00276015095107
+      },
+      {
+        "arc_length_m": 56.532335114860004,
+        "height_m": 2.6364057912754717,
+        "initial_local_voxel_size_m": 0.32955072390943396,
+        "samples_across_smallest_dimension": 4.394009652125787,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 7.833589018730031
+      },
+      {
+        "arc_length_m": 60.60012280110232,
+        "height_m": 2.782944232403521,
+        "initial_local_voxel_size_m": 0.3478680290504401,
+        "samples_across_smallest_dimension": 4.638240387339202,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 8.919393480146784
+      },
+      {
+        "arc_length_m": 64.60012280110232,
+        "height_m": 2.9233120731757403,
+        "initial_local_voxel_size_m": 0.36541400914696753,
+        "samples_across_smallest_dimension": 4.872186788626234,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 9.479456223201105
+      },
+      {
+        "arc_length_m": 68.60012280110232,
+        "height_m": 3.2629421383137203,
+        "initial_local_voxel_size_m": 0.40786776728921503,
+        "samples_across_smallest_dimension": 5.438236897189534,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 9.970840106401695
+      },
+      {
+        "arc_length_m": 73.30255168229597,
+        "height_m": 4.0755866390872555,
+        "initial_local_voxel_size_m": 0.5094483298859069,
+        "samples_across_smallest_dimension": 6.7926443984787594,
+        "segment_id": 33,
+        "under_resolved": true,
+        "width_m": 10.996764867174488
+      },
+      {
+        "arc_length_m": 54.57195065991469,
+        "height_m": 4.780888213267794,
+        "initial_local_voxel_size_m": 0.5976110266584742,
+        "samples_across_smallest_dimension": 7.96814702211299,
+        "segment_id": 34,
+        "under_resolved": true,
+        "width_m": 7.134602978962563
+      },
+      {
+        "arc_length_m": 67.32963864045638,
+        "height_m": 3.488941773758949,
+        "initial_local_voxel_size_m": 0.4361177217198686,
+        "samples_across_smallest_dimension": 5.814902956264915,
+        "segment_id": 34,
+        "under_resolved": true,
+        "width_m": 7.696638144993862
+      },
+      {
+        "arc_length_m": 81.45118617123646,
+        "height_m": 2.393284105922888,
+        "initial_local_voxel_size_m": 0.299160513240361,
+        "samples_across_smallest_dimension": 3.988806843204814,
+        "segment_id": 34,
+        "under_resolved": true,
+        "width_m": 8.632401712273122
+      },
+      {
+        "arc_length_m": 93.96652387393678,
+        "height_m": 2.6194256868522547,
+        "initial_local_voxel_size_m": 0.32742821085653184,
+        "samples_across_smallest_dimension": 4.3657094780870915,
+        "segment_id": 34,
+        "under_resolved": true,
+        "width_m": 8.52290947074188
+      },
+      {
+        "arc_length_m": 105.34487789753601,
+        "height_m": 3.5096479420191455,
+        "initial_local_voxel_size_m": 0.4387059927523932,
+        "samples_across_smallest_dimension": 5.8494132366985765,
+        "segment_id": 34,
+        "under_resolved": true,
+        "width_m": 8.48340927136693
+      },
+      {
+        "arc_length_m": 118.3781472558012,
+        "height_m": 3.510760441890916,
+        "initial_local_voxel_size_m": 0.4388450552363645,
+        "samples_across_smallest_dimension": 5.851267403151527,
+        "segment_id": 34,
+        "under_resolved": true,
+        "width_m": 6.693757415857191
+      },
+      {
+        "arc_length_m": 127.59387320051334,
+        "height_m": 3.457894569786599,
+        "initial_local_voxel_size_m": 0.43223682122332485,
+        "samples_across_smallest_dimension": 5.763157616310998,
+        "segment_id": 34,
+        "under_resolved": true,
+        "width_m": 5.971634091241294
+      },
+      {
+        "arc_length_m": 139.46128563126982,
+        "height_m": 4.200698633069775,
+        "initial_local_voxel_size_m": 0.5250873291337219,
+        "samples_across_smallest_dimension": 7.0011643884496255,
+        "segment_id": 34,
+        "under_resolved": true,
+        "width_m": 6.798352671010794
+      },
+      {
+        "arc_length_m": 198.45595554644737,
+        "height_m": 4.701744565252152,
+        "initial_local_voxel_size_m": 0.587718070656519,
+        "samples_across_smallest_dimension": 7.836240942086921,
+        "segment_id": 34,
+        "under_resolved": true,
+        "width_m": 10.686823130664187
+      },
+      {
+        "arc_length_m": 202.45595554644737,
+        "height_m": 4.660947834273762,
+        "initial_local_voxel_size_m": 0.5826184792842203,
+        "samples_across_smallest_dimension": 7.76824639045627,
+        "segment_id": 34,
+        "under_resolved": true,
+        "width_m": 10.799367470525596
+      },
+      {
+        "arc_length_m": 205.80845032503035,
+        "height_m": 4.664274566256808,
+        "initial_local_voxel_size_m": 0.583034320782101,
+        "samples_across_smallest_dimension": 7.773790943761347,
+        "segment_id": 34,
+        "under_resolved": true,
+        "width_m": 10.823943051696062
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.38804210611025,
+        "initial_local_voxel_size_m": 0.5485052632637812,
+        "samples_across_smallest_dimension": 7.3134035101837505,
+        "segment_id": 35,
+        "under_resolved": true,
+        "width_m": 7.938596156793424
+      },
+      {
+        "arc_length_m": 13.896189780488777,
+        "height_m": 4.047599607414691,
+        "initial_local_voxel_size_m": 0.5059499509268364,
+        "samples_across_smallest_dimension": 6.745999345691152,
+        "segment_id": 35,
+        "under_resolved": true,
+        "width_m": 7.798897302620312
+      },
+      {
+        "arc_length_m": 17.896189780488776,
+        "height_m": 4.107972183256765,
+        "initial_local_voxel_size_m": 0.5134965229070956,
+        "samples_across_smallest_dimension": 6.846620305427941,
+        "segment_id": 35,
+        "under_resolved": true,
+        "width_m": 7.699044179090454
+      },
+      {
+        "arc_length_m": 21.896189780488776,
+        "height_m": 4.142224411133588,
+        "initial_local_voxel_size_m": 0.5177780513916985,
+        "samples_across_smallest_dimension": 6.903707351889314,
+        "segment_id": 35,
+        "under_resolved": true,
+        "width_m": 7.620660990467044
+      },
+      {
+        "arc_length_m": 26.04485602285925,
+        "height_m": 4.139786807822529,
+        "initial_local_voxel_size_m": 0.5174733509778161,
+        "samples_across_smallest_dimension": 6.899644679704215,
+        "segment_id": 35,
+        "under_resolved": true,
+        "width_m": 7.596428683928356
+      },
+      {
+        "arc_length_m": 30.82002226747273,
+        "height_m": 4.504246468462716,
+        "initial_local_voxel_size_m": 0.5630308085578395,
+        "samples_across_smallest_dimension": 7.50707744743786,
+        "segment_id": 35,
+        "under_resolved": true,
+        "width_m": 7.653167760202482
+      },
+      {
+        "arc_length_m": 54.45408487559093,
+        "height_m": 4.6871749713159945,
+        "initial_local_voxel_size_m": 0.5858968714144993,
+        "samples_across_smallest_dimension": 7.811958285526658,
+        "segment_id": 36,
+        "under_resolved": true,
+        "width_m": 10.461620332081303
+      },
+      {
+        "arc_length_m": 58.575025535932824,
+        "height_m": 4.461111268902253,
+        "initial_local_voxel_size_m": 0.5576389086127816,
+        "samples_across_smallest_dimension": 7.435185448170422,
+        "segment_id": 36,
+        "under_resolved": true,
+        "width_m": 10.422041426997799
+      },
+      {
+        "arc_length_m": 62.575025535932824,
+        "height_m": 4.148002241423417,
+        "initial_local_voxel_size_m": 0.5185002801779272,
+        "samples_across_smallest_dimension": 6.913337069039029,
+        "segment_id": 36,
+        "under_resolved": true,
+        "width_m": 10.235953120573773
+      },
+      {
+        "arc_length_m": 66.57502553593282,
+        "height_m": 3.702452562329111,
+        "initial_local_voxel_size_m": 0.46280657029113886,
+        "samples_across_smallest_dimension": 6.170754270548518,
+        "segment_id": 36,
+        "under_resolved": true,
+        "width_m": 9.448860035780795
+      },
+      {
+        "arc_length_m": 70.57502553593282,
+        "height_m": 3.4625203362778016,
+        "initial_local_voxel_size_m": 0.4328150420347252,
+        "samples_across_smallest_dimension": 5.77086722712967,
+        "segment_id": 36,
+        "under_resolved": true,
+        "width_m": 9.082323084758471
+      },
+      {
+        "arc_length_m": 74.57502553593282,
+        "height_m": 3.4784085229422104,
+        "initial_local_voxel_size_m": 0.4348010653677763,
+        "samples_across_smallest_dimension": 5.797347538237018,
+        "segment_id": 36,
+        "under_resolved": true,
+        "width_m": 9.247899464313392
+      },
+      {
+        "arc_length_m": 78.57502553593282,
+        "height_m": 3.768399523242875,
+        "initial_local_voxel_size_m": 0.47104994040535936,
+        "samples_across_smallest_dimension": 6.2806658720714585,
+        "segment_id": 36,
+        "under_resolved": true,
+        "width_m": 9.75931553770413
+      },
+      {
+        "arc_length_m": 82.57502553593282,
+        "height_m": 4.1658748677376085,
+        "initial_local_voxel_size_m": 0.5207343584672011,
+        "samples_across_smallest_dimension": 6.943124779562681,
+        "segment_id": 36,
+        "under_resolved": true,
+        "width_m": 10.29795941840647
+      },
+      {
+        "arc_length_m": 86.99308028221581,
+        "height_m": 4.6256970211123285,
+        "initial_local_voxel_size_m": 0.5782121276390411,
+        "samples_across_smallest_dimension": 7.7094950351872145,
+        "segment_id": 36,
+        "under_resolved": true,
+        "width_m": 10.636714675808612
+      },
+      {
+        "arc_length_m": 70.26552882557075,
+        "height_m": 4.200618938039567,
+        "initial_local_voxel_size_m": 0.5250773672549459,
+        "samples_across_smallest_dimension": 7.0010315633992795,
+        "segment_id": 37,
+        "under_resolved": true,
+        "width_m": 8.598910923148367
+      },
+      {
+        "arc_length_m": 75.03794833878908,
+        "height_m": 3.9939939683810595,
+        "initial_local_voxel_size_m": 0.49924924604763243,
+        "samples_across_smallest_dimension": 6.6566566139684324,
+        "segment_id": 37,
+        "under_resolved": true,
+        "width_m": 9.243992865918079
+      },
+      {
+        "arc_length_m": 35.87616986052947,
+        "height_m": 4.7252397587234185,
+        "initial_local_voxel_size_m": 0.5906549698404273,
+        "samples_across_smallest_dimension": 7.875399597872365,
+        "segment_id": 39,
+        "under_resolved": true,
+        "width_m": 7.969321001249697
+      },
+      {
+        "arc_length_m": 67.46661385939535,
+        "height_m": 4.665919090509622,
+        "initial_local_voxel_size_m": 0.5832398863137027,
+        "samples_across_smallest_dimension": 7.7765318175160365,
+        "segment_id": 40,
+        "under_resolved": true,
+        "width_m": 9.44698460286264
+      },
+      {
+        "arc_length_m": 76.22236734059935,
+        "height_m": 2.825666653506735,
+        "initial_local_voxel_size_m": 0.35320833168834187,
+        "samples_across_smallest_dimension": 4.7094444225112255,
+        "segment_id": 40,
+        "under_resolved": true,
+        "width_m": 7.992401759047495
+      },
+      {
+        "arc_length_m": 86.34807135023334,
+        "height_m": 1.9835628521234738,
+        "initial_local_voxel_size_m": 0.24794535651543423,
+        "samples_across_smallest_dimension": 3.3059380868724566,
+        "segment_id": 40,
+        "under_resolved": true,
+        "width_m": 6.579533347545542
+      },
+      {
+        "arc_length_m": 96.18137250135455,
+        "height_m": 2.80578134364046,
+        "initial_local_voxel_size_m": 0.3507226679550575,
+        "samples_across_smallest_dimension": 4.676302239400767,
+        "segment_id": 40,
+        "under_resolved": true,
+        "width_m": 6.471990629572637
+      },
+      {
+        "arc_length_m": 181.8547196872402,
+        "height_m": 4.7508908875626945,
+        "initial_local_voxel_size_m": 0.5938613609453368,
+        "samples_across_smallest_dimension": 7.918151479271158,
+        "segment_id": 40,
+        "under_resolved": true,
+        "width_m": 6.812434203666555
+      },
+      {
+        "arc_length_m": 187.5995387320103,
+        "height_m": 4.774166288275525,
+        "initial_local_voxel_size_m": 0.5967707860344407,
+        "samples_across_smallest_dimension": 7.956943813792543,
+        "segment_id": 40,
+        "under_resolved": true,
+        "width_m": 6.973216530062824
+      },
+      {
+        "arc_length_m": 191.5995387320103,
+        "height_m": 4.66111451342368,
+        "initial_local_voxel_size_m": 0.58263931417796,
+        "samples_across_smallest_dimension": 7.768524189039467,
+        "segment_id": 40,
+        "under_resolved": true,
+        "width_m": 7.133725437311863
+      },
+      {
+        "arc_length_m": 195.5995387320103,
+        "height_m": 4.313412183970145,
+        "initial_local_voxel_size_m": 0.5391765229962682,
+        "samples_across_smallest_dimension": 7.189020306616909,
+        "segment_id": 40,
+        "under_resolved": true,
+        "width_m": 7.19076561611592
+      },
+      {
+        "arc_length_m": 199.5995387320103,
+        "height_m": 4.076798863635341,
+        "initial_local_voxel_size_m": 0.5095998579544176,
+        "samples_across_smallest_dimension": 6.794664772725569,
+        "segment_id": 40,
+        "under_resolved": true,
+        "width_m": 7.085137139700752
+      },
+      {
+        "arc_length_m": 203.5995387320103,
+        "height_m": 3.9558613179335644,
+        "initial_local_voxel_size_m": 0.49448266474169555,
+        "samples_across_smallest_dimension": 6.593102196555941,
+        "segment_id": 40,
+        "under_resolved": true,
+        "width_m": 6.9559494260688775
+      },
+      {
+        "arc_length_m": 204.26935172263632,
+        "height_m": 3.953521220692525,
+        "initial_local_voxel_size_m": 0.4941901525865656,
+        "samples_across_smallest_dimension": 6.589202034487542,
+        "segment_id": 40,
+        "under_resolved": true,
+        "width_m": 6.951587674528362
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.953521220692525,
+        "initial_local_voxel_size_m": 0.4941901525865656,
+        "samples_across_smallest_dimension": 6.589202034487542,
+        "segment_id": 41,
+        "under_resolved": true,
+        "width_m": 6.951587674528362
+      },
+      {
+        "arc_length_m": 7.441860465116279,
+        "height_m": 3.946377246124136,
+        "initial_local_voxel_size_m": 0.493297155765517,
+        "samples_across_smallest_dimension": 6.577295410206894,
+        "segment_id": 41,
+        "under_resolved": true,
+        "width_m": 7.1691941857676635
+      },
+      {
+        "arc_length_m": 116.2333103906104,
+        "height_m": 4.575758661845921,
+        "initial_local_voxel_size_m": 0.5719698327307401,
+        "samples_across_smallest_dimension": 7.626264436409868,
+        "segment_id": 41,
+        "under_resolved": true,
+        "width_m": 10.0
+      },
+      {
+        "arc_length_m": 123.36058666661621,
+        "height_m": 3.61068407077963,
+        "initial_local_voxel_size_m": 0.45133550884745377,
+        "samples_across_smallest_dimension": 6.017806784632717,
+        "segment_id": 41,
+        "under_resolved": true,
+        "width_m": 10.0
+      },
+      {
+        "arc_length_m": 128.48598359137446,
+        "height_m": 2.9248379722136426,
+        "initial_local_voxel_size_m": 0.3656047465267053,
+        "samples_across_smallest_dimension": 4.874729953689404,
+        "segment_id": 41,
+        "under_resolved": true,
+        "width_m": 10.0
+      },
+      {
+        "arc_length_m": 132.73725610088752,
+        "height_m": 2.5437003228057504,
+        "initial_local_voxel_size_m": 0.3179625403507188,
+        "samples_across_smallest_dimension": 4.239500538009584,
+        "segment_id": 41,
+        "under_resolved": true,
+        "width_m": 10.0
+      },
+      {
+        "arc_length_m": 136.73725610088752,
+        "height_m": 2.3660844287494007,
+        "initial_local_voxel_size_m": 0.2957605535936751,
+        "samples_across_smallest_dimension": 3.943474047915668,
+        "segment_id": 41,
+        "under_resolved": true,
+        "width_m": 10.0
+      },
+      {
+        "arc_length_m": 140.73725610088752,
+        "height_m": 2.1857158171588815,
+        "initial_local_voxel_size_m": 0.2732144771448602,
+        "samples_across_smallest_dimension": 3.6428596952648027,
+        "segment_id": 41,
+        "under_resolved": true,
+        "width_m": 9.377605682377157
+      },
+      {
+        "arc_length_m": 144.98275236050813,
+        "height_m": 2.152467962144408,
+        "initial_local_voxel_size_m": 0.269058495268051,
+        "samples_across_smallest_dimension": 3.5874466035740133,
+        "segment_id": 41,
+        "under_resolved": true,
+        "width_m": 8.700800305598236
+      },
+      {
+        "arc_length_m": 150.12679725643864,
+        "height_m": 2.3135768812835353,
+        "initial_local_voxel_size_m": 0.2891971101604419,
+        "samples_across_smallest_dimension": 3.8559614688058925,
+        "segment_id": 41,
+        "under_resolved": true,
+        "width_m": 8.289360400924283
+      },
+      {
+        "arc_length_m": 157.41264332458584,
+        "height_m": 2.9654646363590036,
+        "initial_local_voxel_size_m": 0.37068307954487545,
+        "samples_across_smallest_dimension": 4.942441060598339,
+        "segment_id": 41,
+        "under_resolved": true,
+        "width_m": 8.561429923396192
+      },
+      {
+        "arc_length_m": 26.29424499956806,
+        "height_m": 3.9471453563979315,
+        "initial_local_voxel_size_m": 0.49339316954974144,
+        "samples_across_smallest_dimension": 6.578575593996553,
+        "segment_id": 42,
+        "under_resolved": true,
+        "width_m": 9.548668001778298
+      },
+      {
+        "arc_length_m": 31.011774284717035,
+        "height_m": 3.339870580106614,
+        "initial_local_voxel_size_m": 0.4174838225133268,
+        "samples_across_smallest_dimension": 5.566450966844357,
+        "segment_id": 42,
+        "under_resolved": true,
+        "width_m": 8.916065182420681
+      },
+      {
+        "arc_length_m": 35.011774284717035,
+        "height_m": 2.9648586745350154,
+        "initial_local_voxel_size_m": 0.3706073343168769,
+        "samples_across_smallest_dimension": 4.9414311242250255,
+        "segment_id": 42,
+        "under_resolved": true,
+        "width_m": 8.418684398246226
+      },
+      {
+        "arc_length_m": 40.63811047905119,
+        "height_m": 2.522026117168088,
+        "initial_local_voxel_size_m": 0.315253264646011,
+        "samples_across_smallest_dimension": 4.203376861946814,
+        "segment_id": 42,
+        "under_resolved": true,
+        "width_m": 7.6509299665059105
+      },
+      {
+        "arc_length_m": 52.012090352936895,
+        "height_m": 2.7335370112135555,
+        "initial_local_voxel_size_m": 0.34169212640169444,
+        "samples_across_smallest_dimension": 4.5558950186892595,
+        "segment_id": 42,
+        "under_resolved": true,
+        "width_m": 7.048229643116528
+      },
+      {
+        "arc_length_m": 58.035771309458156,
+        "height_m": 3.154972960228361,
+        "initial_local_voxel_size_m": 0.39437162002854514,
+        "samples_across_smallest_dimension": 5.258288267047269,
+        "segment_id": 42,
+        "under_resolved": true,
+        "width_m": 8.121172146774539
+      },
+      {
+        "arc_length_m": 62.035771309458156,
+        "height_m": 3.74590522027923,
+        "initial_local_voxel_size_m": 0.46823815253490375,
+        "samples_across_smallest_dimension": 6.24317536713205,
+        "segment_id": 42,
+        "under_resolved": true,
+        "width_m": 9.508123507672465
+      },
+      {
+        "arc_length_m": 66.03577130945816,
+        "height_m": 4.474437402830723,
+        "initial_local_voxel_size_m": 0.5593046753538404,
+        "samples_across_smallest_dimension": 7.457395671384539,
+        "segment_id": 42,
+        "under_resolved": true,
+        "width_m": 10.837882837045395
+      },
+      {
+        "arc_length_m": 91.32591047484064,
+        "height_m": 4.481331467170688,
+        "initial_local_voxel_size_m": 0.560166433396336,
+        "samples_across_smallest_dimension": 7.468885778617813,
+        "segment_id": 43,
+        "under_resolved": true,
+        "width_m": 8.689314357832068
+      },
+      {
+        "arc_length_m": 102.4075511518334,
+        "height_m": 3.9629866810302135,
+        "initial_local_voxel_size_m": 0.4953733351287767,
+        "samples_across_smallest_dimension": 6.604977801717022,
+        "segment_id": 43,
+        "under_resolved": true,
+        "width_m": 8.424708925108204
+      },
+      {
+        "arc_length_m": 111.23120219807815,
+        "height_m": 4.475883110883294,
+        "initial_local_voxel_size_m": 0.5594853888604118,
+        "samples_across_smallest_dimension": 7.45980518480549,
+        "segment_id": 43,
+        "under_resolved": true,
+        "width_m": 8.429852829961712
+      },
+      {
+        "arc_length_m": 155.91037728305875,
+        "height_m": 4.1963224076350185,
+        "initial_local_voxel_size_m": 0.5245403009543773,
+        "samples_across_smallest_dimension": 6.993870679391698,
+        "segment_id": 43,
+        "under_resolved": true,
+        "width_m": 5.8069922274356705
+      },
+      {
+        "arc_length_m": 160.87118800917943,
+        "height_m": 3.9468722131173397,
+        "initial_local_voxel_size_m": 0.49335902663966746,
+        "samples_across_smallest_dimension": 6.5781203551955665,
+        "segment_id": 43,
+        "under_resolved": true,
+        "width_m": 5.668366132542985
+      },
+      {
+        "arc_length_m": 169.35724256991426,
+        "height_m": 3.940247471468315,
+        "initial_local_voxel_size_m": 0.49253093393353936,
+        "samples_across_smallest_dimension": 6.567079119113858,
+        "segment_id": 43,
+        "under_resolved": true,
+        "width_m": 5.850259302749047
+      },
+      {
+        "arc_length_m": 173.35724256991426,
+        "height_m": 4.038060240094065,
+        "initial_local_voxel_size_m": 0.5047575300117582,
+        "samples_across_smallest_dimension": 6.7301004001567755,
+        "segment_id": 43,
+        "under_resolved": true,
+        "width_m": 6.1423513593556285
+      },
+      {
+        "arc_length_m": 177.35724256991426,
+        "height_m": 4.051719426387389,
+        "initial_local_voxel_size_m": 0.5064649282984236,
+        "samples_across_smallest_dimension": 6.752865710645648,
+        "segment_id": 43,
+        "under_resolved": true,
+        "width_m": 6.61714501462248
+      },
+      {
+        "arc_length_m": 181.35724256991426,
+        "height_m": 3.982532268604065,
+        "initial_local_voxel_size_m": 0.49781653357550815,
+        "samples_across_smallest_dimension": 6.637553781006775,
+        "segment_id": 43,
+        "under_resolved": true,
+        "width_m": 6.905155514678768
+      },
+      {
+        "arc_length_m": 185.08882796620415,
+        "height_m": 3.953521220692525,
+        "initial_local_voxel_size_m": 0.4941901525865656,
+        "samples_across_smallest_dimension": 6.589202034487542,
+        "segment_id": 43,
+        "under_resolved": true,
+        "width_m": 6.951587674528362
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.5691627344445394,
+        "initial_local_voxel_size_m": 0.4461453418055674,
+        "samples_across_smallest_dimension": 5.948604557407566,
+        "segment_id": 44,
+        "under_resolved": true,
+        "width_m": 6.576233550016103
+      },
+      {
+        "arc_length_m": 7.142101035010228,
+        "height_m": 4.443787161818603,
+        "initial_local_voxel_size_m": 0.5554733952273254,
+        "samples_across_smallest_dimension": 7.4063119363643395,
+        "segment_id": 44,
+        "under_resolved": true,
+        "width_m": 6.987257423181777
+      },
+      {
+        "arc_length_m": 52.85298384042624,
+        "height_m": 3.0877604314037077,
+        "initial_local_voxel_size_m": 0.38597005392546346,
+        "samples_across_smallest_dimension": 5.1462673856728465,
+        "segment_id": 44,
+        "under_resolved": true,
+        "width_m": 6.711807666987123
+      },
+      {
+        "arc_length_m": 63.21924809010588,
+        "height_m": 2.456864711282983,
+        "initial_local_voxel_size_m": 0.3071080889103729,
+        "samples_across_smallest_dimension": 4.0947745188049725,
+        "segment_id": 44,
+        "under_resolved": true,
+        "width_m": 4.8707993220379935
+      },
+      {
+        "arc_length_m": 71.94635584961881,
+        "height_m": 3.0521428295644517,
+        "initial_local_voxel_size_m": 0.38151785369555646,
+        "samples_across_smallest_dimension": 5.086904715940753,
+        "segment_id": 44,
+        "under_resolved": true,
+        "width_m": 5.377745435040788
+      },
+      {
+        "arc_length_m": 74.83428244159849,
+        "height_m": 3.0826148060148446,
+        "initial_local_voxel_size_m": 0.3853268507518556,
+        "samples_across_smallest_dimension": 5.137691343358075,
+        "segment_id": 44,
+        "under_resolved": true,
+        "width_m": 5.416258219859774
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.0826148060148446,
+        "initial_local_voxel_size_m": 0.3853268507518556,
+        "samples_across_smallest_dimension": 5.137691343358075,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 5.416258219859774
+      },
+      {
+        "arc_length_m": 7.33073249985289,
+        "height_m": 3.020058806169473,
+        "initial_local_voxel_size_m": 0.37750735077118414,
+        "samples_across_smallest_dimension": 5.0334313436157885,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 5.5487103859476905
+      },
+      {
+        "arc_length_m": 13.32838396437656,
+        "height_m": 2.7875027129288554,
+        "initial_local_voxel_size_m": 0.34843783911610693,
+        "samples_across_smallest_dimension": 4.645837854881426,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 5.671612703212789
+      },
+      {
+        "arc_length_m": 18.488900296630412,
+        "height_m": 2.6187858913319286,
+        "initial_local_voxel_size_m": 0.3273482364164911,
+        "samples_across_smallest_dimension": 4.364643152219881,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 5.867530819886453
+      },
+      {
+        "arc_length_m": 22.995510041519907,
+        "height_m": 2.5553681068629603,
+        "initial_local_voxel_size_m": 0.31942101335787004,
+        "samples_across_smallest_dimension": 4.258946844771601,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 6.127451707801719
+      },
+      {
+        "arc_length_m": 26.995510041519907,
+        "height_m": 2.591151000321191,
+        "initial_local_voxel_size_m": 0.3238938750401489,
+        "samples_across_smallest_dimension": 4.318585000535319,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 6.418279262466803
+      },
+      {
+        "arc_length_m": 30.995510041519907,
+        "height_m": 2.685843379927311,
+        "initial_local_voxel_size_m": 0.3357304224909139,
+        "samples_across_smallest_dimension": 4.4764056332121855,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 6.760142535450329
+      },
+      {
+        "arc_length_m": 34.99551004151991,
+        "height_m": 2.8094805524322286,
+        "initial_local_voxel_size_m": 0.3511850690540286,
+        "samples_across_smallest_dimension": 4.682467587387048,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 7.150984686626759
+      },
+      {
+        "arc_length_m": 41.37007229339076,
+        "height_m": 3.0504985525500334,
+        "initial_local_voxel_size_m": 0.3813123190687542,
+        "samples_across_smallest_dimension": 5.084164254250056,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 7.860848655647607
+      },
+      {
+        "arc_length_m": 45.37007229339076,
+        "height_m": 3.227593178343232,
+        "initial_local_voxel_size_m": 0.403449147292904,
+        "samples_across_smallest_dimension": 5.379321963905387,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 8.337269074216573
+      },
+      {
+        "arc_length_m": 49.37007229339076,
+        "height_m": 3.379499108185031,
+        "initial_local_voxel_size_m": 0.4224373885231289,
+        "samples_across_smallest_dimension": 5.6324985136417185,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 8.915900863766755
+      },
+      {
+        "arc_length_m": 54.75155669337642,
+        "height_m": 3.5854253562283787,
+        "initial_local_voxel_size_m": 0.44817816952854733,
+        "samples_across_smallest_dimension": 5.975708927047298,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 9.915103239313327
+      },
+      {
+        "arc_length_m": 60.35156113692759,
+        "height_m": 4.0808195343967855,
+        "initial_local_voxel_size_m": 0.5101024417995982,
+        "samples_across_smallest_dimension": 6.80136589066131,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 10.792059921117033
+      },
+      {
+        "arc_length_m": 64.35156113692759,
+        "height_m": 4.496893652123287,
+        "initial_local_voxel_size_m": 0.5621117065154109,
+        "samples_across_smallest_dimension": 7.494822753538812,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 11.208179800045276
+      },
+      {
+        "arc_length_m": 68.35156113692759,
+        "height_m": 4.762378557194143,
+        "initial_local_voxel_size_m": 0.5952973196492679,
+        "samples_across_smallest_dimension": 7.937297595323573,
+        "segment_id": 45,
+        "under_resolved": true,
+        "width_m": 11.364799558521531
+      },
+      {
+        "arc_length_m": 7.441860465116279,
+        "height_m": 3.676309231527923,
+        "initial_local_voxel_size_m": 0.45953865394099036,
+        "samples_across_smallest_dimension": 6.127182052546538,
+        "segment_id": 46,
+        "under_resolved": true,
+        "width_m": 10.082389219634983
+      },
+      {
+        "arc_length_m": 23.34630268316636,
+        "height_m": 4.238635878391869,
+        "initial_local_voxel_size_m": 0.5298294847989836,
+        "samples_across_smallest_dimension": 7.064393130653115,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 7.510511833764215
+      },
+      {
+        "arc_length_m": 27.892603816769988,
+        "height_m": 4.217327063658248,
+        "initial_local_voxel_size_m": 0.527165882957281,
+        "samples_across_smallest_dimension": 7.028878439430413,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 7.245574118754528
+      },
+      {
+        "arc_length_m": 31.892603816769988,
+        "height_m": 4.327395476974814,
+        "initial_local_voxel_size_m": 0.5409244346218518,
+        "samples_across_smallest_dimension": 7.212325794958025,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 7.27718947117061
+      },
+      {
+        "arc_length_m": 36.3612310224214,
+        "height_m": 4.449857699968159,
+        "initial_local_voxel_size_m": 0.5562322124960198,
+        "samples_across_smallest_dimension": 7.416429499946932,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 7.4701715866853275
+      },
+      {
+        "arc_length_m": 44.635241364894696,
+        "height_m": 4.38086404613964,
+        "initial_local_voxel_size_m": 0.547608005767455,
+        "samples_across_smallest_dimension": 7.301440076899401,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 8.045172469556519
+      },
+      {
+        "arc_length_m": 56.03492110637813,
+        "height_m": 3.1991091117142476,
+        "initial_local_voxel_size_m": 0.39988863896428095,
+        "samples_across_smallest_dimension": 5.331848519523747,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 8.579508542730094
+      },
+      {
+        "arc_length_m": 67.69760378840846,
+        "height_m": 2.014316498569746,
+        "initial_local_voxel_size_m": 0.25178956232121824,
+        "samples_across_smallest_dimension": 3.35719416428291,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 8.97632749060682
+      },
+      {
+        "arc_length_m": 76.39877858264697,
+        "height_m": 2.217060820699637,
+        "initial_local_voxel_size_m": 0.27713260258745465,
+        "samples_across_smallest_dimension": 3.695101367832729,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 9.73177742612762
+      },
+      {
+        "arc_length_m": 82.46896292180992,
+        "height_m": 3.3046011653458836,
+        "initial_local_voxel_size_m": 0.41307514566823544,
+        "samples_across_smallest_dimension": 5.507668608909806,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 10.332475381532293
+      },
+      {
+        "arc_length_m": 86.46896292180992,
+        "height_m": 4.043071785634362,
+        "initial_local_voxel_size_m": 0.5053839732042953,
+        "samples_across_smallest_dimension": 6.738452976057271,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 10.635546564287692
+      },
+      {
+        "arc_length_m": 90.46896292180992,
+        "height_m": 4.561509318340045,
+        "initial_local_voxel_size_m": 0.5701886647925056,
+        "samples_across_smallest_dimension": 7.602515530566742,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 11.024182670474156
+      },
+      {
+        "arc_length_m": 94.46896292180992,
+        "height_m": 4.793194141624151,
+        "initial_local_voxel_size_m": 0.5991492677030189,
+        "samples_across_smallest_dimension": 7.988656902706919,
+        "segment_id": 47,
+        "under_resolved": true,
+        "width_m": 11.32005921609459
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.202350778815669,
+        "initial_local_voxel_size_m": 0.4002938473519586,
+        "samples_across_smallest_dimension": 5.337251298026115,
+        "segment_id": 48,
+        "under_resolved": true,
+        "width_m": 6.0384457408965915
+      },
+      {
+        "arc_length_m": 5.526820831551083,
+        "height_m": 3.027652356309942,
+        "initial_local_voxel_size_m": 0.3784565445387427,
+        "samples_across_smallest_dimension": 5.04608726051657,
+        "segment_id": 48,
+        "under_resolved": true,
+        "width_m": 6.077478932431296
+      },
+      {
+        "arc_length_m": 8.301610080620685,
+        "height_m": 3.4560531261101044,
+        "initial_local_voxel_size_m": 0.43200664076376305,
+        "samples_across_smallest_dimension": 5.760088543516841,
+        "segment_id": 48,
+        "under_resolved": true,
+        "width_m": 6.080739702597401
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.202350778815669,
+        "initial_local_voxel_size_m": 0.4002938473519586,
+        "samples_across_smallest_dimension": 5.337251298026115,
+        "segment_id": 49,
+        "under_resolved": true,
+        "width_m": 6.0384457408965915
+      },
+      {
+        "arc_length_m": 10.015001026856737,
+        "height_m": 3.9340823186632226,
+        "initial_local_voxel_size_m": 0.4917602898329028,
+        "samples_across_smallest_dimension": 6.556803864438704,
+        "segment_id": 49,
+        "under_resolved": true,
+        "width_m": 7.469779370731542
+      },
+      {
+        "arc_length_m": 14.015001026856737,
+        "height_m": 3.9995947080291216,
+        "initial_local_voxel_size_m": 0.4999493385036402,
+        "samples_across_smallest_dimension": 6.665991180048536,
+        "segment_id": 49,
+        "under_resolved": true,
+        "width_m": 8.560994883054619
+      },
+      {
+        "arc_length_m": 14.040793698569733,
+        "height_m": 3.9995929521849636,
+        "initial_local_voxel_size_m": 0.49994911902312045,
+        "samples_across_smallest_dimension": 6.665988253641606,
+        "segment_id": 49,
+        "under_resolved": true,
+        "width_m": 8.560996333707198
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.9995929521849636,
+        "initial_local_voxel_size_m": 0.49994911902312045,
+        "samples_across_smallest_dimension": 6.665988253641606,
+        "segment_id": 50,
+        "under_resolved": true,
+        "width_m": 8.560996333707198
+      },
+      {
+        "arc_length_m": 7.360117763962982,
+        "height_m": 3.8960786053677707,
+        "initial_local_voxel_size_m": 0.48700982567097134,
+        "samples_across_smallest_dimension": 6.493464342279618,
+        "segment_id": 50,
+        "under_resolved": true,
+        "width_m": 6.014015410026155
+      },
+      {
+        "arc_length_m": 11.360117763962982,
+        "height_m": 3.665453596264294,
+        "initial_local_voxel_size_m": 0.4581816995330367,
+        "samples_across_smallest_dimension": 6.1090893271071565,
+        "segment_id": 50,
+        "under_resolved": true,
+        "width_m": 6.584974891341679
+      },
+      {
+        "arc_length_m": 13.855276453937417,
+        "height_m": 3.5118973534004203,
+        "initial_local_voxel_size_m": 0.43898716917505254,
+        "samples_across_smallest_dimension": 5.8531622556673675,
+        "segment_id": 50,
+        "under_resolved": true,
+        "width_m": 6.84036045228563
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.5118973534004203,
+        "initial_local_voxel_size_m": 0.43898716917505254,
+        "samples_across_smallest_dimension": 5.8531622556673675,
+        "segment_id": 51,
+        "under_resolved": true,
+        "width_m": 6.84036045228563
+      },
+      {
+        "arc_length_m": 7.2842227097762695,
+        "height_m": 4.025230881671803,
+        "initial_local_voxel_size_m": 0.5031538602089753,
+        "samples_across_smallest_dimension": 6.708718136119671,
+        "segment_id": 51,
+        "under_resolved": true,
+        "width_m": 7.430805320878946
+      },
+      {
+        "arc_length_m": 55.008981727759235,
+        "height_m": 4.103100509581329,
+        "initial_local_voxel_size_m": 0.5128875636976661,
+        "samples_across_smallest_dimension": 6.838500849302215,
+        "segment_id": 51,
+        "under_resolved": true,
+        "width_m": 6.4015096262587345
+      },
+      {
+        "arc_length_m": 59.008981727759235,
+        "height_m": 3.167393326303171,
+        "initial_local_voxel_size_m": 0.39592416578789635,
+        "samples_across_smallest_dimension": 5.278988877171952,
+        "segment_id": 51,
+        "under_resolved": true,
+        "width_m": 5.674295365515192
+      },
+      {
+        "arc_length_m": 62.3983533505789,
+        "height_m": 2.9611709177340373,
+        "initial_local_voxel_size_m": 0.37014636471675466,
+        "samples_across_smallest_dimension": 4.935284862890063,
+        "segment_id": 51,
+        "under_resolved": true,
+        "width_m": 5.447227437188955
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.496775022092699,
+        "initial_local_voxel_size_m": 0.5620968777615873,
+        "samples_across_smallest_dimension": 7.494625036821165,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 8.16927522404608
+      },
+      {
+        "arc_length_m": 7.092937004605869,
+        "height_m": 4.778844392091543,
+        "initial_local_voxel_size_m": 0.5973555490114428,
+        "samples_across_smallest_dimension": 7.964740653485904,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 8.193595723157317
+      },
+      {
+        "arc_length_m": 15.092937004605869,
+        "height_m": 4.534381407824245,
+        "initial_local_voxel_size_m": 0.5667976759780307,
+        "samples_across_smallest_dimension": 7.557302346373742,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 7.062203999746839
+      },
+      {
+        "arc_length_m": 19.279452772123136,
+        "height_m": 4.086764171160246,
+        "initial_local_voxel_size_m": 0.5108455213950307,
+        "samples_across_smallest_dimension": 6.81127361860041,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 6.442114969666734
+      },
+      {
+        "arc_length_m": 28.77105905976267,
+        "height_m": 4.121265446361424,
+        "initial_local_voxel_size_m": 0.515158180795178,
+        "samples_across_smallest_dimension": 6.868775743935706,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 7.020368384486201
+      },
+      {
+        "arc_length_m": 32.77105905976267,
+        "height_m": 4.094441308396069,
+        "initial_local_voxel_size_m": 0.5118051635495087,
+        "samples_across_smallest_dimension": 6.8240688473267825,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 7.39485231269663
+      },
+      {
+        "arc_length_m": 36.77105905976267,
+        "height_m": 3.777879899563672,
+        "initial_local_voxel_size_m": 0.472234987445459,
+        "samples_across_smallest_dimension": 6.296466499272787,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 7.312633795768993
+      },
+      {
+        "arc_length_m": 42.57104977403838,
+        "height_m": 3.213686897358752,
+        "initial_local_voxel_size_m": 0.401710862169844,
+        "samples_across_smallest_dimension": 5.356144828931253,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 6.974263429657538
+      },
+      {
+        "arc_length_m": 50.213918299253415,
+        "height_m": 2.8506282585541265,
+        "initial_local_voxel_size_m": 0.3563285323192658,
+        "samples_across_smallest_dimension": 4.751047097590211,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 6.92727084498512
+      },
+      {
+        "arc_length_m": 57.07289390631063,
+        "height_m": 2.5366808856147784,
+        "initial_local_voxel_size_m": 0.3170851107018473,
+        "samples_across_smallest_dimension": 4.227801476024631,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 5.95755535133775
+      },
+      {
+        "arc_length_m": 63.10863470200409,
+        "height_m": 2.535510267514339,
+        "initial_local_voxel_size_m": 0.3169387834392924,
+        "samples_across_smallest_dimension": 4.225850445857232,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 5.087791819298447
+      },
+      {
+        "arc_length_m": 67.10863470200408,
+        "height_m": 2.820657607923046,
+        "initial_local_voxel_size_m": 0.35258220099038073,
+        "samples_across_smallest_dimension": 4.701096013205077,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 5.0406525509678515
+      },
+      {
+        "arc_length_m": 71.31866280186587,
+        "height_m": 3.3256025135294554,
+        "initial_local_voxel_size_m": 0.4157003141911819,
+        "samples_across_smallest_dimension": 5.542670855882426,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 5.365569963969738
+      },
+      {
+        "arc_length_m": 77.60552992495089,
+        "height_m": 3.959015768614046,
+        "initial_local_voxel_size_m": 0.49487697107675577,
+        "samples_across_smallest_dimension": 6.598359614356744,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 5.931678914577978
+      },
+      {
+        "arc_length_m": 84.17240344773532,
+        "height_m": 3.911266391685742,
+        "initial_local_voxel_size_m": 0.48890829896071775,
+        "samples_across_smallest_dimension": 6.518777319476237,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 6.03319167105057
+      },
+      {
+        "arc_length_m": 88.17240344773532,
+        "height_m": 3.507598451564773,
+        "initial_local_voxel_size_m": 0.4384498064455966,
+        "samples_across_smallest_dimension": 5.845997419274622,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 5.77771582978222
+      },
+      {
+        "arc_length_m": 92.17240344773532,
+        "height_m": 3.135235722757305,
+        "initial_local_voxel_size_m": 0.3919044653446631,
+        "samples_across_smallest_dimension": 5.225392871262175,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 5.477750866932489
+      },
+      {
+        "arc_length_m": 94.03031258441504,
+        "height_m": 3.0826148060148446,
+        "initial_local_voxel_size_m": 0.3853268507518556,
+        "samples_across_smallest_dimension": 5.137691343358075,
+        "segment_id": 52,
+        "under_resolved": true,
+        "width_m": 5.416258219859774
+      },
+      {
+        "arc_length_m": 35.58569286905691,
+        "height_m": 4.502567910466062,
+        "initial_local_voxel_size_m": 0.5628209888082577,
+        "samples_across_smallest_dimension": 7.504279850776769,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 8.456431369168099
+      },
+      {
+        "arc_length_m": 39.58569286905691,
+        "height_m": 3.4092548252783796,
+        "initial_local_voxel_size_m": 0.42615685315979746,
+        "samples_across_smallest_dimension": 5.682091375463966,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 7.932952115627905
+      },
+      {
+        "arc_length_m": 44.362929556607874,
+        "height_m": 2.52083935560779,
+        "initial_local_voxel_size_m": 0.31510491945097374,
+        "samples_across_smallest_dimension": 4.201398926012984,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 7.267664633398098
+      },
+      {
+        "arc_length_m": 49.471576900438734,
+        "height_m": 2.112511268263256,
+        "initial_local_voxel_size_m": 0.264063908532907,
+        "samples_across_smallest_dimension": 3.5208521137720936,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 6.9896786769983565
+      },
+      {
+        "arc_length_m": 55.1339056353602,
+        "height_m": 2.56733919880247,
+        "initial_local_voxel_size_m": 0.32091739985030876,
+        "samples_across_smallest_dimension": 4.278898664670784,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 7.422083235761671
+      },
+      {
+        "arc_length_m": 60.275069709065356,
+        "height_m": 3.4085450341713184,
+        "initial_local_voxel_size_m": 0.4260681292714148,
+        "samples_across_smallest_dimension": 5.680908390285531,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 8.145759145249903
+      },
+      {
+        "arc_length_m": 64.27506970906535,
+        "height_m": 4.143650384825405,
+        "initial_local_voxel_size_m": 0.5179562981031757,
+        "samples_across_smallest_dimension": 6.906083974709009,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 8.552005467569824
+      },
+      {
+        "arc_length_m": 68.27506970906535,
+        "height_m": 4.745944016366757,
+        "initial_local_voxel_size_m": 0.5932430020458446,
+        "samples_across_smallest_dimension": 7.909906693944595,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 8.681559086354566
+      },
+      {
+        "arc_length_m": 79.6368167779864,
+        "height_m": 4.358600484428123,
+        "initial_local_voxel_size_m": 0.5448250605535154,
+        "samples_across_smallest_dimension": 7.264334140713539,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 8.122929787356938
+      },
+      {
+        "arc_length_m": 83.6368167779864,
+        "height_m": 3.9837031900058486,
+        "initial_local_voxel_size_m": 0.4979628987507311,
+        "samples_across_smallest_dimension": 6.639505316676415,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 7.82576399456118
+      },
+      {
+        "arc_length_m": 87.6368167779864,
+        "height_m": 3.708018103917155,
+        "initial_local_voxel_size_m": 0.46350226298964436,
+        "samples_across_smallest_dimension": 6.1800301731952585,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 7.360586731296228
+      },
+      {
+        "arc_length_m": 91.6368167779864,
+        "height_m": 3.5339535420671484,
+        "initial_local_voxel_size_m": 0.44174419275839355,
+        "samples_across_smallest_dimension": 5.8899225701119144,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 6.910100957674428
+      },
+      {
+        "arc_length_m": 93.37341688939905,
+        "height_m": 3.5118973534004203,
+        "initial_local_voxel_size_m": 0.43898716917505254,
+        "samples_across_smallest_dimension": 5.8531622556673675,
+        "segment_id": 53,
+        "under_resolved": true,
+        "width_m": 6.84036045228563
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.153112038297001,
+        "initial_local_voxel_size_m": 0.5191390047871252,
+        "samples_across_smallest_dimension": 6.921853397161669,
+        "segment_id": 54,
+        "under_resolved": true,
+        "width_m": 8.278034623674346
+      },
+      {
+        "arc_length_m": 7.387705560070146,
+        "height_m": 2.589489764835993,
+        "initial_local_voxel_size_m": 0.32368622060449914,
+        "samples_across_smallest_dimension": 4.3158162747266555,
+        "segment_id": 54,
+        "under_resolved": true,
+        "width_m": 8.918435890129489
+      },
+      {
+        "arc_length_m": 12.273626264438157,
+        "height_m": 3.2964855821378274,
+        "initial_local_voxel_size_m": 0.4120606977672284,
+        "samples_across_smallest_dimension": 5.494142636896379,
+        "segment_id": 54,
+        "under_resolved": true,
+        "width_m": 6.613443763984542
+      },
+      {
+        "arc_length_m": 13.849131536261385,
+        "height_m": 3.202350778815669,
+        "initial_local_voxel_size_m": 0.4002938473519586,
+        "samples_across_smallest_dimension": 5.337251298026115,
+        "segment_id": 54,
+        "under_resolved": true,
+        "width_m": 6.0384457408965915
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.9995929521849636,
+        "initial_local_voxel_size_m": 0.49994911902312045,
+        "samples_across_smallest_dimension": 6.665988253641606,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 8.560996333707198
+      },
+      {
+        "arc_length_m": 7.354662871566007,
+        "height_m": 3.8962591819158168,
+        "initial_local_voxel_size_m": 0.4870323977394771,
+        "samples_across_smallest_dimension": 6.493765303193028,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 7.944674110992036
+      },
+      {
+        "arc_length_m": 15.908920558341393,
+        "height_m": 3.5532063228457096,
+        "initial_local_voxel_size_m": 0.4441507903557137,
+        "samples_across_smallest_dimension": 5.922010538076183,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 5.664129202998364
+      },
+      {
+        "arc_length_m": 25.72008221044845,
+        "height_m": 3.3265465295799572,
+        "initial_local_voxel_size_m": 0.41581831619749465,
+        "samples_across_smallest_dimension": 5.544244215966596,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 4.692872072217571
+      },
+      {
+        "arc_length_m": 36.5978182963582,
+        "height_m": 2.7100027370959956,
+        "initial_local_voxel_size_m": 0.33875034213699945,
+        "samples_across_smallest_dimension": 4.516671228493326,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 3.9018422781625537
+      },
+      {
+        "arc_length_m": 47.473224997627234,
+        "height_m": 3.0517728848075345,
+        "initial_local_voxel_size_m": 0.3814716106009418,
+        "samples_across_smallest_dimension": 5.086288141345891,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 4.920509827997413
+      },
+      {
+        "arc_length_m": 56.230049747422406,
+        "height_m": 3.252737885420686,
+        "initial_local_voxel_size_m": 0.40659223567758573,
+        "samples_across_smallest_dimension": 5.421229809034477,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 5.7602543659021075
+      },
+      {
+        "arc_length_m": 64.3003837566449,
+        "height_m": 3.2360486185300408,
+        "initial_local_voxel_size_m": 0.4045060773162551,
+        "samples_across_smallest_dimension": 5.393414364216735,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 5.923411888099093
+      },
+      {
+        "arc_length_m": 73.99997700842103,
+        "height_m": 3.3195988766700895,
+        "initial_local_voxel_size_m": 0.4149498595837612,
+        "samples_across_smallest_dimension": 5.53266479445015,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 6.12823964186256
+      },
+      {
+        "arc_length_m": 86.1912792117288,
+        "height_m": 2.7195634628533165,
+        "initial_local_voxel_size_m": 0.33994543285666456,
+        "samples_across_smallest_dimension": 4.532605771422195,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 5.56972698885163
+      },
+      {
+        "arc_length_m": 95.20970755899201,
+        "height_m": 2.4470769652627697,
+        "initial_local_voxel_size_m": 0.3058846206578462,
+        "samples_across_smallest_dimension": 4.078461608771283,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 4.828195865890962
+      },
+      {
+        "arc_length_m": 100.32278942056806,
+        "height_m": 2.6018873111833276,
+        "initial_local_voxel_size_m": 0.32523591389791595,
+        "samples_across_smallest_dimension": 4.336478851972213,
+        "segment_id": 55,
+        "under_resolved": true,
+        "width_m": 4.698781777102865
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.4156428511890695,
+        "initial_local_voxel_size_m": 0.5519553563986337,
+        "samples_across_smallest_dimension": 7.359404751981783,
+        "segment_id": 56,
+        "under_resolved": true,
+        "width_m": 10.49388439223942
+      },
+      {
+        "arc_length_m": 7.334375372410151,
+        "height_m": 4.5214542694176085,
+        "initial_local_voxel_size_m": 0.5651817836772011,
+        "samples_across_smallest_dimension": 7.535757115696015,
+        "segment_id": 56,
+        "under_resolved": true,
+        "width_m": 9.66074373956052
+      },
+      {
+        "arc_length_m": 19.33437537241015,
+        "height_m": 4.722820364817975,
+        "initial_local_voxel_size_m": 0.5903525456022469,
+        "samples_across_smallest_dimension": 7.871367274696626,
+        "segment_id": 56,
+        "under_resolved": true,
+        "width_m": 8.159964487240833
+      },
+      {
+        "arc_length_m": 23.417436912881463,
+        "height_m": 3.5361369954920914,
+        "initial_local_voxel_size_m": 0.4420171244365114,
+        "samples_across_smallest_dimension": 5.893561659153486,
+        "segment_id": 56,
+        "under_resolved": true,
+        "width_m": 6.472583737282619
+      },
+      {
+        "arc_length_m": 25.510681830393935,
+        "height_m": 3.4560531261101044,
+        "initial_local_voxel_size_m": 0.43200664076376305,
+        "samples_across_smallest_dimension": 5.760088543516841,
+        "segment_id": 56,
+        "under_resolved": true,
+        "width_m": 6.080739702597401
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 3.4560531261101044,
+        "initial_local_voxel_size_m": 0.43200664076376305,
+        "samples_across_smallest_dimension": 5.760088543516841,
+        "segment_id": 57,
+        "under_resolved": true,
+        "width_m": 6.080739702597401
+      },
+      {
+        "arc_length_m": 6.46681172309277,
+        "height_m": 3.786227551286549,
+        "initial_local_voxel_size_m": 0.47327844391081864,
+        "samples_across_smallest_dimension": 6.310379252144249,
+        "segment_id": 57,
+        "under_resolved": true,
+        "width_m": 6.622850962973446
+      },
+      {
+        "arc_length_m": 28.236593602018353,
+        "height_m": 4.385249228845808,
+        "initial_local_voxel_size_m": 0.548156153605726,
+        "samples_across_smallest_dimension": 7.308748714743014,
+        "segment_id": 57,
+        "under_resolved": true,
+        "width_m": 6.299714949333655
+      },
+      {
+        "arc_length_m": 35.277306183063644,
+        "height_m": 3.7948907376173926,
+        "initial_local_voxel_size_m": 0.4743613422021741,
+        "samples_across_smallest_dimension": 6.324817896028988,
+        "segment_id": 57,
+        "under_resolved": true,
+        "width_m": 6.446958999903095
+      },
+      {
+        "arc_length_m": 39.530198616722856,
+        "height_m": 3.8881885892838683,
+        "initial_local_voxel_size_m": 0.48602357366048354,
+        "samples_across_smallest_dimension": 6.480314315473114,
+        "segment_id": 57,
+        "under_resolved": true,
+        "width_m": 6.596168264142936
+      },
+      {
+        "arc_length_m": 43.598670786977785,
+        "height_m": 4.037202768158961,
+        "initial_local_voxel_size_m": 0.5046503460198701,
+        "samples_across_smallest_dimension": 6.728671280264935,
+        "segment_id": 57,
+        "under_resolved": true,
+        "width_m": 6.630402555086352
+      },
+      {
+        "arc_length_m": 47.598670786977785,
+        "height_m": 4.090326718134007,
+        "initial_local_voxel_size_m": 0.5112908397667508,
+        "samples_across_smallest_dimension": 6.817211196890011,
+        "segment_id": 57,
+        "under_resolved": true,
+        "width_m": 6.4651198338070195
+      },
+      {
+        "arc_length_m": 51.598670786977785,
+        "height_m": 3.950261570478036,
+        "initial_local_voxel_size_m": 0.4937826963097545,
+        "samples_across_smallest_dimension": 6.58376928413006,
+        "segment_id": 57,
+        "under_resolved": true,
+        "width_m": 6.085505172075452
+      },
+      {
+        "arc_length_m": 55.598670786977785,
+        "height_m": 3.2639238731507394,
+        "initial_local_voxel_size_m": 0.4079904841438424,
+        "samples_across_smallest_dimension": 5.439873121917899,
+        "segment_id": 57,
+        "under_resolved": true,
+        "width_m": 5.563196389332232
+      },
+      {
+        "arc_length_m": 55.67761679781798,
+        "height_m": 3.208950790717095,
+        "initial_local_voxel_size_m": 0.4011188488396369,
+        "samples_across_smallest_dimension": 5.348251317861825,
+        "segment_id": 57,
+        "under_resolved": true,
+        "width_m": 5.548756032388217
+      },
+      {
+        "arc_length_m": 0.0,
+        "height_m": 4.107648041519244,
+        "initial_local_voxel_size_m": 0.5134560051899055,
+        "samples_across_smallest_dimension": 6.846080069198741,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 9.04314807286254
+      },
+      {
+        "arc_length_m": 7.306717469706748,
+        "height_m": 4.166583932258433,
+        "initial_local_voxel_size_m": 0.5208229915323042,
+        "samples_across_smallest_dimension": 6.944306553764056,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 8.718774632418317
+      },
+      {
+        "arc_length_m": 11.306717469706747,
+        "height_m": 3.7989568036114427,
+        "initial_local_voxel_size_m": 0.47486960045143034,
+        "samples_across_smallest_dimension": 6.331594672685738,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 7.9091106374999125
+      },
+      {
+        "arc_length_m": 15.306717469706747,
+        "height_m": 3.323029787660973,
+        "initial_local_voxel_size_m": 0.4153787234576216,
+        "samples_across_smallest_dimension": 5.538382979434955,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 7.026264909470299
+      },
+      {
+        "arc_length_m": 19.306717469706747,
+        "height_m": 3.239361908885023,
+        "initial_local_voxel_size_m": 0.40492023861062787,
+        "samples_across_smallest_dimension": 5.398936514808372,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 6.661763688798106
+      },
+      {
+        "arc_length_m": 24.705184509101834,
+        "height_m": 3.148374813689271,
+        "initial_local_voxel_size_m": 0.3935468517111589,
+        "samples_across_smallest_dimension": 5.247291356148786,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 6.243015194360136
+      },
+      {
+        "arc_length_m": 35.88269576266729,
+        "height_m": 3.210461405875903,
+        "initial_local_voxel_size_m": 0.4013076757344879,
+        "samples_across_smallest_dimension": 5.350769009793172,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 4.878963649013962
+      },
+      {
+        "arc_length_m": 42.30197797943321,
+        "height_m": 3.9693107513008785,
+        "initial_local_voxel_size_m": 0.4961638439126098,
+        "samples_across_smallest_dimension": 6.615517918834798,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 5.307101374212973
+      },
+      {
+        "arc_length_m": 50.881385319729624,
+        "height_m": 4.667177887347898,
+        "initial_local_voxel_size_m": 0.5833972359184872,
+        "samples_across_smallest_dimension": 7.778629812246497,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 6.075267348585851
+      },
+      {
+        "arc_length_m": 62.390132395520595,
+        "height_m": 4.217264742854907,
+        "initial_local_voxel_size_m": 0.5271580928568633,
+        "samples_across_smallest_dimension": 7.028774571424845,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 6.017269037307288
+      },
+      {
+        "arc_length_m": 75.73552998236752,
+        "height_m": 3.4421975584014453,
+        "initial_local_voxel_size_m": 0.43027469480018066,
+        "samples_across_smallest_dimension": 5.736995930669075,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 5.996994597388185
+      },
+      {
+        "arc_length_m": 79.33065342577572,
+        "height_m": 3.2874071458410317,
+        "initial_local_voxel_size_m": 0.41092589323012896,
+        "samples_across_smallest_dimension": 5.479011909735053,
+        "segment_id": 58,
+        "under_resolved": true,
+        "width_m": 5.800236369028192
+      }
+    ],
+    "voxel_size_m": 0.6
+  },
+  "sections": {
+    "dominant_route_segment_count": 18.0,
+    "drained_pool_max_width_m": 0.0,
+    "drained_pool_mean_aspect_ratio": 0.0,
+    "drained_pool_sample_count": 0.0,
+    "height_ratio_standard_deviation": 0.15598831072954894,
+    "max_junction_blend_weight": 1.0,
+    "max_lava_age_s": 1748.6985082384456,
+    "max_tube_height": 11.922235785315104,
+    "max_tube_width": 15.008411749909108,
+    "maximum_roof_demand_ratio": 0.09200120877861427,
+    "mean_lava_flux": 1.3639858105567078,
+    "mean_lava_temperature_k": 1442.892313441765,
+    "mean_shape_change_per_100m": 2.844115293576561,
+    "mean_tube_height": 5.364641339690217,
+    "mean_tube_width": 8.957090039482033,
+    "min_tube_height": 1.4051468457328582,
+    "min_tube_width": 3.9018422781625537,
+    "morphology_family_score_standard_deviation": 0.29391227388183244,
+    "morphology_regime_count": 4.0,
+    "sample_count": 591.0,
+    "segment_field_count": 59.0,
+    "unstable_section_count": 0.0,
+    "width_coefficient_of_variation": 0.24944752208052254
+  },
+  "seed": 1,
+  "started_at_utc": "2026-09-07T10:39:08.986672+00:00",
+  "status": "complete",
+  "storage_mode_actual": "dense",
+  "storage_mode_requested": "dense",
+  "timeout_s": 7200.0,
+  "timing_scope": "host, network, sections, base density with roof screening, meshing and welding; excludes optional events, appearance, exports and application import",
+  "timings": {
+    "geometry_s": 27.8209195699892,
+    "host_s": 0.0037019620067439973,
+    "meshing_s": 2.2208549400093034,
+    "network_s": 2.3982664229988586,
+    "sections_s": 0.7669319070118945,
+    "total_s": 30.98982523099403,
+    "volume_s": 25.600064629979897
+  },
+  "voxel_size_m": 0.6,
+  "wall_time_s": 31.971105919015827,
+  "worker_returncode": 0
+}

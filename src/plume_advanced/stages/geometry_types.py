@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from itertools import product
+from typing import Protocol
 
 import numpy as np
 from scipy import ndimage
@@ -27,6 +28,7 @@ class GeometryConfig:
     density_margin: float = 30.0
     chunk_size: int = 64
     iso_level: float = 0.0
+    density_closing_voxels: int = 0
     tunnel_radius_scale: float = 1.2
     chamber_radius_scale: float = 1.7
     junction_radius_scale: float = 1.7
@@ -35,6 +37,15 @@ class GeometryConfig:
     wall_roughness_amplitude: float = 0.18
     wall_roughness_frequency: float = 0.16
     wall_roughness_blend: float = 0.75
+    floor_roughness_scale: float = 0.25
+    roof_roughness_scale: float = 1.0
+    # Inward accretion relief, in metres; zero preserves earlier scenarios.
+    surface_wall_relief_m: float = 0.0
+    surface_roof_relief_m: float = 0.0
+    surface_floor_relief_m: float = 0.0
+    surface_crust_relief_m: float = 0.0
+    surface_feature_scale_m: float = 1.0
+    surface_normal_filter_voxels: float = 1.2
     junction_irregularity_amplitude: float = 0.18
     junction_irregularity_frequency: float = 0.11
     structural_event_blend: float = 0.35
@@ -55,6 +66,22 @@ class GeometryConfig:
         """Return the resolved nominal passage sampling density."""
 
         return self.characteristic_passage_width_m / max(self.voxel_size, 1e-9)
+
+
+class _DensitySurface(Protocol):
+    """Surface-query contract shared by dense and sparse density storage."""
+
+    @property
+    def voxel_size(self) -> float: ...
+
+    @property
+    def iso_level(self) -> float: ...
+
+    def sample_density(self, point: tuple[float, float, float] | np.ndarray) -> float: ...
+
+    def surface_normal(
+        self, point: tuple[float, float, float] | np.ndarray
+    ) -> tuple[float, float, float]: ...
 
 
 @dataclass(frozen=True)
@@ -136,7 +163,7 @@ class VoxelGrid:
         return float(c0 * (1.0 - wz) + c1 * wz)
 
     def surface_normal(
-        self,
+        self: _DensitySurface,
         point: tuple[float, float, float] | np.ndarray,
     ) -> tuple[float, float, float]:
         """Estimate the inward-facing cave normal from the density gradient."""
@@ -158,7 +185,7 @@ class VoxelGrid:
         return (float(normal[0]), float(normal[1]), float(normal[2]))
 
     def raycast_isosurface(
-        self,
+        self: _DensitySurface,
         origin: tuple[float, float, float] | np.ndarray,
         direction: tuple[float, float, float] | np.ndarray,
         max_distance: float,
@@ -305,6 +332,37 @@ class TiledVoxelGrid:
                 return float(tile[tuple(local)])
         return float(self.iso_level - 1.0)
 
+    def synchronize_halos(self) -> None:
+        """Give every shared sample the value used by density queries.
+
+        Independent tile stamping can disagree near rounded profile stations.
+        The lexicographically greatest available tile owns an overlap, matching
+        _density_at. Descending propagation covers faces, edges and corners,
+        including sparse layouts with a missing primary tile.
+        """
+        offsets = tuple(product((-1, 0, 1), repeat=3))
+        for key in sorted(self.tiles, reverse=True):
+            source = self.tiles[key]
+            start = np.asarray(key) * self.tile_size
+            stop = start + np.asarray(source.shape)
+            for offset in offsets:
+                neighbor = tuple(k + d for k, d in zip(key, offset, strict=True))
+                if neighbor >= key or neighbor not in self.tiles:
+                    continue
+                target = self.tiles[neighbor]
+                target_start = np.asarray(neighbor) * self.tile_size
+                lower = np.maximum(start, target_start)
+                upper = np.minimum(stop, target_start + np.asarray(target.shape))
+                if np.any(lower >= upper):
+                    continue
+                source_slice = tuple(slice(int(a), int(b)) for a, b in zip(
+                    lower - start, upper - start, strict=True,
+                ))
+                target_slice = tuple(slice(int(a), int(b)) for a, b in zip(
+                    lower - target_start, upper - target_start, strict=True,
+                ))
+                target[target_slice] = source[source_slice]
+
     def sample_density(
         self,
         point: tuple[float, float, float] | np.ndarray,
@@ -402,6 +460,8 @@ class CaveGeometry:
     # Per-junction immutable records (key/value tuples) preserve local
     # outliers while keeping the existing summary API backwards compatible.
     junction_records: tuple[tuple[tuple[str, object], ...], ...] = ()
+    stability_records: tuple[tuple[tuple[str, object], ...], ...] = ()
+    preserved_pillar_columns: int = 0
 
     @property
     def meshes(self) -> tuple[GeometryChunkMesh, ...]:
@@ -416,9 +476,15 @@ class CaveGeometry:
             "event_mesh_count": float(len(self.event_meshes)),
             "structural_event_count": float(len(self.structural_event_ids)),
             "junction_record_count": float(len(self.junction_records)),
+            "stability_collapse_count": float(sum(
+                bool(dict(record)["failed"]) for record in self.stability_records
+            )),
+            "stability_assessment_count": float(len(self.stability_records)),
+            "preserved_pillar_column_count": float(self.preserved_pillar_columns),
             "stamped_segment_count": float(len(self.stamped_segment_ids)),
             "stamped_sample_count": float(self.stamped_sample_count),
             "voxel_size_m": float(self.voxel_grid.voxel_size),
+            "density_closing_voxels": float(self.config.density_closing_voxels),
             "characteristic_passage_samples": float(
                 self.config.characteristic_samples_across_passage
             ),

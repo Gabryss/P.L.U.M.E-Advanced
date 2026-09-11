@@ -1,0 +1,112 @@
+{
+  "complete_n": 35,
+  "conditions": {
+    "1000m-dense": {
+      "complete_n": 5,
+      "failed_n": 0,
+      "median_peak_rss_gib": 3.9786109924316406,
+      "median_wall_time_s": 48.996469795005396,
+      "planned_n": 5
+    },
+    "1000m-tiled": {
+      "complete_n": 5,
+      "failed_n": 0,
+      "median_peak_rss_gib": 0.7352638244628906,
+      "median_wall_time_s": 51.47281892699539,
+      "planned_n": 5
+    },
+    "2000m-dense": {
+      "complete_n": 5,
+      "failed_n": 0,
+      "median_peak_rss_gib": 10.899879455566406,
+      "median_wall_time_s": 73.31992492999416,
+      "planned_n": 5
+    },
+    "2000m-tiled": {
+      "complete_n": 5,
+      "failed_n": 0,
+      "median_peak_rss_gib": 1.02764892578125,
+      "median_wall_time_s": 73.7230369639874,
+      "planned_n": 5
+    },
+    "5000m-dense": {
+      "complete_n": 0,
+      "failed_n": 5,
+      "median_peak_rss_gib": null,
+      "median_wall_time_s": null,
+      "planned_n": 5
+    },
+    "5000m-tiled": {
+      "complete_n": 5,
+      "failed_n": 0,
+      "median_peak_rss_gib": 1.6497268676757812,
+      "median_wall_time_s": 126.73922400400625,
+      "planned_n": 5
+    },
+    "500m-dense": {
+      "complete_n": 5,
+      "failed_n": 0,
+      "median_peak_rss_gib": 1.7164955139160156,
+      "median_wall_time_s": 29.20745451300172,
+      "planned_n": 5
+    },
+    "500m-tiled": {
+      "complete_n": 5,
+      "failed_n": 0,
+      "median_peak_rss_gib": 0.497344970703125,
+      "median_wall_time_s": 34.94258780500968,
+      "planned_n": 5
+    }
+  },
+  "environment": {
+    "dependencies": {
+      "laspy": "2.7.0",
+      "matplotlib": "3.11.1",
+      "numpy": "2.5.1",
+      "pillow": "12.3.0",
+      "psutil": "7.2.2",
+      "rocky": "0.1.0",
+      "scikit-image": "0.26.0",
+      "scipy": "1.18.0",
+      "trimesh": "4.12.2",
+      "xatlas": "0.0.11"
+    },
+    "git_commit": "0961a66e7c3e92f4f15d5866cfce224a85fff691",
+    "git_dirty": true,
+    "identity_sha256": "6846a0bd88076f727d1805857a5352f61f79df0f46eb112e4991b3996bd6dedb",
+    "inputs": [
+      {
+        "bytes": 11962,
+        "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/config/project.toml",
+        "sha256": "bc0ac5aca9d9ae23676e6954c641697ff87fed26a74c04d7e2cbb87666e8ad76"
+      },
+      {
+        "bytes": 10,
+        "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/paper/campaigns/2026-09-07/frozen/paper/seeds/geometry_seeds.txt",
+        "sha256": "026d8ad3dfa1f2aa9da7964947ddedd4e83c6fc008206ebf898699dea80f9804"
+      }
+    ],
+    "logical_cpu_count": 12,
+    "machine": "x86_64",
+    "platform": "Linux-6.8.0-60-generic-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "python_executable": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/.venv/bin/python",
+    "python_implementation": "CPython",
+    "python_version": "3.13.5",
+    "resolved_config_sha256": "732d3998882b255c39691818e1494a252f9490ce9fed31cb69ca0942a9da6aa2",
+    "source_sha256": "d8bea8ed20c1c22d5c680f961715fc3e90f887c94bef9aa258e2e96009b3f1f8",
+    "thread_environment": {
+      "MKL_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "PLUME_EVALUATION_WORKERS": "4"
+    }
+  },
+  "failed_n": 5,
+  "memory_limit_gib": 12.0,
+  "planned_n": 40,
+  "schema": "plume.scalability-summary.v1",
+  "timeout_s": 7200.0,
+  "timing_scope": "host through finalized cave mesh; excludes optional events, appearance and export"
+}

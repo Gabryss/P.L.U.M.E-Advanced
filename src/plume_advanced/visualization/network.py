@@ -4,12 +4,26 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import numpy as np
 
 from plume_advanced.stages.host_field import HostField
 from plume_advanced.stages.network import CaveNetwork
+from plume_advanced.stages.network_metadata import metadata_float
+
+
+class _BreakoutRecord(TypedDict):
+    path_id: str
+    along: float
+    trigger: str
+    outcome: str
+    score: float
+    parent_before: float
+    parent_after: float
+    branch_flux: float
+    split_fraction: float
+    returned_flux: float
 
 
 @dataclass(frozen=True)
@@ -32,6 +46,9 @@ class CaveNetworkPlotter:
         cave_network: CaveNetwork,
         output_path: str | Path,
     ) -> Path:
+        if cave_network.config.systems.count > 1 and cave_network.config.topology.style == "general":
+            from plume_advanced.visualization.network_systems import render_system_network
+            return render_system_network(host_field, cave_network, output_path)
         import matplotlib.pyplot as plt
 
         output = Path(output_path)
@@ -429,8 +446,8 @@ class CaveNetworkPlotter:
         ax.legend(loc="best", fontsize=7)
 
     @staticmethod
-    def _breakout_records(cave_network: CaveNetwork) -> list[dict[str, object]]:
-        records: dict[str, dict[str, object]] = {}
+    def _breakout_records(cave_network: CaveNetwork) -> list[_BreakoutRecord]:
+        records: dict[str, _BreakoutRecord] = {}
         nodes = {node.node_id: node for node in cave_network.nodes}
         for segment in cave_network.segments:
             path_id = segment.metadata.get("lobe_path_id")
@@ -449,12 +466,12 @@ class CaveNetworkPlotter:
                 "along": along,
                 "trigger": str(segment.metadata.get("breakout_trigger", "unknown")),
                 "outcome": str(segment.metadata.get("formation_state", "unknown")),
-                "score": float(segment.metadata.get("breakout_score", 0.0)),
-                "parent_before": float(segment.metadata.get("parent_flux_before_split", 0.0)),
-                "parent_after": float(segment.metadata.get("parent_flux_after_split", 0.0)),
-                "branch_flux": float(segment.metadata.get("initial_flux", 0.0)),
-                "split_fraction": float(segment.metadata.get("branch_flux_fraction", 0.0)),
-                "returned_flux": float(segment.metadata.get("coalescence_returned_flux", 0.0)),
+                "score": metadata_float(segment.metadata, "breakout_score"),
+                "parent_before": metadata_float(segment.metadata, "parent_flux_before_split"),
+                "parent_after": metadata_float(segment.metadata, "parent_flux_after_split"),
+                "branch_flux": metadata_float(segment.metadata, "initial_flux"),
+                "split_fraction": metadata_float(segment.metadata, "branch_flux_fraction"),
+                "returned_flux": metadata_float(segment.metadata, "coalescence_returned_flux"),
             }
         return sorted(records.values(), key=lambda item: float(item["along"]))
 

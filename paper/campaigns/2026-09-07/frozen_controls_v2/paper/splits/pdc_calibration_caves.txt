@@ -1,0 +1,77 @@
+# PDC v2.0 cave-level calibration partition (76 caves).
+AU.QLD.00 Barkers Cave 1
+AU.VIC.03 Church Cave
+AU.VIC.05 Tunnel Cave
+ES.LNZ.00 La Corona Lava Tube
+ES.LNZ.01 La Cueva de Los Naturalistas
+ES.LPA.01 Cueva Honda de Gallegos
+ES.LPA.02 Cueva de la Mamona
+ES.LPA.03 Cueva de la Sabina
+ES.LPA.04 Cueva de la Virgen Fatima
+IT.CMP.00 Grotta lavica del 1858
+IT.SIC.00 Grotta della Catanese
+IT.SIC.02 Grotta degli Archi
+IT.SIC.03 Grotta del Burrò
+IT.SIC.04 Grotta del Diavolo
+IT.SIC.05 Grotta del Gelo
+IT.SIC.06 Grotta Marasca
+IT.SIC.07 Grotta dei Tre Livelli
+IT.SIC.08 Grotta dei Lamponi
+IT.SIC.09 Grotta di Monte Intraleo
+IT.SIC.09B Grotta di Monte Intraleo 2
+IT.SIC.10 Grotta Micio Conti
+IT.SIC.11 Grotta dei Tedeschi
+IT.SIC.12 Grotta Immacolatella I
+IT.SIC.13 Grotta KTM
+IT.SIC.14 Grotta Nuovalucello I
+IT.SIC.15 Grotta del Salto della Giumenta
+IT.SIC.16 Grotta del Santo
+JO.HAS.00 Al-Fahda Cave
+JO.HAS.01 Al-Badia Cave
+JO.HAS.04 Hashemite University Cave
+JO.HAS.05 Diabé Cave
+JO.HAS.06 Al-Ameed Cave
+JO.HAS.07 Al-Hayya Cave
+JP.HNS.00 Zinza Fuketsu No.1
+PT.AZR.00 Algar da Batalha
+PT.AZR.01 Gruta da Beira
+PT.AZR.02 Gruta das Anelares
+PT.AZR.03 Gruta do Cabeço do Canto
+PT.AZR.04 Gruta do Esqueleto
+PT.AZR.07 Gruta do Soldão
+PT.AZR.08 Gruta dos Balcões
+PT.AZR.09 Gruta Branca Opala
+PT.AZR.10 Gruta da Achada
+PT.AZR.12 Gruta da Madre de Deus
+PT.AZR.14 Gruta do Caldeira
+PT.AZR.15 Gruta do Coelho
+PT.AZR.16 Furna da Recta da Cruz
+PT.AZR.17 Gruta do Bom Jesùs
+PT.AZR.19 Gruta do Enforcado
+SA.HBQ.00 Ghar Al-Hibashi
+SA.HIT.01 Khaf Al Shuwaymis
+USA.CAL.00 Ship Cave
+USA.CAL.01 Skull Cave
+USA.HAW.00 Hammer Cave
+USA.HAW.01 Hana Gardenland Cave
+USA.HAW.02 Kuamo'O Point Sea Caves
+USA.HAW.04 Maluhia Cave
+USA.HAW.07 Pole 149 Cave
+USA.HAW.08 Red Dirt Cave
+USA.HAW.09 So Nice Cave
+USA.HAW.10 Sweet Sunday Cave
+USA.HAW.11 Terraced Cave
+USA.HAW.12 Three Color Cave
+USA.HAW.13 Thunder Dome Pit
+USA.HAW.14 Tom's Hole
+USA.HAW.15 Tusk Cave
+USA.HAW.16 Upper Mouflon Cave
+USA.HAW.17 Thurston Lava Tube
+USA.HAW.18 Kazumura I
+USA.HAW.20 Lua Nunu Makai Cave
+USA.HAW.21 Lua Nunu O Kamakalepo
+USA.NMX.00 Junction Cave
+USA.ORE.00 Lava River Cave
+USA.ORE.01 Pictograph Cave
+USA.ORE.03 Boyd Cave
+USA.ORE.05 Wilson & Barlow Cave

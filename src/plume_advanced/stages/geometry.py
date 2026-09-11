@@ -6,10 +6,11 @@ import heapq
 import math
 from collections import defaultdict
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, replace
 
 import numpy as np
 from scipy import ndimage
+from scipy.interpolate import PchipInterpolator
 from scipy.spatial import cKDTree
 from skimage import measure
 
@@ -28,7 +29,8 @@ from plume_advanced.stages.geometry_types import (
     VoxelGrid,
 )
 from plume_advanced.stages.network import CaveNetwork
-from plume_advanced.stages.section_field import SectionField, SectionSample
+from plume_advanced.stages.section_field import SectionField, SectionFieldGenerator, SectionSample
+from plume_advanced.stages.surface_relief import apply_surface_relief
 
 GeometryProgressCallback = Callable[[str, int, int, str], None]
 
@@ -53,6 +55,7 @@ class _JunctionStamp:
     chamber_type: str = ""
     process_cause: str = ""
     pool_depth_m: float = 0.0
+    profile_driven: bool = False
 
 
 class GeometryGenerator:
@@ -94,12 +97,22 @@ class GeometryGenerator:
     ) -> CaveGeometry:
         """Build the cave density field without polygonizing it."""
 
+        if cave_network.config.quality.enabled:
+            from plume_advanced.stages.network_quality import NetworkQualityError, assess_network
+            assessment = assess_network(cave_network, sections=section_field)
+            if not assessment["accepted"]:
+                raise NetworkQualityError(assessment)
+        self._preserved_pillar_columns = 0
         self._emit_progress(progress, "prepare", 0, 1, "collecting section samples")
         samples_by_segment = {
-            segment_field.segment_id: segment_field.samples
+            segment_field.segment_id: self._refine_profile_chain(segment_field.samples)
             for segment_field in section_field.segment_fields
             if segment_field.samples
         }
+        section_field = replace(section_field, segment_fields=tuple(
+            replace(field, samples=samples_by_segment.get(field.segment_id, ()))
+            for field in section_field.segment_fields
+        ))
         stamp_samples = [
             sample
             for samples in samples_by_segment.values()
@@ -138,6 +151,22 @@ class GeometryGenerator:
             junction_stamps=junction_stamp_points,
         )
         self._remove_small_solid_pockets(voxel_grid)
+        apply_surface_relief(voxel_grid, self.config, progress)
+        if any(getattr(self.config, name) > 0. for name in (
+            "surface_wall_relief_m", "surface_roof_relief_m",
+            "surface_floor_relief_m", "surface_crust_relief_m",
+        )):
+            # Accretion can leave a one-voxel solid flake or air speck near a
+            # tangential boundary. Repair only unresolved isolated pockets,
+            # before roof-collapse screening, never whole disconnected routes.
+            self._remove_small_solid_pockets(voxel_grid, include_void=True)
+        from plume_advanced.stages.voxel_topology import close_density_fissures
+        close_density_fissures(voxel_grid, self.config.density_closing_voxels)
+        stability_records = self._enforce_roof_stability(
+            voxel_grid, section_field, junction_stamp_points,
+        )
+        if isinstance(voxel_grid, TiledVoxelGrid):
+            voxel_grid.synchronize_halos()
         return CaveGeometry(
             config=self.config,
             voxel_grid=voxel_grid,
@@ -146,6 +175,8 @@ class GeometryGenerator:
             assembled_faces=(),
             component_count=0,
             stamped_sample_count=len(stamp_samples),
+            stability_records=stability_records,
+            preserved_pillar_columns=self._preserved_pillar_columns,
             stamped_segment_ids=tuple(sorted(samples_by_segment)),
             minimum_section_width_m=min(
                 (
@@ -220,6 +251,8 @@ class GeometryGenerator:
                 structural_event_ids=(),
                 junction_report=base_geometry.junction_report,
                 junction_records=base_geometry.junction_records,
+                stability_records=base_geometry.stability_records,
+                preserved_pillar_columns=base_geometry.preserved_pillar_columns,
             )
 
         chunk_meshes = self._march_chunks(voxel_grid, progress)
@@ -285,7 +318,102 @@ class GeometryGenerator:
             structural_event_ids=structural_event_ids,
             junction_report=base_geometry.junction_report,
             junction_records=base_geometry.junction_records,
+            stability_records=base_geometry.stability_records,
+            preserved_pillar_columns=base_geometry.preserved_pillar_columns,
         )
+
+    def _enforce_roof_stability(
+        self,
+        grid: VoxelGrid | TiledVoxelGrid,
+        sections: SectionField,
+        junctions: list[_JunctionStamp],
+    ) -> tuple[tuple[tuple[str, object], ...], ...]:
+        """Convert unsupported envelopes into mandatory breakdown plugs.
+
+        This conservative end state represents a blocked, collapsed passage,
+        not a simulated fracture/debris trajectory or a guaranteed skylight.
+        Unlike decorative events it may disconnect a route or close it fully.
+        Run after all section/junction unions so a later union cannot reopen it.
+        """
+        model = sections.config.roof_stability_model
+        records: list[tuple[tuple[str, object], ...]] = []
+        envelopes: list[tuple[str, np.ndarray, float, float, float, float, float]] = []
+        sample_lookup = {}
+        for field in sections.segment_fields:
+            for index, sample in enumerate(field.samples):
+                sample_lookup[(field.segment_id, sample.index)] = sample
+                profile = np.asarray(sample.profile_points, dtype=float) * self._profile_scale(sample)
+                if not len(profile):
+                    continue
+                offsets = profile[:, 0, None] * np.asarray(sample.normal)
+                offsets += profile[:, 1, None] * np.asarray(sample.binormal)
+                if self.config.use_section_profiles:
+                    low, high = offsets.min(axis=0), offsets.max(axis=0)
+                    width = float(np.ptp(profile[:, 0]))
+                else:
+                    rxy, rz = self._radius_xy(sample), self._radius_z(sample)
+                    low, high = np.array((-rxy, -rxy, -rz)), np.array((rxy, rxy, rz))
+                    width = 2.0 * rxy
+                center = np.asarray((sample.x, sample.y, sample.z)) + 0.5 * (low + high)
+                height = float(high[2] - low[2])
+                floor_depth = sample.surface_z - (sample.z + float(low[2]))
+                neighbors = field.samples[max(index - 1, 0):index + 2]
+                reach = max((float(np.linalg.norm(
+                    np.asarray((n.x - sample.x, n.y - sample.y, n.z - sample.z))
+                )) for n in neighbors), default=grid.voxel_size)
+                envelopes.append((
+                    f"section:{field.segment_id}:{sample.index}", center,
+                    width, height, floor_depth,
+                    max(reach, width, grid.voxel_size),
+                    math.atan2(sample.tangent[1], sample.tangent[0]),
+                ))
+        for stamp in junctions:
+            anchors = [s for s in sample_lookup.values() if any(
+                i.junction_id == stamp.junction_id for i in s.junction_influences
+            )]
+            if not anchors:
+                continue
+            # Screen the enlarged junction too, including the bounded lobes
+            # and sub-voxel stencil used by _stamp_junction. The shorter plan
+            # axis is the assumed unsupported roof span (no arch support).
+            width = 2.0 * stamp.radius_short * 1.22 + grid.voxel_size
+            height = 2.0 * stamp.radius_z + grid.voxel_size
+            surface = min(s.surface_z for s in anchors)
+            floor_depth = surface - float(stamp.center[2]) + 0.5 * height
+            envelopes.append((
+                f"junction:{stamp.junction_id}", stamp.center, width, height,
+                floor_depth, 2.0 * stamp.radius_long, stamp.angle,
+            ))
+        for identifier, center, width, height, floor_depth, reach, angle in envelopes:
+            assessment = model.assess(
+                width_m=width, height_m=height, floor_depth_m=floor_depth,
+            )
+            record: dict[str, object] = {
+                "source": identifier, "width_m": width, "height_m": height,
+                "floor_depth_m": floor_depth, **asdict(assessment),
+                "outcome": "blocked_by_breakdown" if assessment.failed else "intact",
+                "model": "self_weight_roof_beam_v1",
+            }
+            records.append(tuple(record.items()))
+            if not assessment.failed:
+                continue
+            event = GeologicalEvent(
+                event_id=-len(records), kind="collapse", segment_id=-1, sample_index=-1,
+                x=float(center[0]), y=float(center[1]), z=float(center[2]),
+                surface_z=float(center[2]) - 0.5 * height + floor_depth,
+                floor_z=float(center[2]) - 0.5 * height,
+                radius_x=max(reach, grid.voxel_size),
+                radius_y=max(width, grid.voxel_size),
+                radius_z=max(height + 0.25 * reach, grid.voxel_size),
+                angle=angle, severity=1.0, material_hint="gravity_breakdown",
+            )
+            # Mandatory structural failure deliberately bypasses the optional
+            # event path's connectivity/rover-route rollback.
+            if isinstance(grid, TiledVoxelGrid):
+                self._stamp_event_into_tiles(grid, event, self._event_tile_keys(grid, event))
+            else:
+                self._stamp_structural_event(density=grid.density, voxel_grid=grid, event=event)
+        return tuple(records)
 
     @staticmethod
     def _mesh_is_closed_manifold(
@@ -338,18 +466,22 @@ class GeometryGenerator:
         ]
 
     @staticmethod
-    def _remove_small_solid_pockets(grid: VoxelGrid | TiledVoxelGrid) -> None:
+    def _remove_small_solid_pockets(
+        grid: VoxelGrid | TiledVoxelGrid, *, include_void: bool = False,
+    ) -> None:
         """Remove unresolved floating rock specks, retaining connected dividers.
 
         The solid uses face connectivity, matching the traversability grid.
         Eight cells is a resolution criterion, not a passage-size
         filter. A matching halo makes this independent of chunk boundaries.
+        After accretion, include_void also closes unresolved isolated air specks.
         """
         limit = 8
 
-        def pockets(density: np.ndarray) -> np.ndarray:
+        def pockets(density: np.ndarray, *, solid: bool = True) -> np.ndarray:
             labels, _ = ndimage.label(
-                density < grid.iso_level, structure=ndimage.generate_binary_structure(3, 1)
+                density < grid.iso_level if solid else density >= grid.iso_level,
+                structure=ndimage.generate_binary_structure(3, 1),
             )
             sizes = np.bincount(labels.ravel())
             removable = sizes <= limit
@@ -359,6 +491,10 @@ class GeometryGenerator:
             return removable[labels]
 
         if isinstance(grid, VoxelGrid):
+            if include_void:
+                grid.density[pockets(grid.density, solid=False)] = grid.iso_level - 1.0
+            # Close air first: flipping both masks simultaneously can turn a
+            # tiny air shell and its solid center into a new isolated air cell.
             grid.density[pockets(grid.density)] = grid.iso_level + 1.0
             return
         replacements = []
@@ -381,11 +517,18 @@ class GeometryGenerator:
                 source = tuple(slice(int(a), int(b)) for a, b in zip(low - neighbor_start, high - neighbor_start))
                 neighborhood[target] = neighbor[source]
             interior = tuple(slice(limit, limit + size) for size in tile.shape)
+            if include_void:
+                void_pockets = pockets(neighborhood, solid=False)
+                neighborhood[void_pockets] = grid.iso_level - 1.0
+                void_mask = void_pockets[interior]
+            else:
+                void_mask = np.zeros(tile.shape, dtype=bool)
             mask = pockets(neighborhood)[interior]
-            if np.any(mask):
-                replacements.append((tile, mask))
-        for tile, mask in replacements:
+            if np.any(mask) or np.any(void_mask):
+                replacements.append((tile, mask, void_mask))
+        for tile, mask, void_mask in replacements:
             tile[mask] = grid.iso_level + 1.0
+            tile[void_mask] = grid.iso_level - 1.0
 
     def _surface_texture_frames(
         self,
@@ -993,6 +1136,9 @@ class GeometryGenerator:
                 f"stamped segment {index}/{len(segment_items)}",
             )
 
+        pillars = self._solid_pillar_columns(np.any(density >= self.config.iso_level, axis=2))
+        self._preserved_pillar_columns = int(np.count_nonzero(pillars))
+        preserved_density = density[pillars, :].copy() if not self.config.use_section_profiles else None
         for index, stamp in enumerate(junction_stamp_points, start=1):
             self._stamp_junction_volume(
                 density=density,
@@ -1007,6 +1153,11 @@ class GeometryGenerator:
                 f"stamped junction volume {index}/{len(junction_stamp_points)}",
             )
 
+        # In profile mode the passage sweeps already leave the solid remnants
+        # intact. Overwriting the negative distance band with -8 imprints the
+        # voxel lattice on every wall bounding a remnant.
+        if not self.config.use_section_profiles:
+            density[pillars, :] = preserved_density
         removed_components, removed_voxels = self._remove_small_carved_components(density)
         carved_count = int(np.count_nonzero(density >= self.config.iso_level))
         self._emit_progress(
@@ -1094,6 +1245,7 @@ class GeometryGenerator:
                 junctions_by_key[key].append(stamp)
 
         tiles: dict[tuple[int, int, int], np.ndarray] = {}
+        projected_void = np.zeros(shape[:2], dtype=bool)
         ordered_keys = sorted(set(segments_by_key) | set(junctions_by_key))
         self._emit_progress(
             progress,
@@ -1118,14 +1270,36 @@ class GeometryGenerator:
                     origin=tile_origin,
                     samples=samples,
                 )
+            projected_void[
+                tile_start[0]:tile_end[0] + 1, tile_start[1]:tile_end[1] + 1
+            ] |= np.any(tile >= self.config.iso_level, axis=2)
+            if np.any(tile >= self.config.iso_level) or key in junctions_by_key:
+                tiles[key] = tile
+            self._emit_progress(progress, "voxel", index, len(ordered_keys),
+                                f"sampled passage tile {index}/{len(ordered_keys)}")
+        # Global projection, including all vertical levels and tile halos,
+        # gives exactly the same remnant mask as the dense implementation.
+        pillars = self._solid_pillar_columns(projected_void)
+        self._preserved_pillar_columns = int(np.count_nonzero(pillars))
+        for index, key in enumerate(sorted(tiles), start=1):
+            tile = tiles[key]
+            tile_start = np.asarray(key, dtype=int) * tile_size
+            tile_end = tile_start + np.asarray(tile.shape) - 1
+            tile_origin = lower + tile_start * self.config.voxel_size
+            local_pillars = pillars[
+                tile_start[0]:tile_end[0] + 1, tile_start[1]:tile_end[1] + 1
+            ]
+            preserved_density = tile[local_pillars, :].copy() if not self.config.use_section_profiles else None
             for stamp in junctions_by_key.get(key, ()):
                 self._stamp_junction_volume(
                     density=tile,
                     origin=tile_origin,
                     stamp=stamp,
                 )
-            if np.any(tile >= self.config.iso_level):
-                tiles[key] = tile
+            if not self.config.use_section_profiles:
+                tile[local_pillars, :] = preserved_density
+            if not np.any(tile >= self.config.iso_level):
+                del tiles[key]
             self._emit_progress(
                 progress,
                 "voxel",
@@ -1141,6 +1315,16 @@ class GeometryGenerator:
             tile_size=tile_size,
             tiles=tiles,
         )
+
+    @staticmethod
+    def _solid_pillar_columns(projected_void: np.ndarray) -> np.ndarray:
+        """Keep existing solid columns enclosed by split/rejoin passages.
+
+        A column containing any existing passage, including an underpass,
+        cannot be marked solid. This preserves remnants rather than adding
+        decorative pillars across paths. Open-ended gaps are not inferred.
+        """
+        return np.asarray(ndimage.binary_fill_holes(projected_void) & ~projected_void)
 
     def _tile_keys_for_world_bounds(
         self,
@@ -1343,7 +1527,7 @@ class GeometryGenerator:
                 pool_width = float(
                     np.clip(
                         requested_width,
-                        2.0 * median_width,
+                        median_width,
                         5.0 * median_width,
                     )
                 )
@@ -1418,12 +1602,25 @@ class GeometryGenerator:
             mean_z = float(np.mean([sample.z for sample in anchors]))
             position = np.array((junction.center_x, junction.center_y, mean_z), dtype=float)
             angle = self._junction_orientation(position, anchors)
+            if self.config.use_section_profiles:
+                # Stage C has already formed the chamber by widening and
+                # shaping the incident passages. This record is a stability
+                # envelope, not a second room to union over those passages.
+                contours = [np.asarray(s.profile_points) * self._profile_scale(s) for s in anchors]
+                floors = [self._sample_floor(s) for s in anchors]
+                roofs = [
+                    s.z + float(np.max(p[:, 0] * s.normal[2] + p[:, 1] * s.binormal[2]))
+                    for s, p in zip(anchors, contours, strict=True)
+                ]
+                position[2] = 0.5 * (min(floors) + max(roofs))
+                radius_short = 0.5 * max(float(np.ptp(p[:, 0])) for p in contours)
+                radius_z = 0.5 * (max(roofs) - min(floors))
             phase_values = procedural_rng(
                 self.config.random_seed,
                 "junction",
                 junction.junction_id,
             ).uniform(0.0, 2.0 * math.pi, size=3)
-            phase = tuple(float(value) for value in phase_values)
+            phase = (float(phase_values[0]), float(phase_values[1]), float(phase_values[2]))
             stamp_points.append(
                 _JunctionStamp(
                     center=position,
@@ -1444,7 +1641,8 @@ class GeometryGenerator:
                     ),
                     # Eight deterministic sub-voxel evaluations provide real
                     # local refinement even when global voxel size is coarse.
-                    refinement_factor=9,
+                    refinement_factor=1 if self.config.use_section_profiles else 9,
+                    profile_driven=self.config.use_section_profiles,
                     chamber_type=chamber_type,
                     process_cause=process_cause,
                     pool_depth_m=pool_depth_m,
@@ -1616,6 +1814,7 @@ class GeometryGenerator:
                     ("kind", str(stamp.kind)),
                     ("chamber_type", str(stamp.chamber_type)),
                     ("process_cause", str(stamp.process_cause)),
+                    ("construction", "section_sweeps" if stamp.profile_driven else "analytic_volume"),
                     ("generated_width_m", float(2.0 * stamp.radius_short)),
                     ("generated_length_m", float(2.0 * stamp.radius_long)),
                     ("generated_height_m", float(2.0 * stamp.radius_z)),
@@ -1739,6 +1938,57 @@ class GeometryGenerator:
         result = np.maximum(region, incoming) + overlap * overlap / np.maximum(4.0 * blend, 1e-12)
         region[...] = result
 
+    def _refine_profile_chain(
+        self, samples: tuple[SectionSample, ...]
+    ) -> tuple[SectionSample, ...]:
+        """Resolve smooth bends before finite sweeps, without spline overshoot.
+
+        Interpolate the floor independently of section height, so widening a
+        chamber cannot lift its floor. Original nodes and contours are retained.
+        """
+        if not self.config.use_section_profiles or len(samples) < 3:
+            return samples
+        if any(len(s.profile_points) != len(samples[0].profile_points) for s in samples):
+            return samples  # retain the existing unequal-contour fallback
+        arc = np.asarray([s.segment_arc_length for s in samples])
+        if np.any(np.diff(arc) <= 1e-9):
+            return samples
+        step = max(2.0, 4.0 * self.config.voxel_size)
+        positions = np.unique(np.concatenate([
+            np.linspace(a, b, max(2, int(math.ceil((b - a) / step)) + 1))
+            for a, b in zip(arc[:-1], arc[1:], strict=True)
+        ]))
+        centers = np.asarray([(s.x, s.y, s.z) for s in samples])
+        curve = PchipInterpolator(arc, centers, axis=0)
+        points = curve(positions)
+        directions = curve.derivative()(positions)
+        floors = PchipInterpolator(arc, [self._sample_floor(s) for s in samples])(positions)
+        result = []
+        for i, (along, point, direction, floor) in enumerate(zip(positions, points, directions, floors, strict=True)):
+            index = int(np.clip(np.searchsorted(arc, along, side="right") - 1, 0, len(samples) - 2))
+            start, end = samples[index:index + 2]
+            weight = float((along - arc[index]) / (arc[index + 1] - arc[index]))
+            reference = start if weight < 0.5 else end
+            if np.linalg.norm(direction) < 1e-9:
+                direction = np.asarray(reference.tangent)
+            direction /= max(float(np.linalg.norm(direction)), 1e-9)
+            normal, binormal = SectionFieldGenerator._build_frame(tuple(direction), reference.normal)
+            profile = (1.0 - weight) * np.asarray(start.profile_points) + weight * np.asarray(end.profile_points)
+            offset = float(np.min(profile[:, 0] * normal[2] + profile[:, 1] * binormal[2]))
+            z = float(floor - self._profile_scale(reference) * offset)
+            surface = (1.0 - weight) * start.surface_z + weight * end.surface_z
+            result.append(replace(
+                reference, index=i, segment_arc_length=float(along),
+                x=float(point[0]), y=float(point[1]), z=z,
+                tangent=(float(direction[0]), float(direction[1]), float(direction[2])),
+                normal=normal, binormal=binormal,
+                profile_points=tuple((float(p[0]), float(p[1])) for p in profile),
+                tube_width=(1.0 - weight) * start.tube_width + weight * end.tube_width,
+                tube_height=(1.0 - weight) * start.tube_height + weight * end.tube_height,
+                surface_z=surface, centerline_depth=surface - z,
+            ))
+        return tuple(result)
+
     def _stamp_sample_chain(
         self,
         *,
@@ -1747,22 +1997,14 @@ class GeometryGenerator:
         samples: tuple[SectionSample, ...],
     ) -> None:
         if self.config.use_section_profiles:
-            for start, end in zip(samples, samples[1:]):
+            for index, (start, end) in enumerate(zip(samples, samples[1:])):
                 self._stamp_profile_segment(
                     density=density,
                     origin=origin,
                     start=start,
                     end=end,
-                )
-                self._stamp_capsule(
-                    density=density,
-                    origin=origin,
-                    start=np.array((start.x, start.y, start.z), dtype=float),
-                    end=np.array((end.x, end.y, end.z), dtype=float),
-                    start_radius_xy=0.45 * self._radius_xy(start),
-                    end_radius_xy=0.45 * self._radius_xy(end),
-                    start_radius_z=0.45 * self._radius_z(start),
-                    end_radius_z=0.45 * self._radius_z(end),
+                    cap_start=index == 0,
+                    cap_end=index == len(samples) - 2,
                 )
             if len(samples) == 1:
                 self._stamp_profile_cap(density=density, origin=origin, sample=samples[0])
@@ -1795,6 +2037,8 @@ class GeometryGenerator:
         origin: np.ndarray,
         start: SectionSample,
         end: SectionSample,
+        cap_start: bool = True,
+        cap_end: bool = True,
     ) -> None:
         start_position = np.array((start.x, start.y, start.z), dtype=float)
         end_position = np.array((end.x, end.y, end.z), dtype=float)
@@ -1837,15 +2081,21 @@ class GeometryGenerator:
         point_x = x_grid - start_position[0]
         point_y = y_grid - start_position[1]
         point_z = z_grid - start_position[2]
-        projection = (
+        chord_projection = (
             point_x * segment[0] + point_y * segment[1] + point_z * segment[2]
         ) / segment_length_squared
-        # Retain longitudinal distance before clamping the closest point.
-        # A cross-section distance alone extrudes the endpoint indefinitely,
-        # leaving the stamp's rectangular allocation bounds as the tube end.
-        axial_outside = np.maximum(-projection, projection - 1.0) * math.sqrt(
-            segment_length_squared
-        )
+        # Use the shared section planes as the loft boundaries. Projection
+        # onto each chord independently assigns different profiles to the same
+        # boundary point on a bend, making a repeated ridge at every sample.
+        start_tangent, end_tangent = np.asarray(start.tangent), np.asarray(end.tangent)
+        start_distance = point_x*start_tangent[0] + point_y*start_tangent[1] + point_z*start_tangent[2]
+        end_distance = ((point_x-segment[0])*end_tangent[0]
+                        + (point_y-segment[1])*end_tangent[1]
+                        + (point_z-segment[2])*end_tangent[2])
+        denominator = start_distance - end_distance
+        projection = np.divide(start_distance, denominator, out=chord_projection.copy(),
+                               where=denominator > 1e-9)
+        axial_outside = np.maximum(-start_distance, end_distance)
         projection = np.clip(projection, 0.0, 1.0)
 
         closest_x = start_position[0] + projection * segment[0]
@@ -1873,19 +2123,37 @@ class GeometryGenerator:
         start_profile = np.array(start.profile_points, dtype=float) * self._profile_scale(start)
         end_profile = np.array(end.profile_points, dtype=float) * self._profile_scale(end)
         t_values = np.clip(projection.reshape(-1), 0.0, 1.0)
-        signed_distance = self._interpolated_profile_signed_distance(
-            section_x.reshape(-1),
-            section_z.reshape(-1),
-            t_values,
-            start_profile,
-            end_profile,
-        ).reshape(section_x.shape)
+        # Only the narrow band can affect the isosurface or confluence fillet.
+        # Conservative interpolated bounds reject distant queries; keep exact
+        # polygon distances throughout the band used by marching cubes.
+        lower_profile = ((1.0 - t_values[:, None]) * start_profile.min(axis=0)
+                         + t_values[:, None] * end_profile.min(axis=0))
+        upper_profile = ((1.0 - t_values[:, None]) * start_profile.max(axis=0)
+                         + t_values[:, None] * end_profile.max(axis=0))
+        if start_profile.shape != end_profile.shape:
+            # The legacy fallback unions both contours rather than lofting
+            # corresponding vertices, so its bounds must cover both in full.
+            lower_profile[:] = np.minimum(start_profile.min(axis=0), end_profile.min(axis=0))
+            upper_profile[:] = np.maximum(start_profile.max(axis=0), end_profile.max(axis=0))
+        query = np.column_stack((section_x.ravel(), section_z.ravel()))
+        outside_box = np.maximum(np.maximum(lower_profile - query, query - upper_profile), 0.0)
+        signed_distance = np.linalg.norm(outside_box, axis=1)
+        band = voxel_size * (3.0 + abs(self.config.iso_level) + 3.0*self.config.wall_roughness_amplitude)
+        active = signed_distance <= band
+        signed_distance[active] = self._interpolated_profile_signed_distance(
+            query[active, 0], query[active, 1], t_values[active], start_profile, end_profile,
+        )
+        signed_distance = signed_distance.reshape(section_x.shape)
         # Round the finite sweep ends. Adjacent sweeps overlap continuously;
         # true termini close smoothly without a planar clipping surface.
-        end_radius = max(
+        terminal_radius = max(
             min(self._profile_bounds_radius(start), self._profile_bounds_radius(end)),
             self.config.minimum_radius,
         )
+        # Only real termini have rounded caps. Interior samples need a small
+        # overlap at the shared plane, not another full-size bulb per sample.
+        terminal = ((start_distance < 0.0) & cap_start) | ((end_distance > 0.0) & cap_end)
+        end_radius = np.where(terminal, terminal_radius, 0.5*voxel_size)
         rounded_end = (
             np.hypot(
                 np.maximum(signed_distance + end_radius, 0.0),
@@ -1959,6 +2227,10 @@ class GeometryGenerator:
         np.maximum(region, density_values.astype(np.float32), out=region)
 
     def _profile_scale(self, sample: SectionSample) -> float:
+        if self.config.use_section_profiles:
+            # Junction widening belongs to Stage C; applying another radius
+            # multiplier when influence crosses 0.08 creates an abrupt step.
+            return self.config.tunnel_radius_scale
         scale = self.config.tunnel_radius_scale
         if any(influence.kind == "chamber" for influence in sample.junction_influences):
             scale = max(scale, self.config.chamber_radius_scale)
@@ -1986,16 +2258,34 @@ class GeometryGenerator:
                 self._profile_signed_distance(x_values, z_values, end_profile),
             )
 
+        # Evaluate each query against its own interpolated polygon. Rounding
+        # the interpolation parameter produces 100 discrete terraces per span.
+        closed = np.allclose(start_profile[0], start_profile[-1]) and np.allclose(
+            end_profile[0], end_profile[-1]
+        )
+        first = start_profile[:-1] if closed else start_profile
+        last = end_profile[:-1] if closed else end_profile
+        if len(first) < 3:
+            return np.full_like(x_values, math.inf, dtype=float)
         distances = np.empty_like(x_values, dtype=float)
-        rounded_t = np.round(t_values, 2)
-        for t_value in np.unique(rounded_t):
-            mask = rounded_t == t_value
-            profile = (1.0 - t_value) * start_profile + t_value * end_profile
-            distances[mask] = self._profile_signed_distance(
-                x_values[mask],
-                z_values[mask],
-                profile,
+        for begin in range(0, len(x_values), 4096):
+            block = slice(begin, begin + 4096)
+            t = t_values[block, None, None]
+            a = first[None, :, :] + t * (last - first)[None, :, :]
+            b = np.roll(a, -1, axis=1)
+            px, pz = x_values[block, None], z_values[block, None]
+            ax, az = a[:, :, 0], a[:, :, 1]
+            ex, ez = b[:, :, 0] - ax, b[:, :, 1] - az
+            along = np.clip(
+                ((px - ax) * ex + (pz - az) * ez) / np.maximum(ex * ex + ez * ez, 1e-12),
+                0.0, 1.0,
             )
+            unsigned = np.sqrt(np.min((px - ax - along * ex)**2 + (pz - az - along * ez)**2, axis=1))
+            crosses = ((az > pz) != (b[:, :, 1] > pz)) & (
+                px < ax + ex * (pz - az) / np.where(np.abs(ez) < 1e-12, 1e-12, ez)
+            )
+            inside = np.count_nonzero(crosses, axis=1) % 2 == 1
+            distances[block] = np.where(inside, -unsigned, unsigned)
         return distances
 
     @staticmethod
@@ -2101,7 +2391,10 @@ class GeometryGenerator:
                 1.0,
             )
             floor_weight = floor_weight * floor_weight * (3.0 - 2.0 * floor_weight)
-            terrain_gain = 1.0 + 0.55 * floor_weight
+            terrain_gain = (
+                self.config.roof_roughness_scale * (1.0 - floor_weight)
+                + self.config.floor_roughness_scale * floor_weight
+            )
 
         blend_distance = max(self.config.wall_roughness_blend * self.config.voxel_size, 1e-6)
         wall_weight = np.exp(-np.abs(signed_distance) / blend_distance)
@@ -2215,6 +2508,11 @@ class GeometryGenerator:
         origin: np.ndarray,
         stamp: _JunctionStamp,
     ) -> None:
+        if stamp.profile_driven:
+            # The incident section sweeps and their bounded confluence fillet
+            # are the chamber. Adding a primitive here erases its floor, roof
+            # and flow orientation, producing the former cylindrical blob.
+            return
         radius = (
             1.22 * max(stamp.radius_long, stamp.radius_short, stamp.radius_z)
             + self.config.voxel_size
@@ -2458,6 +2756,7 @@ class GeometryGenerator:
         voxel_grid: TiledVoxelGrid,
         progress: GeometryProgressCallback | None,
     ) -> list[GeometryChunkMesh]:
+        voxel_grid.synchronize_halos()
         meshes: list[GeometryChunkMesh] = []
         items = sorted(voxel_grid.tiles.items())
         for index, (key, density) in enumerate(items, start=1):
@@ -2565,17 +2864,26 @@ class GeometryGenerator:
                 index = int(parent[index])
             return index
 
-        # Independent chunk marches can place the same interface vertex a few
-        # percent of a voxel apart when the scalar field is nearly tangent to
-        # an event surface.  Such offsets are below the grid's resolvable
-        # feature size, so use a small resolution-relative tolerance only for
-        # cross-chunk reconciliation.
+        # Shared scalar samples already agree. Only reconcile float32 local
+        # marching-cubes roundoff; a fraction-of-voxel radius can incorrectly
+        # join different grid-edge intersections near a tangential surface.
+        largest_extent = max(
+            mesh.grid_bounds[axis + 1] - mesh.grid_bounds[axis]
+            for mesh in chunk_meshes for axis in (0, 2, 4)
+        ) * self.config.voxel_size
         seam_tolerance = max(
             self.config.weld_tolerance,
-            0.05 * self.config.voxel_size,
+            4.0 * np.finfo(np.float32).eps * largest_extent,
             1e-12,
         )
         pairs = cKDTree(positions).query_pairs(seam_tolerance, output_type="ndarray")
+        # Reconcile the closest copies first. A cross-chunk bridge must never
+        # merge two distinct vertices from one original chunk transitively:
+        # doing that deletes thin triangles and opens holes at event surfaces.
+        distances = np.sum((positions[pairs[:, 0]] - positions[pairs[:, 1]]) ** 2, axis=1)
+        pairs = pairs[np.argsort(distances, kind="stable")]
+        cluster_chunks: dict[int, set[int]] = {}
+        cluster_members: dict[int, list[int]] = {}
         for a, b in pairs:
             # Marching cubes may emit distinct, extremely close vertices for a
             # thin but valid feature.  Collapsing those vertices deletes its
@@ -2584,7 +2892,30 @@ class GeometryGenerator:
             if mesh_ids[int(a)] == mesh_ids[int(b)]:
                 continue
             ra, rb = root(int(a)), root(int(b))
-            parent[max(ra, rb)] = min(ra, rb)
+            if ra == rb:
+                continue
+            first_chunks = cluster_chunks.get(ra, {int(mesh_ids[ra])})
+            second_chunks = cluster_chunks.get(rb, {int(mesh_ids[rb])})
+            shared_chunks = first_chunks & second_chunks
+            first_members = cluster_members.get(ra, [ra])
+            second_members = cluster_members.get(rb, [rb])
+            if shared_chunks:
+                # MC can emit several copies of an exact iso-level corner.
+                # Those may coincide within the explicit numerical tolerance;
+                # only the larger cross-seam search radius is forbidden here.
+                duplicate_distances = [
+                    float(np.linalg.norm(positions[x] - positions[y]))
+                    for x in first_members for y in second_members
+                    if mesh_ids[x] == mesh_ids[y]
+                ]
+                if max(duplicate_distances, default=0.0) > max(self.config.weld_tolerance, 1e-12):
+                    continue
+            keep, remove = min(ra, rb), max(ra, rb)
+            parent[remove] = keep
+            cluster_chunks[keep] = first_chunks | second_chunks
+            cluster_chunks.pop(remove, None)
+            cluster_members[keep] = first_members + second_members
+            cluster_members.pop(remove, None)
         roots = np.asarray([root(index) for index in range(len(positions))])
         representatives, inverse = np.unique(roots, return_inverse=True)
         vertices = positions[representatives]
@@ -2602,7 +2933,8 @@ class GeometryGenerator:
                 )
                 if len(set(face)) != 3:
                     continue
-                signature = tuple(sorted(face))
+                sorted_face = sorted(face)
+                signature = (sorted_face[0], sorted_face[1], sorted_face[2])
                 existing = faces_by_signature.get(signature)
                 if existing is None:
                     faces_by_signature[signature] = face
