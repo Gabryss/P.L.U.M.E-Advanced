@@ -49,7 +49,12 @@ def generate_network(project: ProjectConfig) -> tuple[HostField, CaveNetwork]:
 
 
 def generate_sections(project: ProjectConfig) -> tuple[HostField, CaveNetwork, SectionField]:
-    host, network = generate_network(project)
+    # Section/export studies must select the same accepted candidate as production.
+    # Network-only ablations deliberately retain generate_network's narrower scope.
+    host = generate_host(project)
+    network = CaveNetworkGenerator(project.network).generate(
+        host, section_config=project.section_field,
+    )
     return host, network, SectionFieldGenerator(project.section_field).generate(network)
 
 

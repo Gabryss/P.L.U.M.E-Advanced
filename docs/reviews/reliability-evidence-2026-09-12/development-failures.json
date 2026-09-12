@@ -1,0 +1,1280 @@
+[
+  {
+    "name": "seed_smoke",
+    "complete": true,
+    "passed": false,
+    "source_sha256": "b686538305c13c6cddea4a0ae5450aed6db85482f162e6208bca8de10ccf7f1c",
+    "cases": [
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_multi.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: candidate_generation; Host is too narrow for interacting systems"
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "earth",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "mars",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "timeout",
+        "reason": "Exceeded 120.0s wall-time limit"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 20260910,
+          "voxel_size": null
+        },
+        "status": "timeout",
+        "reason": "Exceeded 120.0s wall-time limit"
+      },
+      {
+        "case": {
+          "body": "moon",
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_interacting_systems.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "timeout",
+        "reason": "Exceeded 120.0s wall-time limit"
+      }
+    ]
+  },
+  {
+    "name": "full_smoke",
+    "complete": true,
+    "passed": false,
+    "source_sha256": "db66e3ed855f2334290a4cff229e43f6efb557e93a1baed0ff43a9c267d11462",
+    "cases": [
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "full",
+          "seed": 0,
+          "voxel_size": 0.22
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_single.toml",
+          "scope": "full",
+          "seed": 17,
+          "voxel_size": 0.22
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "full",
+          "seed": 0,
+          "voxel_size": 0.22
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_short_interconnected.toml",
+          "scope": "full",
+          "seed": 17,
+          "voxel_size": 0.22
+        },
+        "status": "timeout",
+        "reason": "Exceeded 300.0s wall-time limit"
+      }
+    ]
+  },
+  {
+    "name": "final_matrix",
+    "complete": false,
+    "passed": false,
+    "source_sha256": "57d4b31fe2bea0eacd53c8984961eca4ae503003a9813b271f4e22da94fb7792",
+    "cases": [
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_single.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_single.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_single.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_single.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_single.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_single.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_single.toml",
+          "scope": "sections",
+          "seed": 4294967295,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_multi.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: unmodeled_plan_crossings, lateral_span_widths"
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_multi.toml",
+          "scope": "sections",
+          "seed": 1,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_multi.toml",
+          "scope": "sections",
+          "seed": 2,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: unmodeled_plan_crossings, lateral_span_widths"
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_multi.toml",
+          "scope": "sections",
+          "seed": 3,
+          "voxel_size": null
+        },
+        "status": "failed",
+        "reason": "NetworkQualityError: Network morphology rejected before meshing: topology_side_branch_count"
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_multi.toml",
+          "scope": "sections",
+          "seed": 17,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_multi.toml",
+          "scope": "sections",
+          "seed": 42,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      },
+      {
+        "case": {
+          "body": null,
+          "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/config/earth_long_interconnected.toml",
+          "scope": "sections",
+          "seed": 0,
+          "voxel_size": null
+        },
+        "status": "passed",
+        "reason": null
+      }
+    ]
+  }
+]

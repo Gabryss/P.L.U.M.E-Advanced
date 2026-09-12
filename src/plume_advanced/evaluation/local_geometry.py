@@ -76,8 +76,6 @@ def local_geometry(
     anchor = np.zeros(3) if lattice_origin is None else np.asarray(lattice_origin, float)
     if anchor.shape != (3,) or not np.all(np.isfinite(anchor)):
         raise ValueError("lattice_origin must be a finite three-vector")
-    if not config.use_section_profiles:
-        raise ValueError("Local inspection currently requires section profile sweeps")
     lower = anchor + np.floor((center - half_extent - anchor) / voxel) * voxel
     upper = anchor + np.ceil((center + half_extent - anchor) / voxel) * voxel
     shape = np.rint((upper - lower) / voxel).astype(int) + 1
@@ -99,8 +97,6 @@ def local_geometry(
     for samples in chains.values():
         generator._stamp_network_chain(density=density, origin=lower, samples=samples)
     junctions = generator._junction_stamp_points(chains, network)
-    for stamp in junctions:
-        generator._stamp_junction_volume(density=density, origin=lower, stamp=stamp)
     grid = VoxelGrid(
         origin=(float(lower[0]), float(lower[1]), float(lower[2])),
         voxel_size=voxel,

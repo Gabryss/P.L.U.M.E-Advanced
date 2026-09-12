@@ -134,7 +134,11 @@ class PortableAssetValidator:
         *,
         manifest_path: str | Path | None = None,
         run_manifest_path: str | Path | None = None,
+        material_profile: str = "textured",
     ) -> None:
+        if material_profile not in {"textured", "neutral"}:
+            raise ValueError("material_profile must be textured or neutral")
+        self.material_profile = material_profile
         self.asset_path = Path(asset_path).expanduser().resolve()
         self.glb = GlbAsset(self.asset_path)
         candidate_manifest = (
@@ -253,6 +257,14 @@ class PortableAssetValidator:
                 decoded.append(f"{index}:{type(error).__name__}")
                 valid_images = False
         normal_scale = float(material.get("normalTexture", {}).get("scale", 1.0))
+        if self.material_profile == "neutral":
+            return [
+                self._check("materials", "Neutral material finite", bool(np.isfinite(
+                    pbr.get("baseColorFactor", [1, 1, 1, 1])).all()), "neutral inspection profile"),
+                self._check("materials", "Embedded images decode", valid_images, ", ".join(decoded)),
+                self._check("materials", "Interior-only cave material", material.get("doubleSided") is False,
+                            f"doubleSided={material.get('doubleSided')}"),
+            ]
         return [
             self._check(
                 "materials",
@@ -481,8 +493,10 @@ class PortableAssetValidator:
         maximum_tangent_angle = 0.0
         chart_seam_groups = 0
         chart_seam_vertices = 0
+        ordered_vertices = np.argsort(inverse, kind="stable")
+        group_offsets = np.r_[0, np.cumsum(counts)]
         for group_index in np.flatnonzero(counts > 1):
-            group = np.flatnonzero(inverse == group_index)
+            group = ordered_vertices[group_offsets[group_index]:group_offsets[group_index + 1]]
             uv_delta = texcoords[group] - texcoords[group[0]]
             group_integer_error = float(
                 np.max(np.abs(uv_delta - np.round(uv_delta)))
@@ -784,7 +798,42 @@ class PortableAssetValidator:
             path = self.run_manifest_path.parent / record["path"]
             if path.is_file() and _sha256(path) == record["sha256"]:
                 verified += 1
+        asset_hash = _sha256(self.asset_path)
+        selected = any(
+            (self.run_manifest_path.parent / record["path"]).resolve() == self.asset_path
+            and record["sha256"] == asset_hash
+            for record in records
+        )
+        # Material-only revisions explicitly link the revised bytes to a
+        # generated source. A nearby manifest alone cannot attest an asset.
+        revision_path = next(
+            (parent / "material_revision.json" for parent in self.asset_path.parents
+             if (parent / "material_revision.json").is_file()), None,
+        )
+        if not selected and revision_path is not None:
+            try:
+                revision = json.loads(revision_path.read_text(encoding="utf-8"))
+                source = Path(revision["source_asset"])
+                if not source.is_absolute():
+                    source = revision_path.parent / source
+                selected = (
+                    revision.get("schema") == "plume.material-revision.v1"
+                    and revision["asset_sha256"] == asset_hash
+                    and source.is_file()
+                    and _sha256(source) == revision["source_sha256"]
+                    and any(
+                        (self.run_manifest_path.parent / record["path"]).resolve() == source.resolve()
+                        and record["sha256"] == revision["source_sha256"]
+                        for record in records
+                    )
+                )
+            except (OSError, ValueError, KeyError, TypeError):
+                selected = False
         return [
+            self._check(
+                "reproducibility", "Selected asset provenance", selected,
+                "Exact generated asset or verified material revision required",
+            ),
             self._check(
                 "reproducibility",
                 "Run completed",
@@ -911,6 +960,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("asset", type=Path, nargs="?", default=_default_asset())
     parser.add_argument("--manifest", type=Path, default=None)
     parser.add_argument("--run-manifest", type=Path, default=None)
+    parser.add_argument("--material-profile", choices=("textured", "neutral"), default="textured",
+                        help="Require PBR maps, or validate an intentionally neutral inspection asset.")
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument(
         "--run-tests",
@@ -933,6 +984,7 @@ def main(argv: list[str] | None = None) -> int:
             args.asset,
             manifest_path=args.manifest,
             run_manifest_path=args.run_manifest,
+            material_profile=args.material_profile,
         )
     except Exception as error:
         console.print(f"[red]Unable to parse {args.asset}: {type(error).__name__}: {error}[/red]")

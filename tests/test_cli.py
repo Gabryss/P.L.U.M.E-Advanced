@@ -162,3 +162,28 @@ cave_displacement_texture = ""
         output.with_name("run_manifest.json").read_text(encoding="utf-8")
     )
     assert payload["failure"]["stage"] == "network"
+
+
+@pytest.mark.integration
+def test_complete_cli_finishes_progress_and_records_export_provenance(tmp_path: Path) -> None:
+    """Exercise orchestration through finalization, including the real exporters."""
+    from plume_advanced.identity import sha256_file
+    from plume_advanced.progress import TerminalProgress
+
+    output = tmp_path / "run" / "network.png"
+    assert cli.main(["--config", str(cli.PACKAGED_CONFIG), "--output", str(output)]) == 0
+    assert TerminalProgress._current is None
+    rows = [json.loads(line) for line in output.with_name("progress.jsonl").read_text().splitlines()]
+    started = [row["stage"] for row in rows if row["event"] == "stage_start"]
+    finished = [row["stage"] for row in rows if row["event"] == "stage_finish"]
+    assert len(started) == 11 and started == finished
+    assert finished[-1] == "Finalize run"
+    work = {row["step"] for row in rows if row["event"] == "work"}
+    assert {"Host fields", "Cross sections", "UV charts", "Tangent triangles"} <= work
+    payload = json.loads(output.with_name("run_manifest.json").read_text())
+    assert payload["status"] == payload["current_stage"] == "complete"
+    records = payload["outputs"]
+    names = {Path(record["path"]).name for record in records}
+    assert {"network_quality_report.json", "export_size_report.json", "plume_cave_scene.glb"} <= names
+    for record in records:
+        assert sha256_file(output.parent / record["path"]) == record["sha256"]

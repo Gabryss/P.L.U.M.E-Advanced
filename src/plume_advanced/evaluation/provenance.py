@@ -6,21 +6,18 @@ import hashlib
 import json
 import os
 import platform
-import subprocess
 import sys
-from importlib import metadata
 from pathlib import Path
 from typing import Any, Iterable
 
 import numpy as np
 
-
-def sha256_file(path: str | Path) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+from plume_advanced.identity import (
+    dependency_versions,
+    git_identity,
+    package_source_hash,
+    sha256_file,
+)
 
 
 def canonical_json_bytes(value: Any) -> bytes:
@@ -75,11 +72,12 @@ def capture_provenance(
     inputs: Iterable[str | Path] = (),
 ) -> dict[str, Any]:
     root = Path(source_root)
+    git = git_identity(root)
     config_hash = semantic_hash(resolved_config) if resolved_config is not None else ""
     provenance: dict[str, Any] = {
-        "git_commit": _git(root, "rev-parse", "HEAD"),
-        "git_dirty": bool(_git(root, "status", "--porcelain")),
-        "source_sha256": _source_identity(),
+        "git_commit": git["revision"],
+        "git_dirty": git["dirty"],
+        "source_sha256": package_source_hash(),
         "python_version": platform.python_version(),
         "python_implementation": platform.python_implementation(),
         "python_executable": sys.executable,
@@ -88,21 +86,7 @@ def capture_provenance(
         "processor": platform.processor(),
         "logical_cpu_count": os.cpu_count(),
         "resolved_config_sha256": config_hash,
-        "dependencies": {
-            name: _version(name)
-            for name in (
-                "numpy",
-                "scipy",
-                "scikit-image",
-                "trimesh",
-                "matplotlib",
-                "xatlas",
-                "psutil",
-                "pillow",
-                "rocky",
-                "laspy",
-            )
-        },
+        "dependencies": dependency_versions(),
         "inputs": [
             {
                 "path": str(Path(path).resolve()),
@@ -125,37 +109,6 @@ def capture_provenance(
     }
     provenance["identity_sha256"] = semantic_hash(provenance)
     return provenance
-
-
-def _source_identity() -> str:
-    """Hash the executing package, including uncommitted or installed sources."""
-
-    package = Path(__file__).resolve().parents[1]
-    return semantic_hash([
-        (path.relative_to(package).as_posix(), sha256_file(path))
-        for path in sorted(package.rglob("*.py"))
-    ])
-
-
-def _git(root: Path, *arguments: str) -> str:
-    try:
-        result = subprocess.run(
-            ("git", *arguments),
-            cwd=root,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except (OSError, subprocess.CalledProcessError):
-        return ""
-    return result.stdout.strip()
-
-
-def _version(name: str) -> str:
-    try:
-        return metadata.version(name)
-    except metadata.PackageNotFoundError:
-        return "unavailable"
 
 
 __all__ = [

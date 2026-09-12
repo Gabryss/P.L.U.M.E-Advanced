@@ -1,0 +1,27 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_terminal_trace_uses_measured_counts_and_unknown_work ___________
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-66/test_terminal_trace_uses_measu0')
+
+    def test_terminal_trace_uses_measured_counts_and_unknown_work(tmp_path):
+        trace = tmp_path / "progress.jsonl"
+        terminal = TerminalProgress(
+            console=Console(file=io.StringIO(), force_terminal=False), total_stages=1, trace_path=trace
+        )
+        try:
+            terminal.start("Export")
+            report_progress("UV charts", 0, 3)
+            report_progress("UV charts", 2, 3)
+            assert terminal._progress.tasks[-1].total == 3
+            report_progress("Native serialization", detail="waiting for writer")
+            # Rich treats total=None as "keep the previous total" in reset/update.
+            # Verify the displayed task, not only the JSON trace's null value.
+>           assert terminal._progress.tasks[-1].total is None
+E           AssertionError: assert 3 is None
+E            +  where 3 = Task(id=1, description='Export / Native serialization', total=3, completed=0, _get_time=<built-in function monotonic>, finished_time=None, visible=True, fields={'count': 'working', 'detail': 'waiting for writer'}, finished_speed=None).total
+
+tests/test_progress.py:48: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_progress.py::test_terminal_trace_uses_measured_counts_and_unknown_work
+1 failed in 0.58s

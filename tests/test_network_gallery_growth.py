@@ -126,6 +126,45 @@ def test_repairs_refresh_phase_discharge(example):
     assert not history_failures(repaired)
 
 
+def test_section_clearance_repair_preserves_accepted_routes_and_flow(example):
+    _, host, network, _ = example
+    arms = [s.segment_id for s in network.segments if s.metadata.get("island_id")]
+    assert arms
+    repaired = repair_network(
+        CaveNetworkGenerator(network.config), host, network, 0,
+        failed_checks=[dict(name="section_island_clearance", segment_ids=arms)],
+    )
+    assert repaired.nodes == network.nodes
+    assert not history_failures(repaired)
+    originals = {s.segment_id: s for s in network.segments}
+    for segment in repaired.segments:
+        before = originals[segment.segment_id]
+        xy = np.array([(p.x, p.y) for p in before.points])
+        delta = np.diff(xy, axis=0)
+        squared = np.sum(delta * delta, axis=1)
+        for point in segment.points:
+            offset = np.array([point.x, point.y]) - xy[:-1]
+            fraction = np.clip(np.sum(offset * delta, axis=1) / np.maximum(squared, 1e-12), 0, 1)
+            assert np.min(np.linalg.norm(offset - fraction[:, None] * delta, axis=1)) < 1e-8
+        assert segment.metadata["quality_repair_kind"] == "section_width"
+        assert max(p.width for p in segment.points) <= max(p.width for p in before.points) + 1e-8
+
+
+def test_empty_island_metadata_does_not_count_as_a_real_island(example, monkeypatch):
+    from plume_advanced.stages import network_gallery_growth as growth
+
+    _, host, network, _ = example
+    config = replace(network.config, topology=replace(network.config.topology, island_count=(3, 8)))
+
+    def two_islands(segments):
+        return [replace(s, metadata=dict(s.metadata, island_id=("a" if i < 2 else "b" if i < 4 else None)))
+                for i, s in enumerate(segments)]
+
+    monkeypatch.setattr(growth, "_mark_islands", two_islands)
+    with pytest.raises(ValueError, match="produced 2 local island splits"):
+        growth.generate_gallery_growth(CaveNetworkGenerator(config), host)
+
+
 def test_source_seed_and_host_change_preferences_and_event_positions(example):
     _, host, n, _ = example
     gen = CaveNetworkGenerator(n.config)
@@ -259,8 +298,10 @@ def test_history_metrics_count_actual_activity_and_reused_flux(example):
     from plume_advanced.evaluation.metrics.emplacement import emplacement_metrics
     from plume_advanced.evaluation.metrics.network import network_metrics
 
-    assert network_metrics(n)["breakout_event_count"] == 2
-    assert n.summary()["breakout_event_count"] == 2
+    count = sum(event["kind"] == "breakout" for event in n.backend_provenance["phase_events"])
+    assert count > 0
+    assert network_metrics(n)["breakout_event_count"] == count
+    assert n.summary()["breakout_event_count"] == count
     rows = emplacement_metrics(n)["phase_activity"]
     for row in rows:
         phase = row["phase"]

@@ -1,8 +1,10 @@
 # Lava-tube geometry validation — 7 September 2026
 
+> Historical report: the measurements and implementation observations below describe the dated run, not the current release. Some output folders were subsequently removed. Unavailable artifacts are identified by their former paths; source links point to the maintained files, whose line numbers have changed. See [current reliability and verification procedures](reliability.md).
+
 The current Earth tube is a useful visual prototype. This pass adds evidence about resolution, surveyed morphology and body-dependent behavior. It does not establish a calibrated physical model of real caves.
 
-The accepted [full Earth tube](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/earth_tube_relief_seed2/lava_tube_geometry.glb) is preserved byte for byte. New fine meshes are independently capped inspection regions; they have **not** been stitched into a replacement full-network mesh. No rocks were generated.
+The accepted full Earth tube (unavailable local artifact: `outputs/earth_tube_relief_seed2/lava_tube_geometry.glb`) is preserved byte for byte. New fine meshes are independently capped inspection regions; they have **not** been stitched into a replacement full-network mesh. No rocks were generated.
 
 ## Shallow sections
 
@@ -19,7 +21,7 @@ Five of six sections pass all final-refinement criteria. All six pass the height
 | 806 | 0.411 m | 0.390 m | 0.31 mm | Pass |
 | 195 | 0.428 m | 0.421 m | 0.09 mm | Pass |
 
-![Measured shallow sections](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/shallow_sections.png)
+Historical figure: Measured shallow sections (unavailable local artifact: `outputs/geometry_validation/shallow_sections.png`)
 
 Criteria were declared before the study: height change ≤2 cm, width change ≤3 cm, area change ≤3%, and symmetric vertex-to-polyline distance ≤3 cm between the last two levels. The distance is a sampled contour measure, not an exact continuous Hausdorff distance. Heights are cross-sectional extents, not guaranteed walking clearances.
 
@@ -27,7 +29,7 @@ This varies the resolution of the whole configured pipeline, including voxel-dep
 
 The new generation report examines both profile width and height. It flags 233 of 830 original profiles at the full mesh’s 20 cm grid under an initial eight-sample criterion. That criterion is a screening heuristic before relief, not a claim that eight samples ensure convergence.
 
-Inspect the [finest section 197 mesh](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/resolution_final/sample_197/voxel_0.0125m/lava_tube_geometry.glb), [all measurements](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/resolution_final/summary.json), or [resolution screening](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/resolution_screen.json). The region meshes use metres and glTF Y-up coordinates; their box caps are inspection boundaries, not natural termini.
+Inspect the finest section 197 mesh (unavailable local artifact: `outputs/geometry_validation/resolution_final/sample_197/voxel_0.0125m/lava_tube_geometry.glb`), all measurements (unavailable local artifact: `outputs/geometry_validation/resolution_final/summary.json`), or resolution screening (unavailable local artifact: `outputs/geometry_validation/resolution_screen.json`). The region meshes use metres and glTF Y-up coordinates; their box caps are inspection boundaries, not natural termini.
 
 ## Surveyed morphology
 
@@ -47,7 +49,7 @@ About 82.1% of represented network length has input section heights between 1 an
 
 The station-order changes are exported, but PDC generally lacks physical distance between stations. These data cannot calibrate a longitudinal correlation length in metres. Floor residual and roof asymmetry were measured with equal boundary sampling; both describe section shape, not centimetre-scale wall texture.
 
-[Distribution plots](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/calibration/comparison.png) · [Calibration measurements and provenance](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/calibration/summary.json)
+Distribution plots (unavailable local artifact: `outputs/geometry_validation/calibration/comparison.png`) · Calibration measurements and provenance (unavailable local artifact: `outputs/geometry_validation/calibration/summary.json`)
 
 ## Surface variation
 
@@ -60,7 +62,7 @@ The local 10 cm Valentine LiDAR product was compared with the matched before/aft
 
 The added relief moves the small-scale variation toward the reference. This supports the visual improvement, but the measurements combine surface relief, curvature and edges. Point coverage differs between scan and synthetic sampling. The 1.6 m neighborhoods can include opposite roof/floor surfaces in low passages; their larger residuals must not be read as material roughness. Roof, floor and wall feature proportions remain uncalibrated.
 
-[Surface comparison plots](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/surface_scales/comparison.png) · [Raw patch measurements and limitations](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/surface_scales/summary.json)
+Surface comparison plots (unavailable local artifact: `outputs/geometry_validation/surface_scales/comparison.png`) · Raw patch measurements and limitations (unavailable local artifact: `outputs/geometry_validation/surface_scales/summary.json`)
 
 ## Body and seed checks
 
@@ -84,7 +86,7 @@ These runs share the Earth-scenario controls with each built-in body preset’s 
 
 A separate gravity counterfactual holds a 20 m wide, 6 m high passage, 1 m roof, 2,900 kg/m³ density, 3 MPa effective tensile strength and safety factor 1.5 fixed. The implemented beam screen gives demand ratios of 4.27 for Earth, 1.61 for Mars and 0.705 for the Moon. It closes the Earth/Mars fixture and preserves the Moon fixture. This verifies the implementation’s gravity response, not real collapse thresholds.
 
-[Nine-run checks](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/body_matrix/summary.json) · [Clipping audit](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/body_matrix/clip_audit.json) · [Gravity counterfactual](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/body_matrix/collapse_counterfactual.json)
+Nine-run checks (unavailable local artifact: `outputs/geometry_validation/body_matrix/summary.json`) · Clipping audit (unavailable local artifact: `outputs/geometry_validation/body_matrix/clip_audit.json`) · Gravity counterfactual (unavailable local artifact: `outputs/geometry_validation/body_matrix/collapse_counterfactual.json`)
 
 ## Changes and verification
 

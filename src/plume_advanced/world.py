@@ -144,6 +144,8 @@ class ExportConfig:
     target: str = "blender"
     file_format: str = "glb"
     generate_collision: bool = True
+    max_visual_triangles: int = 0
+    max_asset_bytes: int = 0
 
 
 @dataclass(frozen=True)
@@ -327,6 +329,10 @@ def build_export_config(raw_config: dict[str, Any] | None) -> ExportConfig:
         if key in data:
             data[key] = str(data[key]).strip().lower()
     config = ExportConfig(**data)
+    for name in ("max_visual_triangles", "max_asset_bytes"):
+        value = getattr(config, name)
+        if type(value) is not int or value < 0:
+            raise ValueError(f"export.{name} must be a nonnegative integer (0 disables the limit)")
     if config.target not in SUPPORTED_EXPORT_TARGETS:
         raise ValueError(
             f"export.target must be one of: {', '.join(sorted(SUPPORTED_EXPORT_TARGETS))}"

@@ -1,5 +1,7 @@
 # Gravity-dependent roofs and Earth morphology
 
+> Historical report: the measurements and implementation observations below describe the dated run, not the current release. Some output folders were subsequently removed. Unavailable artifacts are identified by their former paths; source links point to the maintained files, whose line numbers have changed. See [current reliability and verification procedures](reliability.md).
+
 PLUME separates **formation size controls** from **survival constraints**.
 Stage B proposes the formation network. Stage C constructs profiles and marks
 their roof stability after all frame, elevation and junction adjustments.
@@ -71,7 +73,7 @@ roof geometry. Their structural limits also do not establish the sizes that
 lava flow can actually form. The project’s broader body-dependent formation
 model remains a procedural surrogate.
 
-![Required roof cover and independent floor features](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_improvements/gravity_and_sections.png)
+Historical figure: Required roof cover and independent floor features (unavailable local artifact: `outputs/realism_improvements/gravity_and_sections.png`)
 
 ## Collapse behavior
 
@@ -178,15 +180,15 @@ corners and missing neighboring tiles. Mesh welding also preserves distinct
 vertices within a chunk to avoid deleting thin surface triangles.
 
 The seed-1 Earth comparison is stored in
-[validation_metrics.json](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_improvements/validation_metrics.json).
+validation_metrics.json (unavailable local artifact: `outputs/realism_improvements/validation_metrics.json`).
 It uses actual contours from the saved before/after runs. It is an exploratory
 regression check; no reserved PDC evaluation caves were used for tuning.
 
 The full seed-1 Earth surface with the compact integration-test event
 population is saved as
-[verified_cave_surface.ply](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_improvements/current_earth/verified_cave_surface.ply).
+verified_cave_surface.ply (unavailable local artifact: `outputs/realism_improvements/current_earth/verified_cave_surface.ply`).
 It contains 363,627 vertices and 727,334 triangles, with zero boundary edges
 and zero nonmanifold edges. This verifies mesh integrity, not geological
 accuracy. The illustrative
-[cutaway](/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_improvements/verified_mesh_review.png)
+cutaway (unavailable local artifact: `outputs/realism_improvements/verified_mesh_review.png`)
 removes the ceiling for inspection; its crop boundaries are artificial.

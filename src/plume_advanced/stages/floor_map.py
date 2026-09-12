@@ -17,6 +17,7 @@ from typing import Any
 
 import numpy as np
 
+from plume_advanced.progress import report_progress
 from plume_advanced.stages.network import CaveNetwork
 from plume_advanced.stages.section_field import SectionField, SectionSample
 
@@ -168,7 +169,9 @@ class FloorMapGenerator:
         }
         band_offsets = self._segment_band_offsets(section_field)
         cells: list[FloorCell] = []
-        for segment_field in section_field.segment_fields:
+        for segment_number, segment_field in enumerate(section_field.segment_fields):
+            report_progress("Floor raycasts", segment_number, len(section_field.segment_fields),
+                            f"segment {segment_field.segment_id}; {len(cells):,} valid cells")
             band_offset = band_offsets.get(segment_field.segment_id, 0.0)
             z_level = level_lookup.get(segment_field.segment_id, 0)
             for sample in segment_field.samples:
@@ -183,6 +186,8 @@ class FloorMapGenerator:
                     )
                     if cell is not None:
                         cells.append(cell)
+        report_progress("Floor raycasts", len(section_field.segment_fields), len(section_field.segment_fields),
+                        f"{len(cells):,} valid cells")
         return FloorAtlas(
             config=self.config,
             cells=tuple(cells),
@@ -228,7 +233,10 @@ class FloorMapGenerator:
 
         cells: list[FloorCell] = []
         invalidated: list[int] = []
-        for source_cell in base_atlas.cells:
+        for cell_index, source_cell in enumerate(base_atlas.cells):
+            if cell_index % 256 == 0:
+                report_progress("Floor revalidation", cell_index, len(base_atlas.cells),
+                                f"{len(invalidated):,} cells invalidated")
             sample = sample_lookup.get(
                 (source_cell.segment_id, source_cell.sample_index)
             )

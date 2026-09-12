@@ -2,13 +2,15 @@
 
 Procedural lava-tube environments with explicit physical context, inspectable intermediate stages, and portable 3D outputs.
 
-**Version:** 0.1.0 · **Python:** 3.12+ · **Configuration schema:** 3 · **License:** BSD 3-Clause
+**Version:** 0.1.0 · **Python:** 3.12+ · **Configuration schema:** 4 · **License:** BSD 3-Clause
 
 ## Introduction
 
 PLUME generates lava-tube networks and their interior geometry for exploration, robotics simulation, and controlled scientific experiments. Its purpose is to make many reproducible cave environments whose topology, passage shapes, geology, and celestial setting can be varied independently and examined at every stage.
 
 The workflow starts with a possible physical host: terrain, available cover, rock competence, fractures, and emplacement conditions. It grows a formation network, samples cross-sections along that network, constructs a volumetric cave, and exports its surface. The current command line generates the host from a TOML description; the Python API exposes the host-field interface for external integrations. There is no general-purpose measured-DEM import command yet.
+
+See the [reliability and testing guide](docs/reliability.md) for seed campaigns, detailed progress, native Blender tests, and simulation export budgets.
 
 ### Purpose and scientific contribution
 
@@ -654,7 +656,7 @@ Section metadata records conditional limits and collapse flags. Geometry constru
 
 ### D. Continuous volume, relief, and meshing
 
-[GeometryGenerator](src/plume_advanced/stages/geometry.py) refines the sampled centerlines and profiles, sweeps the contours into a shared scalar volume, and joins overlapping passages. Profile-based generation is the default: chambers are built from widened section sweeps. It does not add a second cylindrical room on top of an already widened profile. The explicit legacy primitive mode remains available through `use_section_profiles = false`.
+[GeometryGenerator](src/plume_advanced/stages/geometry.py) refines the sampled centerlines and profiles, sweeps the contours into a shared scalar volume, and joins overlapping passages. Generation uses section profiles: chambers are built from widened section sweeps. It does not add a second cylindrical room on top of an already widened profile.
 
 Continuous interpolation across shared section planes and shape-preserving centerline refinement limit the stepped joins and repeated ribs that arise from independent coarse stamps. The implementation preserves the floor separately during refinement. Dense and overlapping tiled grids share the same density-query convention and reconcile boundary samples before polygonization.
 

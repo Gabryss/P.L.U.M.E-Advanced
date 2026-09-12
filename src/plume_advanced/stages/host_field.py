@@ -24,6 +24,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from plume_advanced.procedural import procedural_rng
+from plume_advanced.progress import report_progress
 
 Array1D = NDArray[np.float64]
 Array2D = NDArray[np.float64]
@@ -366,13 +367,16 @@ class HostFieldGenerator:
         self.config = config or HostFieldConfig()
 
     def generate(self) -> HostField:
+        report_progress("Host fields", 0, 4, "grid and correlated variation")
         x_coords, y_coords = self._build_axes()
         x_grid, y_grid = np.meshgrid(x_coords, y_coords)
         variation = self._build_variation_fields(x_grid, y_grid)
 
+        report_progress("Host fields", 1, 4, "terrain gradients and slopes")
         elevation = self._build_terrain(x_grid, y_grid, variation)
         gradient_y, gradient_x = self._build_gradient(elevation)
         slope_degrees = self._build_slope_degrees(gradient_x, gradient_y)
+        report_progress("Host fields", 2, 4, "deposits, cooling, fractures and roof stability")
         process = self._build_process_layers(
             x_grid=x_grid,
             y_grid=y_grid,
@@ -381,6 +385,7 @@ class HostFieldGenerator:
         )
         cover_thickness = process["cover_thickness"]
         roof_competence = process["roof_competence"]
+        report_progress("Host fields", 3, 4, "routing costs")
         growth_cost, routing_terms = self._build_growth_cost(
             slope_degrees=slope_degrees,
             cover_thickness=cover_thickness,
@@ -389,6 +394,7 @@ class HostFieldGenerator:
             roof_stability=process["roof_stability"],
         )
 
+        report_progress("Host fields", 4, 4, "host ready")
         return HostField(
             config=self.config,
             x_coords=x_coords,

@@ -4,8 +4,10 @@ import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -21,6 +23,70 @@ from plume_advanced.stages.geometry import GeometryGenerator
 from plume_advanced.stages.host_field import HostFieldGenerator
 from plume_advanced.stages.network import CaveNetworkGenerator
 from plume_advanced.stages.section_field import SectionFieldGenerator
+
+
+@pytest.fixture
+def bare_floor_cell() -> FloorCell:
+    return FloorCell(
+        cell_id=0, segment_id=10, sample_index=0, z_level=0,
+        distance_along_m=0.0, lateral_offset_m=0.0,
+        atlas_x_m=0.0, atlas_y_m=0.0, x=0.0, y=0.0, z=0.0,
+        normal_x=0.0, normal_y=0.0, normal_z=1.0,
+        clearance_m=3.0, tube_width_m=6.0, grounded=True,
+    )
+
+
+@pytest.mark.parametrize("kind, classification", [("infill", "sediment"), ("choke", "constriction")])
+@pytest.mark.parametrize("applied", [False, True])
+def test_floor_records_only_applied_volume_modifiers(
+    bare_floor_cell: FloorCell, kind: str, classification: str, applied: bool,
+) -> None:
+    event = SimpleNamespace(
+        event_id=7, kind=kind, segment_id=10,
+        position=(0.0, 0.0, 0.0), max_radius=2.0, radius_z=0.4,
+    )
+    result = FloorMapGenerator._classify_cell(
+        bare_floor_cell, event_field=SimpleNamespace(events=(event,)),
+        applied_structural_ids={7} if applied else set(),
+        is_chamber=False, is_terminus=False,
+    )
+    assert result.geology_class == (classification if applied else "bare_basalt")
+    assert (result.event_influence > 0.0) is applied
+    assert (result.sediment_thickness_m > 0.0) is (applied and kind == "infill")
+
+
+@pytest.mark.parametrize("applied", [False, True])
+def test_surviving_floor_margin_does_not_invent_rejected_sediment(
+    bare_floor_cell: FloorCell, applied: bool,
+) -> None:
+    # The nearest surviving cell is outside the ordinary event radius. Coverage
+    # still represents accepted infill, but must not fabricate rejected infill.
+    event = SimpleNamespace(
+        event_id=7, kind="infill", segment_id=10,
+        position=(20.0, 0.0, 0.0), max_radius=2.0, radius_z=0.4,
+    )
+    result = FloorMapGenerator._ensure_structural_event_coverage(
+        [bare_floor_cell], event_field=SimpleNamespace(events=(event,)),
+        applied_structural_ids={7} if applied else set(),
+    )
+    assert result[0].cell_id == bare_floor_cell.cell_id
+    assert result[0].position == bare_floor_cell.position
+    assert (result[0].geology_class == "sediment") is applied
+    assert (result[0].sediment_thickness_m > 0.0) is applied
+
+
+def test_collapse_talus_remains_when_volume_cut_is_rejected(bare_floor_cell: FloorCell) -> None:
+    event = SimpleNamespace(
+        event_id=7, kind="collapse", segment_id=10,
+        position=(0.0, 0.0, 0.0), max_radius=2.0, radius_z=0.4,
+    )
+    result = FloorMapGenerator._classify_cell(
+        bare_floor_cell, event_field=SimpleNamespace(events=(event,)),
+        applied_structural_ids=set(), is_chamber=False, is_terminus=False,
+    )
+    assert result.geology_class == "breakdown"
+    assert result.debris_density > 0.0
+    assert result.sediment_thickness_m == 0.0
 
 
 class FloorMapTests(unittest.TestCase):

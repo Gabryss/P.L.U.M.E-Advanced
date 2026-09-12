@@ -7,6 +7,7 @@ inspection scene with an overview and interior cameras. No geometry is added.
 
 from __future__ import annotations
 
+import argparse
 import json
 import struct
 import sys
@@ -17,10 +18,10 @@ import numpy as np
 from mathutils import Matrix, Vector
 
 
-def configure_inspection_view(*, textured: bool) -> str:
+def configure_inspection_view(*, textured: bool, preview_samples: int = 64) -> str:
     """Make the saved startup view show the material and distinguish neutral files."""
     scene = bpy.context.scene
-    scene.cycles.preview_samples = 32
+    scene.cycles.preview_samples = preview_samples
     scene.cycles.use_preview_denoising = True
     for screen in bpy.data.screens:
         for area in screen.areas:
@@ -36,7 +37,12 @@ def configure_inspection_view(*, textured: bool) -> str:
 
 
 def main() -> None:
-    root = Path(sys.argv[sys.argv.index("--") + 1]).resolve()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("run_directory", type=Path)
+    parser.add_argument("--quality", choices=("preview", "standard", "high"), default="standard")
+    args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
+    root = args.run_directory.resolve()
+    samples, threshold = {"preview": (32, 0.1), "standard": (256, 0.02), "high": (1024, 0.005)}[args.quality]
     output = root / "export_blender"
     source = next(output.glob("*.glb"))
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -85,7 +91,8 @@ def main() -> None:
     scene.unit_settings.scale_length = 1.0
     scene.render.engine = "CYCLES"
     scene.cycles.device = "CPU"
-    scene.cycles.samples = 24
+    scene.cycles.samples = samples
+    scene.cycles.adaptive_threshold = threshold
     scene.cycles.use_denoising = True
     scene.render.resolution_x = 1400
     scene.render.resolution_y = 900
@@ -210,6 +217,9 @@ def main() -> None:
         "bounds_blender_z_up_m": [minimum.tolist(), maximum.tolist()],
         "scale": list(cave.scale),
         "inspection_torch_power_w": 600.0,
+        "render_quality": args.quality,
+        "render_samples": samples,
+        "render_noise_threshold": threshold,
         "cameras": cameras,
         "initial_camera": scene.camera.name,
         "startup_shading": "MATERIAL" if expected_images else "SOLID",

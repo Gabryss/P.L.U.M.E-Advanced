@@ -33,7 +33,6 @@ class GeometryConfig:
     chamber_radius_scale: float = 1.7
     junction_radius_scale: float = 1.7
     minimum_radius: float = 3.5
-    use_section_profiles: bool = True
     wall_roughness_amplitude: float = 0.18
     wall_roughness_frequency: float = 0.16
     wall_roughness_blend: float = 0.75
@@ -46,8 +45,6 @@ class GeometryConfig:
     surface_crust_relief_m: float = 0.0
     surface_feature_scale_m: float = 1.0
     surface_normal_filter_voxels: float = 1.2
-    junction_irregularity_amplitude: float = 0.18
-    junction_irregularity_frequency: float = 0.11
     structural_event_blend: float = 0.35
     weld_tolerance: float = 1e-5
     strict_texture_loading: bool = True
@@ -424,21 +421,6 @@ class GeometryChunkMesh:
 
 
 @dataclass(frozen=True)
-class SurfaceTextureFrame:
-    """Route-local frame used to map the cave wall without global stretching."""
-
-    segment_id: int
-    center: tuple[float, float, float]
-    tangent: tuple[float, float, float]
-    normal: tuple[float, float, float]
-    binormal: tuple[float, float, float]
-    longitudinal_m: float
-    longitudinal_rate: float = 1.0
-    profile_points: tuple[tuple[float, float], ...] = ()
-    profile_perimeter_m: float = 0.0
-
-
-@dataclass(frozen=True)
 class CaveGeometry:
     """Stage-D output for voxel-stamped cave geometry."""
 
@@ -452,7 +434,7 @@ class CaveGeometry:
     stamped_segment_ids: tuple[int, ...]
     minimum_section_width_m: float = 0.0
     protected_route_points: tuple[tuple[float, float, float], ...] = ()
-    surface_texture_frames: tuple[SurfaceTextureFrame, ...] = ()
+    route_centers: tuple[tuple[float, float, float], ...] = ()
     event_meshes: tuple[GeologicalEventMesh, ...] = ()
     structural_event_ids: tuple[int, ...] = ()
     # Additive Stage-D junction quality report.  A tuple keeps the public
@@ -590,7 +572,6 @@ __all__ = [
     "CaveGeometry",
     "GeometryChunkMesh",
     "GeometryConfig",
-    "SurfaceTextureFrame",
     "SurfaceHit",
     "TiledVoxelGrid",
     "VoxelGrid",

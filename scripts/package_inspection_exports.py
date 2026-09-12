@@ -17,8 +17,8 @@ from pathlib import Path
 from plume_advanced.exporters.atomic import atomic_output_directory
 from plume_advanced.exporters.targets import (
     ExportResult,
-    _write_engine_import_guide,
-    _write_target_descriptor,
+    write_engine_import_guide,
+    write_target_descriptor,
 )
 from plume_advanced.validation import GlbAsset
 from plume_advanced.world import ExportConfig
@@ -55,8 +55,8 @@ def main() -> None:
             shutil.copy2(source, asset)
             shutil.copy2(manifest, staging / manifest.name)
             result = ExportResult(target=target, primary_asset=asset, files=(asset,))
-            _write_target_descriptor(result, config, staging, source.stem)
-            guide = _write_engine_import_guide(target, staging, asset, collision_asset=None)
+            write_target_descriptor(result, config, staging, source.stem)
+            guide = write_engine_import_guide(target, staging, asset, collision_asset=None)
             if guide:
                 with guide.open("a") as file:
                     file.write("\nThis inspection package contains one complete cave and no rocks.\n"
@@ -78,6 +78,18 @@ def main() -> None:
         "scope": "Identical portable assets; destination application imports are checked separately.",
     }
     (root / "inspection_packages.json").write_text(json.dumps(report, indent=2) + "\n")
+    # Attest the exact copied assets too, so generic selected-asset validation
+    # does not mistake neighboring files for products of this run.
+    from plume_advanced.evaluation.reliability import write_json
+    from plume_advanced.identity import sha256_file
+    by_path = {record["path"]: record for record in run_manifest["outputs"]}
+    for record in records:
+        path = root / record["asset"]
+        by_path[record["asset"]] = {"path": record["asset"], "bytes": path.stat().st_size,
+                                   "sha256": sha256_file(path)}
+    run_manifest["outputs"] = [by_path[key] for key in sorted(by_path)]
+    write_json(root / "run_manifest.json", run_manifest)
+
     print(json.dumps(report, indent=2))
 
 

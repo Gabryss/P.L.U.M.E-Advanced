@@ -32,7 +32,7 @@ The inspection run in `outputs/natural_final/` uses seed 1, the standard Earth r
 
 ## Regression coverage
 
-`tests/test_network.py` checks restored attachment cells, graph connectivity, exact endpoints, rounded grid corners, and conserved flow. `tests/test_mesh_continuity.py` covers distance welding across rounding buckets, translated meshes at nonbinary voxel spacing, smoothing without seams, finite narrowing tube ends, shared junction floors, independent underpasses, dense/tiled junction surface and cleanup equivalence, physical holes versus UV seams, and collision fallback for narrow tubes. The existing geometry test checks one connected surface with closed manifold edges and consistent texture-frame directions.
+`tests/test_network.py` checks restored attachment cells, graph connectivity, exact endpoints, rounded grid corners, and conserved flow. `tests/test_mesh_continuity.py` covers distance welding across rounding buckets, translated meshes at nonbinary voxel spacing, smoothing without seams, finite narrowing tube ends, shared junction floors, independent underpasses, dense/tiled junction surface and cleanup equivalence, physical holes versus UV seams, and collision fallback for narrow tubes. The existing geometry test checks one connected surface with closed manifold edges and inward-oriented surfaces and retained route centres.
 
 ## Verification notes
 

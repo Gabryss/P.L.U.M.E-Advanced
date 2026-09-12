@@ -197,7 +197,7 @@ def test_room_union_keeps_an_existing_loop_pillar(storage: str) -> None:
     field = replace(field, segment_fields=(SegmentSectionField(0, (7,), samples),))
     geometry = GeometryGenerator(GeometryConfig(
         voxel_size=.5, storage_mode=storage, chunk_size=12, minimum_radius=.5,
-        wall_roughness_amplitude=0., junction_irregularity_amplitude=0., density_margin=2.,
+        wall_roughness_amplitude=0., density_margin=2.,
     )).generate(network, field)
     assert geometry.preserved_pillar_columns > 0
     assert geometry.voxel_grid.sample_density((0., 0., 0.)) < 0
@@ -206,7 +206,7 @@ def test_room_union_keeps_an_existing_loop_pillar(storage: str) -> None:
 
 
 def test_enlarged_junction_cannot_bypass_roof_stability() -> None:
-    from plume_advanced.stages.geometry import _JunctionStamp
+    from plume_advanced.stages.geometry import _JunctionEnvelope
     from plume_advanced.stages.section_field import SectionJunctionInfluence
     network, field = _fixture()
     samples = tuple(replace(s, profile_points=tuple((x * .1, y * .25) for x, y in s.profile_points),
@@ -215,8 +215,8 @@ def test_enlarged_junction_cannot_bypass_roof_stability() -> None:
                     for s in field.segment_fields[0].samples)
     field = replace(field, segment_fields=(SegmentSectionField(0, (7,), samples),))
     generator = GeometryGenerator(GeometryConfig(voxel_size=.5, minimum_radius=.5, wall_roughness_amplitude=0.))
-    stamp = _JunctionStamp(center=np.array((10., 0., 0.)), radius_long=20., radius_short=15.,
-                           radius_z=3., angle=0., phase=(0., 0., 0.), kind='chamber', junction_id=7)
+    stamp = _JunctionEnvelope(center=np.array((10., 0., 0.)), radius_long=20., radius_short=15.,
+                           radius_z=3., angle=0., kind='chamber', junction_id=7)
     grid = generator._build_voxel_grid({0: samples}, network, None, junction_stamps=[stamp])
     records = [dict(r) for r in generator._enforce_roof_stability(grid, field, [stamp])]
     assert all(not r['failed'] for r in records if str(r['source']).startswith('section:'))

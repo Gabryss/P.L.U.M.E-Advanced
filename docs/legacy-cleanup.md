@@ -5,6 +5,20 @@ The pre-cleanup version is preserved in commit **`32cbcee`** on
 removed. This review covers the maintained Python package, repository utilities,
 tests, presets, dependencies, entry points, CI checks and documentation.
 
+## 12 September follow-up
+
+The additional cleanup removed the primitive/capsule/ellipsoid geometry path, analytic room stamping, unused transported texture frames, and the ineffective `section_field.level_transition_fraction`, `geometry.use_section_profiles`, and `geometry.junction_irregularity_*` settings. Current files must omit those keys. Junction diagnostics now report `junction_envelope_count`; they no longer claim primitive sub-voxel refinement.
+
+The 500 historical Python files under campaign and Overleaf snapshots have been removed from the working tree. Scientific inputs, configuration records, figures and measured results remain. Their exact removed paths are listed in [the source inventory](reviews/retired-source-inventory-2026-09-12.json). Restore the complete historical tree from checkpoint **`89d7f6a`**, created before this follow-up:
+
+```bash
+git worktree add --detach ../PLUME-before-reliability 89d7f6a
+```
+
+Run historical campaign scripts only from that worktree with their recorded dependencies. The current package does not attempt to load their old pickles. Current checkpoint schema v2 invalidates caches after runtime/dependency changes as well as source, input and configuration changes. See [reliability and tests](reliability.md).
+
+The remaining sections record the 11 September review. Their references to retained source snapshots describe that earlier state; the 12 September removal and recovery instructions above supersede them.
+
 ## Removed implementation
 
 | Finding | Change | Reason |

@@ -9,14 +9,14 @@ roof screening. Rock props remain disabled in the tube study configuration.
 
 - **Chambers were constructed twice.** Stage C widened and shaped the passage,
   but Stage D added an independent room with steep sides and a shallow roof.
-  With `use_section_profiles = true`, the section sweeps now define the room.
+  Section sweeps define the room.
   Junction records retain a conservative stability envelope and identify the
   construction as `section_sweeps`; they no longer add an analytic room.
 - **Pillar preservation damaged the distance field.** Setting the entire solid
   column to a fixed negative value also overwrote the narrow band beside the
   wall, imprinting the voxel lattice on the isosurface. Profile sweeps already
-  preserve the intervening solid. The legacy primitive path restores the
-  original negative values instead of a constant.
+  preserve the intervening solid, so the maintained path needs no separate
+  pillar overwrite.
 - **Adjoining sweeps disagreed on bends.** Independent projection onto each
   chord assigned different interpolated sections to a shared boundary point.
   Sweeps now meet on the shared section planes. Internal overlaps are small;
@@ -42,9 +42,7 @@ roof screening. Rock props remain disabled in the tube study configuration.
   lighting seams. This changes the shading normals, not the vertex positions.
   Displaced textured surfaces retain geometric normals after displacement.
 
-The legacy `use_section_profiles = false` mode retains analytic primitive
-geometry for compatibility. These morphology corrections target the normal
-profile-based pipeline.
+The primitive geometry mode was removed in the 12 September cleanup. Section sweeps are the sole maintained geometry path.
 
 ## Reproduction and inspection
 
@@ -57,7 +55,7 @@ profile-based pipeline.
 
 The geometry-only command runs fresh host, network, section and mesh stages,
 keeps mandatory roof screening, and avoids rock generation and texture baking.
-It exports a single, double-sided GLB in metres with the glTF Y-up convention.
+It exports a single, inward-facing GLB in metres with the glTF Y-up convention.
 The inspection renderer reads that exported GLB and records its cameras. It
 uses neutral lighting; the images are mesh renders, not generated illustrations.
 

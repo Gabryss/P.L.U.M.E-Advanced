@@ -17,6 +17,7 @@ from xml.sax.saxutils import escape
 import numpy as np
 import trimesh
 
+from plume_advanced.progress import report_progress
 from plume_advanced.stages.geometry_export import (
     build_cave_visual_surface,
     export_cave_texture_files,
@@ -52,14 +53,42 @@ def export_target_asset(
     output = Path(output_root)
     safe_name = _safe_asset_name(asset_name)
     _validate_export_request(export_config)
-    scene = prepare_export_scene(cave_geometry)
+    face_count = len(cave_geometry.assembled_faces) + sum(len(mesh.faces) for mesh in cave_geometry.event_meshes)
+    for name in ("max_visual_triangles", "max_asset_bytes"):
+        value = getattr(export_config, name)
+        if type(value) is not int or value < 0:
+            raise ValueError(f"export.{name} must be a nonnegative integer")
+    if export_config.max_visual_triangles and face_count > export_config.max_visual_triangles:
+        raise ValueError(f"Export has {face_count:,} visual triangles; budget is {export_config.max_visual_triangles:,}. "
+                         "Use a smaller extent or a coarser, clearance-validated resolution.")
+    scene = prepare_export_scene(cave_geometry, generate_collision=export_config.generate_collision)
     with atomic_output_directory(output) as staging:
+        report_progress("Write target package", detail=f"{export_config.target}: {face_count:,} visual triangles")
         staged = _export_target_asset_in_place(
             scene,
             export_config,
             staging,
             safe_name,
         )
+        sizes = {path.relative_to(staging).as_posix(): path.stat().st_size
+                 for path in staged.files if path.is_file()}
+        oversized = {name: size for name, size in sizes.items()
+                     if export_config.max_asset_bytes and size > export_config.max_asset_bytes}
+        if oversized:
+            raise ValueError(f"Export file size budget exceeded ({export_config.max_asset_bytes:,} bytes): {oversized}")
+        report_path = staging / "export_size_report.json"
+        report_path.write_text(json.dumps({
+            "schema": "plume.export-size.v1", "visual_triangles": face_count,
+            "visual_vertices_after_uv_seams": len(scene.canonical_visual["positions"]),
+            "cave_vertex_and_index_bytes": sum(scene.canonical_visual[key].nbytes
+                for key in ("positions", "faces", "normals", "tangents", "texcoords")),
+            "collision_triangles": len(scene.collision_faces),
+            "files": sizes, "total_file_bytes": sum(sizes.values()),
+            "limits": {"visual_triangles": export_config.max_visual_triangles,
+                       "asset_bytes": export_config.max_asset_bytes},
+            "scope": "File and mesh buffers; engine runtime memory and texture mipmaps are additional. No automatic geometry decimation.",
+        }, indent=2) + "\n")
+        staged = replace(staged, files=staged.files + (report_path,))
     return ExportResult(
         target=staged.target,
         primary_asset=output / staged.primary_asset.relative_to(staging),
@@ -113,7 +142,7 @@ def _export_target_asset_in_place(
             safe_name,
             scene,
         )
-        descriptor = _write_target_descriptor(result, export_config, output, safe_name)
+        descriptor = write_target_descriptor(result, export_config, output, safe_name)
         return ExportResult(
             target=target,
             primary_asset=result.primary_asset,
@@ -145,8 +174,8 @@ def _export_target_asset_in_place(
                 files=tuple(files),
                 warnings=result.warnings,
             )
-        descriptor = _write_target_descriptor(result, export_config, output, safe_name)
-        guide = _write_engine_import_guide(
+        descriptor = write_target_descriptor(result, export_config, output, safe_name)
+        guide = write_engine_import_guide(
             export_config.target,
             output,
             result.primary_asset,
@@ -464,7 +493,7 @@ def _export_glb_or_obj(
     )
 
 
-def _write_target_descriptor(
+def write_target_descriptor(
     result: ExportResult,
     export_config: ExportConfig,
     output: Path,
@@ -526,7 +555,7 @@ def _write_target_descriptor(
     return descriptor
 
 
-def _write_engine_import_guide(
+def write_engine_import_guide(
     target: str,
     output: Path,
     primary_asset: Path,

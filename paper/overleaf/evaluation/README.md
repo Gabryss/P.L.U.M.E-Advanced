@@ -1,5 +1,7 @@
 # PLUME evaluation campaign, 7 September 2026
 
+> Historical code was removed during the 12 September cleanup. Restore commit `89d7f6a` to run the commands described below. Inputs, results and figures in this document remain historical evidence.
+
 **Completed:** all 2,076 declared cases were attempted. There are 2,071 completed
 cases and five dense 5 km memory-limit failures. Read the [measured results](REPORT.md)
 and the machine-readable `report.json`. All case configuration identities and

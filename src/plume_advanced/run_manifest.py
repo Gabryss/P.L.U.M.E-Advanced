@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import platform
-import subprocess
 import sys
 import tempfile
-from importlib import metadata
 from pathlib import Path
 from typing import Iterable, Mapping
 
 from plume_advanced.config import ProjectConfig, project_config_manifest
+from plume_advanced.identity import (
+    dependency_versions,
+    git_identity,
+    package_source_hash,
+    sha256_file,
+)
 
 
 def write_run_manifest(
@@ -50,22 +53,11 @@ def write_run_manifest(
             "implementation": platform.python_implementation(),
             "executable": sys.executable,
         },
-        "dependencies": {
-            name: _package_version(name)
-            for name in (
-                "matplotlib",
-                "numpy",
-                "pillow",
-                "rich",
-                "scikit-image",
-                "scipy",
-                "trimesh",
-            )
-        },
+        "dependencies": dependency_versions(),
         "source": {
-            "revision": _git_value(root, "rev-parse", "HEAD"),
-            "dirty": bool(_git_value(root, "status", "--porcelain")),
-            "sha256": _source_hash(root),
+            **git_identity(root),
+            "sha256": package_source_hash(),
+            "identity_schema": "plume.executing-package.v1",
         },
         "resolved_config": project_config_manifest(project_config),
         "inputs": [
@@ -105,58 +97,12 @@ def write_run_manifest(
     return output
 
 
-def _package_version(name: str) -> str:
-    try:
-        return metadata.version(name)
-    except metadata.PackageNotFoundError:
-        return "unavailable"
-
-
-def _git_value(root: Path, *arguments: str) -> str:
-    try:
-        result = subprocess.run(
-            ("git", *arguments),
-            cwd=root,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except (OSError, subprocess.CalledProcessError):
-        return ""
-    return result.stdout.strip()
-
-
-def _source_hash(root: Path) -> str:
-    digest = hashlib.sha256()
-    candidates = [
-        root / "pyproject.toml",
-        root / "uv.lock",
-        root / "config" / "project.toml",
-    ]
-    candidates.extend(sorted((root / "src").rglob("*.py")))
-    candidates.extend(sorted((root / "scripts").rglob("*.py")))
-    for path in candidates:
-        if not path.is_file():
-            continue
-        digest.update(str(path.relative_to(root)).encode("utf-8"))
-        digest.update(path.read_bytes())
-    return digest.hexdigest()
-
-
 def _file_record(path: Path, *, relative_to: Path) -> dict[str, str | int]:
     return {
         "path": os.path.relpath(path, relative_to),
         "bytes": path.stat().st_size,
-        "sha256": _file_hash(path),
+        "sha256": sha256_file(path),
     }
-
-
-def _file_hash(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 __all__ = ["write_run_manifest"]

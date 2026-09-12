@@ -1,0 +1,221 @@
+.............................................................................................. [ 16%]
+...................................................................F.... [ 28%]
+................................................................... [ 40%]
+.................................................................... [ 51%]
+........................................................................ [ 64%]
+........................................................................ [ 76%]
+........................................................................ [ 88%]
+.................................................................        [100%]
+=================================== FAILURES ===================================
+___________ GeologicalEventTests.test_geometry_consumes_event_field ____________
+
+self = <test_events.GeologicalEventTests testMethod=test_geometry_consumes_event_field>
+
+    def test_geometry_consumes_event_field(self) -> None:
+        project_config = load_project_config(ROOT / "config" / "earth_short_single.toml")
+        event_config = load_project_config(ROOT / "config" / "project.toml").events
+        # Exercise collapse, choke and infill on the shorter inspection route.
+        event_config = replace(event_config, geological_event_density_per_100m=0.8)
+        project_config = replace(project_config, geometry=replace(project_config.geometry, density_margin=4.0))
+        host_field = HostFieldGenerator(project_config.host_field).generate()
+        cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
+        section_field = SectionFieldGenerator(project_config.section_field).generate(cave_network)
+        geometry_generator = GeometryGenerator(project_config.geometry)
+        base_geometry = geometry_generator.build_base_volume(
+            cave_network,
+            section_field,
+        )
+        floor_atlas = FloorMapGenerator(project_config.floor_map).generate(
+            cave_network,
+            section_field,
+            base_geometry,
+        )
+        event_field = GeologicalEventGenerator(
+            _compact_event_config(event_config)
+        ).generate(
+            section_field,
+            base_geometry,
+            floor_atlas,
+        )
+        cave_geometry = geometry_generator.finalize(
+            base_geometry,
+            event_field,
+        )
+        final_floor_atlas = FloorMapGenerator(project_config.floor_map).revalidate(
+            cave_network,
+            section_field,
+            cave_geometry,
+            floor_atlas,
+            event_field,
+        )
+    
+        summary = cave_geometry.summary()
+        self.assertGreater(int(summary["carved_voxel_count"]), 0)
+        self.assertGreaterEqual(int(summary["vertex_count"]), 3)
+        self.assertGreaterEqual(int(summary["face_count"]), 1)
+        self.assertEqual(int(summary["event_mesh_count"]), len(event_field.meshes))
+        self.assertGreater(int(summary["event_vertex_count"]), 0)
+        self.assertGreater(int(summary["event_face_count"]), 0)
+        structural_modifier_ids = {
+            event.event_id
+            for event in event_field.events
+            if event.kind in {"collapse", "choke", "infill"}
+        }
+        self.assertGreater(int(summary["structural_event_count"]), 0)
+        self.assertLessEqual(
+            int(summary["structural_event_count"]),
+            int(event_field.summary()["structural_modifier_count"]),
+        )
+        self.assertTrue(
+            set(cave_geometry.structural_event_ids) <= structural_modifier_ids
+        )
+        self.assertLess(
+            summary["carved_voxel_count"],
+            base_geometry.summary()["carved_voxel_count"],
+        )
+        self.assertEqual(int(summary["voxel_component_count"]), 1)
+        # One connected cave volume can legitimately have additional closed
+        # surface shells around structural infill or choke obstacles.
+        self.assertGreaterEqual(int(summary["component_count"]), 1)
+        self.assertEqual(final_floor_atlas.generation_stage, "final")
+        self.assertEqual(
+            len(final_floor_atlas.cells) + len(final_floor_atlas.invalidated_cell_ids),
+            len(floor_atlas.cells),
+        )
+        final_cell_ids = {cell.cell_id for cell in final_floor_atlas.cells}
+        prop_cell_ids = {
+            event.floor_cell_id for event in event_field.events if event.kind in {"rock", "boulder"}
+        }
+        self.assertTrue(prop_cell_ids.issubset(final_cell_ids))
+        self.assertGreater(
+            int(final_floor_atlas.summary()["geologically_influenced_cell_count"]),
+            0,
+        )
+        self.assertGreater(
+            int(final_floor_atlas.summary()["breakdown_cell_count"]),
+            0,
+        )
+>       self.assertGreater(
+            int(final_floor_atlas.summary()["sediment_cell_count"]),
+            0,
+        )
+E       AssertionError: 0 not greater than 0
+
+tests/test_events.py:900: AssertionError
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.5-final-0 ________________
+
+Name                                                              Stmts   Miss  Cover
+-------------------------------------------------------------------------------------
+src/plume_advanced/__init__.py                                        6      0   100%
+src/plume_advanced/cli.py                                           312     42    87%
+src/plume_advanced/config.py                                        666    133    80%
+src/plume_advanced/evaluation/__init__.py                             6      0   100%
+src/plume_advanced/evaluation/_common.py                             63     42    33%
+src/plume_advanced/evaluation/aggregate.py                           25     17    32%
+src/plume_advanced/evaluation/artifacts.py                          104      7    93%
+src/plume_advanced/evaluation/cli.py                                119     31    74%
+src/plume_advanced/evaluation/config.py                              86     17    80%
+src/plume_advanced/evaluation/continuity.py                          79      9    89%
+src/plume_advanced/evaluation/datasets/__init__.py                    2      0   100%
+src/plume_advanced/evaluation/datasets/pdc.py                       126      6    95%
+src/plume_advanced/evaluation/experiments/__init__.py                 0      0   100%
+src/plume_advanced/evaluation/experiments/common.py                  33     11    67%
+src/plume_advanced/evaluation/experiments/controllability.py         52     37    29%
+src/plume_advanced/evaluation/experiments/determinism.py             45     11    76%
+src/plume_advanced/evaluation/experiments/export_consistency.py      74      4    95%
+src/plume_advanced/evaluation/experiments/host_ablation.py           68     35    49%
+src/plume_advanced/evaluation/experiments/morphometry.py             97     75    23%
+src/plume_advanced/evaluation/experiments/sampling_ablation.py       47     32    32%
+src/plume_advanced/evaluation/experiments/scalability.py             96     51    47%
+src/plume_advanced/evaluation/experiments/scalability_worker.py      65     65     0%
+src/plume_advanced/evaluation/latex.py                               74     12    84%
+src/plume_advanced/evaluation/local_geometry.py                      84      7    92%
+src/plume_advanced/evaluation/metrics/__init__.py                     6      0   100%
+src/plume_advanced/evaluation/metrics/contours.py                    72      5    93%
+src/plume_advanced/evaluation/metrics/emplacement.py                223     16    93%
+src/plume_advanced/evaluation/metrics/morphometry.py                 36      6    83%
+src/plume_advanced/evaluation/metrics/network.py                    257     39    85%
+src/plume_advanced/evaluation/metrics/sections.py                    78     26    67%
+src/plume_advanced/evaluation/morphology_bootstrap.py                50      3    94%
+src/plume_advanced/evaluation/plotting.py                           114     47    59%
+src/plume_advanced/evaluation/provenance.py                          43      1    98%
+src/plume_advanced/evaluation/reliability.py                        186    117    37%
+src/plume_advanced/evaluation/runner.py                             111      6    95%
+src/plume_advanced/evaluation/schema.py                              42      2    95%
+src/plume_advanced/evaluation/serialization.py                       21      2    90%
+src/plume_advanced/evaluation/statistics.py                         113     40    65%
+src/plume_advanced/evaluation/visualization/__init__.py               3      0   100%
+src/plume_advanced/evaluation/visualization/dashboard.py            287     34    88%
+src/plume_advanced/evaluation/visualization/emplacement.py           82     11    87%
+src/plume_advanced/exporters/__init__.py                              3      0   100%
+src/plume_advanced/exporters/atomic.py                               31      5    84%
+src/plume_advanced/exporters/materials.py                           105     11    90%
+src/plume_advanced/exporters/scene.py                                68     11    84%
+src/plume_advanced/exporters/targets.py                             358     27    92%
+src/plume_advanced/identity.py                                       42      2    95%
+src/plume_advanced/media/__init__.py                                  2      0   100%
+src/plume_advanced/media/manim_data.py                              186     27    85%
+src/plume_advanced/media/manim_typography.py                         13     13     0%
+src/plume_advanced/output_guard.py                                   30      1    97%
+src/plume_advanced/pipeline/__init__.py                               2      0   100%
+src/plume_advanced/pipeline/checkpoints.py                           90      1    99%
+src/plume_advanced/procedural.py                                     15      0   100%
+src/plume_advanced/progress.py                                       94      2    98%
+src/plume_advanced/run_manifest.py                                   30      0   100%
+src/plume_advanced/stability.py                                      35      3    91%
+src/plume_advanced/stages/__init__.py                                 6      0   100%
+src/plume_advanced/stages/events.py                                1119    101    91%
+src/plume_advanced/stages/floor_map.py                              293     16    95%
+src/plume_advanced/stages/geometry.py                              1011    129    87%
+src/plume_advanced/stages/geometry_export.py                        737     71    90%
+src/plume_advanced/stages/geometry_types.py                         351      9    97%
+src/plume_advanced/stages/host_field.py                             371     12    97%
+src/plume_advanced/stages/network.py                               2201    178    92%
+src/plume_advanced/stages/network_acceptance.py                     155      3    98%
+src/plume_advanced/stages/network_gallery_growth.py                 363     10    97%
+src/plume_advanced/stages/network_interconnected.py                 272     17    94%
+src/plume_advanced/stages/network_metadata.py                         9      1    89%
+src/plume_advanced/stages/network_quality.py                        346     20    94%
+src/plume_advanced/stages/network_systems.py                        284     43    85%
+src/plume_advanced/stages/network_topology.py                       328     12    96%
+src/plume_advanced/stages/section_field.py                          869     33    96%
+src/plume_advanced/stages/surface_frames.py                          60      0   100%
+src/plume_advanced/stages/surface_relief.py                         124      2    98%
+src/plume_advanced/stages/voxel_topology.py                          38      1    97%
+src/plume_advanced/validation.py                                    336     68    80%
+src/plume_advanced/visualization/__init__.py                          7      0   100%
+src/plume_advanced/visualization/drained_pools.py                   119      6    95%
+src/plume_advanced/visualization/events.py                           77     13    83%
+src/plume_advanced/visualization/floor_map.py                        98     25    74%
+src/plume_advanced/visualization/geometry.py                        292    255    13%
+src/plume_advanced/visualization/host_field.py                       55      2    96%
+src/plume_advanced/visualization/inspection.py                      108     67    38%
+src/plume_advanced/visualization/interconnected.py                   68     68     0%
+src/plume_advanced/visualization/network.py                         320     41    87%
+src/plume_advanced/visualization/network_systems.py                  73     73     0%
+src/plume_advanced/visualization/network_topology.py                 68     68     0%
+src/plume_advanced/visualization/section_field.py                   192     18    91%
+src/plume_advanced/world.py                                         180     15    92%
+-------------------------------------------------------------------------------------
+TOTAL                                                             16087   2479    85%
+Coverage JSON written to file tmp/reliability_cleanup_20260912/checked_coverage.json
+============================= slowest 15 durations =============================
+136.84s call     tests/test_network.py::CaveNetworkTests::test_regression_seeds_produce_connected_positive_flow_graphs
+110.76s call     tests/test_events.py::GeologicalEventTests::test_geometry_consumes_event_field
+109.15s call     tests/test_floor_map.py::FloorMapTests::test_floor_atlas_lifts_intrinsic_cells_to_generated_surface
+97.78s call     tests/test_events.py::GeologicalEventTests::test_event_stage_places_seeded_mesh_events
+77.11s call     tests/test_geometry.py::GeometryTests::test_geometry_stage_stamps_voxels_and_builds_isosurface_mesh
+56.28s call     tests/test_network.py::CaveNetworkTests::test_network_density_controls_lobes_anastomoses_and_loops
+55.03s call     tests/test_network.py::CaveNetworkTests::test_default_config_generates_host_driven_lobe_network
+50.37s call     tests/test_network.py::CaveNetworkTests::test_backbone_curvature_controls_are_seeded
+35.15s call     tests/test_diagnostic_dashboard.py::test_dashboard_accepts_bounded_seeded_stage_b_c_fixture
+32.49s call     tests/test_network.py::CaveNetworkTests::test_no_argument_generators_preserve_entry_to_exit_reachability
+31.49s call     tests/test_emplacement_backend_benchmark.py::test_emplacement_backend_benchmark_smoke
+31.37s setup    tests/test_visualization.py::test_stage_diagnostic_renderers_write_valid_png_artifacts
+30.01s call     tests/test_network.py::CaveNetworkTests::test_capture_probability_blocks_cross_level_merges
+29.02s call     tests/test_section_field.py::SectionFieldTests::test_morphology_regimes_are_seeded_inherited_and_simple
+23.31s call     tests/test_section_field.py::SectionFieldTests::test_section_field_is_geometry_ready_and_junction_aware
+=========================== short test summary info ============================
+FAILED tests/test_events.py::GeologicalEventTests::test_geometry_consumes_event_field
+1 failed, 581 passed, 1 skipped, 59 subtests passed in 1064.92s (0:17:44)

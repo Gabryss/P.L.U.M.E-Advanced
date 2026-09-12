@@ -105,8 +105,9 @@ def test_provenance_tracks_dirty_sources_inputs_and_dependencies(
     module.write_text("VALUE = 1\n")
     input_file = tmp_path / "project.toml"
     input_file.write_text("procedural_seed = 1\n")
-    monkeypatch.setattr(provenance, "__file__", str(module))
-    monkeypatch.setattr(provenance, "_git", lambda *_args: "unchanged-dirty-revision")
+    from plume_advanced.identity import package_source_hash
+    monkeypatch.setattr(provenance, "package_source_hash", lambda: package_source_hash(package))
+    monkeypatch.setattr(provenance, "git_identity", lambda *_args: {"revision": "same", "dirty": True})
 
     def capture():
         return provenance.capture_provenance(tmp_path, inputs=(input_file,))
@@ -121,5 +122,5 @@ def test_provenance_tracks_dirty_sources_inputs_and_dependencies(
     input_file.write_text("procedural_seed = 2\n")
     changed_input = capture()
     assert changed_source["identity_sha256"] != changed_input["identity_sha256"]
-    monkeypatch.setattr(provenance, "_version", lambda _name: "changed-version")
+    monkeypatch.setattr(provenance, "dependency_versions", lambda: {"numpy": "changed-version"})
     assert changed_input["identity_sha256"] != capture()["identity_sha256"]

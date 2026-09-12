@@ -21,12 +21,18 @@ from scipy import ndimage
 from scipy.spatial import cKDTree
 
 from plume_advanced.procedural import procedural_rng
+from plume_advanced.progress import report_progress
 from plume_advanced.stages.geometry_types import (
     CaveGeometry,
     GeometryConfig,
-    SurfaceTextureFrame,
     TiledVoxelGrid,
     VoxelGrid,
+)
+from plume_advanced.stages.surface_frames import (
+    angle_weighted_vertex_normals as _angle_weighted_vertex_normals,
+)
+from plume_advanced.stages.surface_frames import (
+    mesh_tangents as _mesh_tangents,
 )
 
 GLB_EMBEDDED_TEXTURE_MAX_SIZE = 1024
@@ -166,6 +172,7 @@ def build_cave_visual_surface(
     consume the same returned visual surface.
     """
 
+    report_progress("Texture inputs", detail="checking maps and decoding displacement")
     _validate_texture_dependencies(cave_geometry)
     cache = image_cache if image_cache is not None else {}
     if displacement_image is None:
@@ -190,7 +197,7 @@ def build_cave_visual_surface(
         vertices=source_vertices,
         faces=source_faces,
         material_index=-1,
-        texture_frames=cave_geometry.surface_texture_frames,
+        route_centers=cave_geometry.route_centers,
         smoothing_iterations=cave_geometry.config.cave_smoothing_iterations,
         variation_seed=cave_geometry.config.random_seed,
         roughness_frequency=cave_geometry.config.wall_roughness_frequency,
@@ -316,6 +323,7 @@ def export_geometry_glb(
             },
         )
 
+    report_progress("GLB serialization", detail="encoding mesh buffers and embedded images")
     output.write_bytes(builder.to_glb())
     _write_geometry_manifest(
         cave_geometry,
@@ -423,7 +431,7 @@ def _cave_primitive_payload(
     vertices: np.ndarray,
     faces: np.ndarray,
     material_index: int,
-    texture_frames: tuple[SurfaceTextureFrame, ...] = (),
+    route_centers: tuple[tuple[float, float, float], ...] = (),
     smoothing_iterations: int = 0,
     variation_seed: int | None = None,
     roughness_frequency: float = 0.16,
@@ -437,6 +445,7 @@ def _cave_primitive_payload(
 ) -> CavePrimitivePayload:
     canonical_vertices = np.asarray(vertices, dtype=np.float64)
     face_indices = np.asarray(faces, dtype=np.uint32)
+    report_progress("Surface smoothing", detail=f"{len(face_indices):,} triangles; {smoothing_iterations} iterations")
     canonical_vertices = _smooth_visual_surface(
         canonical_vertices,
         face_indices,
@@ -444,11 +453,13 @@ def _cave_primitive_payload(
         variation_seed=variation_seed,
         roughness_frequency=roughness_frequency,
     )
+    report_progress("Surface orientation", detail=f"{len(face_indices):,} triangles")
     face_indices = _orient_faces_toward_cave_interior(
         canonical_vertices,
         face_indices,
-        texture_frames,
+        route_centers,
     )
+    report_progress("Surface normals", detail=f"{len(canonical_vertices):,} vertices")
     if density_grid is None:
         canonical_normals = _angle_weighted_vertex_normals(canonical_vertices, face_indices)
     else:
@@ -463,6 +474,7 @@ def _cave_primitive_payload(
         canonical_normals,
         scale_m=texture_scale_m,
     )
+    report_progress("Displacement", detail="applying metric displacement across chart seams")
     canonical_vertices, displacement = _bake_seam_consistent_displacement(
         canonical_vertices,
         canonical_normals,
@@ -486,12 +498,14 @@ def _cave_primitive_payload(
     canonical_vertices = canonical_vertices[vertex_mapping]
     canonical_normals = canonical_normals[vertex_mapping]
     face_indices = atlas_faces
+    report_progress("Tangent frames", detail=f"{len(face_indices):,} triangles")
     mesh_tangents = _mesh_tangents(
         canonical_vertices,
         face_indices,
         texcoords,
         canonical_normals,
     )
+    report_progress("Export arrays", detail="packing positions, normals, UVs and tangents")
     canonical_tangents = mesh_tangents
     if convert_to_gltf:
         output_positions = _canonical_to_gltf_vectors(canonical_vertices)
@@ -524,8 +538,8 @@ def _xatlas_metric_uvs(
 
     Large voxel surfaces are divided into bounded, face-order-preserving
     batches. The source assembler emits spatially local face runs, and the
-    material is repeat-wrapped, so independent atlas packing is both faster
-    and harmless: only each chart's local shape and metric scale matter.
+    material is repeat-wrapped. Independent packing bounds memory, but chart
+    boundaries can remain visible with directional textures.
     """
 
     positions = np.ascontiguousarray(vertices, dtype=np.float32)
@@ -544,6 +558,8 @@ def _xatlas_metric_uvs(
     uv_batches: list[np.ndarray] = []
     vertex_offset = 0
     for face_start in range(0, len(triangles), batch_size):
+        report_progress("UV charts", face_start, len(triangles),
+                        f"atlas batch {face_start // batch_size + 1}/{math.ceil(len(triangles) / batch_size)}")
         source_faces = triangles[face_start : face_start + batch_size]
         source_vertex_indices = np.unique(source_faces)
         local_faces = np.searchsorted(
@@ -580,6 +596,7 @@ def _xatlas_metric_uvs(
         uv_batches.append(local_atlas_uvs)
         vertex_offset += len(source_mapping)
 
+    report_progress("UV charts", len(triangles), len(triangles), "joining chart batches")
     vertex_mapping = np.concatenate(mappings)
     atlas_faces = np.concatenate(face_batches)
     atlas_uvs = np.concatenate(uv_batches)
@@ -845,39 +862,32 @@ def _surface_roughness_weights(
 def _orient_faces_toward_cave_interior(
     vertices: np.ndarray,
     faces: np.ndarray,
-    texture_frames: tuple[SurfaceTextureFrame, ...],
+    route_centers: tuple[tuple[float, float, float], ...],
 ) -> np.ndarray:
     """Orient the cave boundary toward its route centres for backface culling."""
 
     triangles = np.asarray(faces, dtype=np.uint32).copy()
-    if not texture_frames or len(triangles) == 0:
+    if not route_centers or len(triangles) == 0:
         return triangles
     positions = np.asarray(vertices, dtype=np.float64)
-    triangle_positions = positions[triangles]
-    face_centers = triangle_positions.mean(axis=1)
-    route_centers = np.asarray(
-        [frame.center for frame in texture_frames],
-        dtype=np.float64,
-    )
-    _distances, frame_indices = cKDTree(route_centers).query(face_centers, k=1)
-    toward_interior = route_centers[frame_indices] - face_centers
-    face_normals = np.cross(
-        triangle_positions[:, 1] - triangle_positions[:, 0],
-        triangle_positions[:, 2] - triangle_positions[:, 0],
-    )
-    valid = (
-        np.linalg.norm(face_normals, axis=1) > 1e-12
-    ) & (
-        np.linalg.norm(toward_interior, axis=1) > 1e-12
-    )
-    if np.any(valid):
-        orientation = np.einsum(
-            "ij,ij->i",
-            face_normals[valid],
-            toward_interior[valid],
-        )
-        if float(np.median(orientation)) < 0.0:
-            triangles[:, [1, 2]] = triangles[:, [2, 1]]
+    centers = np.asarray(route_centers, dtype=np.float64)
+    tree = cKDTree(centers)
+    orientation = np.empty(len(triangles), dtype=np.float64)
+    used = 0
+    batch_size = 65_536
+    for start in range(0, len(triangles), batch_size):
+        points = positions[triangles[start:start + batch_size]]
+        face_centers = points.mean(axis=1)
+        _distances, indices = tree.query(face_centers, k=1)
+        toward_interior = centers[indices] - face_centers
+        face_normals = np.cross(points[:, 1] - points[:, 0], points[:, 2] - points[:, 0])
+        valid = (np.linalg.norm(face_normals, axis=1) > 1e-12) & (np.linalg.norm(toward_interior, axis=1) > 1e-12)
+        values = np.einsum("ij,ij->i", face_normals[valid], toward_interior[valid])
+        orientation[used:used + len(values)] = values
+        used += len(values)
+        report_progress("Surface orientation", min(start+batch_size, len(triangles)), len(triangles))
+    if used and float(np.median(orientation[:used])) < 0.0:
+        triangles[:, [1, 2]] = triangles[:, [2, 1]]
     return triangles
 
 
@@ -951,96 +961,8 @@ def density_surface_normals(
     return normals
 
 
-def _angle_weighted_vertex_normals(
-    vertices: np.ndarray,
-    faces: np.ndarray,
-) -> np.ndarray:
-    """Compute smooth normals after global welding."""
-
-    positions = np.asarray(vertices, dtype=np.float64)
-    triangles = np.asarray(faces, dtype=np.int64)
-    normals = np.zeros_like(positions, dtype=np.float64)
-    for face in triangles:
-        triangle = positions[face]
-        edge_a = triangle[1] - triangle[0]
-        edge_b = triangle[2] - triangle[0]
-        face_normal = np.cross(edge_a, edge_b)
-        normal_length = float(np.linalg.norm(face_normal))
-        if normal_length <= 1e-12:
-            continue
-        face_normal /= normal_length
-        for corner in range(3):
-            center = triangle[corner]
-            vector_a = triangle[(corner + 1) % 3] - center
-            vector_b = triangle[(corner + 2) % 3] - center
-            length_a = float(np.linalg.norm(vector_a))
-            length_b = float(np.linalg.norm(vector_b))
-            if length_a <= 1e-12 or length_b <= 1e-12:
-                continue
-            cosine = float(np.dot(vector_a, vector_b) / (length_a * length_b))
-            angle = math.acos(float(np.clip(cosine, -1.0, 1.0)))
-            normals[face[corner]] += face_normal * angle
-
-    lengths = np.linalg.norm(normals, axis=1)
-    missing = lengths <= 1e-12
-    normals[~missing] /= lengths[~missing, None]
-    normals[missing] = np.array((0.0, 0.0, 1.0))
-    return normals
 
 
-def _mesh_tangents(
-    vertices: np.ndarray,
-    faces: np.ndarray,
-    texcoords: np.ndarray,
-    normals: np.ndarray,
-) -> np.ndarray:
-    """Generate orthonormal tangent frames compatible with glTF normal maps."""
-
-    positions = np.asarray(vertices, dtype=np.float64)
-    triangles = np.asarray(faces, dtype=np.int64)
-    uv = np.asarray(texcoords, dtype=np.float64)
-    vertex_normals = np.asarray(normals, dtype=np.float64)
-    tangent_u = np.zeros_like(positions)
-    tangent_v = np.zeros_like(positions)
-
-    for face in triangles:
-        p0, p1, p2 = positions[face]
-        uv0, uv1, uv2 = uv[face]
-        edge1 = p1 - p0
-        edge2 = p2 - p0
-        duv1 = uv1 - uv0
-        duv2 = uv2 - uv0
-        determinant = duv1[0] * duv2[1] - duv1[1] * duv2[0]
-        if abs(float(determinant)) <= 1e-12:
-            continue
-        reciprocal = 1.0 / determinant
-        s_direction = (edge1 * duv2[1] - edge2 * duv1[1]) * reciprocal
-        t_direction = (edge2 * duv1[0] - edge1 * duv2[0]) * reciprocal
-        for vertex_index in face:
-            tangent_u[vertex_index] += s_direction
-            tangent_v[vertex_index] += t_direction
-
-    tangents = np.zeros((len(positions), 4), dtype=np.float64)
-    for index, normal in enumerate(vertex_normals):
-        tangent = tangent_u[index] - normal * float(np.dot(normal, tangent_u[index]))
-        tangent_length = float(np.linalg.norm(tangent))
-        if tangent_length <= 1e-12:
-            reference = (
-                np.array((0.0, 0.0, 1.0))
-                if abs(float(normal[2])) < 0.9
-                else np.array((1.0, 0.0, 0.0))
-            )
-            tangent = np.cross(reference, normal)
-            tangent_length = max(float(np.linalg.norm(tangent)), 1e-12)
-        tangent /= tangent_length
-        handedness = (
-            -1.0
-            if float(np.dot(np.cross(normal, tangent), tangent_v[index])) < 0.0
-            else 1.0
-        )
-        tangents[index, :3] = tangent
-        tangents[index, 3] = handedness
-    return tangents
 
 
 def _canonical_to_gltf_vectors(values: np.ndarray) -> np.ndarray:

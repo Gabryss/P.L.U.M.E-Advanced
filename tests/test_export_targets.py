@@ -250,7 +250,7 @@ class TargetExporterTests(unittest.TestCase):
                 (Path(temp_dir) / "gazebo" / "tube" / "model.sdf").is_file()
             )
             self.assertTrue((Path(temp_dir) / "omniverse" / "tube.usd").is_file())
-            recorded_files: set[Path] = {result.primary_asset}
+            recorded_files: set[Path] = {result.primary_asset, Path(temp_dir) / "export_size_report.json"}
             for target, record in manifest["targets"].items():
                 primary = Path(temp_dir) / record["primary_asset"]
                 files = [Path(temp_dir) / value for value in record["files"]]

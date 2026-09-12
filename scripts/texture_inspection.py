@@ -13,8 +13,8 @@ from plume_advanced.exporters.atomic import atomic_output_directory
 from plume_advanced.exporters.materials import apply_cave_material
 from plume_advanced.exporters.targets import (
     ExportResult,
-    _write_engine_import_guide,
-    _write_target_descriptor,
+    write_engine_import_guide,
+    write_target_descriptor,
 )
 from plume_advanced.world import ExportConfig
 
@@ -51,8 +51,8 @@ def main() -> None:
             shutil.copy2(target.with_suffix('.manifest.json'), asset.with_suffix('.manifest.json'))
             export = ExportConfig(target=engine, file_format='glb', generate_collision=False)
             result = ExportResult(target=engine, primary_asset=asset, files=(asset,))
-            _write_target_descriptor(result, export, folder, source.stem)
-            _write_engine_import_guide(engine, folder, asset, collision_asset=None)
+            write_target_descriptor(result, export, folder, source.stem)
+            write_engine_import_guide(engine, folder, asset, collision_asset=None)
             with asset.open('rb') as file:
                 assert hashlib.file_digest(file, 'sha256').hexdigest() == report['asset_sha256']
         shutil.copy2(root / 'stage_c_sections.npz', staging / 'stage_c_sections.npz')

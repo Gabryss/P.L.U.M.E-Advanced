@@ -1,0 +1,44 @@
+{
+  "production_source_sha256": "dbc1abcf0a2a433d1e56ef6f908eea3d32e3d23bc3223c2385f6cda7f58db09c",
+  "tests": {
+    "current_collected": 591,
+    "verified_passing_unique": 591,
+    "subtests_passing": 59,
+    "optional_collection_skips": [
+      "Manim"
+    ],
+    "full_sweep": {
+      "passed": 581,
+      "failed": 1,
+      "duration_s": 1064.92
+    },
+    "subsequent_runs": {
+      "corrected_event_and_related_floor": {
+        "passed": 9,
+        "duration_s": 97.78
+      },
+      "new_pinned_seed_cases": {
+        "passed": 2,
+        "duration_s": 66.18
+      },
+      "display_fix_affected_checks": {
+        "passed": 93,
+        "duration_s": 49.92
+      }
+    },
+    "note": "Full sweep followed by a test-only sediment correction and nine added cases. After the campaign, progress.py alone changed to correct Rich indeterminate task totals; 93 affected tests and a semantic replay passed. See display-fix.json for all module hashes."
+  },
+  "ruff": "All checks passed!",
+  "mypy": "Success: no issues found in 90 source files",
+  "dependency_check": "Checked 42 packages in 2ms\nAll installed packages are compatible",
+  "lock_check": "Resolved 68 packages in 1ms",
+  "compileall": "passed for src, scripts and tests",
+  "local_documentation_links": "passed; historical pre-implementation audit excluded",
+  "blender_version": "5.2.0 LTS",
+  "archive_cleanup": {
+    "removed_python_files": 500,
+    "uncompressed_bytes": 6512023,
+    "recovery_commit": "89d7f6a02f8e5822cdd45ab7f01104b3525b23b7"
+  },
+  "generation_campaign_source_sha256": "22f29272488ff42553ef4a53b5110f6306e98712253d1336eb404ad1edc36d2d"
+}

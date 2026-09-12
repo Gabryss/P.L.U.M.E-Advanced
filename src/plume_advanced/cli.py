@@ -11,18 +11,8 @@ import tempfile
 import time
 from dataclasses import asdict
 from pathlib import Path
-from typing import ClassVar
 
-from rich.console import Console
-from rich.progress import (
-    BarColumn,
-    Progress,
-    TaskID,
-    TaskProgressColumn,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-)
+from plume_advanced.progress import TerminalProgress, report_progress
 
 SOURCE_ROOT = Path(__file__).resolve().parents[2]
 WORKING_ROOT = Path.cwd()
@@ -73,76 +63,9 @@ from plume_advanced.stages.network import CaveNetworkGenerator, export_network_r
 from plume_advanced.stages.section_field import SectionFieldGenerator
 from plume_advanced.visualization.events import GeologicalEventPlotter
 from plume_advanced.visualization.floor_map import FloorMapPlotter
-from plume_advanced.visualization.geometry import GeometryPlotter
 from plume_advanced.visualization.host_field import HostFieldPlotter
+from plume_advanced.visualization.inspection import InspectionSectionPlotter, SavedGeometryPlotter
 from plume_advanced.visualization.network import CaveNetworkPlotter
-from plume_advanced.visualization.section_field import SectionFieldPlotter
-
-
-class TerminalProgress:
-    """Rich-backed progress reporter for long pipeline runs."""
-
-    _current: ClassVar["TerminalProgress | None"] = None
-
-    def __init__(self, *, width: int = 32) -> None:
-        self.console = Console()
-        self._progress = Progress(
-            TextColumn("[bold cyan]{task.description:<28}"),
-            BarColumn(bar_width=width),
-            TaskProgressColumn(),
-            TextColumn("({task.completed:.0f}/{task.total:.0f})"),
-            TimeElapsedColumn(),
-            TextColumn("ETA"),
-            TimeRemainingColumn(),
-            TextColumn("[dim]{task.fields[detail]}"),
-            console=self.console,
-        )
-        self._progress.start()
-        self._active_task_id: TaskID | None = None
-        self._last_total = 1
-        type(self)._current = self
-
-    def log(self, message: str) -> None:
-        self.console.print(message)
-
-    def start(self, label: str, detail: str = "") -> None:
-        self._last_total = 1
-        self._active_task_id = self._progress.add_task(
-            label,
-            total=1,
-            completed=0,
-            detail=detail or "starting",
-        )
-
-    def update(self, current: int, total: int, detail: str = "") -> None:
-        if self._active_task_id is None:
-            return
-        total = max(total, 1)
-        current = min(max(current, 0), total)
-        self._last_total = total
-        self._progress.update(
-            self._active_task_id,
-            total=total,
-            completed=current,
-            detail=detail,
-        )
-
-    def finish(self, detail: str = "done") -> None:
-        if self._active_task_id is None:
-            return
-        self.update(self._last_total, self._last_total, detail)
-        self._progress.stop_task(self._active_task_id)
-        self._active_task_id = None
-
-    def close(self) -> None:
-        self._progress.stop()
-        if type(self)._current is self:
-            type(self)._current = None
-
-    @classmethod
-    def close_active(cls) -> None:
-        if cls._current is not None:
-            cls._current.close()
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -321,7 +244,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         print(error, file=sys.stderr)
         return 2
 
-    progress = TerminalProgress()
+    progress = TerminalProgress(trace_path=args.output.with_name("progress.jsonl"))
     progress.start("Configuration", "loaded TOML and checked output")
     resolved_config_path = write_project_config_manifest(
         project_config,
@@ -358,10 +281,11 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
             resume=args.resume,
         )
         if reused:
-            progress.log(f"[cyan]Resumed {stage} from a validated checkpoint.[/cyan]")
+            progress.log(f"Resumed {stage} from a validated checkpoint.")
         return artifact
 
     def checkpoint(stage: str) -> None:
+        report_progress("Run manifest", detail="hashing completed artifacts")
         write_run_manifest(
             project_config,
             run_manifest_output,
@@ -479,7 +403,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         f"{int(section_summary['sample_count'])} samples; rendering",
     )
     if project_config.run.render_diagnostics:
-        section_output_path = SectionFieldPlotter().render(
+        section_output_path = InspectionSectionPlotter().render(
             cave_network,
             section_field,
             section_output,
@@ -494,7 +418,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     stage_timings["sections_s"] = time.perf_counter() - stage_started
 
     def geometry_progress(phase: str, current: int, total: int, message: str) -> None:
-        progress.update(current, total, f"{phase}: {message}")
+        progress.substep(phase, current, total, message)
 
     geometry_generator = GeometryGenerator(project_config.geometry)
     checkpoint("base_geometry")
@@ -538,7 +462,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     stage_started = time.perf_counter()
 
     def event_progress(phase: str, current: int, total: int, message: str) -> None:
-        progress.update(current, total, f"{phase}: {message}")
+        progress.substep(phase, current, total, message)
 
     event_field = resumable(
         "geological_events",
@@ -649,8 +573,8 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     geometry_output_path = None
     geometry_presentation_output_path = None
     geometry_chunk_output_path = None
-    if project_config.run.render_diagnostics and hasattr(cave_geometry.voxel_grid, "density"):
-        geometry_plotter = GeometryPlotter()
+    if project_config.run.render_diagnostics:
+        geometry_plotter = SavedGeometryPlotter(cave_geometry)
         geometry_output_path = geometry_plotter.render_debug(
             cave_network,
             cave_geometry,
@@ -671,10 +595,6 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
             cave_network,
             cave_geometry,
             geometry_chunk_output,
-        )
-    elif project_config.run.render_diagnostics:
-        progress.log(
-            "[yellow]Skipping dense Stage-D diagnostic rasters for sparse tiled storage.[/yellow]"
         )
     progress.update(
         3,
@@ -701,7 +621,6 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     progress.finish(f"wrote {export_result.primary_asset.name}")
     stage_timings["export_s"] = time.perf_counter() - stage_started
 
-    progress.close()
     progress.log("Generated cave pipeline artifacts.")
     progress.log(f"Configuration: {args.config}")
     progress.log(f"Resolved configuration: {resolved_config_path}")
@@ -786,6 +705,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         progress.log(f"geometry_{key}: {value:.3f}")
 
     manifest_outputs = [
+        *completed_outputs,
         resolved_config_path,
         host_influence_path,
         network_report_path,
@@ -813,6 +733,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         )
         if path is not None
     )
+    progress.start("Finalize run", "hashing output files and recording provenance")
     run_manifest_path = write_run_manifest(
         project_config,
         run_manifest_output,
@@ -824,6 +745,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         inputs=manifest_inputs,
         timings=stage_timings,
     )
+    progress.finish(f"wrote {run_manifest_path.name}")
     progress.log(f"Run manifest: {run_manifest_path}")
 
     return 0
@@ -882,6 +804,8 @@ def main(argv: list[str] | None = None) -> int:
         except Exception:
             pass
         raise
+    finally:
+        TerminalProgress.close_active()
 
 
 if __name__ == "__main__":

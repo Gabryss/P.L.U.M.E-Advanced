@@ -1,0 +1,12 @@
+{
+  "source": {
+    "dirty": true,
+    "identity_schema": "plume.executing-package.v1",
+    "revision": "89d7f6a02f8e5822cdd45ab7f01104b3525b23b7",
+    "sha256": "dbc1abcf0a2a433d1e56ef6f908eea3d32e3d23bc3223c2385f6cda7f58db09c"
+  },
+  "passed": true,
+  "wheel_bytes": 371221,
+  "package_modules": 90,
+  "scope": "Extracted built wheel using installed dependencies, imported from an empty working directory"
+}

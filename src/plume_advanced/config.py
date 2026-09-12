@@ -80,6 +80,18 @@ def _reject_unknown_keys(
         raise ValueError(f"Unknown configuration keys: {qualified}")
 
 
+def _validate_finite_values(value: Any, path: str = "config") -> None:
+    """Reject TOML nan/inf before they reach array sizes, seeds or physics."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _validate_finite_values(item, f"{path}.{key}")
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            _validate_finite_values(item, f"{path}[{index}]")
+    elif isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f"{path} must be finite")
+
+
 @dataclass(frozen=True)
 class ProjectConfig:
     """Top-level project configuration."""
@@ -117,6 +129,7 @@ def load_project_config(
     config_path = Path(path)
     with config_path.open("rb") as config_file:
         raw_config = tomllib.load(config_file)
+    _validate_finite_values(raw_config)
     source_schema_version = raw_config.get("schema_version")
     if type(source_schema_version) is not int or source_schema_version != CURRENT_SCHEMA_VERSION:
         raise ValueError(
@@ -1200,8 +1213,6 @@ def _validate_pipeline_configs(
         )
     if section_field.maximum_uphill_grade < 0.0:
         raise ValueError("section_field.maximum_uphill_grade cannot be negative")
-    if not 0.0 < section_field.level_transition_fraction < 0.5:
-        raise ValueError("section_field.level_transition_fraction must be in (0, 0.5)")
     if section_field.chamber_max_tube_width < section_field.maximum_tube_width:
         raise ValueError(
             "section_field.chamber_max_tube_width cannot be smaller than maximum_tube_width"

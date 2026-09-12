@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 import trimesh
 
+from plume_advanced.progress import report_progress
 from plume_advanced.stages.geometry_export import (
     CavePrimitivePayload,
     build_cave_visual_surface,
@@ -26,12 +27,17 @@ class PreparedExportScene:
     collision_faces: np.ndarray
 
 
-def prepare_export_scene(cave_geometry: CaveGeometry) -> PreparedExportScene:
+def prepare_export_scene(cave_geometry: CaveGeometry, *, generate_collision: bool = True) -> PreparedExportScene:
     canonical_visual = build_cave_visual_surface(
         cave_geometry,
         convert_to_gltf=False,
     )
-    collision_vertices, collision_faces = simplified_collision_arrays(cave_geometry)
+    if generate_collision:
+        report_progress("Collision mesh", detail="clustering and checking the closed surface")
+        collision_vertices, collision_faces = simplified_collision_arrays(cave_geometry)
+    else:
+        collision_vertices = np.empty((0, 3), dtype=np.float64)
+        collision_faces = np.empty((0, 3), dtype=np.int64)
     return PreparedExportScene(
         geometry=cave_geometry,
         canonical_visual=canonical_visual,

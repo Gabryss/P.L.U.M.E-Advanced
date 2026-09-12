@@ -88,3 +88,19 @@ def test_full_inspection_presets_request_portable_materials():
             assert Path(path).parent == root / 'texture/dark_rock_8k/textures'
         assert config.cave_displacement_scale_m == 0
         assert config.cave_displacement_texture == ''
+
+
+def test_material_revision_reuses_uv_storage(material_case, tmp_path):
+    source, config = material_case
+    original = GlbAsset(source)
+    _, _, primitive = original.cave_primitive()
+    uv_index = primitive['attributes']['TEXCOORD_0']
+    original_uv = original.document['accessors'][uv_index]
+    output = tmp_path / 'material.glb'
+    apply_cave_material(source, output, config, source_tile_size_m=8)
+    revised = GlbAsset(output)
+    revised_uv = revised.document['accessors'][uv_index]
+    assert revised_uv['bufferView'] == original_uv['bufferView']
+    assert revised_uv.get('byteOffset', 0) == original_uv.get('byteOffset', 0)
+    # Only the three embedded images need new buffer views, not another UV copy.
+    assert len(revised.document['bufferViews']) == len(original.document['bufferViews']) + 3

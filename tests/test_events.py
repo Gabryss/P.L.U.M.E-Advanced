@@ -897,9 +897,17 @@ class GeologicalEventTests(unittest.TestCase):
             int(final_floor_atlas.summary()["breakdown_cell_count"]),
             0,
         )
-        self.assertGreater(
-            int(final_floor_atlas.summary()["sediment_cell_count"]),
-            0,
+        self.assertTrue(any(event.kind == "infill" for event in event_field.events))
+        # An infill proposal may be rejected by the connectivity safeguard.
+        # The atlas must reflect applied geometry, not fabricate sediment for
+        # every proposal merely because this fixture requested all event kinds.
+        applied_infill = any(
+            event.kind == "infill" and event.event_id in cave_geometry.structural_event_ids
+            for event in event_field.events
+        )
+        self.assertEqual(
+            int(final_floor_atlas.summary()["sediment_cell_count"]) > 0,
+            applied_infill,
         )
         self.assertLess(
             int(final_floor_atlas.summary()["chamber_cell_count"]),

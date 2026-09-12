@@ -13,7 +13,6 @@ from plume_advanced.stages.geometry_export import export_geometry_glb
 from plume_advanced.stages.geometry_types import (
     CaveGeometry,
     GeometryConfig,
-    SurfaceTextureFrame,
     VoxelGrid,
 )
 from plume_advanced.validation import (
@@ -109,14 +108,7 @@ def test_portable_validator_checks_embedded_materials_and_displacement(
     )
     height.save(displacement)
 
-    frame = SurfaceTextureFrame(
-        segment_id=1,
-        center=(0.25, 0.25, 0.25),
-        tangent=(0.0, 1.0, 0.0),
-        normal=(1.0, 0.0, 0.0),
-        binormal=(0.0, 0.0, 1.0),
-        longitudinal_m=0.0,
-    )
+    frame = (0.25, 0.25, 0.25)
     geometry = CaveGeometry(
         config=GeometryConfig(
             cave_diffuse_texture=str(diffuse),
@@ -144,7 +136,7 @@ def test_portable_validator_checks_embedded_materials_and_displacement(
         component_count=1,
         stamped_sample_count=1,
         stamped_segment_ids=(1,),
-        surface_texture_frames=(frame,),
+        route_centers=(frame,),
     )
     export_dir = tmp_path / "export_neutral"
     asset = export_geometry_glb(geometry, export_dir / "plume_cave_scene.glb")

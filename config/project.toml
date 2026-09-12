@@ -234,7 +234,6 @@ minimum_roof_thickness = 6.5
 maximum_centerline_depth = 26.0
 preferred_cover_fraction = 0.34
 maximum_uphill_grade = 0.015
-level_transition_fraction = 0.18
 
 [floor_map]
 # The topology-aware atlas is also used as the candidate surface for props.
@@ -321,12 +320,9 @@ max_dense_voxels = 80000000
 density_margin = 24.0
 chunk_size = 64
 iso_level = 0.0
-use_section_profiles = true
 wall_roughness_amplitude = 0.28
 wall_roughness_frequency = 0.18
 wall_roughness_blend = 0.85
-junction_irregularity_amplitude = 0.30
-junction_irregularity_frequency = 0.095
 structural_event_blend = 0.35
 weld_tolerance = 1e-5
 cave_normal_scale = 2.0

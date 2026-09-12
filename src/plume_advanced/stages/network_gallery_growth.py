@@ -9,14 +9,18 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
+from collections.abc import Sequence
 from copy import copy
 from dataclasses import replace
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from plume_advanced.procedural import derive_subseed, procedural_rng
 from plume_advanced.stages.network_systems import plan_interactions, preferred_tracks
+
+if TYPE_CHECKING:
+    from plume_advanced.stages.network import CavePoint, CaveSegment
 
 
 def independent_preferences(generator, host, geometry):
@@ -135,6 +139,7 @@ def generate_gallery_growth(generator, host):
     planned, records = plan_interactions(
         along, tracks, width, cfg.systems, events=interactions,
         local_spacing=interconnected, connection_check=connection_check,
+        simple_splits=not interconnected,
     )
 
     def world(a, c):
@@ -157,7 +162,9 @@ def generate_gallery_growth(generator, host):
     for sid, (start, end, first, last, group) in enumerate(records):
         a = along[first : last + 1]
         c = tracks[list(group), first : last + 1].mean(axis=0).copy()
-        reach = min(0.4 * (a[-1] - a[0]), 12 * width)
+        # Keep local gallery confluences inside the junction neighborhood;
+        # a twelve-width blend can fuse distinct arms far before their node.
+        reach = min(0.4 * (a[-1] - a[0]), (12 if interconnected else 4) * width)
         for delta, distance in (
             (nodes[start].lateral_offset - c[0], a - a[0]),
             (nodes[end].lateral_offset - c[-1], a[-1] - a),
@@ -216,7 +223,7 @@ def generate_gallery_growth(generator, host):
     segments = _mark_islands(segments)
     # Screen actual grown front topology before doing more expensive history
     # and section work. No synthetic island is inserted to meet the target.
-    count = len({s.metadata["island_id"] for s in segments if "island_id" in s.metadata})
+    count = len({s.metadata["island_id"] for s in segments if s.metadata.get("island_id")})
     if not interconnected and not cfg.topology.island_count[0] <= count <= cfg.topology.island_count[1]:
         raise ValueError(
             f"Independent routes produced {count} local island splits outside the requested range"
@@ -332,24 +339,33 @@ def grow_phase_history(generator, host, nodes, segments, phases):
                 candidates.append((score + float(rng.uniform(0, 0.1)), s.segment_id, index))
         if not candidates:
             continue
-        score, sid, index = max(candidates)
-        parent = next(s for s in segments if s.segment_id == sid)
-        supply = parent.mean_flux
-        allocated = min(
-            supply * float(rng.uniform(*cfg.lobe_growth.branch_flux_fraction)),
-            cfg.source_flux * cfg.systems.count * history.phase_flux_budget_fraction,
-        )
-        if allocated < cfg.source_flux * max(
-            cfg.lobe_growth.minimum_viable_flux_fraction, history.retirement_flux_threshold
-        ):
-            events.append(dict(kind="flux_starved_breakout", phase=phase, parent_segment_id=sid))
+        proposal = None
+        for score, sid, index in sorted(candidates, reverse=True)[:16]:
+            parent = next(s for s in segments if s.segment_id == sid)
+            supply = parent.mean_flux
+            allocated = min(
+                supply * float(rng.uniform(*cfg.lobe_growth.branch_flux_fraction)),
+                cfg.source_flux * cfg.systems.count * history.phase_flux_budget_fraction,
+            )
+            if allocated < cfg.source_flux * max(
+                cfg.lobe_growth.minimum_viable_flux_fraction, history.retirement_flux_threshold
+            ):
+                events.append(dict(kind="flux_starved_breakout", phase=phase, parent_segment_id=sid))
+                continue
+            points, reason = trace_blind_breakout(generator, host, parent, index, rng, allocated)
+            if (
+                len(points) < 4
+                or points[-1].arc_length < cfg.topology.side_branch_length_widths[0] * width * 0.8
+                or not breakout_has_clearance(points, segments, sid)
+                or any(not (host.x_coords[0] <= p.x <= host.x_coords[-1]
+                            and host.y_coords[0] <= p.y <= host.y_coords[-1]) for p in points)
+            ):
+                continue
+            proposal = points, reason
+            break
+        if proposal is None:
             continue
-        points, reason = trace_blind_breakout(generator, host, parent, index, rng, allocated)
-        if (
-            len(points) < 4
-            or points[-1].arc_length < cfg.topology.side_branch_length_widths[0] * width * 0.8
-        ):
-            continue
+        points, reason = proposal
         start, new_sid = _split_segment(nodes, segments, sid, index)
         from plume_advanced.stages.network import CaveNode, CaveSegment
 
@@ -408,6 +424,42 @@ def grow_phase_history(generator, host, nodes, segments, phases):
             )
         )
     return segments, events
+
+
+def breakout_has_clearance(
+    points: Sequence[CavePoint], segments: Sequence[CaveSegment], parent_id: int
+) -> bool:
+    """Conservatively exclude blind branches that cut through another passage.
+
+    The connected parent is handled by the final curvature/crossing checks.
+    Other routes use point-to-chord distances and half a branch sampling step
+    of extra clearance, covering the intervals between sampled branch points.
+    """
+    if len(points) < 2:
+        return False
+    starts, ends, radii = [], [], []
+    for segment in segments:
+        if segment.segment_id == parent_id:
+            continue
+        for a, b in zip(segment.points, segment.points[1:]):
+            starts.append((a.x, a.y))
+            ends.append((b.x, b.y))
+            radii.append(.5 * max(a.width, b.width))
+    if not starts:
+        return True
+    start = np.asarray(starts)
+    delta = np.asarray(ends) - start
+    radius = np.asarray(radii)
+    length_squared = np.sum(delta * delta, axis=1)
+    branch = np.array([(p.x, p.y) for p in points])
+    margin = .5 * np.linalg.norm(np.diff(branch, axis=0), axis=1).max(initial=0)
+    for point, xy in zip(points, branch):
+        fraction = np.clip(np.sum((xy - start) * delta, axis=1)
+                           / np.maximum(length_squared, 1e-12), 0, 1)
+        distances = np.linalg.norm(xy - start - fraction[:, None] * delta, axis=1)
+        if np.any(distances < radius + .5 * point.width + margin):
+            return False
+    return True
 
 
 def trace_blind_breakout(generator, host, parent, index, rng, flux):

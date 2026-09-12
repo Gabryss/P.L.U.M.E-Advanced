@@ -1,0 +1,915 @@
+{
+  "scope": "Full sweep before the test-only sediment correction and nine added cases; no subsequent production edits.",
+  "totals": {
+    "covered_lines": 13608,
+    "num_statements": 16087,
+    "percent_covered": 84.59004164853609,
+    "percent_covered_display": "85",
+    "missing_lines": 2479,
+    "excluded_lines": 19,
+    "percent_statements_covered": 84.59004164853609,
+    "percent_statements_covered_display": "85"
+  },
+  "files": {
+    "src/plume_advanced/__init__.py": {
+      "covered_lines": 6,
+      "num_statements": 6,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/cli.py": {
+      "covered_lines": 270,
+      "num_statements": 312,
+      "percent_covered": 86.53846153846153,
+      "percent_covered_display": "87",
+      "missing_lines": 42,
+      "excluded_lines": 0,
+      "percent_statements_covered": 86.53846153846153,
+      "percent_statements_covered_display": "87"
+    },
+    "src/plume_advanced/config.py": {
+      "covered_lines": 533,
+      "num_statements": 666,
+      "percent_covered": 80.03003003003003,
+      "percent_covered_display": "80",
+      "missing_lines": 133,
+      "excluded_lines": 0,
+      "percent_statements_covered": 80.03003003003003,
+      "percent_statements_covered_display": "80"
+    },
+    "src/plume_advanced/evaluation/__init__.py": {
+      "covered_lines": 6,
+      "num_statements": 6,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/evaluation/_common.py": {
+      "covered_lines": 21,
+      "num_statements": 63,
+      "percent_covered": 33.333333333333336,
+      "percent_covered_display": "33",
+      "missing_lines": 42,
+      "excluded_lines": 0,
+      "percent_statements_covered": 33.333333333333336,
+      "percent_statements_covered_display": "33"
+    },
+    "src/plume_advanced/evaluation/aggregate.py": {
+      "covered_lines": 8,
+      "num_statements": 25,
+      "percent_covered": 32.0,
+      "percent_covered_display": "32",
+      "missing_lines": 17,
+      "excluded_lines": 0,
+      "percent_statements_covered": 32.0,
+      "percent_statements_covered_display": "32"
+    },
+    "src/plume_advanced/evaluation/artifacts.py": {
+      "covered_lines": 97,
+      "num_statements": 104,
+      "percent_covered": 93.26923076923077,
+      "percent_covered_display": "93",
+      "missing_lines": 7,
+      "excluded_lines": 0,
+      "percent_statements_covered": 93.26923076923077,
+      "percent_statements_covered_display": "93"
+    },
+    "src/plume_advanced/evaluation/cli.py": {
+      "covered_lines": 88,
+      "num_statements": 119,
+      "percent_covered": 73.94957983193277,
+      "percent_covered_display": "74",
+      "missing_lines": 31,
+      "excluded_lines": 0,
+      "percent_statements_covered": 73.94957983193277,
+      "percent_statements_covered_display": "74"
+    },
+    "src/plume_advanced/evaluation/config.py": {
+      "covered_lines": 69,
+      "num_statements": 86,
+      "percent_covered": 80.23255813953489,
+      "percent_covered_display": "80",
+      "missing_lines": 17,
+      "excluded_lines": 0,
+      "percent_statements_covered": 80.23255813953489,
+      "percent_statements_covered_display": "80"
+    },
+    "src/plume_advanced/evaluation/continuity.py": {
+      "covered_lines": 70,
+      "num_statements": 79,
+      "percent_covered": 88.60759493670886,
+      "percent_covered_display": "89",
+      "missing_lines": 9,
+      "excluded_lines": 0,
+      "percent_statements_covered": 88.60759493670886,
+      "percent_statements_covered_display": "89"
+    },
+    "src/plume_advanced/evaluation/datasets/__init__.py": {
+      "covered_lines": 2,
+      "num_statements": 2,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/evaluation/datasets/pdc.py": {
+      "covered_lines": 120,
+      "num_statements": 126,
+      "percent_covered": 95.23809523809524,
+      "percent_covered_display": "95",
+      "missing_lines": 6,
+      "excluded_lines": 0,
+      "percent_statements_covered": 95.23809523809524,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/evaluation/experiments/__init__.py": {
+      "covered_lines": 0,
+      "num_statements": 0,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/evaluation/experiments/common.py": {
+      "covered_lines": 22,
+      "num_statements": 33,
+      "percent_covered": 66.66666666666667,
+      "percent_covered_display": "67",
+      "missing_lines": 11,
+      "excluded_lines": 0,
+      "percent_statements_covered": 66.66666666666667,
+      "percent_statements_covered_display": "67"
+    },
+    "src/plume_advanced/evaluation/experiments/controllability.py": {
+      "covered_lines": 15,
+      "num_statements": 52,
+      "percent_covered": 28.846153846153847,
+      "percent_covered_display": "29",
+      "missing_lines": 37,
+      "excluded_lines": 0,
+      "percent_statements_covered": 28.846153846153847,
+      "percent_statements_covered_display": "29"
+    },
+    "src/plume_advanced/evaluation/experiments/determinism.py": {
+      "covered_lines": 34,
+      "num_statements": 45,
+      "percent_covered": 75.55555555555556,
+      "percent_covered_display": "76",
+      "missing_lines": 11,
+      "excluded_lines": 0,
+      "percent_statements_covered": 75.55555555555556,
+      "percent_statements_covered_display": "76"
+    },
+    "src/plume_advanced/evaluation/experiments/export_consistency.py": {
+      "covered_lines": 70,
+      "num_statements": 74,
+      "percent_covered": 94.5945945945946,
+      "percent_covered_display": "95",
+      "missing_lines": 4,
+      "excluded_lines": 0,
+      "percent_statements_covered": 94.5945945945946,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/evaluation/experiments/host_ablation.py": {
+      "covered_lines": 33,
+      "num_statements": 68,
+      "percent_covered": 48.529411764705884,
+      "percent_covered_display": "49",
+      "missing_lines": 35,
+      "excluded_lines": 0,
+      "percent_statements_covered": 48.529411764705884,
+      "percent_statements_covered_display": "49"
+    },
+    "src/plume_advanced/evaluation/experiments/morphometry.py": {
+      "covered_lines": 22,
+      "num_statements": 97,
+      "percent_covered": 22.68041237113402,
+      "percent_covered_display": "23",
+      "missing_lines": 75,
+      "excluded_lines": 0,
+      "percent_statements_covered": 22.68041237113402,
+      "percent_statements_covered_display": "23"
+    },
+    "src/plume_advanced/evaluation/experiments/sampling_ablation.py": {
+      "covered_lines": 15,
+      "num_statements": 47,
+      "percent_covered": 31.914893617021278,
+      "percent_covered_display": "32",
+      "missing_lines": 32,
+      "excluded_lines": 0,
+      "percent_statements_covered": 31.914893617021278,
+      "percent_statements_covered_display": "32"
+    },
+    "src/plume_advanced/evaluation/experiments/scalability.py": {
+      "covered_lines": 45,
+      "num_statements": 96,
+      "percent_covered": 46.875,
+      "percent_covered_display": "47",
+      "missing_lines": 51,
+      "excluded_lines": 0,
+      "percent_statements_covered": 46.875,
+      "percent_statements_covered_display": "47"
+    },
+    "src/plume_advanced/evaluation/experiments/scalability_worker.py": {
+      "covered_lines": 0,
+      "num_statements": 65,
+      "percent_covered": 0.0,
+      "percent_covered_display": "0",
+      "missing_lines": 65,
+      "excluded_lines": 0,
+      "percent_statements_covered": 0.0,
+      "percent_statements_covered_display": "0"
+    },
+    "src/plume_advanced/evaluation/latex.py": {
+      "covered_lines": 62,
+      "num_statements": 74,
+      "percent_covered": 83.78378378378379,
+      "percent_covered_display": "84",
+      "missing_lines": 12,
+      "excluded_lines": 0,
+      "percent_statements_covered": 83.78378378378379,
+      "percent_statements_covered_display": "84"
+    },
+    "src/plume_advanced/evaluation/local_geometry.py": {
+      "covered_lines": 77,
+      "num_statements": 84,
+      "percent_covered": 91.66666666666667,
+      "percent_covered_display": "92",
+      "missing_lines": 7,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.66666666666667,
+      "percent_statements_covered_display": "92"
+    },
+    "src/plume_advanced/evaluation/metrics/__init__.py": {
+      "covered_lines": 6,
+      "num_statements": 6,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/evaluation/metrics/contours.py": {
+      "covered_lines": 67,
+      "num_statements": 72,
+      "percent_covered": 93.05555555555556,
+      "percent_covered_display": "93",
+      "missing_lines": 5,
+      "excluded_lines": 0,
+      "percent_statements_covered": 93.05555555555556,
+      "percent_statements_covered_display": "93"
+    },
+    "src/plume_advanced/evaluation/metrics/emplacement.py": {
+      "covered_lines": 207,
+      "num_statements": 223,
+      "percent_covered": 92.82511210762331,
+      "percent_covered_display": "93",
+      "missing_lines": 16,
+      "excluded_lines": 0,
+      "percent_statements_covered": 92.82511210762331,
+      "percent_statements_covered_display": "93"
+    },
+    "src/plume_advanced/evaluation/metrics/morphometry.py": {
+      "covered_lines": 30,
+      "num_statements": 36,
+      "percent_covered": 83.33333333333333,
+      "percent_covered_display": "83",
+      "missing_lines": 6,
+      "excluded_lines": 0,
+      "percent_statements_covered": 83.33333333333333,
+      "percent_statements_covered_display": "83"
+    },
+    "src/plume_advanced/evaluation/metrics/network.py": {
+      "covered_lines": 218,
+      "num_statements": 257,
+      "percent_covered": 84.8249027237354,
+      "percent_covered_display": "85",
+      "missing_lines": 39,
+      "excluded_lines": 0,
+      "percent_statements_covered": 84.8249027237354,
+      "percent_statements_covered_display": "85"
+    },
+    "src/plume_advanced/evaluation/metrics/sections.py": {
+      "covered_lines": 52,
+      "num_statements": 78,
+      "percent_covered": 66.66666666666667,
+      "percent_covered_display": "67",
+      "missing_lines": 26,
+      "excluded_lines": 0,
+      "percent_statements_covered": 66.66666666666667,
+      "percent_statements_covered_display": "67"
+    },
+    "src/plume_advanced/evaluation/morphology_bootstrap.py": {
+      "covered_lines": 47,
+      "num_statements": 50,
+      "percent_covered": 94.0,
+      "percent_covered_display": "94",
+      "missing_lines": 3,
+      "excluded_lines": 0,
+      "percent_statements_covered": 94.0,
+      "percent_statements_covered_display": "94"
+    },
+    "src/plume_advanced/evaluation/plotting.py": {
+      "covered_lines": 67,
+      "num_statements": 114,
+      "percent_covered": 58.771929824561404,
+      "percent_covered_display": "59",
+      "missing_lines": 47,
+      "excluded_lines": 0,
+      "percent_statements_covered": 58.771929824561404,
+      "percent_statements_covered_display": "59"
+    },
+    "src/plume_advanced/evaluation/provenance.py": {
+      "covered_lines": 42,
+      "num_statements": 43,
+      "percent_covered": 97.67441860465117,
+      "percent_covered_display": "98",
+      "missing_lines": 1,
+      "excluded_lines": 0,
+      "percent_statements_covered": 97.67441860465117,
+      "percent_statements_covered_display": "98"
+    },
+    "src/plume_advanced/evaluation/reliability.py": {
+      "covered_lines": 69,
+      "num_statements": 186,
+      "percent_covered": 37.096774193548384,
+      "percent_covered_display": "37",
+      "missing_lines": 117,
+      "excluded_lines": 0,
+      "percent_statements_covered": 37.096774193548384,
+      "percent_statements_covered_display": "37"
+    },
+    "src/plume_advanced/evaluation/runner.py": {
+      "covered_lines": 105,
+      "num_statements": 111,
+      "percent_covered": 94.5945945945946,
+      "percent_covered_display": "95",
+      "missing_lines": 6,
+      "excluded_lines": 0,
+      "percent_statements_covered": 94.5945945945946,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/evaluation/schema.py": {
+      "covered_lines": 40,
+      "num_statements": 42,
+      "percent_covered": 95.23809523809524,
+      "percent_covered_display": "95",
+      "missing_lines": 2,
+      "excluded_lines": 0,
+      "percent_statements_covered": 95.23809523809524,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/evaluation/serialization.py": {
+      "covered_lines": 19,
+      "num_statements": 21,
+      "percent_covered": 90.47619047619048,
+      "percent_covered_display": "90",
+      "missing_lines": 2,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.47619047619048,
+      "percent_statements_covered_display": "90"
+    },
+    "src/plume_advanced/evaluation/statistics.py": {
+      "covered_lines": 73,
+      "num_statements": 113,
+      "percent_covered": 64.60176991150442,
+      "percent_covered_display": "65",
+      "missing_lines": 40,
+      "excluded_lines": 0,
+      "percent_statements_covered": 64.60176991150442,
+      "percent_statements_covered_display": "65"
+    },
+    "src/plume_advanced/evaluation/visualization/__init__.py": {
+      "covered_lines": 3,
+      "num_statements": 3,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/evaluation/visualization/dashboard.py": {
+      "covered_lines": 253,
+      "num_statements": 287,
+      "percent_covered": 88.15331010452962,
+      "percent_covered_display": "88",
+      "missing_lines": 34,
+      "excluded_lines": 0,
+      "percent_statements_covered": 88.15331010452962,
+      "percent_statements_covered_display": "88"
+    },
+    "src/plume_advanced/evaluation/visualization/emplacement.py": {
+      "covered_lines": 71,
+      "num_statements": 82,
+      "percent_covered": 86.58536585365853,
+      "percent_covered_display": "87",
+      "missing_lines": 11,
+      "excluded_lines": 0,
+      "percent_statements_covered": 86.58536585365853,
+      "percent_statements_covered_display": "87"
+    },
+    "src/plume_advanced/exporters/__init__.py": {
+      "covered_lines": 3,
+      "num_statements": 3,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/exporters/atomic.py": {
+      "covered_lines": 26,
+      "num_statements": 31,
+      "percent_covered": 83.87096774193549,
+      "percent_covered_display": "84",
+      "missing_lines": 5,
+      "excluded_lines": 0,
+      "percent_statements_covered": 83.87096774193549,
+      "percent_statements_covered_display": "84"
+    },
+    "src/plume_advanced/exporters/materials.py": {
+      "covered_lines": 94,
+      "num_statements": 105,
+      "percent_covered": 89.52380952380952,
+      "percent_covered_display": "90",
+      "missing_lines": 11,
+      "excluded_lines": 0,
+      "percent_statements_covered": 89.52380952380952,
+      "percent_statements_covered_display": "90"
+    },
+    "src/plume_advanced/exporters/scene.py": {
+      "covered_lines": 57,
+      "num_statements": 68,
+      "percent_covered": 83.82352941176471,
+      "percent_covered_display": "84",
+      "missing_lines": 11,
+      "excluded_lines": 0,
+      "percent_statements_covered": 83.82352941176471,
+      "percent_statements_covered_display": "84"
+    },
+    "src/plume_advanced/exporters/targets.py": {
+      "covered_lines": 331,
+      "num_statements": 358,
+      "percent_covered": 92.45810055865921,
+      "percent_covered_display": "92",
+      "missing_lines": 27,
+      "excluded_lines": 0,
+      "percent_statements_covered": 92.45810055865921,
+      "percent_statements_covered_display": "92"
+    },
+    "src/plume_advanced/identity.py": {
+      "covered_lines": 40,
+      "num_statements": 42,
+      "percent_covered": 95.23809523809524,
+      "percent_covered_display": "95",
+      "missing_lines": 2,
+      "excluded_lines": 0,
+      "percent_statements_covered": 95.23809523809524,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/media/__init__.py": {
+      "covered_lines": 2,
+      "num_statements": 2,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/media/manim_data.py": {
+      "covered_lines": 159,
+      "num_statements": 186,
+      "percent_covered": 85.48387096774194,
+      "percent_covered_display": "85",
+      "missing_lines": 27,
+      "excluded_lines": 0,
+      "percent_statements_covered": 85.48387096774194,
+      "percent_statements_covered_display": "85"
+    },
+    "src/plume_advanced/media/manim_typography.py": {
+      "covered_lines": 0,
+      "num_statements": 13,
+      "percent_covered": 0.0,
+      "percent_covered_display": "0",
+      "missing_lines": 13,
+      "excluded_lines": 0,
+      "percent_statements_covered": 0.0,
+      "percent_statements_covered_display": "0"
+    },
+    "src/plume_advanced/output_guard.py": {
+      "covered_lines": 29,
+      "num_statements": 30,
+      "percent_covered": 96.66666666666667,
+      "percent_covered_display": "97",
+      "missing_lines": 1,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.66666666666667,
+      "percent_statements_covered_display": "97"
+    },
+    "src/plume_advanced/pipeline/__init__.py": {
+      "covered_lines": 2,
+      "num_statements": 2,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/pipeline/checkpoints.py": {
+      "covered_lines": 89,
+      "num_statements": 90,
+      "percent_covered": 98.88888888888889,
+      "percent_covered_display": "99",
+      "missing_lines": 1,
+      "excluded_lines": 0,
+      "percent_statements_covered": 98.88888888888889,
+      "percent_statements_covered_display": "99"
+    },
+    "src/plume_advanced/procedural.py": {
+      "covered_lines": 15,
+      "num_statements": 15,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/progress.py": {
+      "covered_lines": 92,
+      "num_statements": 94,
+      "percent_covered": 97.87234042553192,
+      "percent_covered_display": "98",
+      "missing_lines": 2,
+      "excluded_lines": 0,
+      "percent_statements_covered": 97.87234042553192,
+      "percent_statements_covered_display": "98"
+    },
+    "src/plume_advanced/run_manifest.py": {
+      "covered_lines": 30,
+      "num_statements": 30,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/stability.py": {
+      "covered_lines": 32,
+      "num_statements": 35,
+      "percent_covered": 91.42857142857143,
+      "percent_covered_display": "91",
+      "missing_lines": 3,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.42857142857143,
+      "percent_statements_covered_display": "91"
+    },
+    "src/plume_advanced/stages/__init__.py": {
+      "covered_lines": 6,
+      "num_statements": 6,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/stages/events.py": {
+      "covered_lines": 1018,
+      "num_statements": 1119,
+      "percent_covered": 90.97408400357462,
+      "percent_covered_display": "91",
+      "missing_lines": 101,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.97408400357462,
+      "percent_statements_covered_display": "91"
+    },
+    "src/plume_advanced/stages/floor_map.py": {
+      "covered_lines": 277,
+      "num_statements": 293,
+      "percent_covered": 94.53924914675768,
+      "percent_covered_display": "95",
+      "missing_lines": 16,
+      "excluded_lines": 0,
+      "percent_statements_covered": 94.53924914675768,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/stages/geometry.py": {
+      "covered_lines": 882,
+      "num_statements": 1011,
+      "percent_covered": 87.24035608308606,
+      "percent_covered_display": "87",
+      "missing_lines": 129,
+      "excluded_lines": 0,
+      "percent_statements_covered": 87.24035608308606,
+      "percent_statements_covered_display": "87"
+    },
+    "src/plume_advanced/stages/geometry_export.py": {
+      "covered_lines": 666,
+      "num_statements": 737,
+      "percent_covered": 90.3663500678426,
+      "percent_covered_display": "90",
+      "missing_lines": 71,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.3663500678426,
+      "percent_statements_covered_display": "90"
+    },
+    "src/plume_advanced/stages/geometry_types.py": {
+      "covered_lines": 342,
+      "num_statements": 351,
+      "percent_covered": 97.43589743589743,
+      "percent_covered_display": "97",
+      "missing_lines": 9,
+      "excluded_lines": 13,
+      "percent_statements_covered": 97.43589743589743,
+      "percent_statements_covered_display": "97"
+    },
+    "src/plume_advanced/stages/host_field.py": {
+      "covered_lines": 359,
+      "num_statements": 371,
+      "percent_covered": 96.7654986522911,
+      "percent_covered_display": "97",
+      "missing_lines": 12,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.7654986522911,
+      "percent_statements_covered_display": "97"
+    },
+    "src/plume_advanced/stages/network.py": {
+      "covered_lines": 2023,
+      "num_statements": 2201,
+      "percent_covered": 91.91276692412539,
+      "percent_covered_display": "92",
+      "missing_lines": 178,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.91276692412539,
+      "percent_statements_covered_display": "92"
+    },
+    "src/plume_advanced/stages/network_acceptance.py": {
+      "covered_lines": 152,
+      "num_statements": 155,
+      "percent_covered": 98.06451612903226,
+      "percent_covered_display": "98",
+      "missing_lines": 3,
+      "excluded_lines": 0,
+      "percent_statements_covered": 98.06451612903226,
+      "percent_statements_covered_display": "98"
+    },
+    "src/plume_advanced/stages/network_gallery_growth.py": {
+      "covered_lines": 353,
+      "num_statements": 363,
+      "percent_covered": 97.24517906336088,
+      "percent_covered_display": "97",
+      "missing_lines": 10,
+      "excluded_lines": 2,
+      "percent_statements_covered": 97.24517906336088,
+      "percent_statements_covered_display": "97"
+    },
+    "src/plume_advanced/stages/network_interconnected.py": {
+      "covered_lines": 255,
+      "num_statements": 272,
+      "percent_covered": 93.75,
+      "percent_covered_display": "94",
+      "missing_lines": 17,
+      "excluded_lines": 0,
+      "percent_statements_covered": 93.75,
+      "percent_statements_covered_display": "94"
+    },
+    "src/plume_advanced/stages/network_metadata.py": {
+      "covered_lines": 8,
+      "num_statements": 9,
+      "percent_covered": 88.88888888888889,
+      "percent_covered_display": "89",
+      "missing_lines": 1,
+      "excluded_lines": 0,
+      "percent_statements_covered": 88.88888888888889,
+      "percent_statements_covered_display": "89"
+    },
+    "src/plume_advanced/stages/network_quality.py": {
+      "covered_lines": 326,
+      "num_statements": 346,
+      "percent_covered": 94.21965317919076,
+      "percent_covered_display": "94",
+      "missing_lines": 20,
+      "excluded_lines": 4,
+      "percent_statements_covered": 94.21965317919076,
+      "percent_statements_covered_display": "94"
+    },
+    "src/plume_advanced/stages/network_systems.py": {
+      "covered_lines": 241,
+      "num_statements": 284,
+      "percent_covered": 84.85915492957747,
+      "percent_covered_display": "85",
+      "missing_lines": 43,
+      "excluded_lines": 0,
+      "percent_statements_covered": 84.85915492957747,
+      "percent_statements_covered_display": "85"
+    },
+    "src/plume_advanced/stages/network_topology.py": {
+      "covered_lines": 316,
+      "num_statements": 328,
+      "percent_covered": 96.34146341463415,
+      "percent_covered_display": "96",
+      "missing_lines": 12,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.34146341463415,
+      "percent_statements_covered_display": "96"
+    },
+    "src/plume_advanced/stages/section_field.py": {
+      "covered_lines": 836,
+      "num_statements": 869,
+      "percent_covered": 96.20253164556962,
+      "percent_covered_display": "96",
+      "missing_lines": 33,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.20253164556962,
+      "percent_statements_covered_display": "96"
+    },
+    "src/plume_advanced/stages/surface_frames.py": {
+      "covered_lines": 60,
+      "num_statements": 60,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/stages/surface_relief.py": {
+      "covered_lines": 122,
+      "num_statements": 124,
+      "percent_covered": 98.38709677419355,
+      "percent_covered_display": "98",
+      "missing_lines": 2,
+      "excluded_lines": 0,
+      "percent_statements_covered": 98.38709677419355,
+      "percent_statements_covered_display": "98"
+    },
+    "src/plume_advanced/stages/voxel_topology.py": {
+      "covered_lines": 37,
+      "num_statements": 38,
+      "percent_covered": 97.36842105263158,
+      "percent_covered_display": "97",
+      "missing_lines": 1,
+      "excluded_lines": 0,
+      "percent_statements_covered": 97.36842105263158,
+      "percent_statements_covered_display": "97"
+    },
+    "src/plume_advanced/validation.py": {
+      "covered_lines": 268,
+      "num_statements": 336,
+      "percent_covered": 79.76190476190476,
+      "percent_covered_display": "80",
+      "missing_lines": 68,
+      "excluded_lines": 0,
+      "percent_statements_covered": 79.76190476190476,
+      "percent_statements_covered_display": "80"
+    },
+    "src/plume_advanced/visualization/__init__.py": {
+      "covered_lines": 7,
+      "num_statements": 7,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/visualization/drained_pools.py": {
+      "covered_lines": 113,
+      "num_statements": 119,
+      "percent_covered": 94.95798319327731,
+      "percent_covered_display": "95",
+      "missing_lines": 6,
+      "excluded_lines": 0,
+      "percent_statements_covered": 94.95798319327731,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/visualization/events.py": {
+      "covered_lines": 64,
+      "num_statements": 77,
+      "percent_covered": 83.11688311688312,
+      "percent_covered_display": "83",
+      "missing_lines": 13,
+      "excluded_lines": 0,
+      "percent_statements_covered": 83.11688311688312,
+      "percent_statements_covered_display": "83"
+    },
+    "src/plume_advanced/visualization/floor_map.py": {
+      "covered_lines": 73,
+      "num_statements": 98,
+      "percent_covered": 74.48979591836735,
+      "percent_covered_display": "74",
+      "missing_lines": 25,
+      "excluded_lines": 0,
+      "percent_statements_covered": 74.48979591836735,
+      "percent_statements_covered_display": "74"
+    },
+    "src/plume_advanced/visualization/geometry.py": {
+      "covered_lines": 37,
+      "num_statements": 292,
+      "percent_covered": 12.67123287671233,
+      "percent_covered_display": "13",
+      "missing_lines": 255,
+      "excluded_lines": 0,
+      "percent_statements_covered": 12.67123287671233,
+      "percent_statements_covered_display": "13"
+    },
+    "src/plume_advanced/visualization/host_field.py": {
+      "covered_lines": 53,
+      "num_statements": 55,
+      "percent_covered": 96.36363636363636,
+      "percent_covered_display": "96",
+      "missing_lines": 2,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.36363636363636,
+      "percent_statements_covered_display": "96"
+    },
+    "src/plume_advanced/visualization/inspection.py": {
+      "covered_lines": 41,
+      "num_statements": 108,
+      "percent_covered": 37.96296296296296,
+      "percent_covered_display": "38",
+      "missing_lines": 67,
+      "excluded_lines": 0,
+      "percent_statements_covered": 37.96296296296296,
+      "percent_statements_covered_display": "38"
+    },
+    "src/plume_advanced/visualization/interconnected.py": {
+      "covered_lines": 0,
+      "num_statements": 68,
+      "percent_covered": 0.0,
+      "percent_covered_display": "0",
+      "missing_lines": 68,
+      "excluded_lines": 0,
+      "percent_statements_covered": 0.0,
+      "percent_statements_covered_display": "0"
+    },
+    "src/plume_advanced/visualization/network.py": {
+      "covered_lines": 279,
+      "num_statements": 320,
+      "percent_covered": 87.1875,
+      "percent_covered_display": "87",
+      "missing_lines": 41,
+      "excluded_lines": 0,
+      "percent_statements_covered": 87.1875,
+      "percent_statements_covered_display": "87"
+    },
+    "src/plume_advanced/visualization/network_systems.py": {
+      "covered_lines": 0,
+      "num_statements": 73,
+      "percent_covered": 0.0,
+      "percent_covered_display": "0",
+      "missing_lines": 73,
+      "excluded_lines": 0,
+      "percent_statements_covered": 0.0,
+      "percent_statements_covered_display": "0"
+    },
+    "src/plume_advanced/visualization/network_topology.py": {
+      "covered_lines": 0,
+      "num_statements": 68,
+      "percent_covered": 0.0,
+      "percent_covered_display": "0",
+      "missing_lines": 68,
+      "excluded_lines": 0,
+      "percent_statements_covered": 0.0,
+      "percent_statements_covered_display": "0"
+    },
+    "src/plume_advanced/visualization/section_field.py": {
+      "covered_lines": 174,
+      "num_statements": 192,
+      "percent_covered": 90.625,
+      "percent_covered_display": "91",
+      "missing_lines": 18,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.625,
+      "percent_statements_covered_display": "91"
+    },
+    "src/plume_advanced/world.py": {
+      "covered_lines": 165,
+      "num_statements": 180,
+      "percent_covered": 91.66666666666667,
+      "percent_covered_display": "92",
+      "missing_lines": 15,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.66666666666667,
+      "percent_statements_covered_display": "92"
+    }
+  }
+}

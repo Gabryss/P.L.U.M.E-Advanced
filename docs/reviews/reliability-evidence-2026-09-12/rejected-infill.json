@@ -1,0 +1,40 @@
+{
+  "events": [
+    {
+      "id": 0,
+      "kind": "collapse",
+      "applied": true
+    },
+    {
+      "id": 11,
+      "kind": "collapse",
+      "applied": true
+    },
+    {
+      "id": 19,
+      "kind": "infill",
+      "applied": false
+    },
+    {
+      "id": 20,
+      "kind": "choke",
+      "applied": true
+    }
+  ],
+  "floor": {
+    "cell_count": 544.0,
+    "grounded_cell_count": 544.0,
+    "segment_count": 6.0,
+    "mean_clearance_m": 1.5465750525979438,
+    "vertical_overlap_pixel_count": 0.0,
+    "invalidated_cell_count": 3.0,
+    "geologically_influenced_cell_count": 50.0,
+    "sediment_cell_count": 0.0,
+    "breakdown_cell_count": 38.0,
+    "debris_cell_count": 11.0,
+    "constriction_cell_count": 1.0,
+    "bare_basalt_cell_count": 494.0,
+    "chamber_cell_count": 0.0,
+    "terminus_cell_count": 21.0
+  }
+}

@@ -86,11 +86,17 @@ def apply_cave_material(
     uv_accessor = doc['accessors'][uv_index]
     uvs = asset.accessor(uv_index).astype('<f4') * (source_tile_size_m / config.cave_texture_scale_m)
     uv_bytes = uvs.tobytes()
-    uv_accessor.update(bufferView=len(doc['bufferViews']), byteOffset=0,
-                       min=uvs.min(axis=0).tolist(), max=uvs.max(axis=0).tolist())
-    doc['bufferViews'].append({'buffer': 0, 'byteOffset': len(binary),
-                               'byteLength': len(uv_bytes), 'target': 34962})
-    binary.extend(uv_bytes)
+    view = doc['bufferViews'][uv_accessor['bufferView']]
+    # PLUME emits tightly packed float32 UVs. Replace that range instead of
+    # retaining a second, unused copy for every vertex in a large cave.
+    if (uv_accessor.get('componentType') != 5126 or 'sparse' in uv_accessor
+            or view.get('byteStride', 8) != 8):
+        raise ValueError('Material revision requires packed float32 UVs')
+    start = view.get('byteOffset', 0) + uv_accessor.get('byteOffset', 0)
+    if start + len(uv_bytes) > view.get('byteOffset', 0) + view['byteLength']:
+        raise ValueError('UV accessor exceeds its buffer view')
+    binary[start:start+len(uv_bytes)] = uv_bytes
+    uv_accessor.update(min=uvs.min(axis=0).tolist(), max=uvs.max(axis=0).tolist())
     doc['buffers'][0]['byteLength'] = len(binary)
     doc['asset'].setdefault('extras', {})['material_revision'] = 'plume.tiled-pbr.v1'
     encoded = json.dumps(doc, separators=(',', ':')).encode()

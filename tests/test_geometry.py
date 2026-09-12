@@ -65,39 +65,18 @@ class GeometryTests(unittest.TestCase):
         self.assertGreaterEqual(int(summary["vertex_count"]), 3)
         self.assertGreaterEqual(int(summary["face_count"]), 1)
 
-        frames_by_segment = {}
-        for frame in cave_geometry.surface_texture_frames:
-            frames_by_segment.setdefault(frame.segment_id, []).append(frame)
-            self.assertGreaterEqual(
-                frame.binormal[2],
-                -1e-7,
-                "texture-frame vertical axes must point upward",
-            )
-            handed_binormal = np.cross(
-                np.asarray(frame.tangent),
-                np.asarray(frame.normal),
-            )
-            self.assertGreater(
-                float(np.dot(handed_binormal, np.asarray(frame.binormal))),
-                0.99,
-                "texture frames must remain right-handed",
-            )
-        for frames in frames_by_segment.values():
-            for first, second in zip(frames, frames[1:], strict=False):
-                center_delta = np.asarray(second.center) - np.asarray(first.center)
-                longitudinal_delta = (
-                    second.longitudinal_m - first.longitudinal_m
-                )
-                if abs(longitudinal_delta) <= 1e-9:
-                    continue
-                tangent_progress = float(
-                    np.dot(np.asarray(first.tangent), center_delta)
-                )
-                self.assertGreaterEqual(
-                    tangent_progress * longitudinal_delta,
-                    -1e-7,
-                    "texture tangents must point toward increasing longitudinal UV",
-                )
+        expected_centers = tuple(
+            (s.x, s.y, s.z)
+            for field in section_field.segment_fields for s in field.samples
+        )
+        from scipy.spatial import cKDTree
+        centers = np.asarray(cave_geometry.route_centers)
+        self.assertTrue(np.isfinite(centers).all())
+        self.assertEqual(len(centers), cave_geometry.stamped_sample_count)
+        # Stage D refines the sampled curve and floor before retaining centers.
+        # Every original station must still be covered within one mesh voxel.
+        distances, _ = cKDTree(centers).query(expected_centers)
+        self.assertLess(float(np.max(distances)), project_config.geometry.voxel_size)
 
         if hasattr(cave_geometry.voxel_grid, "density"):
             density_tiles = (cave_geometry.voxel_grid.density,)

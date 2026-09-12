@@ -22,25 +22,51 @@ from plume_advanced.stages.network_quality import (
 )
 
 
-def repair_network(generator, host, network, repair_pass):
+def limit_width_gradient(widths: np.ndarray, arc: np.ndarray, gradient: float) -> np.ndarray:
+    """Largest non-expanding width envelope with a bounded spatial slope."""
+    if widths.shape != arc.shape or not np.isfinite(widths).all() or not np.isfinite(arc).all():
+        raise ValueError("Width constraints require matching finite arrays")
+    if np.any(widths <= 0) or np.any(np.diff(arc) < 0) or not np.isfinite(gradient) or gradient <= 0:
+        raise ValueError("Width constraints require positive widths/gradient and ordered distances")
+    if not len(widths):
+        return widths.copy()
+    distance = gradient * (arc - arc[0])
+    left = distance + np.minimum.accumulate(widths - distance)
+    right = -distance + np.minimum.accumulate((widths + distance)[::-1])[::-1]
+    return np.minimum(widths, np.minimum(left, right))
+
+
+def repair_network(generator, host, network, repair_pass, *, failed_checks=None):
     """Keep graph nodes and topology fixed; rebuild all dependent geometry/state.
 
     A global displacement bound avoids the sharp derivative discontinuities of
     independently clipping each smoothing offset. No branch is silently deleted.
     """
     config = generator.config
+    section_clearance_checks = {
+        "nonlocal_passage_overlap", "section_island_clearance", "section_footprint_islands",
+    }
+    preserve_routes = bool(failed_checks) and all(
+        check["name"] in section_clearance_checks for check in failed_checks
+    )
+    affected = {sid for check in (failed_checks or []) for sid in check.get("segment_ids", [])}
     nodes = {n.node_id: n for n in network.nodes}
     outgoing = {s.start_node_id for s in network.segments}
     degrees = network._degrees()
-    repaired, desired_widths = [], {}
+    repaired = []
+    desired_widths: dict[int, np.ndarray | list[float]] = {}
     for segment in network.segments:
         raw = np.array([[p.x, p.y] for p in segment.points])
+        if len(raw) < 2 or not np.isfinite(raw).all():
+            raise ValueError(f"Segment {segment.segment_id} has no finite repairable route")
         arc = np.r_[0, np.cumsum(np.linalg.norm(np.diff(raw, axis=0), axis=1))]
+        if arc[-1] <= 1e-9:
+            raise ValueError(f"Segment {segment.segment_id} has zero length; try a fresh candidate")
         spacing = min(2.0, 0.2 * segment.mean_width)
         distances = np.linspace(0, arc[-1], max(5, int(np.ceil(arc[-1] / spacing)) + 1))
         linear = np.column_stack([np.interp(distances, arc, raw[:, k]) for k in range(2)])
         sigma = min((1.5 + repair_pass) * segment.mean_width, 0.18 * arc[-1])
-        coords = gaussian_filter1d(
+        coords = linear.copy() if preserve_routes else gaussian_filter1d(
             linear, sigma / (distances[1] - distances[0]), axis=0, mode="nearest"
         )
         t = distances / arc[-1]
@@ -71,7 +97,15 @@ def repair_network(generator, host, network, repair_pass):
             # erase the rock island between two valid routes.
             widths = gaussian_filter1d(old_width, max(1., sigma / (distances[1] - distances[0])), mode="nearest")
             widths = np.minimum(widths, 1.9 * config.maximum_passage_radius)
-        metadata = dict(segment.metadata, quality_repair_pass=repair_pass + 1)
+        if preserve_routes:
+            # Narrow conflicting envelopes before touching an already accepted
+            # route. Smoothing island arms toward their chord closes the solid
+            # island and can make a section-clearance failure worse.
+            widths = old_width.copy()
+            if not affected or segment.segment_id in affected:
+                widths = np.minimum(widths, np.maximum(2 * config.minimum_passage_radius, .85 * widths))
+        metadata = dict(segment.metadata, quality_repair_pass=repair_pass + 1,
+                        quality_repair_kind="section_width" if preserve_routes else "route")
         if (
             segment.kind in BLIND_KINDS
             and segment.end_node_id not in outgoing
@@ -80,13 +114,13 @@ def repair_network(generator, host, network, repair_pass):
             reach = min(0.45 * new_arc[-1], 6 * target)
             u = np.clip((new_arc - (new_arc[-1] - reach)) / max(reach, 1e-9), 0, 1)
             factor = 1 - (1 - config.quality.terminal_width_ratio * 0.8) * u * u * (3 - 2 * u)
-            if config.topology.style in {"trunk_dominated", "interconnected"}:
-                # Reapply an absolute envelope cap after smoothing, not a
-                # cumulative multiplier that pinches tips on every repair.
-                widths = np.minimum(widths, float(max(widths)) * factor)
-            else:
-                widths *= factor
+            # Reapply an absolute cap, rather than compounding the taper on
+            # every repair. This also applies to general lobe growth.
+            widths = np.minimum(widths, float(max(widths)) * factor)
             metadata["quality_terminal_taper"] = True
+        # Centerline smoothing changes station distances. Width interpolation
+        # on the original arc alone can leave arbitrarily steep transitions.
+        widths = limit_width_gradient(widths, new_arc, 0.95 * config.quality.maximum_width_gradient)
         points = []
         for index, (xy, distance, width) in enumerate(zip(coords, new_arc, widths)):
             substrate = host.sample(float(xy[0]), float(xy[1]))
@@ -108,7 +142,7 @@ def repair_network(generator, host, network, repair_pass):
         desired_widths[segment.segment_id] = widths
         repaired.append(replace(segment, points=tuple(points), metadata=metadata))
     # Recompute cooling/travel ages and flux against the repaired lengths.
-    if config.topology.style == "interconnected":
+    if config.topology.style == "interconnected" and not preserve_routes:
         from plume_advanced.stages.network_interconnected import smooth_routes
         repaired = smooth_routes(host, repaired, network.backend_provenance["flow_direction"])
         desired_widths = {s.segment_id: [p.width for p in s.points] for s in repaired}
@@ -158,6 +192,7 @@ def repair_network(generator, host, network, repair_pass):
 def generate_accepted_network(
     generator, host, *, section_config=None, report_path=None, progress=None
 ):
+    from plume_advanced.stages.network_systems import GenerationDomainError
     from plume_advanced.stages.section_field import SectionFieldGenerator
 
     config = generator.config
@@ -208,6 +243,7 @@ def generate_accepted_network(
         worker = copy(generator)
         worker.config = replace(config, random_seed=seed)
         candidate = None
+        previous_failed_checks: list[dict[str, Any]] = []
         for repair_pass in range(config.quality.repair_passes + 1):
             try:
                 if repair_pass == 0:
@@ -216,7 +252,8 @@ def generate_accepted_network(
                     )
                     candidate = worker._generate_candidate(host)
                 else:
-                    candidate = repair_network(worker, host, candidate, repair_pass - 1)
+                    candidate = repair_network(worker, host, candidate, repair_pass - 1,
+                                               failed_checks=previous_failed_checks)
                 assessment = assess_network(candidate, host)
                 # Section generation is much cheaper than meshing, but skip it
                 # while a candidate still has known network construction defects.
@@ -229,7 +266,11 @@ def generate_accepted_network(
                     "repair_pass": repair_pass,
                     **assessment,
                 }
-            except ValueError as error:
+            except GenerationDomainError as error:
+                report.update(status="invalid_input", failure_reason=str(error))
+                publish(str(error))
+                raise
+            except (ValueError, ArithmeticError) as error:
                 record = {
                     "attempt": attempt,
                     "seed": canonical_seed(seed),
@@ -248,6 +289,7 @@ def generate_accepted_network(
                 }
             report["attempts"].append(record)
             failed = [c["name"] for c in record["checks"] if not c["passed"]]
+            previous_failed_checks = [c for c in record["checks"] if not c["passed"]]
             if record["accepted"]:
                 report.update(
                     status="accepted",

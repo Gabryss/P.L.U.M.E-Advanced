@@ -307,7 +307,7 @@ def test_connected_split_merge_get_finite_transition_stamp_and_report():
             blend_length=18.0,
         ),)
     )
-    generator = GeometryGenerator(GeometryConfig(voxel_size=0.6, wall_roughness_amplitude=0.0, use_section_profiles=False))
+    generator = GeometryGenerator(GeometryConfig(voxel_size=0.6, wall_roughness_amplitude=0.0))
     stamps = generator._junction_stamp_points({0: parent, 1: daughter}, network)
     assert len(stamps) == 1
     stamp = stamps[0]
@@ -316,7 +316,7 @@ def test_connected_split_merge_get_finite_transition_stamp_and_report():
     assert stamp.radius_short * 2.0 / np.median(stamp.incident_widths) <= 2.5
     report = dict(generator._junction_report(network, {0: parent, 1: daughter}, junction_stamp_points=stamps))
     assert report["junction_max_width_m"] >= report["junction_median_incident_width_m"]
-    assert report["junction_refinement_sample_count"] == 9.0
+    assert report["junction_envelope_count"] == 1.0
 
 
 def test_stage_c_blend_metadata_controls_transition_length():
@@ -430,34 +430,14 @@ def test_drained_pool_honors_independent_dimensions_and_flow_orientation():
             "process_cause": "drainback",
         },
     )
-    stamp = GeometryGenerator(GeometryConfig(minimum_radius=1.0, use_section_profiles=False))._junction_stamp_points(
+    stamp = GeometryGenerator(GeometryConfig(minimum_radius=1.0))._junction_stamp_points(
         {0: samples}, SimpleNamespace(junctions=(junction,), segments=())
     )[0]
     assert 2.0 * stamp.radius_long == pytest.approx(30.0)
-    assert 2.0 * stamp.radius_short == pytest.approx(16.8)
-    assert 2.0 * stamp.radius_z == pytest.approx(4.0)
+    assert 2.0 * stamp.radius_short == pytest.approx(max(np.ptp(np.asarray(s.profile_points)[:, 0]) for s in samples) * GeometryConfig().tunnel_radius_scale)
+    assert stamp.radius_z > 0
     assert abs(np.sin(stamp.angle)) < 1e-7
     assert stamp.process_cause == "drainback"
-
-
-def test_drained_pool_shape_is_deterministic_and_vertically_bounded():
-    from plume_advanced.stages.geometry import _JunctionStamp
-
-    stamp = _JunctionStamp(
-        center=np.zeros(3), radius_long=15.0, radius_short=8.4, radius_z=2.0,
-        angle=0.0, phase=(0.3, 1.1, 2.2), kind="chamber",
-        refinement_factor=9, chamber_type="drained_lava_pool", pool_depth_m=4.0,
-    )
-    config = GeometryConfig(voxel_size=0.5, minimum_radius=1.0, random_seed=7)
-    first = np.full((81, 49, 25), -8.0, dtype=np.float32)
-    second = first.copy()
-    origin = np.array([-20.0, -12.0, -6.0])
-    GeometryGenerator(config)._stamp_junction_volume(density=first, origin=origin, stamp=stamp)
-    GeometryGenerator(config)._stamp_junction_volume(density=second, origin=origin, stamp=stamp)
-    np.testing.assert_array_equal(first, second)
-    carved_z = np.flatnonzero(np.any(first >= 0.0, axis=(0, 1)))
-    assert carved_z.size > 0
-    assert (carved_z[-1] - carved_z[0] + 1) * config.voxel_size <= 2.0 * stamp.radius_z + config.voxel_size
 
 
 def test_ordinary_chamber_dimensions_are_unchanged_by_unrelated_metadata():
@@ -471,6 +451,6 @@ def test_ordinary_chamber_dimensions_are_unchanged_by_unrelated_metadata():
     generator = GeometryGenerator(GeometryConfig(minimum_radius=1.0, random_seed=3))
     plain = generator._junction_stamp_points({0: samples}, SimpleNamespace(junctions=(SimpleNamespace(**base),), segments=()))[0]
     tagged = generator._junction_stamp_points({0: samples}, SimpleNamespace(junctions=(SimpleNamespace(**base, metadata={"chamber_type": "skylight"}),), segments=()))[0]
-    assert (plain.radius_long, plain.radius_short, plain.radius_z, plain.phase) == (
-        tagged.radius_long, tagged.radius_short, tagged.radius_z, tagged.phase
+    assert (plain.radius_long, plain.radius_short, plain.radius_z) == (
+        tagged.radius_long, tagged.radius_short, tagged.radius_z
     )

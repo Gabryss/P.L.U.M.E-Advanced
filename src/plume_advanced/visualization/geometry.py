@@ -530,8 +530,7 @@ class GeometryPlotter:
                 alpha=0.9,
             )
 
-    @staticmethod
-    def _carved_footprint(cave_geometry: CaveGeometry) -> tuple[np.ndarray, tuple[float, float, float, float]]:
+    def _carved_footprint(self, cave_geometry: CaveGeometry) -> tuple[np.ndarray, tuple[float, float, float, float]]:
         grid = cave_geometry.voxel_grid
         if not isinstance(grid, VoxelGrid):
             raise TypeError("A dense voxel grid is required for footprint visualization.")
@@ -546,8 +545,7 @@ class GeometryPlotter:
         )
         return footprint, extent
 
-    @staticmethod
-    def _carved_profile(cave_geometry: CaveGeometry) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def _carved_profile(self, cave_geometry: CaveGeometry) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         grid = cave_geometry.voxel_grid
         if not isinstance(grid, VoxelGrid):
             raise TypeError("A dense voxel grid is required for profile visualization.")

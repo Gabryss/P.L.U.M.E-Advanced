@@ -1,0 +1,23 @@
+{
+  "schema": "plume.export-size.v1",
+  "visual_triangles": 326596,
+  "visual_vertices_after_uv_seams": 181823,
+  "cave_vertex_and_index_bytes": 12646656,
+  "collision_triangles": 0,
+  "files": {
+    "plume_cave.glb": 12648988,
+    "plume_cave.manifest.json": 2477,
+    "plume_cave_fallback.obj": 39547194,
+    "plume_cave_fallback.mtl": 173,
+    "plume_cave_import_blender.py": 1106,
+    "README_IMPORT_BLENDER.txt": 438,
+    "plume_cave.blender_validation.json": 359,
+    "plume_cave.blender.json": 730
+  },
+  "total_file_bytes": 52201465,
+  "limits": {
+    "visual_triangles": 0,
+    "asset_bytes": 0
+  },
+  "scope": "File and mesh buffers; engine runtime memory and texture mipmaps are additional. No automatic geometry decimation."
+}

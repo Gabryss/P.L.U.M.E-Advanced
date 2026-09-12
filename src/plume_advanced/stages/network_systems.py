@@ -65,6 +65,10 @@ class NetworkSystemsConfig:
             raise ValueError("network.systems persistence lengths must be at least three widths")
 
 
+class GenerationDomainError(ValueError):
+    """Seed-independent incompatibility between host extent and requested tubes."""
+
+
 def _cross_bounds(host, geometry, along, margin):
     """Intersect flow-aligned stations with the actual rectangular host."""
     lower, upper = np.full_like(along, -np.inf), np.full_like(along, np.inf)
@@ -75,14 +79,18 @@ def _cross_bounds(host, geometry, along, margin):
         base = origin + along * flow
         if abs(cross) < 1e-10:
             if np.any(base < coords[0] + margin) or np.any(base > coords[-1] - margin):
-                raise ValueError(
-                    "Interacting systems do not fit inside the host along the flow direction"
+                raise GenerationDomainError(
+                    "Requested routes do not fit inside the host along the flow direction. "
+                    f"Required wall margin is {margin:.3g} m; enlarge the host or shorten the route."
                 )
             continue
         a, b = (coords[0] + margin - base) / cross, (coords[-1] - margin - base) / cross
         lower, upper = np.maximum(lower, np.minimum(a, b)), np.minimum(upper, np.maximum(a, b))
     if np.any(lower >= upper):
-        raise ValueError("Host is too narrow for interacting systems")
+        raise GenerationDomainError(
+            f"Host is too narrow for the requested tube scale (wall margin {margin:.3g} m). "
+            "Enlarge host_field.grid or reduce the requested passage scale; changing seeds cannot fix this."
+        )
     return lower, upper
 
 
@@ -100,7 +108,7 @@ def preferred_tracks(generator, host, geometry, *, corridor=None, preserve_ident
     spacing = controls.source_spacing_widths * width
     sources = (np.arange(controls.count) - (controls.count - 1) / 2) * spacing
     if sources[0] < lower[0] or sources[-1] > upper[0]:
-        raise ValueError(
+        raise GenerationDomainError(
             "Source spacing/count does not fit inside the host; widen the host or reduce spacing"
         )
     correlation = controls.correlation_length_widths * width
@@ -110,7 +118,14 @@ def preferred_tracks(generator, host, geometry, *, corridor=None, preserve_ident
         rng = procedural_rng(config.random_seed, "network-system", system_id)
         noise = rng.normal(0, controls.lateral_variation_widths * width, len(knots))
         noise[0] = 0
-        target = source + CubicSpline(knots, noise, bc_type="natural")(along)
+        variation = CubicSpline(knots, noise, bc_type="natural")(along)
+        if config.topology.style == "trunk_dominated":
+            # A kilometre-long gallery samples many more random extremes than
+            # a short one. Keep its lateral variation a bounded amplitude,
+            # without clipping the route into straight plateaus.
+            amplitude = controls.lateral_variation_widths * width
+            variation = amplitude * np.tanh(variation / amplitude)
+        target = source + variation
         if corridor is not None:
             # Independent preferences share a host corridor, not a prescribed
             # confluence. Their convergence and divergence determine events.
@@ -159,7 +174,8 @@ def enforce_source_order(tracks: np.ndarray) -> None:
         tracks[:, index] = [mean for mean, count in blocks for _ in range(count)]
 
 
-def plan_interactions(along, tracks, width, controls, *, events=None, local_spacing=False, connection_check=None):
+def plan_interactions(along, tracks, width, controls, *, events=None, local_spacing=False,
+                      connection_check=None, simple_splits=False):
     """Return explicit directed nodes and disjoint shared-passage records.
 
     Each record is (start node, end node, first station, last station,
@@ -189,7 +205,8 @@ def plan_interactions(along, tracks, width, controls, *, events=None, local_spac
         for group in groups:
             first = active[group][1]
             if (
-                len(group) < 2
+                (simple_splits and len(active) != 1)
+                or len(group) < 2
                 or position - along[first] < controls.minimum_shared_length_widths * width
                 or (local_spacing and position-along[first] < controls.interaction_spacing_widths*width)
             ):

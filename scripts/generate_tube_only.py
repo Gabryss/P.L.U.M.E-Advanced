@@ -8,7 +8,7 @@ import hashlib
 import json
 import pickle
 import time
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import numpy as np
@@ -22,7 +22,7 @@ from plume_advanced.evaluation.artifacts import (
 )
 from plume_advanced.evaluation.local_geometry import section_resolution_report
 from plume_advanced.stages.geometry import GeometryGenerator
-from plume_advanced.stages.geometry_export import _smooth_visual_surface, density_surface_normals
+from plume_advanced.stages.geometry_export import export_geometry_glb
 from plume_advanced.stages.host_field import HostFieldGenerator
 from plume_advanced.stages.network import CaveNetworkGenerator
 from plume_advanced.stages.section_field import SectionFieldGenerator
@@ -38,6 +38,8 @@ def main() -> None:
     if config.events.enabled or config.events.include_rock_props:
         parser.error("Use a configuration with events and rock props disabled")
     out = args.output_directory
+    if out.exists() and any(out.iterdir()):
+        raise FileExistsError(f"Choose an empty output directory: {out}")
     out.mkdir(parents=True, exist_ok=True)
     started = time.monotonic()
     last_update = 0.0
@@ -75,26 +77,16 @@ def main() -> None:
 def export_surface(geometry, out: Path, *, elapsed_before_export: float = 0.) -> None:
     """Export and reload-check a completed geometry, without repeating generation."""
     started = time.monotonic()
-    vertices = np.asarray(geometry.assembled_vertices, dtype=np.float64)
-    faces = np.asarray(geometry.assembled_faces, dtype=np.int64)
-    if not len(faces):
-        raise RuntimeError("No open cave surface survived stability screening")
-    vertices = _smooth_visual_surface(vertices, faces, iterations=geometry.config.cave_smoothing_iterations)
-    mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
-    mesh.vertex_normals = density_surface_normals(
-        geometry.voxel_grid, vertices, mesh.vertex_normals,
-        filter_voxels=geometry.config.surface_normal_filter_voxels,
-    )
-    mesh.apply_transform(np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, -1, 0, 0], [0, 0, 0, 1]]))
-    mesh.visual = trimesh.visual.TextureVisuals(material=trimesh.visual.material.PBRMaterial(
-        name="Neutral cave surface", baseColorFactor=[150,143,130,255],
-        metallicFactor=0., roughnessFactor=.95, doubleSided=True,
+    if geometry.event_meshes:
+        raise ValueError("Tube-only export cannot contain rock meshes")
+    geometry = replace(geometry, config=replace(
+        geometry.config, cave_diffuse_texture="", cave_normal_texture="",
+        cave_roughness_texture="", cave_displacement_texture="", cave_displacement_scale_m=0.,
     ))
-    mesh.metadata = {"kind": "cave_wall", "units": "metres", "rock_props": 0}
-    scene = trimesh.Scene()
-    scene.add_geometry(mesh, node_name="cave_wall", geom_name="cave_wall")
     path = out / "lava_tube_geometry.glb"
-    scene.export(path)
+    if path.exists():
+        raise FileExistsError(f"Choose a new output file: {path}")
+    export_geometry_glb(geometry, path)
     loaded = trimesh.load(path, force="scene", process=False)
     parts = list(loaded.geometry.values())
     if len(parts) != 1:

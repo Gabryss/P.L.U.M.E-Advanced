@@ -31,7 +31,6 @@ from plume_advanced.stages.geometry_types import (
     CaveGeometry,
     GeometryChunkMesh,
     GeometryConfig,
-    SurfaceTextureFrame,
     VoxelGrid,
 )
 
@@ -216,14 +215,7 @@ class GeometryExportTests(unittest.TestCase):
             dtype=np.float64,
         )
         wall_faces = np.array(((0, 1, 2),), dtype=np.uint32)
-        frame = SurfaceTextureFrame(
-            segment_id=1,
-            center=(0.0, 0.0, 0.0),
-            tangent=(0.0, 1.0, 0.0),
-            normal=(1.0, 0.0, 0.0),
-            binormal=(0.0, 0.0, 1.0),
-            longitudinal_m=0.0,
-        )
+        frame = (0.0, 0.0, 0.0)
         oriented = _orient_faces_toward_cave_interior(
             wall_vertices,
             wall_faces,

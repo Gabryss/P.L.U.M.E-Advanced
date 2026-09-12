@@ -1,0 +1,14 @@
+{
+  "checkpoint": {
+    "normal_seconds": 0.846175027982099,
+    "tangent_seconds": 0.41702048300066963
+  },
+  "batched": {
+    "normal_seconds": 0.011404087010305375,
+    "tangent_seconds": 0.009119388996623456
+  },
+  "triangles": 20000,
+  "vertices": 10000,
+  "scope": "Single-process shading helpers, not whole-generation speedup",
+  "baseline": "89d7f6a"
+}

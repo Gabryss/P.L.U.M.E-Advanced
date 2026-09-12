@@ -1,0 +1,2143 @@
+{
+  "schema": "plume.reliability-evidence.v1",
+  "complete": true,
+  "passed": true,
+  "source_unchanged": true,
+  "source_sha256": "22f29272488ff42553ef4a53b5110f6306e98712253d1336eb404ad1edc36d2d",
+  "runtime": {
+    "dependencies": {
+      "laspy": "2.7.0",
+      "lazrs": "0.8.2",
+      "matplotlib": "3.11.1",
+      "numpy": "2.5.1",
+      "pillow": "12.3.0",
+      "psutil": "7.2.2",
+      "rich": "15.0.0",
+      "rocky": "0.1.0",
+      "scikit-image": "0.26.0",
+      "scipy": "1.18.0",
+      "trimesh": "4.12.2",
+      "xatlas": "0.0.11"
+    },
+    "implementation": "CPython",
+    "machine": "x86_64",
+    "python": "3.13.5",
+    "schema": "plume.runtime.v1",
+    "system": "Linux"
+  },
+  "cases_passed": 61,
+  "replays_passed": 61,
+  "network_and_sections_cases": 59,
+  "full_cases": 2,
+  "method": {
+    "workers": 6,
+    "memory_limit_mib_per_worker": 8192,
+    "matrix_timeout_s_per_worker": 600,
+    "additional_moon_timeout_s_per_worker": 900,
+    "python_hash_seeds": [
+      11,
+      37
+    ],
+    "timing_limitation": "Concurrent worker timings, not controlled performance benchmarks"
+  },
+  "cases": [
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_single.toml",
+        "scope": "sections",
+        "seed": 0,
+        "voxel_size": null
+      },
+      "elapsed_s": 38.23585581101361,
+      "exit_code": 0,
+      "identity": {
+        "host": "3e570c8b95dee992340245963bca024e0e61a7803d46e7da1bcde0f1647607da",
+        "network": "eee834f43bc2b15bc8fe6cca88954a3362c44ca6ce34ed1fc6b75da8ecb892b3",
+        "sections": "23c1bf5e0514a1e7d000566f737de879493157638c9c92dfb2e480d8da83f94e"
+      },
+      "matrix_index": 0,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 3360.8925184393383,
+        "repair_pass": 1,
+        "segment_count": 24,
+        "selected_attempt": 3
+      },
+      "peak_rss_mib": 255.37109375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.24219459600863047,
+        "network": 28.005194973986363,
+        "sections": 9.063703659019666
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_single.toml",
+        "scope": "sections",
+        "seed": 1,
+        "voxel_size": null
+      },
+      "elapsed_s": 40.57231354099349,
+      "exit_code": 0,
+      "identity": {
+        "host": "7f5ca1c3e06afb1ce3d868277c81276e4c99f8856bb97d4a508b2717b2ddb026",
+        "network": "7b7e7809dc88c756d75f2557337bf501511aad9fba51f21a892580df2ca31f99",
+        "sections": "a97bfac9598cb1bb6dbd5a82349a6ef5d5bdb6b1c79a4401849bdd01cb2685b0"
+      },
+      "matrix_index": 1,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 3305.513811012747,
+        "repair_pass": 0,
+        "segment_count": 21,
+        "selected_attempt": 3
+      },
+      "peak_rss_mib": 256.34375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.24167537098401226,
+        "network": 33.791338597016875,
+        "sections": 5.842968525015749
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_single.toml",
+        "scope": "sections",
+        "seed": 2,
+        "voxel_size": null
+      },
+      "elapsed_s": 94.5606738239876,
+      "exit_code": 0,
+      "identity": {
+        "host": "86922a79c6411a3e523045d58ff90ad4dc9b53a96b18cd604dff7dfd9ebbb64d",
+        "network": "884472619e0dcb6d52dbdcd6b96c13320b12d86012c30bee0bbbc62a7d3e9583",
+        "sections": "bcc71056845afd9e4ca3831ba80d59b2a8671b59da783dc1612a54407bcbb555"
+      },
+      "matrix_index": 2,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 3304.1825198607635,
+        "repair_pass": 0,
+        "segment_count": 23,
+        "selected_attempt": 11
+      },
+      "peak_rss_mib": 258.578125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.35229748400161043,
+        "network": 84.89908953401027,
+        "sections": 8.325527503009653
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_single.toml",
+        "scope": "sections",
+        "seed": 3,
+        "voxel_size": null
+      },
+      "elapsed_s": 45.90662043899647,
+      "exit_code": 0,
+      "identity": {
+        "host": "83199f716a4ec21e2a643b94bd5cc976f0ca0553a22289b85a5b67e14ea36fa8",
+        "network": "c76e6ab741753b7fdae7011fb51630e4497f196eb6e156ac4ba6407919d1aa0b",
+        "sections": "e0f36caba09bc4a3a59684984818c06dccbf327c02eaf6a93fd08136307bb489"
+      },
+      "matrix_index": 3,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 3283.1973237599295,
+        "repair_pass": 0,
+        "segment_count": 21,
+        "selected_attempt": 4
+      },
+      "peak_rss_mib": 241.578125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.2939784759946633,
+        "network": 38.71826238799258,
+        "sections": 5.983406090992503
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_single.toml",
+        "scope": "sections",
+        "seed": 17,
+        "voxel_size": null
+      },
+      "elapsed_s": 49.54301674599992,
+      "exit_code": 0,
+      "identity": {
+        "host": "fbafae8989b1f27071cb1a6ab4de20baf0ba1d18b69d21a8cf4e2dd815f2ac59",
+        "network": "bb3486ffe79a30f0eafe8aae7f42f8765f60d578c0cc51be8f42545450ca658a",
+        "sections": "3593e572f7384df4c196040719c28266f2be543eb948c06b7c06813df2005cd6"
+      },
+      "matrix_index": 4,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 3342.8172190790083,
+        "repair_pass": 3,
+        "segment_count": 24,
+        "selected_attempt": 4
+      },
+      "peak_rss_mib": 252.84765625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.31242298800498247,
+        "network": 40.66125384301995,
+        "sections": 7.571650522004347
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_single.toml",
+        "scope": "sections",
+        "seed": 42,
+        "voxel_size": null
+      },
+      "elapsed_s": 19.045849448011722,
+      "exit_code": 0,
+      "identity": {
+        "host": "fde163978e28073fb255bcb48a252d0eb9db405971c576e8c281923937ed1abc",
+        "network": "e2c9d92ce65b136312700a35bc1d2dcf2dd24bf0958ecefd9ccd108be55dc467",
+        "sections": "e0b3753eff240502c17a40ea90f37f5b936c9b0432b60a5e2850811a5ac4d03f"
+      },
+      "matrix_index": 5,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 3330.230399195418,
+        "repair_pass": 0,
+        "segment_count": 23,
+        "selected_attempt": 1
+      },
+      "peak_rss_mib": 232.71484375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.2388648549967911,
+        "network": 10.019036468991544,
+        "sections": 7.894259658001829
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_single.toml",
+        "scope": "sections",
+        "seed": 20260910,
+        "voxel_size": null
+      },
+      "elapsed_s": 154.30700027401326,
+      "exit_code": 0,
+      "identity": {
+        "host": "463412ad6eda5a17825262f33f6a05294d1b23db2be915738ab0cd10cac48096",
+        "network": "423f76d95505fa694877300da7495ff1d1605f8584ed28500bde052affc9aa27",
+        "sections": "abccf6b889df300d08925fb79bb6754f5909eaffb291434d07bf37a769ab6f62"
+      },
+      "matrix_index": 6,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 3292.736244899625,
+        "repair_pass": 2,
+        "segment_count": 21,
+        "selected_attempt": 5
+      },
+      "peak_rss_mib": 276.859375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.1888177559885662,
+        "network": 145.97414034599205,
+        "sections": 7.299751744023524
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_single.toml",
+        "scope": "sections",
+        "seed": 4294967295,
+        "voxel_size": null
+      },
+      "elapsed_s": 37.36612518399488,
+      "exit_code": 0,
+      "identity": {
+        "host": "ca896f968ec116a94ed1eb92d759b4c553aa8c3a9b71126e0aa8f0e1a8b170b9",
+        "network": "0295f8d08e23791ece0f3e71208c9be08f5c116cbb134d16f3c58fbfdf79562c",
+        "sections": "b76f2184afab9a1f0fcad06c63e292be8534f6f86db8e710ec274ae5dbf2b5b0"
+      },
+      "matrix_index": 7,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 3341.781350000252,
+        "repair_pass": 0,
+        "segment_count": 24,
+        "selected_attempt": 8
+      },
+      "peak_rss_mib": 250.55859375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.1921178649936337,
+        "network": 29.169176742987474,
+        "sections": 6.934871000004932
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_multi.toml",
+        "scope": "sections",
+        "seed": 0,
+        "voxel_size": null
+      },
+      "elapsed_s": 26.871966656995937,
+      "exit_code": 0,
+      "identity": {
+        "host": "1e8b21c5320a4103ddd5d0902c70eb3883115fd845a5941ac9a11db494bff0de",
+        "network": "a06135915276530237640f444f41f64313659d687d8c261cfb4464f9c44d074d",
+        "sections": "af64c14dfd0ea950523d17a3d489bd969bd202bcd04c312d981b39a07bd8e3b8"
+      },
+      "matrix_index": 8,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 3762.745788364814,
+        "repair_pass": 0,
+        "segment_count": 28,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 241.84765625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.2725872399751097,
+        "network": 15.818553491000785,
+        "sections": 9.708231848984724
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_multi.toml",
+        "scope": "sections",
+        "seed": 1,
+        "voxel_size": null
+      },
+      "elapsed_s": 26.199467839993304,
+      "exit_code": 0,
+      "identity": {
+        "host": "1182ebc15bcf958b95baeb508e6b468e76302993c40c2eff259a045e372ed8cf",
+        "network": "305a4cc7cf2053e074413bcf30db6c071373e0f8348036c53446e9a1dd1b2bb7",
+        "sections": "0aac57789ebee26c8070efae46c7f5827638c475ed8500785c9254d7047fbc3a"
+      },
+      "matrix_index": 9,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 3507.9581894262965,
+        "repair_pass": 0,
+        "segment_count": 24,
+        "selected_attempt": 23
+      },
+      "peak_rss_mib": 231.28125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.18258753401460126,
+        "network": 18.11520543700317,
+        "sections": 7.128587965999031
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_multi.toml",
+        "scope": "sections",
+        "seed": 2,
+        "voxel_size": null
+      },
+      "elapsed_s": 52.93021527599194,
+      "exit_code": 0,
+      "identity": {
+        "host": "e7cf9adad67eef1973216049ccb23eb2020a8d62e2444e98bb584b773ee0cf13",
+        "network": "10990b9adc23d7cf1d0207b95f1c96b0687e33f0cb3eaf77480a4eec674a151b",
+        "sections": "0c4dd7c747892de5cb42d4e5b99f1e1f24901b63635adabc8dc758a264ba85bd"
+      },
+      "matrix_index": 10,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 3583.7811811376714,
+        "repair_pass": 1,
+        "segment_count": 25,
+        "selected_attempt": 15
+      },
+      "peak_rss_mib": 256.3828125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.2087584650143981,
+        "network": 42.067089647985995,
+        "sections": 9.797662091004895
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_multi.toml",
+        "scope": "sections",
+        "seed": 3,
+        "voxel_size": null
+      },
+      "elapsed_s": 30.639758912991965,
+      "exit_code": 0,
+      "identity": {
+        "host": "a2bb6df82881da6f90c126767df6a997e4cb3c975fd0da0ede12fc74e7f1c760",
+        "network": "bd4c1fa72d616cabcba9aa8ba69ce31cf264d333aed2b8b9a908b776cd49f910",
+        "sections": "bca18e981f71f6686213d1b03744a1e5682546287ef7c882f92da4a2e916e104"
+      },
+      "matrix_index": 11,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 3742.3102934785325,
+        "repair_pass": 0,
+        "segment_count": 24,
+        "selected_attempt": 6
+      },
+      "peak_rss_mib": 233.37890625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.2905479919863865,
+        "network": 21.163283657020656,
+        "sections": 8.269291142001748
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_multi.toml",
+        "scope": "sections",
+        "seed": 17,
+        "voxel_size": null
+      },
+      "elapsed_s": 29.807149433006998,
+      "exit_code": 0,
+      "identity": {
+        "host": "fb63753bb04f8d904b6a477c033b78d726aeba380d67e22967af0a270628311e",
+        "network": "3074aa37c25fa925f4ac021562bcfad439cb3af9714ac420e9d6a4802297d6d7",
+        "sections": "183560776dc8f992c59487ea888ff06019439f124857f262e07731a92807da2b"
+      },
+      "matrix_index": 12,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 3504.739689688795,
+        "repair_pass": 0,
+        "segment_count": 25,
+        "selected_attempt": 13
+      },
+      "peak_rss_mib": 231.05078125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.18604485102696344,
+        "network": 20.862514981010463,
+        "sections": 7.926434625987895
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_multi.toml",
+        "scope": "sections",
+        "seed": 42,
+        "voxel_size": null
+      },
+      "elapsed_s": 51.8148589959892,
+      "exit_code": 0,
+      "identity": {
+        "host": "d960b896e8c0d60afa9e547826bd68f610dfadcb18fd844a119110b899c247d6",
+        "network": "2975236d735b18baebc3f36d4095d38d5eb656533d6807dc9b7fc733e752a7c1",
+        "sections": "90fc7d81d2b0adb9a947446f81ac0a1568cf86ffd2b84aff29e1fe14c906acb3"
+      },
+      "matrix_index": 13,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 3920.1753676851176,
+        "repair_pass": 0,
+        "segment_count": 25,
+        "selected_attempt": 45
+      },
+      "peak_rss_mib": 253.9921875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.27918134597712196,
+        "network": 40.94091254900559,
+        "sections": 9.44116782900528
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_multi.toml",
+        "scope": "sections",
+        "seed": 20260910,
+        "voxel_size": null
+      },
+      "elapsed_s": 45.19201477698516,
+      "exit_code": 0,
+      "identity": {
+        "host": "b1139ac1c66fe86e964fb7f9dfaa4589431cfc959a384f64441c734d6d653fbd",
+        "network": "5230d9d9f48d403bce02afdeedc0a36e640f1433d2fde85bc32b253c64790f61",
+        "sections": "fd43aa3244b647650c0f3a42f1b5748be9be91ba032a7503228c5248995a8171"
+      },
+      "matrix_index": 14,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 3835.52831231737,
+        "repair_pass": 0,
+        "segment_count": 25,
+        "selected_attempt": 30
+      },
+      "peak_rss_mib": 234.03125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.2396200060029514,
+        "network": 32.33413909401861,
+        "sections": 11.530745769006899
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_multi.toml",
+        "scope": "sections",
+        "seed": 4294967295,
+        "voxel_size": null
+      },
+      "elapsed_s": 30.85758874399471,
+      "exit_code": 0,
+      "identity": {
+        "host": "aff352ed7a19551c8a3099462ce7b87f4be007c4fcb7eea8c5380702f2378ee5",
+        "network": "0f9a9d1d58bec9b3e6562046e939d64fecbdd4e7f382eb9959708f33de650934",
+        "sections": "a9e69456a0abe53f89305dea8aec1f7beec2a370ad7c94a51603d85c4d75ae5e"
+      },
+      "matrix_index": 15,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 3831.929319145083,
+        "repair_pass": 0,
+        "segment_count": 34,
+        "selected_attempt": 13
+      },
+      "peak_rss_mib": 237.35546875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.27319770099711604,
+        "network": 19.209186226013117,
+        "sections": 10.26400659698993
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_interconnected.toml",
+        "scope": "sections",
+        "seed": 0,
+        "voxel_size": null
+      },
+      "elapsed_s": 40.51015465700766,
+      "exit_code": 0,
+      "identity": {
+        "host": "157704f14976c512a72f2bb850e0ed7337372c730d082ff9f050b69fedaa99d5",
+        "network": "f05e82dca21e9054a35e3af7b4c8547648fa777a2b167d07c50fc1fc22b0fb89",
+        "sections": "7e76c0cc30032a56f237727f69390dcb1580e0c6a6aa058481b4d1c9979f47dd"
+      },
+      "matrix_index": 16,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 6528.675273551093,
+        "repair_pass": 0,
+        "segment_count": 41,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 287.734375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.32347682301769964,
+        "network": 23.555744773009792,
+        "sections": 15.192590983002447
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_interconnected.toml",
+        "scope": "sections",
+        "seed": 1,
+        "voxel_size": null
+      },
+      "elapsed_s": 246.13249135800288,
+      "exit_code": 0,
+      "identity": {
+        "host": "0ab9ea7199a8056d70d1ab437587ee98f8f7a2c42d909efda7100c43972a5266",
+        "network": "688ede306600341903b80e81fb615684df93d280e155f210acc5de3263347f26",
+        "sections": "dc035053627087b82f9c42f926c3829762dca7cd628a16737ce44e7878ebf126"
+      },
+      "matrix_index": 17,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 6814.032821013673,
+        "repair_pass": 1,
+        "segment_count": 43,
+        "selected_attempt": 3
+      },
+      "peak_rss_mib": 349.9921875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.3808981009933632,
+        "network": 228.21855124802096,
+        "sections": 16.080936373007717
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_interconnected.toml",
+        "scope": "sections",
+        "seed": 2,
+        "voxel_size": null
+      },
+      "elapsed_s": 393.2307018370193,
+      "exit_code": 0,
+      "identity": {
+        "host": "24df95eacf55708b2ca9030e1ba9a189c60a6c43ae26cacc03913ead3b0879e7",
+        "network": "8711b18dd71eb4fb0d067e05ede1428b376334e5714fc6bcdae25b1da0e55ec1",
+        "sections": "7449388df42f5f733dc298c68c7c6090d3ffd21598fdb8d56f4891655eb690a6"
+      },
+      "matrix_index": 18,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 7429.9505969371285,
+        "repair_pass": 0,
+        "segment_count": 40,
+        "selected_attempt": 4
+      },
+      "peak_rss_mib": 361.88671875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.3629147679894231,
+        "network": 368.9530049340101,
+        "sections": 22.54643392501748
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_interconnected.toml",
+        "scope": "sections",
+        "seed": 3,
+        "voxel_size": null
+      },
+      "elapsed_s": 299.4763509950135,
+      "exit_code": 0,
+      "identity": {
+        "host": "4ce4a66eb6af381989a05596d555acd1e1c29c8912e7adcf897cfb77ab6d525f",
+        "network": "ef6d02ab22009e57770b11b75e86415974d19578bd72836066b95ea256ad2d30",
+        "sections": "7b927ca0a9b99735ccd7526eb82b8f49865e01ae83790680a58c1758da01a01d"
+      },
+      "matrix_index": 19,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 6856.718987005443,
+        "repair_pass": 1,
+        "segment_count": 46,
+        "selected_attempt": 3
+      },
+      "peak_rss_mib": 364.109375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.3228945060109254,
+        "network": 282.0712329359958,
+        "sections": 15.866148903995054
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_interconnected.toml",
+        "scope": "sections",
+        "seed": 17,
+        "voxel_size": null
+      },
+      "elapsed_s": 46.151173966994975,
+      "exit_code": 0,
+      "identity": {
+        "host": "9adcbc2cbf5508245f489fab420380c574d66a3e945ae8361412c086cfe82658",
+        "network": "3796cb313886e760b089ca42d2ab52320d128314571e883fece70c3f476e6731",
+        "sections": "8f9a2e61f22f995613743a7bf38d4ebd87a4f6aa8091759cf0b7bce58fe305d3"
+      },
+      "matrix_index": 20,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 6876.429537473275,
+        "repair_pass": 0,
+        "segment_count": 42,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 292.98828125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.3404460359888617,
+        "network": 26.38806740299333,
+        "sections": 17.97258871298982
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_interconnected.toml",
+        "scope": "sections",
+        "seed": 42,
+        "voxel_size": null
+      },
+      "elapsed_s": 66.81920565900509,
+      "exit_code": 0,
+      "identity": {
+        "host": "81a6e71665414b2269dcb5aa891a19db277ce3385889518f9c8a499a8dd962fe",
+        "network": "f488786d3b8aefd646514d5add35d9cebf9e71b39e8486d73e7e3e4be29511ad",
+        "sections": "f0d4dc5896fedc107a7e826e210d0e6ae7107845a917e9aeade4931a840ea522"
+      },
+      "matrix_index": 21,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 6956.00016874216,
+        "repair_pass": 0,
+        "segment_count": 40,
+        "selected_attempt": 1
+      },
+      "peak_rss_mib": 345.63671875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.2522422760084737,
+        "network": 46.52811442798702,
+        "sections": 18.638244346017018
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_interconnected.toml",
+        "scope": "sections",
+        "seed": 20260910,
+        "voxel_size": null
+      },
+      "elapsed_s": 46.278669741004705,
+      "exit_code": 0,
+      "identity": {
+        "host": "34f37b896d8b5e0506b53fd84c7b0ae39b09ea89697fb94a6abe719ab758fb38",
+        "network": "360ae46e92af3f25e5e58fde6d6e50558a3aa330e379c651460e90e512b1cb4a",
+        "sections": "4f0a1041507aec176e2c8df77b28d7be5a94419f88b5c11183f4296d06256918"
+      },
+      "matrix_index": 22,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 6741.668762624007,
+        "repair_pass": 0,
+        "segment_count": 44,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 296.4921875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.2654508120031096,
+        "network": 25.25503353701788,
+        "sections": 19.39768955798354
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_long_interconnected.toml",
+        "scope": "sections",
+        "seed": 4294967295,
+        "voxel_size": null
+      },
+      "elapsed_s": 47.520998040010454,
+      "exit_code": 0,
+      "identity": {
+        "host": "c2cd72da486dd6d36926f751c6c2e885af00d4ffc753b9edfe022909bdfecdec",
+        "network": "aea804bec209315fe1771064d6ec620765b989755f8a2c5286564fd10a9b0cc1",
+        "sections": "5906239739c637ffd5d53f5f7386be87139999e1df17303cfc9d4e3c9bfc2a63"
+      },
+      "matrix_index": 23,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 7281.646692006433,
+        "repair_pass": 1,
+        "segment_count": 48,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 300.9140625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.34811105398694053,
+        "network": 26.939529644994764,
+        "sections": 18.697318055987125
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_single.toml",
+        "scope": "sections",
+        "seed": 0,
+        "voxel_size": null
+      },
+      "elapsed_s": 5.589775311003905,
+      "exit_code": 0,
+      "identity": {
+        "host": "1844899bc381b1375115742cefaa30b23652e160e18cdf2afbba5705a6553393",
+        "network": "ee880ff69ec10ce6e333d22f6983752769a57c6c768dcce7e4ed4144d1fe3b34",
+        "sections": "ad9a04744496b9c815732c28d4268bdb816e2b19dc8ca2ae58eda66adb3ed3b1"
+      },
+      "matrix_index": 24,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 528.5738171544075,
+        "repair_pass": 2,
+        "segment_count": 11,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 111.3359375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.04585897599463351,
+        "network": 3.3997796940093394,
+        "sections": 1.2692237520241179
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_single.toml",
+        "scope": "sections",
+        "seed": 1,
+        "voxel_size": null
+      },
+      "elapsed_s": 3.836534063972067,
+      "exit_code": 0,
+      "identity": {
+        "host": "0e970bfd62bd4e7a31fd1ac54eb9c0d20bf762a86c9bc2b3d589b0ee51b0e067",
+        "network": "847ffd8164ab4e76a2dea217bdd6c97d2b1794d52ad450b7398ce0dcb65b4eca",
+        "sections": "b5765088fbfb8967b184601d497e8b4e1469134f4d29be2a574f35d95bc4ae62"
+      },
+      "matrix_index": 25,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 550.051966612976,
+        "repair_pass": 0,
+        "segment_count": 11,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 111.66015625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.041162304987665266,
+        "network": 1.7596934430184774,
+        "sections": 1.1675320499925874
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_single.toml",
+        "scope": "sections",
+        "seed": 2,
+        "voxel_size": null
+      },
+      "elapsed_s": 3.7830698569887318,
+      "exit_code": 0,
+      "identity": {
+        "host": "ea6931b84cc2122fdc1d6fb919eae7b57bd509aeee62e7436203cbe375078081",
+        "network": "f89015ab0c7ad66a8cf28a9c9bfccf37209cf6d4f8cdf07fc01b3204897724cb",
+        "sections": "e12cc17865394170c46dbca9ae6b62db216f3f3b01caf2bfd70923405c670591"
+      },
+      "matrix_index": 26,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 539.4400540991871,
+        "repair_pass": 0,
+        "segment_count": 11,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 111.55078125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.04465030299616046,
+        "network": 1.8108569070172962,
+        "sections": 1.168678916990757
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_single.toml",
+        "scope": "sections",
+        "seed": 3,
+        "voxel_size": null
+      },
+      "elapsed_s": 3.527087119000498,
+      "exit_code": 0,
+      "identity": {
+        "host": "ad9daeaa8d3e25a0db7e7b7c077901409351c5ea7831912fbbdb01dba32400db",
+        "network": "09bff6ceba240a0c5c249d67d7b8a6c456353f9b14176e322e772614aa8d70ab",
+        "sections": "2b19503b17e64b968bc1ba42bb44242536e6750f98473a9656fdc15657580e81"
+      },
+      "matrix_index": 27,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 502.2895943759746,
+        "repair_pass": 0,
+        "segment_count": 8,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 111.2265625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.04233520900015719,
+        "network": 1.6320919239951763,
+        "sections": 1.043541405000724
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_single.toml",
+        "scope": "sections",
+        "seed": 17,
+        "voxel_size": null
+      },
+      "elapsed_s": 3.4797573490068316,
+      "exit_code": 0,
+      "identity": {
+        "host": "33631742398b5f48173cdf8075aaa3121ea890afa017d818d82498ff9502ec8f",
+        "network": "319aa64f1a1a14910da67b23ab82d73ee766b1a3f26431c476fffe4d53ab041d",
+        "sections": "93cf1999820e6bb956a49258e27925efbaee02b1ef3f8f3bcf5abb6b55bffca8"
+      },
+      "matrix_index": 28,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 474.43891870222205,
+        "repair_pass": 0,
+        "segment_count": 6,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 110.80859375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.04358637100085616,
+        "network": 1.4733298140054103,
+        "sections": 1.2404142519808374
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_single.toml",
+        "scope": "sections",
+        "seed": 42,
+        "voxel_size": null
+      },
+      "elapsed_s": 6.083888978988398,
+      "exit_code": 0,
+      "identity": {
+        "host": "70ec68e6e1257600f4efb32c482ab7226a055068a74cc958ea6e0b54435f9906",
+        "network": "0a164d2b62e1986c8d975c26da2f736fb4f12d3cbaae845a4741a28a55a13248",
+        "sections": "ca3527b9d8fdd9f136015506ccebeb57fcb591ca0742118946bd468a73f9ecf5"
+      },
+      "matrix_index": 29,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 539.202270296486,
+        "repair_pass": 3,
+        "segment_count": 11,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 112.984375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.029157894983654842,
+        "network": 4.281894379993901,
+        "sections": 1.145739378000144
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_single.toml",
+        "scope": "sections",
+        "seed": 20260910,
+        "voxel_size": null
+      },
+      "elapsed_s": 5.646898399980273,
+      "exit_code": 0,
+      "identity": {
+        "host": "96db6c569ed520b7eeb26bf5b88ece5a0f6a475c19d9037c47ee3fa39fc00d82",
+        "network": "7be5e02acd5dd300481cf6d0ceb0a3d18c5452e287d1972c853d67355d430339",
+        "sections": "798ffc9afa73778f47754e74937923a2f3b817af92a49303c1663ab6cb0817c6"
+      },
+      "matrix_index": 30,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 518.0803720974347,
+        "repair_pass": 1,
+        "segment_count": 9,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 112.28515625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.04213959499611519,
+        "network": 3.2451774169749115,
+        "sections": 1.5299807759874966
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_single.toml",
+        "scope": "sections",
+        "seed": 4294967295,
+        "voxel_size": null
+      },
+      "elapsed_s": 4.07952263802872,
+      "exit_code": 0,
+      "identity": {
+        "host": "b88fa89457f291889d9907b9ac25df2b8d1b4c79c50ef8d122310cc33ef87e76",
+        "network": "17e852ba28908cf228ac21318991c85d75c0f85b3aa4f200d8a185ca84784a8c",
+        "sections": "988bba1cbf9efa20332a1d459adffae02bbb2851503b295f3a7d6d3f4b5a759f"
+      },
+      "matrix_index": 31,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 38,
+        "combined_length_m": 545.8311446476234,
+        "repair_pass": 0,
+        "segment_count": 11,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 111.89453125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.045570802001748234,
+        "network": 1.9351968499831855,
+        "sections": 1.2583779970009346
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_multi.toml",
+        "scope": "sections",
+        "seed": 0,
+        "voxel_size": null
+      },
+      "elapsed_s": 3.5285126240050886,
+      "exit_code": 0,
+      "identity": {
+        "host": "d37b8ad571a02da42e61509a9aaa952a9979ad56d52e226b87c75f153fc99d47",
+        "network": "55db7cabb5169013a5398800764e9a22ab8048e32c57e291820e49c3ea3b95f0",
+        "sections": "64bbc0fc627ee27451dd4ab9f49fb52e4f5c40bb42341cab70562a415cec064d"
+      },
+      "matrix_index": 32,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 599.9983918417356,
+        "repair_pass": 0,
+        "segment_count": 13,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 112.34375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.04268715498619713,
+        "network": 1.6309601929970086,
+        "sections": 1.1918057719885837
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_multi.toml",
+        "scope": "sections",
+        "seed": 1,
+        "voxel_size": null
+      },
+      "elapsed_s": 4.140128520986764,
+      "exit_code": 0,
+      "identity": {
+        "host": "f47f734fd2206dbdd38c9f71fcc4a0e99d5ad8de334baa2c7ace5ce80722fa80",
+        "network": "fc53df277c00673a06a0d93e6eca2d47aa14e7951d6e5aef5a5150a42353dafd",
+        "sections": "00b904e55ad2e5882344b99cf501299ae7a832bbeb5863b72be4491ad159d3b7"
+      },
+      "matrix_index": 33,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 651.3719147665529,
+        "repair_pass": 0,
+        "segment_count": 13,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 111.4296875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.04388893098803237,
+        "network": 1.898976717988262,
+        "sections": 1.4020196950004902
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_multi.toml",
+        "scope": "sections",
+        "seed": 2,
+        "voxel_size": null
+      },
+      "elapsed_s": 4.089725523983361,
+      "exit_code": 0,
+      "identity": {
+        "host": "439fdad3624869623425ceb2a930a4332bf843075b35318f09124fd5c9e79f6a",
+        "network": "71b3cbe488b0beecc0fca6d7dd506dcfd8e4a3b2be01077a022d53ed3a96f067",
+        "sections": "188b430327d7cb6223d95d634708c6bed8d6a0a0512a29b836a5fe517df12a9a"
+      },
+      "matrix_index": 34,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 614.8018293237726,
+        "repair_pass": 0,
+        "segment_count": 13,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 112.64453125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.034847962990170345,
+        "network": 1.6847616129962262,
+        "sections": 1.6665696319832932
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_multi.toml",
+        "scope": "sections",
+        "seed": 3,
+        "voxel_size": null
+      },
+      "elapsed_s": 4.832773564994568,
+      "exit_code": 0,
+      "identity": {
+        "host": "40279fed4167652feb4182c260972ef463dc89e20d22eeea83608bd1f41fbcdf",
+        "network": "ca7001164fd913950db7dd10a7cc921817d4a9a773ff22989b30b0dd4c32e433",
+        "sections": "f8f0d3e89a2541b89ff236bd2d524a571deb618f8285f0ed5f51d3de00ccc48b"
+      },
+      "matrix_index": 35,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 679.5232955104003,
+        "repair_pass": 0,
+        "segment_count": 13,
+        "selected_attempt": 6
+      },
+      "peak_rss_mib": 112.42578125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.03997826197883114,
+        "network": 2.3896650999959093,
+        "sections": 1.5880000609904528
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_multi.toml",
+        "scope": "sections",
+        "seed": 17,
+        "voxel_size": null
+      },
+      "elapsed_s": 5.238925596000627,
+      "exit_code": 0,
+      "identity": {
+        "host": "b1c161cf11be78fa093c2daad1bc70a3a6d43b24c7eaf755fa14e6245d1c5981",
+        "network": "c793957083e9bac94622f1ee092e1c9a13060fb4cc714fd184609c60ff403acc",
+        "sections": "05be76be860440fca91cc34150802670d8c9e0b6f8444ab10641bb05e98aa853"
+      },
+      "matrix_index": 36,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 605.7775052701343,
+        "repair_pass": 0,
+        "segment_count": 11,
+        "selected_attempt": 13
+      },
+      "peak_rss_mib": 112.421875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.040051465010037646,
+        "network": 2.660950421995949,
+        "sections": 1.738841031998163
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_multi.toml",
+        "scope": "sections",
+        "seed": 42,
+        "voxel_size": null
+      },
+      "elapsed_s": 4.495846701000119,
+      "exit_code": 0,
+      "identity": {
+        "host": "1afb8686a27c6d3cf846505ca8a23e97729de7f8af5d54b58b4bc6774ca273c1",
+        "network": "6709b6ebe40eaf92a0a5948beedac81f28fecc6542a600b737f2969f7c886acd",
+        "sections": "d3d56b485017ee48adb70b66c327dd51c8f419164fdbe2dacfe048ff5de737db"
+      },
+      "matrix_index": 37,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 603.8774243847784,
+        "repair_pass": 0,
+        "segment_count": 11,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 112.44140625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.04060944099910557,
+        "network": 2.0353177759971004,
+        "sections": 1.6452148359967396
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_multi.toml",
+        "scope": "sections",
+        "seed": 20260910,
+        "voxel_size": null
+      },
+      "elapsed_s": 4.038664269988658,
+      "exit_code": 0,
+      "identity": {
+        "host": "fd17bd5c36e39d69c23eb3f3c1d40d47a6e884db3a04b9999d33a688d05fb647",
+        "network": "3e43d280d103f007b06e6fa7b635dcf45547813e41ee7d04c3d1c129c1ad30e0",
+        "sections": "9fc4d74aecba414bd63942edaf85a075f05ccaac4fab2a48d12bf72e568e286e"
+      },
+      "matrix_index": 38,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 571.5690729637698,
+        "repair_pass": 0,
+        "segment_count": 11,
+        "selected_attempt": 1
+      },
+      "peak_rss_mib": 112.10546875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.03625470501719974,
+        "network": 1.7013185470132157,
+        "sections": 1.5862415570009034
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_multi.toml",
+        "scope": "sections",
+        "seed": 4294967295,
+        "voxel_size": null
+      },
+      "elapsed_s": 5.084677890990861,
+      "exit_code": 0,
+      "identity": {
+        "host": "97f3a8d89514e307412a618db1ffd61db11b21df0dcfc1767d1c76392b5a9214",
+        "network": "3a30baf6976153f6b04e84a8bcd5f4847fd9a56d421499a02889cf91bc028c3f",
+        "sections": "a2471d0457acdf0d95360957c66efef921edeaf9a0aea25d7d8eb8652da713fa"
+      },
+      "matrix_index": 39,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 51,
+        "combined_length_m": 578.6512065401932,
+        "repair_pass": 0,
+        "segment_count": 11,
+        "selected_attempt": 20
+      },
+      "peak_rss_mib": 112.265625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.04497322198585607,
+        "network": 2.572383318998618,
+        "sections": 1.6164263460086659
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_interconnected.toml",
+        "scope": "sections",
+        "seed": 0,
+        "voxel_size": null
+      },
+      "elapsed_s": 24.471415807987796,
+      "exit_code": 0,
+      "identity": {
+        "host": "8cd83a4e39a6c437b1f59ad050a1950222acb9fd4d82241a6445d3895a5c264b",
+        "network": "f1b4fb2eb978d92150c6691a0a1e271774a489903ce43a5f6ca0b663ffc0249f",
+        "sections": "bb4833b08af9260be3c02b902253f6ca68f8957fc821824d1b25644fd15b46e9"
+      },
+      "matrix_index": 40,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 955.928006492865,
+        "repair_pass": 0,
+        "segment_count": 10,
+        "selected_attempt": 1
+      },
+      "peak_rss_mib": 131.5390625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.053919241996482015,
+        "network": 21.36217845400097,
+        "sections": 2.1534429599996656
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_interconnected.toml",
+        "scope": "sections",
+        "seed": 1,
+        "voxel_size": null
+      },
+      "elapsed_s": 11.250916688994039,
+      "exit_code": 0,
+      "identity": {
+        "host": "f6d67ea2dea4721cc38f3e5a07cd9a01f0452428e90af65237509412b03fa2f2",
+        "network": "86917b6e53a9d392f681adfc0b15965a8b7a5103df1905b7ee12eb8032f4cee2",
+        "sections": "36a0e84879ed385f497418ee5d1becaaa2f0891f797db9aa59811dacc1d1b55d"
+      },
+      "matrix_index": 41,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 1093.5417889278237,
+        "repair_pass": 0,
+        "segment_count": 10,
+        "selected_attempt": 3
+      },
+      "peak_rss_mib": 137.90625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.05373134001274593,
+        "network": 7.17905267799506,
+        "sections": 3.131686011009151
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_interconnected.toml",
+        "scope": "sections",
+        "seed": 2,
+        "voxel_size": null
+      },
+      "elapsed_s": 11.359655729989754,
+      "exit_code": 0,
+      "identity": {
+        "host": "cd634d8975d4eb7d5be7a793f347f0b7b9777d81a34a79398745bc3b4d52706d",
+        "network": "92a7785dc58f1254c3e33973eeb74ae148f1cf6b9bd83acb8c5755fe92ac2523",
+        "sections": "c201393a88d9f17d2b71d89b4fb3c45174bbf68f2a562ce663d6824d0c196a80"
+      },
+      "matrix_index": 42,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 1036.4926287401545,
+        "repair_pass": 0,
+        "segment_count": 13,
+        "selected_attempt": 1
+      },
+      "peak_rss_mib": 140.08203125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.03791460898355581,
+        "network": 8.204955597990192,
+        "sections": 2.4667041749926284
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_interconnected.toml",
+        "scope": "sections",
+        "seed": 3,
+        "voxel_size": null
+      },
+      "elapsed_s": 26.565104276989587,
+      "exit_code": 0,
+      "identity": {
+        "host": "71ead4c1b614a08134da41f946741d7dade3051ef2ccc61b1ce818a65c9e45af",
+        "network": "3f3fdb5699eb5d3501ed943b39421d93d17df5bb58097633061eb8ff49de3197",
+        "sections": "12bc547d9c481d200a264210f9e362a4cb297ff266e5a9006373c1396a33bc1c"
+      },
+      "matrix_index": 43,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 804.5033175517763,
+        "repair_pass": 0,
+        "segment_count": 8,
+        "selected_attempt": 3
+      },
+      "peak_rss_mib": 142.5,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.047902198013616726,
+        "network": 24.33003737599938,
+        "sections": 1.4364371630072128
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_interconnected.toml",
+        "scope": "sections",
+        "seed": 17,
+        "voxel_size": null
+      },
+      "elapsed_s": 56.52001622100943,
+      "exit_code": 0,
+      "identity": {
+        "host": "f4f84565bca208d9322a37cac8483d149d8a9c274eb504e09ee2368c38555bb3",
+        "network": "506269a8a81412b02e437a4ddbaf9d5f48270d7e2051922add9c485a5c6e13d3",
+        "sections": "778a3b3730feb964c21ff64d2675efbd44a12c43728ce096edb396c78a10760f"
+      },
+      "matrix_index": 44,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 1033.779223551313,
+        "repair_pass": 0,
+        "segment_count": 15,
+        "selected_attempt": 5
+      },
+      "peak_rss_mib": 158.375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.05018482098239474,
+        "network": 53.210131529020146,
+        "sections": 2.488144294009544
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_interconnected.toml",
+        "scope": "sections",
+        "seed": 42,
+        "voxel_size": null
+      },
+      "elapsed_s": 6.295087714999681,
+      "exit_code": 0,
+      "identity": {
+        "host": "a65aa963eddaf1d78d564bc42b91f123e440b17a66271b30f1e0519626267e2b",
+        "network": "47ecab5bca47469477dc96f56069b05bb9a7ec88fd27845c58e4a44d2076b194",
+        "sections": "c234075a1a238364e5a585d6a1fab702c707c9d142a4188c52b798bf9309a82f"
+      },
+      "matrix_index": 45,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 854.9682648485134,
+        "repair_pass": 0,
+        "segment_count": 11,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 125.50390625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.04078136300086044,
+        "network": 3.368843554984778,
+        "sections": 2.2476829210063443
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_interconnected.toml",
+        "scope": "sections",
+        "seed": 20260910,
+        "voxel_size": null
+      },
+      "elapsed_s": 6.638763651018962,
+      "exit_code": 0,
+      "identity": {
+        "host": "042fac24abaef59bcfea3a5efd31864f46c77c80bd6df2ea63450a7ece139b8a",
+        "network": "6808a3cdb9ea71448633be06a2cbeb3aa20e920d31f2839954d3c6692df8e31b",
+        "sections": "b2516c1c9207ada2759241b4070881ffbba6865d6571600b99f4164397b4c29b"
+      },
+      "matrix_index": 46,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 1015.6245173377978,
+        "repair_pass": 0,
+        "segment_count": 10,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 127.2734375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.052175264980178326,
+        "network": 3.4448762190004345,
+        "sections": 2.4002596359932795
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_interconnected.toml",
+        "scope": "sections",
+        "seed": 4294967295,
+        "voxel_size": null
+      },
+      "elapsed_s": 6.1339914049895015,
+      "exit_code": 0,
+      "identity": {
+        "host": "7b216235a191ccf09dc1451103f541348e3bcfd92893ca0c2463ecadaad57107",
+        "network": "14e338b4d94ec7d9a969eec1035a2970a344e45aa2ebe3678eaebb3fec9f8358",
+        "sections": "5e05310b3ac0ac4e65183131c520d0838f51938b3e6818ee40a8d182036ca89f"
+      },
+      "matrix_index": 47,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 50,
+        "combined_length_m": 1010.7377942209922,
+        "repair_pass": 0,
+        "segment_count": 13,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 123.84765625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.033189769979799166,
+        "network": 3.8394409629981965,
+        "sections": 1.665235180000309
+      }
+    },
+    {
+      "case": {
+        "body": "mars",
+        "config": "config/project.toml",
+        "scope": "sections",
+        "seed": 0,
+        "voxel_size": null
+      },
+      "elapsed_s": 33.68973029998597,
+      "exit_code": 0,
+      "identity": {
+        "host": "d35cf84cb4d78c60d87918ab927b107776831dcf7d7e09a3ed1fabbb1b37df10",
+        "network": "18db395ea92b9f1f603bb95b8be5470918af39d6e6424584aefdd975973fbfe6",
+        "sections": "c6e62f3f511639766784e283936071438b418944ae1ea548887c6d34d8273a74"
+      },
+      "matrix_index": 48,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 25,
+        "combined_length_m": 5498.332282980706,
+        "repair_pass": 3,
+        "segment_count": 48,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 162.140625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.1000275149999652,
+        "network": 32.34803223100607,
+        "sections": 0.6709570670209359
+      }
+    },
+    {
+      "case": {
+        "body": "mars",
+        "config": "config/project.toml",
+        "scope": "sections",
+        "seed": 1,
+        "voxel_size": null
+      },
+      "elapsed_s": 144.41223354300018,
+      "exit_code": 0,
+      "identity": {
+        "host": "a78b1ace2cc31b3894d057207402f177e1b7f587f71f489ab397f9303441b443",
+        "network": "7a0836973d89f7efcd4d5ac43ea54b7abc9ff323e295538e50c4f6f3d76cee72",
+        "sections": "3aa8d057a436d3bbc2fed2195bbe1e5e66bc5b4151de60db41158d00167551e3"
+      },
+      "matrix_index": 49,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 25,
+        "combined_length_m": 5156.532259675796,
+        "repair_pass": 2,
+        "segment_count": 51,
+        "selected_attempt": 2
+      },
+      "peak_rss_mib": 162.1796875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.12181630200939253,
+        "network": 142.605051060993,
+        "sections": 1.0177404579881113
+      }
+    },
+    {
+      "case": {
+        "body": "mars",
+        "config": "config/project.toml",
+        "scope": "sections",
+        "seed": 17,
+        "voxel_size": null
+      },
+      "elapsed_s": 169.08748771299724,
+      "exit_code": 0,
+      "identity": {
+        "host": "aa6b16d48f1b0f2b4e2cedf2867971a8b648fe1a9e7a9de4e7ec33d0ae510e56",
+        "network": "f6701494b0be76ed9c99cd5c9464d60dd5200a64a7bb93ce9186bf235f02d090",
+        "sections": "afafd28d905797f4e442458fdf0ee92e790313e42e32ac87b8841054d2e5f60a"
+      },
+      "matrix_index": 50,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 25,
+        "combined_length_m": 6246.3417122183655,
+        "repair_pass": 2,
+        "segment_count": 42,
+        "selected_attempt": 3
+      },
+      "peak_rss_mib": 163.01171875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.14612503300304525,
+        "network": 167.3867865819775,
+        "sections": 0.7925005599972792
+      }
+    },
+    {
+      "case": {
+        "body": "mars",
+        "config": "config/project.toml",
+        "scope": "sections",
+        "seed": 4294967295,
+        "voxel_size": null
+      },
+      "elapsed_s": 165.38011486199684,
+      "exit_code": 0,
+      "identity": {
+        "host": "541d570d5c7ee2609a2ce1abee345dface98281a7b15c1cf8aebdf8060c87d27",
+        "network": "400e072a96ad00c2b829ccaebf2d872644426f40e1545cb0572e62ad03f8156b",
+        "sections": "8035db69e081ca886da799a734f26473f1b1e2ff7b8da95243f4434027198705"
+      },
+      "matrix_index": 51,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 25,
+        "combined_length_m": 6769.776212291468,
+        "repair_pass": 2,
+        "segment_count": 49,
+        "selected_attempt": 2
+      },
+      "peak_rss_mib": 164.8671875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.14457080699503422,
+        "network": 162.8995677740022,
+        "sections": 1.5097816550114658
+      }
+    },
+    {
+      "case": {
+        "body": "moon",
+        "config": "config/project.toml",
+        "scope": "sections",
+        "seed": 0,
+        "voxel_size": null
+      },
+      "elapsed_s": 348.98370062798494,
+      "exit_code": 0,
+      "identity": {
+        "host": "a5c11edacd9169fb16665ace3a81ce8f1d518536c9cd9ca56a969260e3225894",
+        "network": "4ea64c9b39ae1ff7f5ae36578a48b2b6c4293849da11066d884564fd43376488",
+        "sections": "39bae32480cf62dba152381031cbafafd2126cc1357095fed663d5882550dd4c"
+      },
+      "matrix_index": 52,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 25,
+        "combined_length_m": 7074.650026846838,
+        "repair_pass": 3,
+        "segment_count": 46,
+        "selected_attempt": 3
+      },
+      "peak_rss_mib": 230.25,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.25401672002044506,
+        "network": 346.99503937599366,
+        "sections": 0.9705894800135866
+      }
+    },
+    {
+      "case": {
+        "body": "moon",
+        "config": "config/project.toml",
+        "scope": "sections",
+        "seed": 1,
+        "voxel_size": null
+      },
+      "elapsed_s": 334.61640922300285,
+      "exit_code": 0,
+      "identity": {
+        "host": "b3b32ee8ebae3192bf6ccb9936e911ddb7d5bbe56a9ba486697fd0a6179dc818",
+        "network": "9f96020dfe55005c395ddb55d7720e169d51cb6e4665d7a7a9ba6c572f55e7f8",
+        "sections": "f7217bd7aca663a60a536f118c68a17394eab521b9932d2c508bc7fd77cfa208"
+      },
+      "matrix_index": 53,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 25,
+        "combined_length_m": 7760.197160805124,
+        "repair_pass": 3,
+        "segment_count": 57,
+        "selected_attempt": 3
+      },
+      "peak_rss_mib": 231.2578125,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.32611297399853356,
+        "network": 332.5708139410126,
+        "sections": 0.8300900910107885
+      }
+    },
+    {
+      "case": {
+        "body": "moon",
+        "config": "config/project.toml",
+        "scope": "sections",
+        "seed": 17,
+        "voxel_size": null
+      },
+      "elapsed_s": 81.5007488260162,
+      "exit_code": 0,
+      "identity": {
+        "host": "073005ceaaec9cfe824a4b61b7ee0b376683d4c3f33b2bb3dfaa02b6b71d2e59",
+        "network": "112968c1c0d37ae8b3540777f7b95cce022cda743d59b95133f3692d9a5cedae",
+        "sections": "551c320ee39949fad4140c0f45df224f2fe8c1c0bf2a32a2dba8289904231de4"
+      },
+      "matrix_index": 54,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 25,
+        "combined_length_m": 8131.405266864818,
+        "repair_pass": 3,
+        "segment_count": 58,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 231.4296875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.3152508079947438,
+        "network": 78.98238592399866,
+        "sections": 1.2426576070138253
+      }
+    },
+    {
+      "case": {
+        "body": "moon",
+        "config": "config/project.toml",
+        "scope": "sections",
+        "seed": 4294967295,
+        "voxel_size": null
+      },
+      "elapsed_s": 71.5258703599975,
+      "exit_code": 0,
+      "identity": {
+        "host": "75dbc746e01591a07a141b523f7a1bbc88a7261d34a4888bc52147bb1e9621b9",
+        "network": "24af1120cd3b11035a1ce50a37a0e60a27f23acd84bac9743ad9e76496af9ab6",
+        "sections": "1274b924e3fb004741176a4b4d0c8a979f4d5fd3ce666a9c5ef08a502ef8658f"
+      },
+      "matrix_index": 55,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 25,
+        "combined_length_m": 8227.225840615238,
+        "repair_pass": 3,
+        "segment_count": 63,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 231.44140625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 0.22667175499373116,
+        "network": 69.67444767599227,
+        "sections": 0.9871970289968885
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_single.toml",
+        "scope": "full",
+        "seed": 0,
+        "voxel_size": 0.22
+      },
+      "elapsed_s": 189.28206287999637,
+      "exit_code": 0,
+      "identity": {
+        "glb": "19bb0682d794e7dadf550815425e062bdc43fd2753fbf77d01aac4d9f67800c5",
+        "host": "1844899bc381b1375115742cefaa30b23652e160e18cdf2afbba5705a6553393",
+        "network": "ee880ff69ec10ce6e333d22f6983752769a57c6c768dcce7e4ed4144d1fe3b34",
+        "sections": "ad9a04744496b9c815732c28d4268bdb816e2b19dc8ca2ae58eda66adb3ed3b1"
+      },
+      "matrix_index": 56,
+      "memory_limit_applied": true,
+      "metrics": {
+        "asset_bytes": 12648988,
+        "checks": 38,
+        "combined_length_m": 528.5738171544075,
+        "density_mib": 55.52339553833008,
+        "event_count": 0,
+        "floor_cells": 426,
+        "repair_pass": 2,
+        "segment_count": 11,
+        "selected_attempt": 0,
+        "triangles": 326596
+      },
+      "peak_rss_mib": 893.9140625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "base_floor": 7.899997839005664,
+        "base_geometry": 36.58292091099429,
+        "events": 3.4428987419232726e-05,
+        "export": 134.29458646598505,
+        "final_floor": 3.4355519440141506,
+        "final_geometry": 1.9961278809932992,
+        "host": 0.026738903019577265,
+        "network": 2.0411862429755274,
+        "portable_validation": 1.5254401550046168,
+        "sections": 0.7973360089818016
+      }
+    },
+    {
+      "case": {
+        "body": null,
+        "config": "config/earth_short_interconnected.toml",
+        "scope": "full",
+        "seed": 17,
+        "voxel_size": 0.22
+      },
+      "elapsed_s": 349.82486073698965,
+      "exit_code": 0,
+      "identity": {
+        "glb": "3667dfdff9275a3c6d30aedcc69c9dc5245e74445bf687bfef87843c06aa1d11",
+        "host": "f4f84565bca208d9322a37cac8483d149d8a9c274eb504e09ee2368c38555bb3",
+        "network": "506269a8a81412b02e437a4ddbaf9d5f48270d7e2051922add9c485a5c6e13d3",
+        "sections": "778a3b3730feb964c21ff64d2675efbd44a12c43728ce096edb396c78a10760f"
+      },
+      "matrix_index": 57,
+      "memory_limit_applied": true,
+      "metrics": {
+        "asset_bytes": 23649572,
+        "checks": 50,
+        "combined_length_m": 1033.779223551313,
+        "density_mib": 161.3321304321289,
+        "event_count": 0,
+        "floor_cells": 764,
+        "repair_pass": 0,
+        "segment_count": 15,
+        "selected_attempt": 5,
+        "triangles": 611426
+      },
+      "peak_rss_mib": 1511.38671875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "base_floor": 13.899213772005169,
+        "base_geometry": 65.27716169200721,
+        "events": 2.652101102285087e-05,
+        "export": 201.45245346101,
+        "final_floor": 6.414120664005168,
+        "final_geometry": 3.8403161850001197,
+        "host": 0.030974604014772922,
+        "network": 52.526265459979186,
+        "portable_validation": 2.8390589589835145,
+        "sections": 2.637553730979562
+      }
+    },
+    {
+      "case": {
+        "body": "moon",
+        "config": "config/earth_interacting_systems.toml",
+        "scope": "sections",
+        "seed": 17,
+        "voxel_size": null
+      },
+      "elapsed_s": 257.09255719400244,
+      "exit_code": 0,
+      "identity": {
+        "host": "aace4576c0f10f58b5862a72a5ed9e710768950c01b1ad68f21ca3151fa080a5",
+        "network": "58c26ffcfc5004c83a5c12b3784b41fdf885e7bc37bd20715a7a2536319c0d91",
+        "sections": "4dafa8665935e434c11e856a7cee3d4f4f487d09ce061713b300d0b76b192496"
+      },
+      "matrix_index": 58,
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 32,
+        "combined_length_m": 88974.4944712109,
+        "repair_pass": 0,
+        "segment_count": 12,
+        "selected_attempt": 1
+      },
+      "peak_rss_mib": 1362.546875,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 2.4130424839968327,
+        "network": 213.1190965390124,
+        "sections": 39.70231690601213
+      }
+    },
+    {
+      "case": {
+        "body": "moon",
+        "config": "config/earth_interacting_systems.toml",
+        "scope": "sections",
+        "seed": 20260910,
+        "voxel_size": null
+      },
+      "elapsed_s": 421.0275647059898,
+      "exit_code": 0,
+      "identity": {
+        "host": "a9c75d0ba386bbd18f14a1ef5097fef4e7385780fca7f639baaa4b3153978b04",
+        "network": "419a32b47ab312b8c7aaf8cff08d700911725634ab1aa001a5d3916295723d76",
+        "sections": "d34675e52a1317d0275c07fc67d274cc517d5c4dae8ad14df6f9a3b8ad4729a0"
+      },
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 32,
+        "combined_length_m": 92254.70509951442,
+        "repair_pass": 1,
+        "segment_count": 9,
+        "selected_attempt": 1
+      },
+      "peak_rss_mib": 1372.77734375,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 3.06419669999741,
+        "network": 319.9161938139878,
+        "sections": 95.93132343300385
+      }
+    },
+    {
+      "case": {
+        "body": "moon",
+        "config": "config/earth_interacting_systems.toml",
+        "scope": "sections",
+        "seed": 4294967295,
+        "voxel_size": null
+      },
+      "elapsed_s": 145.2228749759961,
+      "exit_code": 0,
+      "identity": {
+        "host": "aedd10f92710b4634ce9c58450b02d1a1f2ffabd8956bee017f06e7b22c92d15",
+        "network": "9f2465adb59377fadaa6ca935dc28d7f448fbc60e1d67c7550b6a2a8d5ea924d",
+        "sections": "1e7e2e6baa5477c13283f0b05ee8b71bd5a8eff69d1e685c72fa674c9fedc6ff"
+      },
+      "memory_limit_applied": true,
+      "metrics": {
+        "checks": 32,
+        "combined_length_m": 76977.87992796606,
+        "repair_pass": 1,
+        "segment_count": 7,
+        "selected_attempt": 0
+      },
+      "peak_rss_mib": 1366.265625,
+      "python_hash_seed": 11,
+      "replay_passed": true,
+      "status": "passed",
+      "timings_s": {
+        "host": 2.943502082984196,
+        "network": 78.8673410610063,
+        "sections": 60.6824494759785
+      }
+    }
+  ]
+}

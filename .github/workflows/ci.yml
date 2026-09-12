@@ -13,9 +13,9 @@ jobs:
         with:
           python-version: "3.12"
           enable-cache: true
-      - run: uv sync --locked
+      - run: uv sync --locked --no-dev
       - run: >-
-          uv run python -c
+          uv run --no-sync python -c
           "from importlib.metadata import distributions;
           from plume_advanced import cli;
           c = cli.load_project_config(cli.PACKAGED_CONFIG);
@@ -36,9 +36,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
       - run: sudo apt-get update && sudo apt-get install -y imagemagick
-      - run: uv sync --locked --group dev --extra rocks
-      - run: uv run ruff check src scripts tests
-      - run: uv run mypy src/plume_advanced
-      - run: uv run python -m compileall -q src scripts tests
-      - run: uv run pytest -q --cov=plume_advanced --cov-report=term-missing --cov-fail-under=70
+      - run: uv sync --locked --group dev --extra rocks --extra paper
+      - run: uv run --no-sync ruff check src scripts tests
+      - run: uv run --no-sync mypy src/plume_advanced
+      - run: uv run --no-sync python -m compileall -q src scripts tests
+      - run: uv run --no-sync pytest -q --cov=plume_advanced --cov-report=term-missing --cov-fail-under=70
       - run: uv build

@@ -8,6 +8,7 @@ from dataclasses import dataclass, replace
 import numpy as np
 
 from plume_advanced.procedural import procedural_rng
+from plume_advanced.progress import report_progress
 from plume_advanced.stability import RoofStabilityModel
 from plume_advanced.stages.network import CaveJunction, CaveNetwork, CaveSegment
 
@@ -72,7 +73,6 @@ class SectionFieldConfig:
     vertical_level_spacing: float = 0.0  # zero: actual passage height plus rock clearance
     minimum_vertical_clearance: float = 2.0
     maximum_uphill_grade: float = 0.015
-    level_transition_fraction: float = 0.18
     gravity_m_s2: float = 9.80665
     rock_density_kg_m3: float = 2900.0
     effective_tensile_strength_pa: float = 3_000_000.0
@@ -334,7 +334,8 @@ class SectionFieldGenerator:
         incoming_morphologies: dict[int, list[tuple[int, _SegmentMorphologyState]]] = {}
         segment_fields_by_id: dict[int, SegmentSectionField] = {}
         segment_fields: list[SegmentSectionField] = []
-        for segment_id in generation_order:
+        for segment_number, segment_id in enumerate(generation_order):
+            report_progress("Cross sections", segment_number, len(generation_order), f"segment {segment_id}")
             segment = segment_lookup[segment_id]
             connected_junctions = tuple(
                 junction
