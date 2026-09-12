@@ -201,7 +201,7 @@ def test_multiple_host_corridors_are_deterministic_and_single_is_opt_in(example)
     ).generate()
     assert host_semantic_hash(c) == host_semantic_hash(d)
     assert not np.allclose(c.elevation, a.elevation)
-    assert not np.allclose(c.routing_cost, a.routing_cost)
+    assert not np.allclose(c.growth_cost, a.growth_cost)
 
 
 def test_impossible_host_fails_closed_without_modification(example):

@@ -25,7 +25,6 @@ rocks = [
 paper = [
   "laspy[lazrs]>=2.6",
   "psutil>=6.0",
-  "openpyxl>=3.1",
 ]
 video = [
   "manim>=0.21,<0.22",

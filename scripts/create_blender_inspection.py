@@ -17,6 +17,24 @@ import numpy as np
 from mathutils import Matrix, Vector
 
 
+def configure_inspection_view(*, textured: bool) -> str:
+    """Make the saved startup view show the material and distinguish neutral files."""
+    scene = bpy.context.scene
+    scene.cycles.preview_samples = 32
+    scene.cycles.use_preview_denoising = True
+    for screen in bpy.data.screens:
+        for area in screen.areas:
+            if area.type == "VIEW_3D":
+                area.spaces.active.clip_start = 0.02
+                area.spaces.active.clip_end = 20000.0
+                area.spaces.active.region_3d.view_perspective = "CAMERA"
+                if screen.name == "Layout":
+                    # Rendered shading resets to Solid when Blender reopens a file.
+                    # Material Preview persists and displays packed maps immediately.
+                    area.spaces.active.shading.type = "MATERIAL" if textured else "SOLID"
+    return "plume_textured_inspection.blend" if textured else "plume_full_inspection.blend"
+
+
 def main() -> None:
     root = Path(sys.argv[sys.argv.index("--") + 1]).resolve()
     output = root / "export_blender"
@@ -41,6 +59,26 @@ def main() -> None:
     expected_triangles = gltf["accessors"][primitive["indices"]]["count"] // 3
     actual_triangles = sum(len(poly.vertices) - 2 for poly in cave.data.polygons)
     assert actual_triangles == expected_triangles
+    # Imported GLB images must survive moving the native scene to another machine.
+    expected_images = len(gltf.get("images", []))
+    material_images = {
+        node.image.name: node.image
+        for material in cave.data.materials if material and material.use_nodes
+        for node in material.node_tree.nodes if node.type == "TEX_IMAGE" and node.image
+    }
+    assert len(material_images) == expected_images, "GLB material images were lost during import"
+    material_bindings = {}
+    imported_material = cave.data.materials[0]
+    shader = next(node for node in imported_material.node_tree.nodes if node.type == "BSDF_PRINCIPLED")
+    gltf_material = gltf["materials"][primitive["material"]]
+    pbr = gltf_material.get("pbrMetallicRoughness", {})
+    for socket, expected in (("Base Color", "baseColorTexture" in pbr),
+                             ("Roughness", "metallicRoughnessTexture" in pbr),
+                             ("Normal", "normalTexture" in gltf_material)):
+        material_bindings[socket] = shader.inputs[socket].is_linked
+        assert not expected or material_bindings[socket], f"Unconnected material input: {socket}"
+    bpy.ops.file.pack_all()
+    assert all(image.packed_file for image in material_images.values())
     sections = np.load(root / "stage_c_sections.npz")
     scene = bpy.context.scene
     scene.unit_settings.system = "METRIC"
@@ -73,7 +111,7 @@ def main() -> None:
                                     * max(scene.render.resolution_x / scene.render.resolution_y, 1.0))
         else:
             light_data = bpy.data.lights.new(name + " torch", "POINT")
-            light_data.energy = 60.0
+            light_data.energy = 600.0
             light_data.shadow_soft_size = 0.06
             light = bpy.data.objects.new(name + " torch", light_data)
             scene.collection.objects.link(light)
@@ -150,13 +188,8 @@ def main() -> None:
         obj.select_set(False)
     cave.select_set(True)
     bpy.context.view_layer.objects.active = cave
-    for screen in bpy.data.screens:
-        for area in screen.areas:
-            if area.type == "VIEW_3D":
-                area.spaces.active.clip_start = 0.02
-                area.spaces.active.clip_end = 20000.0
-                area.spaces.active.region_3d.view_perspective = "CAMERA"
-    native = output / "plume_full_inspection.blend"
+    native = output / configure_inspection_view(textured=expected_images > 0)
+    scene.render.filepath = str(root / "previews" / "inspection_render.png")
     bpy.ops.wm.save_as_mainfile(filepath=str(native))
     report = {
         "blender_version": bpy.app.version_string,
@@ -166,17 +199,26 @@ def main() -> None:
         "vertices": len(cave.data.vertices),
         "triangles": actual_triangles,
         "triangle_count_preserved": True,
+        "embedded_images_expected": expected_images,
+        "material_inputs_linked": material_bindings,
+        "material_images": [
+            {"name": image.name, "size": list(image.size),
+             "color_space": image.colorspace_settings.name, "packed": bool(image.packed_file)}
+            for image in material_images.values()
+        ],
         "bounds_preserved_within_2_mm": True,
         "bounds_blender_z_up_m": [minimum.tolist(), maximum.tolist()],
         "scale": list(cave.scale),
+        "inspection_torch_power_w": 600.0,
         "cameras": cameras,
         "initial_camera": scene.camera.name,
+        "startup_shading": "MATERIAL" if expected_images else "SOLID",
         "scope": "Actual Blender import and two interior roof/floor ray checks; no Unity or UE import test.",
     }
     (root / "blender_import_check.json").write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report), flush=True)
     # Save honest images of the imported file, using the same geometry and
-    # neutral material as delivered to the other applications.
+    # material as delivered to the other applications.
     previews = root / "previews"
     previews.mkdir(exist_ok=True)
     for camera in (overview, plan, *interiors):

@@ -87,9 +87,8 @@ limits. Final passage dimensions and stability are resolved downstream.
 | `split_confirmation_widths` | Distance over which a release preference must persist; suppresses brief spikes. |
 | `require_merge`, `require_split` | Require at least one event of that type. Absence rejects the candidate and advances the deterministic search. These do not require every system to participate. |
 
-This mode requires `emplacement_backend = "internal"` and
-`growth_model = "hybrid_lobe"`. When count exceeds one, it replaces the
-single-system source fan and secondary lobe/braid/history grammar.
+This mode requires `emplacement_backend = "internal"`. When count exceeds one,
+it replaces the single-system source fan and secondary lobe/history generator.
 `source_count`, `network_density`, lobe opportunity controls, stacking and drained
 pool controls do not change this mode. Use the systems table to tune its topology.
 `source_flux` remains mean inlet discharge, making total supply

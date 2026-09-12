@@ -73,7 +73,7 @@ Controls ending in `_widths` are multiples of `2 * network.base_passage_radius`.
 | Chronological activity, finite-budget blind breakouts, cooling retirement and passage reuse | Integrated as described above |
 | Drained pools | Integrated; occurrence is conditional on suitable sites |
 | Deterministic candidate rejection, repair and retry | Integrated; fails closed when the budget is exhausted |
-| Legacy cell-based lobe grammar, braid recipes and deposition feedback | Not executed in this mode; remain part of the general single-system generator |
+| General cell-based lobe growth and deposition feedback | Not executed in this mode; remain part of the general single-system generator |
 | Stacked levels and vertical capture | Unsupported here; nonzero `stacked_lobe_fraction` is rejected explicitly |
 | Rocks, geological events, texture assets, collision packages | Separate optional stages; disabled in the supplied inspection preset |
 | Thermofluid simulation or a physically proven formation history | Not implemented |

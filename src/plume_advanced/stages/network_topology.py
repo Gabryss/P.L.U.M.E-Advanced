@@ -136,10 +136,10 @@ def generate_trunk_network(generator, host):
         islands.append((float(cursor), float(cursor + span), i))
         cursor += span + 3 * width + spaces[i + 1]
     # Side branches are independent events on intact trunk, not extra loops.
-    candidates = np.linspace(max(source_join + 3 * width, 0.35 * length), length - 3 * width, 200)
+    candidate_positions = np.linspace(max(source_join + 3 * width, 0.35 * length), length - 3 * width, 200)
     candidates = [
         float(a)
-        for a in candidates
+        for a in candidate_positions
         if all(not (start - 2 * width < a < end + 2 * width) for start, end, _ in islands)
     ]
     branch_sites = []
@@ -158,7 +158,8 @@ def generate_trunk_network(generator, host):
             *(a for start, end, _ in islands for a in (start, end)),
         }
     )
-    nodes, segments = [], []
+    nodes: list[CaveNode] = []
+    segments: list[CaveSegment] = []
 
     def world(a, c):
         return np.column_stack(
@@ -427,7 +428,7 @@ def assess_topology(network, sections, check):
         order = CaveNetworkGenerator._topological_node_ids(
             list(network.nodes), list(network.segments)
         )
-        expected_lineage = annotate_source_lineage(network.nodes, network.segments, order)
+        expected_lineage = annotate_source_lineage(network.segments, order)
         invalid_lineage = [
             s.segment_id
             for s, expected_segment in zip(network.segments, expected_lineage)
@@ -468,7 +469,8 @@ def assess_topology(network, sections, check):
         check("section_island_clearance", False, "invalid profiles", None, invalid_profiles)
         return
     fields = {f.segment_id: f for f in sections.segment_fields}
-    minimum_gap, failed = np.inf, []
+    minimum_gap = np.inf
+    failed: list[int] = []
     for group in islands.values():
         if len(group) != 2:
             continue
@@ -501,8 +503,8 @@ def assess_topology(network, sections, check):
                         float((xy @ cross).max()),
                     ]
                 )
-            rows = np.array(sorted(rows))
-            bounds.append(np.array([np.interp(positions, rows[:, 0], rows[:, i]) for i in (1, 2)]))
+            ordered_rows = np.array(sorted(rows))
+            bounds.append(np.array([np.interp(positions, ordered_rows[:, 0], ordered_rows[:, i]) for i in (1, 2)]))
         if len(bounds) == 2:
             below, above = sorted(bounds, key=lambda b: float(b.mean()))
             gap = float(np.min(above[0] - below[1]))

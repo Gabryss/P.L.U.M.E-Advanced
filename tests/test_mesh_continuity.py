@@ -38,6 +38,16 @@ def sample(x=0.0, y=0.0, z=0.0):
     )
 
 
+def test_mismatched_section_profiles_fail_instead_of_forming_an_oversized_union():
+    first = np.asarray(sample().profile_points)
+    second = first[::2] * 1.5
+    generator = GeometryGenerator()
+    with pytest.raises(ValueError, match="matching vertex counts"):
+        generator._interpolated_profile_signed_distance(
+            np.array([0.0]), np.array([0.0]), np.array([0.5]), first, second
+        )
+
+
 def test_profile_end_narrows_before_closing_without_box_cutoff():
     gen = GeometryGenerator(
         GeometryConfig(

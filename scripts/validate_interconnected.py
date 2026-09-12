@@ -72,7 +72,7 @@ def worker(args):
         y=host.y_coords,
         elevation=host.elevation,
         cover=host.cover_thickness,
-        routing_cost=host.routing_cost,
+        routing_cost=host.growth_cost,
     )
     # Local trusted checkpoints for inspecting/re-rendering this campaign.
     with (root / "stage_ac_checkpoint.pkl").open("wb") as stream:

@@ -237,11 +237,11 @@ def test_invalid_controls_rejected(kwargs):
 
 def test_config_round_trip_and_unknown_keys(tmp_path):
     path = tmp_path / "systems.toml"
-    path.write_text("[network.systems]\ncount = 3\nrequire_split = false\n")
+    path.write_text("schema_version = 4\n[network.systems]\ncount = 3\nrequire_split = false\n")
     config = load_project_config(path)
     assert config.network.systems.count == 3
     assert config.network.systems.require_split is False
-    path.write_text("[network.systems]\ncounts = 3\n")
+    path.write_text("schema_version = 4\n[network.systems]\ncounts = 3\n")
     with pytest.raises(ValueError, match="counts"):
         load_project_config(path)
 

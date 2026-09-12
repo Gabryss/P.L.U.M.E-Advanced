@@ -1,11 +1,11 @@
-schema_version = 3
+schema_version = 4
 procedural_seed = 3
 
 [run]
 dev_mode = true
 quality = "preview"
 dev_max_route_length_m = 600.0
-dev_max_braid_zones = 1
+dev_max_lobe_paths = 5
 render_diagnostics = false
 overwrite_outputs = false
 
@@ -40,7 +40,6 @@ source_count = 3
 source_band_length = 60.0
 source_band_half_width = 120.0
 trace_max_steps = 180
-spur_count = 1
 
 # Several arterial systems can grow together; count 1 preserves the existing grammar.
 [network.systems]
@@ -52,16 +51,11 @@ enabled = true
 max_attempts = 8
 repair_passes = 3
 
-[network.braid_grammar]
-zone_count = [1, 1]
-branches_per_zone = [2, 2]
-
 [events]
 enabled = false
 include_rock_props = false
 use_rocky_meshes = false
 rock_population_multiplier = 10.0
-debris_density_basis = "floor_area"
 rock_density_per_100m2 = 0.45
 boulder_density_per_100m2 = 0.04
 rock_radius_range = [0.03, 0.75]

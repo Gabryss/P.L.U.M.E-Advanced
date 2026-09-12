@@ -814,7 +814,11 @@ class GeologicalEventTests(unittest.TestCase):
             self.assertGreater(max(signed_contact_distances), 0.0)
 
     def test_geometry_consumes_event_field(self) -> None:
-        project_config = load_project_config(ROOT / "config" / "project.toml")
+        project_config = load_project_config(ROOT / "config" / "earth_short_single.toml")
+        event_config = load_project_config(ROOT / "config" / "project.toml").events
+        # Exercise collapse, choke and infill on the shorter inspection route.
+        event_config = replace(event_config, geological_event_density_per_100m=0.8)
+        project_config = replace(project_config, geometry=replace(project_config.geometry, density_margin=4.0))
         host_field = HostFieldGenerator(project_config.host_field).generate()
         cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
         section_field = SectionFieldGenerator(project_config.section_field).generate(cave_network)
@@ -829,7 +833,7 @@ class GeologicalEventTests(unittest.TestCase):
             base_geometry,
         )
         event_field = GeologicalEventGenerator(
-            _compact_event_config(project_config.events)
+            _compact_event_config(event_config)
         ).generate(
             section_field,
             base_geometry,

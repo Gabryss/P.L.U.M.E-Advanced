@@ -1,6 +1,6 @@
 """Pure metrics over canonical PLUME stage representations."""
 
-from plume_advanced.evaluation.metrics.continuity import longitudinal_continuity
+from plume_advanced.evaluation.continuity import longitudinal_continuity
 from plume_advanced.evaluation.metrics.emplacement import emplacement_metrics
 from plume_advanced.evaluation.metrics.morphometry import contour_morphometry
 from plume_advanced.evaluation.metrics.network import (

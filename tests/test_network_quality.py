@@ -343,10 +343,10 @@ def test_config_reads_nested_quality_and_rejects_misspelled_key(tmp_path):
     from plume_advanced.config import load_project_config
 
     path = tmp_path / "test.toml"
-    path.write_text("[network.quality]\nmax_attempts = 3\nrepair_passes = 1\n")
+    path.write_text("schema_version = 4\n[network.quality]\nmax_attempts = 3\nrepair_passes = 1\n")
     loaded = load_project_config(path)
     assert loaded.network.quality.max_attempts == 3
     assert loaded.network.quality.enabled
-    path.write_text("[network.quality]\nmax_atempts = 3\n")
+    path.write_text("schema_version = 4\n[network.quality]\nmax_atempts = 3\n")
     with pytest.raises(ValueError):
         load_project_config(path)

@@ -52,6 +52,7 @@ class GeometryConfig:
     weld_tolerance: float = 1e-5
     strict_texture_loading: bool = True
     embedded_texture_max_size: int = 1024
+    cave_texture_scale_m: float = 8.0
     cave_normal_scale: float = 2.0
     cave_smoothing_iterations: int = 4
     cave_displacement_scale_m: float = 0.12
@@ -463,11 +464,6 @@ class CaveGeometry:
     stability_records: tuple[tuple[tuple[str, object], ...], ...] = ()
     preserved_pillar_columns: int = 0
 
-    @property
-    def meshes(self) -> tuple[GeometryChunkMesh, ...]:
-        """Compatibility alias for callers that render/export geometry meshes."""
-
-        return self.chunk_meshes
 
     def summary(self) -> dict[str, float]:
         summary = {

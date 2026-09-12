@@ -71,15 +71,6 @@ def summary(values: Iterable[float]) -> dict[str, float | int | None]:
     }
 
 
-def point_sequence(path: Any) -> list[Any]:
-    if isinstance(path, (list, tuple)):
-        return list(path)
-    points = value(path, "points", "samples", default=())
-    if points is None:
-        return []
-    return list(points)
-
-
 def as_xy(point: Any) -> tuple[float, float] | None:
     x = finite(value(point, "x", "x_coord", "longitude"))
     y = finite(value(point, "y", "y_coord", "latitude"))

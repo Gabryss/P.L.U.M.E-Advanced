@@ -23,6 +23,7 @@ from scipy.spatial import cKDTree
 from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.geometry_types import (
     CaveGeometry,
+    GeometryConfig,
     SurfaceTextureFrame,
     TiledVoxelGrid,
     VoxelGrid,
@@ -180,15 +181,11 @@ def build_cave_visual_surface(
     ):
         raise RuntimeError("Failed to decode configured cave displacement texture")
     if not cave_geometry.assembled_vertices or not cave_geometry.assembled_faces:
-        source_vertices, source_faces = _assemble_export_chunks(
-            cave_geometry.chunk_meshes
+        raise ValueError(
+            "Cave export requires the assembled Stage-E mesh; generate geometry before exporting."
         )
-    else:
-        source_vertices = np.asarray(
-            cave_geometry.assembled_vertices,
-            dtype=np.float64,
-        )
-        source_faces = np.asarray(cave_geometry.assembled_faces, dtype=np.uint32)
+    source_vertices = np.asarray(cave_geometry.assembled_vertices, dtype=np.float64)
+    source_faces = np.asarray(cave_geometry.assembled_faces, dtype=np.uint32)
     return _cave_primitive_payload(
         vertices=source_vertices,
         faces=source_faces,
@@ -203,6 +200,7 @@ def build_cave_visual_surface(
         convert_to_gltf=convert_to_gltf,
         density_grid=cave_geometry.voxel_grid,
         normal_filter_voxels=cave_geometry.config.surface_normal_filter_voxels,
+        texture_scale_m=cave_geometry.config.cave_texture_scale_m,
     )
 
 
@@ -420,29 +418,6 @@ def _add_cave_wall_to_strict_glb(
     return payload["displacement"]
 
 
-def _assemble_export_chunks(chunk_meshes) -> tuple[np.ndarray, np.ndarray]:
-    """Fallback assembly used only when a legacy geometry lacks a welded mesh."""
-
-    vertices: list[tuple[float, float, float]] = []
-    faces: list[tuple[int, int, int]] = []
-    offset = 0
-    for chunk_mesh in chunk_meshes:
-        vertices.extend(chunk_mesh.vertices)
-        faces.extend(
-            (
-                int(face[0]) + offset,
-                int(face[1]) + offset,
-                int(face[2]) + offset,
-            )
-            for face in chunk_mesh.faces
-        )
-        offset += len(chunk_mesh.vertices)
-    return (
-        np.asarray(vertices, dtype=np.float32),
-        np.asarray(faces, dtype=np.uint32),
-    )
-
-
 def _cave_primitive_payload(
     *,
     vertices: np.ndarray,
@@ -458,6 +433,7 @@ def _cave_primitive_payload(
     convert_to_gltf: bool = True,
     density_grid: VoxelGrid | TiledVoxelGrid | None = None,
     normal_filter_voxels: float = 1.2,
+    texture_scale_m: float = GLB_CAVE_TEXTURE_SCALE_METERS,
 ) -> CavePrimitivePayload:
     canonical_vertices = np.asarray(vertices, dtype=np.float64)
     face_indices = np.asarray(faces, dtype=np.uint32)
@@ -485,7 +461,7 @@ def _cave_primitive_payload(
         canonical_vertices,
         face_indices,
         canonical_normals,
-        scale_m=GLB_CAVE_TEXTURE_SCALE_METERS,
+        scale_m=texture_scale_m,
     )
     canonical_vertices, displacement = _bake_seam_consistent_displacement(
         canonical_vertices,
@@ -1107,38 +1083,43 @@ def _canonical_to_gltf_translation(
 
 
 def _cave_strict_glb_material(cave_geometry: CaveGeometry, *, builder, image_cache: dict) -> int:
-    texture_size = cave_geometry.config.embedded_texture_max_size
+    return add_cave_pbr_material(cave_geometry.config, builder=builder, image_cache=image_cache)
+
+
+def add_cave_pbr_material(config: GeometryConfig, *, builder, image_cache: dict) -> int:
+    """Bind the same portable material during generation and material-only export."""
+    texture_size = config.embedded_texture_max_size
     diffuse_image = _load_texture_image(
-        cave_geometry.config.cave_diffuse_texture,
+        config.cave_diffuse_texture,
         image_cache,
         max_size=texture_size,
     )
     normal_image = _load_texture_image(
-        cave_geometry.config.cave_normal_texture,
+        config.cave_normal_texture,
         image_cache,
         max_size=texture_size,
     )
     roughness_image = _load_metallic_roughness_texture(
-        cave_geometry.config.cave_roughness_texture,
+        config.cave_roughness_texture,
         image_cache,
         max_size=texture_size,
     )
     for label, path, image in (
-        ("diffuse", cave_geometry.config.cave_diffuse_texture, diffuse_image),
-        ("normal", cave_geometry.config.cave_normal_texture, normal_image),
-        ("roughness", cave_geometry.config.cave_roughness_texture, roughness_image),
+        ("diffuse", config.cave_diffuse_texture, diffuse_image),
+        ("normal", config.cave_normal_texture, normal_image),
+        ("roughness", config.cave_roughness_texture, roughness_image),
     ):
-        if cave_geometry.config.strict_texture_loading and path and image is None:
+        if config.strict_texture_loading and path and image is None:
             raise RuntimeError(f"Failed to decode configured cave {label} texture: {path}")
     return builder.material(
         name="cave_wall_material",
-        base_color_factor=(0.36, 0.35, 0.31, 1.0),
+        base_color_factor=(1.0, 1.0, 1.0, 1.0) if diffuse_image is not None else (0.36, 0.35, 0.31, 1.0),
         base_color_texture=diffuse_image,
         normal_texture=normal_image,
-        normal_scale=cave_geometry.config.cave_normal_scale,
+        normal_scale=config.cave_normal_scale,
         metallic_roughness_texture=roughness_image,
         metallic_factor=0.0,
-        roughness_factor=0.92,
+        roughness_factor=1.0 if roughness_image is not None else 0.92,
         double_sided=False,
     )
 
@@ -1166,7 +1147,8 @@ def _write_geometry_manifest(
                 "roughness": cave_geometry.config.cave_roughness_texture,
                 "displacement": cave_geometry.config.cave_displacement_texture,
                 "uv_projection": "xatlas_metric_charts",
-                "uv_scale_m": GLB_CAVE_TEXTURE_SCALE_METERS,
+                "uv_scale_m": cave_geometry.config.cave_texture_scale_m,
+                "embedded_texture_max_size": cave_geometry.config.embedded_texture_max_size,
                 "surface_order": [
                     "visual_smoothing",
                     "xatlas_chart_generation",
@@ -1513,78 +1495,6 @@ class _StrictGlbBuilder:
         children.append(node_index)
         return node_index
 
-    def _primitive(
-        self,
-        *,
-        positions: np.ndarray,
-        faces: np.ndarray,
-        material_index: int,
-        texcoords: np.ndarray | None = None,
-        normals: np.ndarray | None = None,
-        tangents: np.ndarray | None = None,
-    ) -> dict[str, object]:
-        attributes = {
-            "POSITION": self._accessor(
-                positions,
-                component_type=5126,
-                accessor_type="VEC3",
-                target=34962,
-                minimum=positions.min(axis=0).tolist(),
-                maximum=positions.max(axis=0).tolist(),
-            )
-        }
-        if texcoords is not None:
-            texcoords = np.asarray(texcoords, dtype=np.float32)
-            attributes["TEXCOORD_0"] = self._accessor(
-                texcoords,
-                component_type=5126,
-                accessor_type="VEC2",
-                target=34962,
-                minimum=texcoords.min(axis=0).tolist(),
-                maximum=texcoords.max(axis=0).tolist(),
-            )
-        if normals is not None:
-            normals = np.asarray(normals, dtype=np.float32)
-            attributes["NORMAL"] = self._accessor(
-                normals,
-                component_type=5126,
-                accessor_type="VEC3",
-                target=34962,
-                minimum=normals.min(axis=0).tolist(),
-                maximum=normals.max(axis=0).tolist(),
-            )
-        if tangents is not None:
-            tangents = np.asarray(tangents, dtype=np.float32)
-            attributes["TANGENT"] = self._accessor(
-                tangents,
-                component_type=5126,
-                accessor_type="VEC4",
-                target=34962,
-                minimum=tangents.min(axis=0).tolist(),
-                maximum=tangents.max(axis=0).tolist(),
-            )
-
-        max_index = int(faces.max())
-        if max_index <= 65_535:
-            index_data = faces.astype(np.uint16)
-            component_type = 5123
-        else:
-            index_data = faces.astype(np.uint32)
-            component_type = 5125
-        indices = self._accessor(
-            index_data.reshape(-1),
-            component_type=component_type,
-            accessor_type="SCALAR",
-            target=34963,
-            minimum=[0],
-            maximum=[max_index],
-        )
-        return {
-            "attributes": attributes,
-            "indices": indices,
-            "material": material_index,
-            "mode": 4,
-        }
 
     def to_glb(self) -> bytes:
         document = {
@@ -1610,6 +1520,9 @@ class _StrictGlbBuilder:
             document["images"] = self._images
         if self._textures:
             document["textures"] = self._textures
+            document["samplers"] = [
+                {"wrapS": 10497, "wrapT": 10497, "magFilter": 9729, "minFilter": 9987}
+            ]
 
         json_bytes = json.dumps(document, separators=(",", ":")).encode("utf-8")
         json_bytes += b" " * ((_alignment_padding(len(json_bytes), 4)))
@@ -1628,7 +1541,7 @@ class _StrictGlbBuilder:
         image_index = self._image(image)
         if image_index not in self._texture_cache:
             self._texture_cache[image_index] = len(self._textures)
-            self._textures.append({"source": image_index})
+            self._textures.append({"source": image_index, "sampler": 0})
         return self._texture_cache[image_index]
 
     def _image(self, image) -> int:
@@ -1846,11 +1759,11 @@ def _write_obj_mtl(
     lines: list[str] = [
         "newmtl cave_wall_material",
         "Ka 0.05 0.05 0.05",
-        "Kd 0.36 0.35 0.31",
+        "Kd 1.0 1.0 1.0" if cave_maps["diffuse"] else "Kd 0.36 0.35 0.31",
         "Ks 0.02 0.02 0.02",
         "Ns 8.0",
         "Pm 0.0",
-        "Pr 0.92",
+        "Pr 1.0" if cave_maps["roughness"] else "Pr 0.92",
     ]
     if cave_maps["diffuse"]:
         lines.append(f"map_Kd {_relative_path(cave_maps['diffuse'], obj_dir)}")

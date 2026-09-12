@@ -80,7 +80,7 @@ class TerrainWave:
 class RoutingWeights:
     """Inspectable weights for the process-informed routing surrogate.
 
-    The defaults are the legacy Stage-A constants.  ``resolved`` is the only
+    The defaults are the baseline Stage-A weights.  ``resolved`` is the only
     path used by generation so evaluation ablations cannot accidentally apply
     a different normalization convention.
     """
@@ -193,12 +193,6 @@ class HostFieldSample:
     gradient_x: float
     gradient_y: float
 
-    @property
-    def routing_cost(self) -> float:
-        """Preferred name for the legacy ``growth_cost`` compatibility field."""
-
-        return self.growth_cost
-
 
 @dataclass(frozen=True)
 class HostField:
@@ -228,11 +222,6 @@ class HostField:
     gradient_x: Array2D
     gradient_y: Array2D
 
-    @property
-    def routing_cost(self) -> Array2D:
-        """Preferred name for the legacy ``growth_cost`` compatibility field."""
-
-        return self.growth_cost
 
     @property
     def extent(self) -> tuple[float, float, float, float]:
@@ -395,7 +384,6 @@ class HostFieldGenerator:
         growth_cost, routing_terms = self._build_growth_cost(
             slope_degrees=slope_degrees,
             cover_thickness=cover_thickness,
-            roof_competence=roof_competence,
             fracture_intensity=process["fracture_intensity"],
             flow_capacity=process["flow_capacity"],
             roof_stability=process["roof_stability"],
@@ -823,7 +811,6 @@ class HostFieldGenerator:
         *,
         slope_degrees: Array2D,
         cover_thickness: Array2D,
-        roof_competence: Array2D,
         fracture_intensity: Array2D,
         flow_capacity: Array2D,
         roof_stability: Array2D,
@@ -931,7 +918,7 @@ def export_host_influence_report(
                 "fracture_intensity": host_field.fracture_intensity,
                 "flow_capacity": host_field.flow_capacity,
                 "roof_stability": host_field.roof_stability,
-                "routing_cost": host_field.routing_cost,
+                "routing_cost": host_field.growth_cost,
             }.items()
         },
         "influence": host_field.routing_influence_summary(),

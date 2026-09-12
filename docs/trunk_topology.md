@@ -104,7 +104,7 @@ width, flow or section-profile checks.
 
 `network.systems.count` selects the number of upstream feeders in this mode.
 The distributed system spacing, capture/release and persistence controls apply
-only to the `general` topology. Lobe, braid, history and density controls are also
+only to the `general` topology. Lobe, history and density controls are also
 inactive here; the diagnostics script skips the unrelated density sweep and
 emplacement-history figures. Internal emplacement is required. Extra sources
 still require room in the host; accepting counts up to eight in the configuration

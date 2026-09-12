@@ -21,6 +21,16 @@ from plume_advanced.world import ExportConfig
 
 
 class TargetExporterTests(unittest.TestCase):
+    def test_unassembled_geometry_is_rejected_before_export(self) -> None:
+        geometry = replace(self._geometry(), assembled_vertices=(), assembled_faces=())
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaisesRegex(ValueError, "assembled Stage-E mesh"):
+                export_target_asset(
+                    geometry,
+                    ExportConfig(target="neutral", file_format="glb", generate_collision=False),
+                    Path(temporary) / "incomplete",
+                )
+
     def test_failed_staged_export_preserves_previous_complete_package(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output = Path(temp_dir) / "package"

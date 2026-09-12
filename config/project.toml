@@ -1,4 +1,4 @@
-schema_version = 3
+schema_version = 4
 procedural_seed = 1
 
 [world]
@@ -21,7 +21,7 @@ cooling_rate_scale = 1.0
 dev_mode = true
 quality = "standard"
 dev_max_route_length_m = 1500.0
-dev_max_braid_zones = 2
+dev_max_lobe_paths = 6
 render_diagnostics = true
 # Safety default: prompt before writing into a non-empty generation directory.
 # Set true only for unattended/debug batches that intentionally replace files.
@@ -77,7 +77,6 @@ angle_degrees = [-65.0, 85.0]
 phase = [-3.14159, 3.14159]
 
 [network]
-growth_model = "hybrid_lobe"
 # Operational default.  Set to "downflow_reference" for the lightweight
 # perturbed-DEM ensemble, or to "flowy" only with a compatible external
 # executable configured as `flowy_executable = "/path/to/flowy"`.
@@ -110,10 +109,6 @@ occupancy_smoothing_passes = 2
 # widths; the generator also enforces a host-corridor-relative minimum.
 minimum_branch_offset_widths = 1.25
 paint_flux_chambers = false
-spur_count = 4
-spur_max_steps = 24
-spur_lateral_bias = 1.3
-spur_congestion_weight = 0.85
 channel_count_samples = 28
 
 # Process-based Stage-B growth. Active lobes follow a correlated perturbation
@@ -191,23 +186,6 @@ drained_pool_width_ratio = [2.0, 4.5]
 drained_pool_max_width_m = 28.0
 drained_pool_depth_m = [5.0, 12.0]
 
-# Retained for the explicit legacy_braid compatibility mode.
-[network.braid_grammar]
-zone_count = [4, 7]
-center_fraction = [0.14, 0.88]
-min_center_spacing = 0.10
-half_length_fraction = [0.045, 0.095]
-branches_per_zone = [2, 4]
-lateral_offset_scale = [0.35, 1.25]
-start_shift_fraction = [-0.26, 0.26]
-end_shift_fraction = [-0.26, 0.26]
-skew = [-0.70, 0.70]
-wobble = [0.08, 0.38]
-underpass_probability = 0.24
-ladder_probability = 0.52
-ladder_rung_count = [1, 2]
-chamber_radius_scale = [1.0, 1.60]
-
 [section_field]
 sampling_policy = "adaptive"
 base_height_ratio = 0.66
@@ -283,12 +261,8 @@ clustered_debris_fraction = 0.45
 collapse_cluster_radius_scale = 4.0
 collapse_cluster_spacing_scale = 0.90
 # Floor-area density keeps wide galleries from looking emptier than narrow ones.
-debris_density_basis = "floor_area"
 rock_density_per_100m2 = 0.45
 boulder_density_per_100m2 = 0.04
-# Retained for reproducible legacy length-based projects.
-rock_density_per_100m = 2.00
-boulder_density_per_100m = 0.18
 geological_event_density_per_100m = 0.12
 collapse_event_fraction = 0.35
 choke_event_fraction = 0.30

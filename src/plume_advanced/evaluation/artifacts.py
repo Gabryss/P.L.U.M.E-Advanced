@@ -31,7 +31,7 @@ def host_semantic_hash(host_field: HostField, *, tolerance: float = 1e-9) -> str
                 "fracture": host_field.fracture_intensity,
                 "capacity": host_field.flow_capacity,
                 "stability": host_field.roof_stability,
-                "routing_cost": host_field.routing_cost,
+                "routing_cost": host_field.growth_cost,
             }.items()
         }
     )

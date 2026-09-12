@@ -37,6 +37,3 @@ def diagnostics_to_json(report: Any, *, indent: int | None = None) -> str:
         ensure_ascii=True,
         allow_nan=False,
     )
-
-
-serialize_diagnostics = diagnostics_to_json

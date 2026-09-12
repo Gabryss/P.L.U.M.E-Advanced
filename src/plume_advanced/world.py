@@ -116,7 +116,7 @@ class RunConfig:
     dev_mode: bool = False
     quality: str = "standard"
     dev_max_route_length_m: float = 1500.0
-    dev_max_braid_zones: int = 2
+    dev_max_lobe_paths: int = 6
     render_diagnostics: bool = True
     overwrite_outputs: bool = False
 
@@ -281,8 +281,8 @@ def build_run_config(raw_config: dict[str, Any] | None) -> RunConfig:
         )
     if config.dev_max_route_length_m <= 0.0:
         raise ValueError("run.dev_max_route_length_m must be positive")
-    if config.dev_max_braid_zones < 0:
-        raise ValueError("run.dev_max_braid_zones must be non-negative")
+    if config.dev_max_lobe_paths < 1:
+        raise ValueError("run.dev_max_lobe_paths must be positive")
     return config
 
 

@@ -12,6 +12,7 @@ from plume_advanced.stages.events import GeologicalEventConfig, GeologicalEventF
 from plume_advanced.stages.geometry import GeometryGenerator
 from plume_advanced.stages.geometry_types import GeometryConfig
 from plume_advanced.stages.network import CaveNetwork, CaveNetworkConfig
+from plume_advanced.stages.network_quality import NetworkQualityConfig
 from plume_advanced.stages.section_field import (
     SectionField,
     SectionFieldConfig,
@@ -69,7 +70,9 @@ def _fixture(gravity: float = 9.80665) -> tuple[CaveNetwork, SectionField]:
         junction_blend_weight=0., junction_influences=(), profile_points=profile,
     ) for i in range(3))
     network = CaveNetwork(
-        config=CaveNetworkConfig(), nodes=(), segments=(), junctions=(),
+        # This isolates roof mechanics using synthetic profiles without a graph.
+        config=CaveNetworkConfig(quality=NetworkQualityConfig(enabled=False)),
+        nodes=(), segments=(), junctions=(),
         occupancy=np.zeros((2, 2)), width_field=np.zeros((2, 2)),
         dominant_route_node_ids=(), slice_along_positions=(),
         slice_channel_counts=(), slice_visible_channel_counts=(),

@@ -54,7 +54,7 @@ def route_preferences(generator, host, geometry):
     The final lateral-order projection prevents implicit source swaps. Explicit
     capture/release planning subsequently turns contact into graph connections.
     """
-    from plume_advanced.stages.network_systems import _cross_bounds
+    from plume_advanced.stages.network_systems import _cross_bounds, enforce_source_order
 
     cfg, controls = generator.config, generator.config.systems
     width = 2 * cfg.base_passage_radius
@@ -98,7 +98,7 @@ def route_preferences(generator, host, geometry):
             distances = np.linspace(0, reach, 5)
             a = np.broadcast_to(along[i - 1] + distances, (len(slopes), 5))
             c = track[i - 1] + slopes[:, None] * distances
-            costs = sample(host.routing_cost, a, c)
+            costs = sample(host.growth_cost, a, c)
             heights = sample(host.elevation, a, c)
             grade = np.diff(heights, axis=1) / np.maximum(
                 np.diff(distances)[None, :] * np.sqrt(1 + slopes[:, None] ** 2), 1e-9
@@ -120,14 +120,7 @@ def route_preferences(generator, host, geometry):
         tracks.append(track)
     tracks = gaussian_filter1d(np.asarray(tracks), max(1, width / step), axis=1, mode="nearest")
     # Stable pool-adjacent-violators projection; membership is never sorted away.
-    for i in range(len(along)):
-        blocks = []
-        for value in tracks[:, i]:
-            blocks.append([float(value), 1])
-            while len(blocks) > 1 and blocks[-2][0] > blocks[-1][0]:
-                b, a = blocks.pop(), blocks.pop()
-                blocks.append([(a[0] * a[1] + b[0] * b[1]) / (a[1] + b[1]), a[1] + b[1]])
-        tracks[:, i] = [value for value, count in blocks for _ in range(count)]
+    enforce_source_order(tracks)
     # Restore the exact source locations after filtering.
     fade = np.clip(along / (2 * width), 0, 1)
     fade = fade * fade * (3 - 2 * fade)
@@ -158,7 +151,7 @@ def connection_guard(generator, host, geometry, along, tracks, width):
         ):
             return False
         centres = [float(np.mean(tracks[list(g), index])) for g in (left, right)]
-        cross = np.linspace(*centres, 7)
+        cross = np.linspace(centres[0], centres[1], 7)
         samples = [
             host.sample(
                 geometry.seed_x + along[index] * geometry.flow_x + c * geometry.cross_x,
@@ -186,7 +179,8 @@ def smooth_routes(host, segments, axis):
     """
     axis = np.asarray(axis)
     cross = np.array([-axis[1], axis[0]])
-    prepared, directions = {}, {}
+    prepared = {}
+    directions: dict[int, list[float]] = {}
     for s in segments:
         if s.metadata.get("topology_role") == "side_branch":
             continue
@@ -306,13 +300,13 @@ def spatial_metrics(network, sections=None):
     boundaries = np.linspace(lo, hi, n + 1)
     stations = (boundaries[:-1] + boundaries[1:]) / 2
     step = float(boundaries[1] - boundaries[0])
-    intervals = [[] for _ in stations]
+    intervals: list[list[tuple[float, float]]] = [[] for _ in stations]
     for r in rows:
         indices = np.flatnonzero((stations >= r[0, 0]) & (stations < r[-1, 0]))
         low, high = (np.interp(stations[indices], r[:, 0], r[:, i]) for i in (1, 2))
         for i, a, b in zip(indices, low, high):
             intervals[i].append((float(a), float(b)))
-    counts, gaps = [], []
+    station_counts, gaps = [], []
     clearance = cfg.interconnection.minimum_clearance_widths * width
     for interval in intervals:
         count, end = 0, -np.inf
@@ -322,8 +316,8 @@ def spatial_metrics(network, sections=None):
                     gaps.append(a - end)
                 count += 1
             end = max(end, b)
-        counts.append(count)
-    counts = np.asarray(counts)
+        station_counts.append(count)
+    counts = np.asarray(station_counts)
 
     def longest(mask):
         longest_run = run = 0
@@ -401,7 +395,7 @@ def assess_interconnected(network, host, sections, check):
         maximum_angle,
         cfg.maximum_junction_angle_degrees,
     )
-    starved = []
+    starved: list[int] = []
     minimum_supply = (
         network.config.source_flux * network.config.lobe_growth.minimum_viable_flux_fraction
     )

@@ -81,7 +81,7 @@ def _path_id(segment: CaveSegment, index: int) -> str:
     return f"segment_{segment.segment_id}_{index}"
 
 
-def _phase_count(network: CaveNetwork, metadata: Iterable[dict[str, Any]]) -> tuple[int, bool]:
+def _phase_count(metadata: Iterable[dict[str, Any]]) -> tuple[int, bool]:
     values = [_number(_first(item, _PHASE_KEYS)) for item in metadata]
     finite = [int(round(value)) for value in values if value is not None and value >= 1.0]
     if finite:
@@ -275,7 +275,7 @@ def emplacement_metrics(network: CaveNetwork) -> dict[str, Any]:
     """Return tolerant phase, lobe, flux, and longitudinal diagnostics."""
 
     metadata = [dict(segment.metadata or {}) for segment in network.segments]
-    phase_count, phase_metadata_available = _phase_count(network, metadata)
+    phase_count, phase_metadata_available = _phase_count(metadata)
     records = _path_records(network, phase_count)
     history_available = any(
         any(key in item for key in (_PHASE_KEYS + _BIRTH_KEYS + _DEATH_KEYS + _STATE_KEYS))

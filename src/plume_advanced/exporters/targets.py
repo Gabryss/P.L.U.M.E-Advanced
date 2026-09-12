@@ -535,6 +535,7 @@ def _write_engine_import_guide(
 ) -> Path | None:
     """Write concise, version-resilient import settings beside engine assets."""
 
+    lines: tuple[str, ...]
     if target == "ue5":
         name = "README_IMPORT_UE5.txt"
         lines = (
@@ -562,6 +563,10 @@ def _write_engine_import_guide(
             "Install a glTF 2.0 importer compatible with your Unity version (for example glTFast).",
             f"Import {primary_asset.name} with scale 1.0 and preserve normals/tangents.",
             "The GLB is Y-up, metre-based, self-contained, and uses metallic/roughness PBR.",
+            "Keep the importer's generated materials and use shaders for your active render pipeline.",
+            "PBR maps, when configured, are embedded: sRGB base color; linear OpenGL normal; "
+            "linear roughness in green and metallic in blue. UVs repeat at the configured metre scale.",
+            "Do not assign the packed glTF roughness image directly to a metallic-smoothness slot.",
             (
                 f"Use {collision_asset.name} for a MeshCollider; disable rendering on that object."
                 if collision_asset is not None

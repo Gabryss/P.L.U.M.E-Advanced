@@ -26,26 +26,6 @@ from plume_advanced.stages.network_topology import NetworkTopologyConfig
 
 
 @dataclass(frozen=True)
-class BraidGrammarConfig:
-    """Seed-sampled controls for network split/merge motifs."""
-
-    zone_count: tuple[int, int] = (4, 6)
-    center_fraction: tuple[float, float] = (0.14, 0.88)
-    min_center_spacing: float = 0.11
-    half_length_fraction: tuple[float, float] = (0.045, 0.09)
-    branches_per_zone: tuple[int, int] = (2, 4)
-    lateral_offset_scale: tuple[float, float] = (0.35, 1.25)
-    start_shift_fraction: tuple[float, float] = (-0.24, 0.24)
-    end_shift_fraction: tuple[float, float] = (-0.24, 0.24)
-    skew: tuple[float, float] = (-0.65, 0.65)
-    wobble: tuple[float, float] = (0.08, 0.36)
-    underpass_probability: float = 0.22
-    ladder_probability: float = 0.48
-    ladder_rung_count: tuple[int, int] = (1, 2)
-    chamber_radius_scale: tuple[float, float] = (1.0, 1.55)
-
-
-@dataclass(frozen=True)
 class LobeGrowthConfig:
     """Controls for process-based stochastic lava-lobe propagation."""
 
@@ -127,7 +107,6 @@ class CaveNetworkConfig:
     systems: NetworkSystemsConfig = NetworkSystemsConfig()
     topology: NetworkTopologyConfig = NetworkTopologyConfig()
     interconnection: InterconnectionConfig = InterconnectionConfig()
-    growth_model: str = "hybrid_lobe"
     network_density: float = 1.0
     emplacement_backend: str = "internal"
     flowy_executable: str | None = None
@@ -140,7 +119,6 @@ class CaveNetworkConfig:
     loop_probability: float = 1.0
     capture_probability: float = 1.0
     chamber_gain: float = 1.0
-    braid_grammar: BraidGrammarConfig = BraidGrammarConfig()
     lobe_growth: LobeGrowthConfig = LobeGrowthConfig()
     emplacement_history: EmplacementHistoryConfig = EmplacementHistoryConfig()
     body_spatial_scale: float = 1.0
@@ -166,10 +144,6 @@ class CaveNetworkConfig:
     minimum_branch_offset_widths: float = 1.25
     paint_flux_chambers: bool = False
     occupancy_smoothing_passes: int = 1
-    spur_count: int = 5
-    spur_max_steps: int = 24
-    spur_lateral_bias: float = 1.3
-    spur_congestion_weight: float = 0.85
     channel_count_samples: int = 28
 
 
@@ -685,28 +659,6 @@ class _FlowGeometry:
 
 
 @dataclass(frozen=True)
-class _BraidZone:
-    center_fraction: float
-    half_length_fraction: float
-    branches: tuple["_ZoneBranch", ...]
-    ladder_rungs: tuple[float, ...] = ()
-    chamber_radius_scale: float = 1.0
-
-
-@dataclass(frozen=True)
-class _ZoneBranch:
-    kind: str
-    lateral_offset: float
-    start_shift_fraction: float = 0.0
-    end_shift_fraction: float = 0.0
-    skew: float = 0.0
-    wobble: float = 0.0
-    phase: float = 0.0
-    z_level: int = 0
-    merge_shared_cells: bool = True
-
-
-@dataclass(frozen=True)
 class _SelectedPath:
     kind: str
     path: tuple[tuple[int, int], ...]
@@ -1092,7 +1044,6 @@ class CaveNetworkGenerator:
         geometry = self._build_flow_geometry(host_field)
         # Match Stage A's baseline semantics: an unspecified seed produces a
         # stable canonical network, while configured seeds select variations.
-        rng = procedural_rng(self.config.random_seed, "network-grammar")
         source_cells = self._select_source_cells(host_field, geometry)
         support_field = self._build_support_field(host_field, geometry)
         downstream_potential = self._build_downstream_potential(
@@ -1116,14 +1067,12 @@ class CaveNetworkGenerator:
             "provenance": "plume_hybrid_lobe",
         }
         proposal_path_count = 1
-        backbone_perturbation = None
-        if self.config.growth_model == "hybrid_lobe":
-            backbone_perturbation = self._correlated_terrain_perturbation(
-                host_field.elevation.shape,
-                amplitude_m=self.config.lobe_growth.terrain_perturbation_m,
-                correlation_cells=self.config.lobe_growth.perturbation_correlation_cells,
-                rng=procedural_rng(self.config.random_seed, "backbone-downflow"),
-            )
+        backbone_perturbation = self._correlated_terrain_perturbation(
+            host_field.elevation.shape,
+            amplitude_m=self.config.lobe_growth.terrain_perturbation_m,
+            correlation_cells=self.config.lobe_growth.perturbation_correlation_cells,
+            rng=procedural_rng(self.config.random_seed, "backbone-downflow"),
+        )
         if self.config.emplacement_backend == "internal":
             backbone_path = self._trace_backbone_path(
                 host_field=host_field,
@@ -1184,11 +1133,7 @@ class CaveNetworkGenerator:
                 "proposal_downstream_progress_m": float(
                     geometry.along_grid[backbone_path[-1]] - geometry.along_grid[backbone_path[0]]
                 ),
-                "secondary_growth_model": (
-                    "flux_breakout_avulsion"
-                    if self.config.growth_model == "hybrid_lobe"
-                    else "legacy_braid"
-                ),
+                "secondary_growth_model": "flux_breakout_avulsion",
             }
         )
 
@@ -1272,71 +1217,19 @@ class CaveNetworkGenerator:
                     ),
                 )
             )
-        if self.config.growth_model == "hybrid_lobe":
-            selected_paths.extend(
-                self._build_lobe_growth_paths(
-                    host_field=host_field,
-                    geometry=geometry,
-                    support_field=support_field,
-                    downstream_potential=downstream_potential,
-                    backbone_path=backbone_path,
-                    backbone_alongs=backbone_alongs,
-                    backbone_crosses=backbone_crosses,
-                    initial_paths=tuple(selected_paths),
-                    phase_count=emplacement_phase_count,
-                )
+        selected_paths.extend(
+            self._build_lobe_growth_paths(
+                host_field=host_field,
+                geometry=geometry,
+                support_field=support_field,
+                downstream_potential=downstream_potential,
+                backbone_path=backbone_path,
+                backbone_alongs=backbone_alongs,
+                backbone_crosses=backbone_crosses,
+                initial_paths=tuple(selected_paths),
+                phase_count=emplacement_phase_count,
             )
-        else:
-            braid_zones = self._build_braid_zones(host_field, geometry, rng)
-            for zone_index, zone in enumerate(braid_zones):
-                zone_paths = self._build_zone_paths(
-                    host_field=host_field,
-                    geometry=geometry,
-                    support_field=support_field,
-                    backbone_path=backbone_path,
-                    backbone_alongs=backbone_alongs,
-                    backbone_crosses=backbone_crosses,
-                    zone=zone,
-                    occupied_cells=occupied_cells,
-                    zone_index=zone_index,
-                )
-                for selected_path in zone_paths:
-                    selected_paths.append(selected_path)
-                    occupied_cells.update(selected_path.path[2:-2])
-
-            _skeleton_mask, total_flux, _family_flux = self._build_representative_fields(
-                shape=host_field.growth_cost.shape,
-                selected_paths=tuple(selected_paths),
-            )
-
-            _, connectable_flux, _ = self._build_representative_fields(
-                shape=host_field.growth_cost.shape,
-                selected_paths=tuple(
-                    selected_path
-                    for selected_path in selected_paths
-                    if selected_path.merge_shared_cells
-                ),
-            )
-            spur_starts = self._select_spur_start_cells(connectable_flux, geometry)
-            for spur_index, start_cell in enumerate(spur_starts):
-                path = self._trace_spur(
-                    host_field=host_field,
-                    geometry=geometry,
-                    support_field=support_field,
-                    start_cell=start_cell,
-                    total_flux=total_flux,
-                    lateral_sign=-1.0 if spur_index % 2 == 0 else 1.0,
-                    rng=rng,
-                )
-                if path:
-                    selected_paths.append(
-                        _SelectedPath(
-                            kind="spur",
-                            path=tuple(self._simplify_path(path)),
-                            merge_shared_cells=False,
-                            metadata=self._build_segment_metadata(kind="spur"),
-                        )
-                    )
+        )
 
         annotated_paths = self._annotate_drained_pool_chambers(
             host_field=host_field,
@@ -1517,7 +1410,7 @@ class CaveNetworkGenerator:
             -np.square(geometry.cross_grid / max(host_field.config.corridor_width, 1.0))
         )
         support = (
-            self.config.growth_cost_weight * (1.0 - host_field.routing_cost)
+            self.config.growth_cost_weight * (1.0 - host_field.growth_cost)
             + self.config.corridor_weight * corridor_score
         )
         return support
@@ -2935,70 +2828,6 @@ class CaveNetworkGenerator:
         scale = max(float(np.std(correlated)), 1e-9)
         return amplitude_m * correlated / scale
 
-    def _trace_spur(
-        self,
-        *,
-        host_field: HostField,
-        geometry: _FlowGeometry,
-        support_field: np.ndarray,
-        start_cell: tuple[int, int],
-        total_flux: np.ndarray,
-        lateral_sign: float,
-        rng,
-    ) -> list[tuple[int, int]]:
-        path = [start_cell]
-        current_world = self._cell_to_world(host_field, start_cell)
-        side_target_x = geometry.cross_x * lateral_sign
-        side_target_y = geometry.cross_y * lateral_sign
-        has_left_existing_network = False
-        uphill_streak = 0
-
-        for _ in range(self.config.spur_max_steps):
-            current = path[-1]
-            current_world = self._cell_to_world(host_field, current)
-            current_elevation = float(host_field.elevation[current])
-            candidates: list[tuple[tuple[int, int], float]] = []
-            for next_cell in self._neighbor_cells(host_field, current):
-                if next_cell in path[-3:]:
-                    continue
-                # Spurs are terminal distributaries. Once one leaves the
-                # existing network, do not let it reconnect downstream and
-                # silently become a cyclic bypass.
-                if next_cell != start_cell and float(total_flux[next_cell]) > 0.0:
-                    continue
-                next_world = self._cell_to_world(host_field, next_cell)
-                step_x = next_world[0] - current_world[0]
-                step_y = next_world[1] - current_world[1]
-                step_length = math.hypot(step_x, step_y)
-                if math.isclose(step_length, 0.0):
-                    continue
-                next_elevation = float(host_field.elevation[next_cell])
-                uphill = next_elevation - current_elevation
-                if uphill > self.config.max_uphill_step:
-                    continue
-                if uphill > 0.0 and uphill_streak >= 1:
-                    continue
-                step_unit_x = step_x / step_length
-                step_unit_y = step_y / step_length
-                side_alignment = step_unit_x * side_target_x + step_unit_y * side_target_y
-                score = float(support_field[next_cell])
-                score += self.config.spur_lateral_bias * side_alignment
-                score -= self.config.spur_congestion_weight * float(total_flux[next_cell])
-                candidates.append((next_cell, score))
-
-            if not candidates:
-                break
-
-            next_cell = self._sample_candidate(candidates, 0.45, rng)
-            path.append(next_cell)
-            selected_uphill = float(host_field.elevation[next_cell]) - current_elevation
-            uphill_streak = uphill_streak + 1 if selected_uphill > 0.0 else 0
-            if float(total_flux[next_cell]) <= 0.0:
-                has_left_existing_network = True
-            if has_left_existing_network and len(path) > 8:
-                break
-
-        return path if len(path) > 4 else []
 
     def _build_backbone_profile(
         self,
@@ -3168,364 +2997,6 @@ class CaveNetworkGenerator:
             )
         return path
 
-    def _build_braid_zones(
-        self,
-        host_field: HostField,
-        geometry: _FlowGeometry,
-        rng,
-    ) -> tuple[_BraidZone, ...]:
-        grammar = self.config.braid_grammar
-        spread = 0.34 * host_field.config.corridor_width
-        zone_count = self._sample_int_range(rng, grammar.zone_count)
-        center_min, center_max = grammar.center_fraction
-        raw_centers = sorted(
-            float(rng.uniform(center_min, center_max)) for _ in range(zone_count * 4)
-        )
-        centers: list[float] = []
-        for center in raw_centers:
-            if all(abs(center - existing) >= grammar.min_center_spacing for existing in centers):
-                centers.append(center)
-            if len(centers) >= zone_count:
-                break
-        while len(centers) < zone_count:
-            centers.append(float(rng.uniform(center_min, center_max)))
-        centers.sort()
-
-        zones: list[_BraidZone] = []
-        for center in centers:
-            branch_count = self._sample_int_range(rng, grammar.branches_per_zone)
-            branch_count = max(2, branch_count)
-            branches: list[_ZoneBranch] = []
-            signs = [-1.0, 1.0]
-            for branch_index in range(branch_count):
-                sign = signs[branch_index % 2]
-                if branch_index >= 2:
-                    sign *= -1.0 if rng.random() < 0.5 else 1.0
-                kind = self._sample_branch_kind(rng)
-                z_level = 0
-                merge_shared_cells = True
-                if rng.random() < grammar.underpass_probability:
-                    kind = "underpass"
-                    z_level = -1 if rng.random() < 0.5 else 1
-                    merge_shared_cells = False
-                lateral_scale = self._sample_float_range(rng, grammar.lateral_offset_scale)
-                sampled_offset = lateral_scale * spread
-                minimum_offset = max(
-                    self.config.minimum_branch_offset_widths
-                    * 2.0
-                    * self.config.base_passage_radius,
-                    0.19 * host_field.config.corridor_width,
-                )
-                branches.append(
-                    _ZoneBranch(
-                        kind=kind,
-                        lateral_offset=sign * max(sampled_offset, minimum_offset),
-                        start_shift_fraction=self._sample_float_range(
-                            rng, grammar.start_shift_fraction
-                        ),
-                        end_shift_fraction=self._sample_float_range(
-                            rng, grammar.end_shift_fraction
-                        ),
-                        skew=self._sample_float_range(rng, grammar.skew),
-                        wobble=self._sample_float_range(rng, grammar.wobble),
-                        phase=float(rng.uniform(0.0, 2.0 * math.pi)),
-                        z_level=z_level,
-                        merge_shared_cells=merge_shared_cells,
-                    )
-                )
-
-            ladder_rungs: tuple[float, ...] = ()
-            if branch_count >= 2 and rng.random() < grammar.ladder_probability:
-                rung_count = self._sample_int_range(rng, grammar.ladder_rung_count)
-                ladder_rungs = tuple(
-                    sorted(float(rng.uniform(0.25, 0.75)) for _ in range(rung_count))
-                )
-
-            zones.append(
-                _BraidZone(
-                    center_fraction=center,
-                    half_length_fraction=self._sample_float_range(
-                        rng, grammar.half_length_fraction
-                    ),
-                    branches=tuple(branches),
-                    ladder_rungs=ladder_rungs,
-                    chamber_radius_scale=self._sample_float_range(
-                        rng, grammar.chamber_radius_scale
-                    ),
-                )
-            )
-
-        return tuple(zones)
-
-    def _build_zone_paths(
-        self,
-        *,
-        host_field: HostField,
-        geometry: _FlowGeometry,
-        support_field: np.ndarray,
-        backbone_path: list[tuple[int, int]],
-        backbone_alongs: np.ndarray,
-        backbone_crosses: np.ndarray,
-        zone: _BraidZone,
-        occupied_cells: set[tuple[int, int]],
-        zone_index: int,
-    ) -> tuple[_SelectedPath, ...]:
-        center_along = zone.center_fraction * geometry.along_extent
-        half_length = zone.half_length_fraction * geometry.along_extent
-        zone_paths: list[_SelectedPath] = []
-        built_branch_paths: list[tuple[_ZoneBranch, tuple[tuple[int, int], ...]]] = []
-        for branch in zone.branches:
-            start_along = center_along - half_length + branch.start_shift_fraction * half_length
-            end_along = center_along + half_length + branch.end_shift_fraction * half_length
-            backbone_segment = self._extract_backbone_segment(
-                backbone_path=backbone_path,
-                geometry=geometry,
-                start_along=start_along,
-                end_along=end_along,
-            )
-            if len(backbone_segment) < 8:
-                continue
-            path = self._build_offset_zone_path(
-                host_field=host_field,
-                geometry=geometry,
-                support_field=support_field,
-                backbone_segment=backbone_segment,
-                backbone_alongs=backbone_alongs,
-                backbone_crosses=backbone_crosses,
-                branch=branch,
-            )
-            if not path:
-                continue
-            simplified = self._simplify_path(path)
-            if len(simplified) < 5:
-                continue
-            max_cross_delta = max(
-                abs(
-                    float(geometry.cross_grid[cell])
-                    - float(
-                        np.interp(
-                            float(geometry.along_grid[cell]), backbone_alongs, backbone_crosses
-                        )
-                    )
-                )
-                for cell in simplified
-            )
-            if max_cross_delta < max(0.18 * host_field.config.corridor_width, 18.0):
-                continue
-            selected = _SelectedPath(
-                kind=branch.kind,
-                path=tuple(simplified),
-                z_level=branch.z_level,
-                merge_shared_cells=branch.merge_shared_cells,
-                metadata=self._build_segment_metadata(
-                    kind=branch.kind,
-                    zone_index=zone_index,
-                    z_level=branch.z_level,
-                    chamber_radius_scale=zone.chamber_radius_scale,
-                ),
-            )
-            zone_paths.append(selected)
-            built_branch_paths.append((branch, selected.path))
-
-        if zone.ladder_rungs and built_branch_paths:
-            ladder_paths = self._build_zone_ladders(
-                host_field=host_field,
-                geometry=geometry,
-                support_field=support_field,
-                backbone_alongs=backbone_alongs,
-                backbone_crosses=backbone_crosses,
-                branches=built_branch_paths,
-                rungs=zone.ladder_rungs,
-                zone_index=zone_index,
-                chamber_radius_scale=zone.chamber_radius_scale,
-            )
-            zone_paths.extend(ladder_paths)
-        return tuple(zone_paths)
-
-    def _extract_backbone_segment(
-        self,
-        *,
-        backbone_path: list[tuple[int, int]],
-        geometry: _FlowGeometry,
-        start_along: float,
-        end_along: float,
-    ) -> list[tuple[int, int]]:
-        segment = [
-            cell
-            for cell in backbone_path
-            if start_along <= float(geometry.along_grid[cell]) <= end_along
-        ]
-        if not segment:
-            start_cell = self._cell_on_path_at_along(backbone_path, geometry, start_along)
-            end_cell = self._cell_on_path_at_along(backbone_path, geometry, end_along)
-            return [start_cell, end_cell]
-        first_index = backbone_path.index(segment[0])
-        last_index = backbone_path.index(segment[-1])
-        return backbone_path[first_index : last_index + 1]
-
-    def _build_offset_zone_path(
-        self,
-        *,
-        host_field: HostField,
-        geometry: _FlowGeometry,
-        support_field: np.ndarray,
-        backbone_segment: list[tuple[int, int]],
-        backbone_alongs: np.ndarray,
-        backbone_crosses: np.ndarray,
-        branch: _ZoneBranch,
-    ) -> list[tuple[int, int]]:
-        if len(backbone_segment) < 2:
-            return []
-        built_path = [backbone_segment[0]]
-        segment_start = float(geometry.along_grid[backbone_segment[0]])
-        segment_end = float(geometry.along_grid[backbone_segment[-1]])
-        along_span = max(segment_end - segment_start, geometry.cell_scale)
-
-        for index, cell in enumerate(backbone_segment[1:-1], start=1):
-            along = float(geometry.along_grid[cell])
-            progress = (along - segment_start) / along_span
-            clamped_progress = float(np.clip(progress, 0.0, 1.0))
-            envelope = self._natural_split_envelope(
-                clamped_progress,
-                branch.skew,
-                branch.phase,
-            )
-            meander = (
-                branch.wobble
-                * envelope
-                * (
-                    0.72 * math.sin(2.0 * math.pi * 0.58 * clamped_progress + branch.phase)
-                    + 0.28 * math.sin(2.0 * math.pi * 1.31 * clamped_progress + 0.5 * branch.phase)
-                )
-            )
-            target_cross = (
-                float(np.interp(along, backbone_alongs, backbone_crosses))
-                + branch.lateral_offset * envelope
-                + 0.18 * host_field.config.corridor_width * meander
-            )
-            target_x = geometry.seed_x + geometry.flow_x * along + geometry.cross_x * target_cross
-            target_y = geometry.seed_y + geometry.flow_y * along + geometry.cross_y * target_cross
-            snapped = self._snap_target_cell(
-                host_field=host_field,
-                geometry=geometry,
-                support_field=support_field,
-                target_x=target_x,
-                target_y=target_y,
-                target_cross=target_cross,
-            )
-            if snapped == built_path[-1]:
-                continue
-            built_path.append(snapped)
-        if backbone_segment[-1] != built_path[-1]:
-            built_path.append(backbone_segment[-1])
-        return built_path
-
-    @staticmethod
-    def _natural_split_envelope(
-        progress: float,
-        skew: float,
-        phase: float,
-    ) -> float:
-        """Return an asymmetric, rounded offset for a split/merge path."""
-
-        t = float(np.clip(progress, 0.0, 1.0))
-        if t <= 0.0 or t >= 1.0:
-            return 0.0
-        warped = float(
-            np.clip(
-                t
-                + 0.10 * skew * math.sin(math.pi * t)
-                + 0.025 * math.sin(phase) * math.sin(2.0 * math.pi * t),
-                0.0,
-                1.0,
-            )
-        )
-        exponent = 1.15 + 0.25 * abs(skew)
-        rounded = max(math.sin(math.pi * warped), 0.0) ** exponent
-        breathing = 1.0 + 0.035 * rounded * math.sin(2.0 * math.pi * 0.55 * t + phase)
-        return max(0.0, rounded * breathing)
-
-    def _build_zone_ladders(
-        self,
-        *,
-        host_field: HostField,
-        geometry: _FlowGeometry,
-        support_field: np.ndarray,
-        backbone_alongs: np.ndarray,
-        backbone_crosses: np.ndarray,
-        branches: list[tuple[_ZoneBranch, tuple[tuple[int, int], ...]]],
-        rungs: tuple[float, ...],
-        zone_index: int,
-        chamber_radius_scale: float,
-    ) -> tuple[_SelectedPath, ...]:
-        # Grade-separated branches deliberately do not form graph junctions at
-        # interior XY crossings. Attaching a ladder to one would therefore
-        # create a floating two-node component rather than a physical passage.
-        connectable_branches = [item for item in branches if item[0].merge_shared_cells]
-        if len(connectable_branches) < 2:
-            return ()
-        ordered = sorted(
-            connectable_branches,
-            key=lambda item: np.mean([float(geometry.cross_grid[cell]) for cell in item[1]]),
-        )
-        ladders: list[_SelectedPath] = []
-        for rung_index, rung_fraction in enumerate(rungs):
-            pair_index = (zone_index + rung_index) % (len(ordered) - 1)
-            left_branch = ordered[pair_index][1]
-            right_branch = ordered[pair_index + 1][1]
-            left_alongs = [float(geometry.along_grid[cell]) for cell in left_branch]
-            right_alongs = [float(geometry.along_grid[cell]) for cell in right_branch]
-            overlap_start = max(min(left_alongs), min(right_alongs))
-            overlap_end = min(max(left_alongs), max(right_alongs))
-            overlap_span = overlap_end - overlap_start
-            if overlap_span <= 2.0 * geometry.cell_scale:
-                continue
-            center_along = overlap_start + rung_fraction * overlap_span
-            cross_gap = abs(
-                float(np.mean([geometry.cross_grid[cell] for cell in right_branch]))
-                - float(np.mean([geometry.cross_grid[cell] for cell in left_branch]))
-            )
-            along_skew = min(
-                0.38 * overlap_span,
-                max(3.5 * geometry.cell_scale, 0.55 * cross_gap),
-            )
-            skew_sign = -1.0 if (zone_index + rung_index) % 2 else 1.0
-            left_target = center_along - 0.5 * skew_sign * along_skew
-            right_target = center_along + 0.5 * skew_sign * along_skew
-            left_cell = min(
-                left_branch,
-                key=lambda cell: abs(float(geometry.along_grid[cell]) - left_target),
-            )
-            right_cell = min(
-                right_branch,
-                key=lambda cell: abs(float(geometry.along_grid[cell]) - right_target),
-            )
-            connector = self._build_connector_path(
-                host_field=host_field,
-                geometry=geometry,
-                support_field=support_field,
-                start_cell=left_cell,
-                end_cell=right_cell,
-                backbone_alongs=backbone_alongs,
-                backbone_crosses=backbone_crosses,
-            )
-            simplified = self._simplify_path(connector)
-            if len(simplified) < 3:
-                continue
-            metadata = self._build_segment_metadata(
-                kind="ladder",
-                zone_index=zone_index,
-                chamber_radius_scale=chamber_radius_scale,
-            )
-            metadata["connection_style"] = "oblique_anastomosis"
-            ladders.append(
-                _SelectedPath(
-                    kind="ladder",
-                    path=tuple(simplified),
-                    metadata=metadata,
-                )
-            )
-        return tuple(ladders)
 
     def _build_connector_path(
         self,
@@ -3720,8 +3191,12 @@ class CaveNetworkGenerator:
         for selected_path in selected_paths:
             family_label = self._family_label_for_kind(selected_path.kind)
             metadata = selected_path.metadata or {}
-            weight = (float(metadata.get("phase_weighted_flux", 1.0))
-                      if metadata.get("network_process") == "independent_gallery_v1" else 1.0)
+            weight = 1.0
+            if metadata.get("network_process") == "independent_gallery_v1":
+                value = metadata.get("phase_weighted_flux", 1.0)
+                if not isinstance(value, (int, float)) or not math.isfinite(value):
+                    raise ValueError("phase_weighted_flux must be a finite number")
+                weight = float(value)
             for cell in selected_path.path:
                 mask[cell] = True
                 flux[cell] += weight
@@ -4305,7 +3780,7 @@ class CaveNetworkGenerator:
             resolved.append(replace(segment, points=points))
         if self.config.systems.count > 1 or self.config.topology.style == "trunk_dominated":
             from plume_advanced.stages.network_systems import annotate_source_lineage
-            resolved = annotate_source_lineage(nodes, resolved, self._topological_node_ids(nodes, resolved))
+            resolved = annotate_source_lineage(resolved, self._topological_node_ids(nodes, resolved))
         return resolved
 
     @staticmethod
@@ -4335,7 +3810,10 @@ class CaveNetworkGenerator:
             )
             active_count = max(death_phase - birth_phase + 1, 1)
             if "active_phases" in metadata:
-                active_count = len(metadata["active_phases"])
+                active_phases = metadata["active_phases"]
+                if not isinstance(active_phases, list):
+                    raise ValueError("active_phases must be a list")
+                active_count = len(active_phases)
             duty_cycle = active_count / phase_count
             peak_flux = segment.mean_flux * (1.0 + 0.22 * (1.0 - duty_cycle))
             uphill_distance = 0.0
@@ -4375,7 +3853,11 @@ class CaveNetworkGenerator:
                 }
             )
             if "phase_fluxes" in metadata:
-                flows = metadata["phase_fluxes"]
+                raw_flows = metadata["phase_fluxes"]
+                if (not isinstance(raw_flows, list) or not raw_flows
+                    or any(not isinstance(f, (int, float)) or not math.isfinite(f) for f in raw_flows)):
+                    raise ValueError("phase_fluxes must be a nonempty list of finite numbers")
+                flows = np.asarray(raw_flows, dtype=float)
                 metadata.update(phase_weighted_flux=float(np.mean(flows)),
                     peak_formation_flux=float(max(flows)), peak_flux_phase=int(np.argmax(flows)))
             resolved.append(replace(segment, metadata=metadata))
@@ -4739,40 +4221,6 @@ class CaveNetworkGenerator:
         if network.max_flow_conservation_error() > 1e-8:
             raise ValueError("Cave network violates split/merge flux conservation")
 
-    def _select_spur_start_cells(
-        self,
-        total_flux: np.ndarray,
-        geometry: _FlowGeometry,
-    ) -> tuple[tuple[int, int], ...]:
-        occupied_cells = np.argwhere(total_flux > 0.0)
-        if occupied_cells.size == 0 or self.config.spur_count <= 0:
-            return ()
-
-        candidates: list[tuple[tuple[int, int], float]] = []
-        for y_index, x_index in occupied_cells:
-            along_position = float(geometry.along_grid[y_index, x_index])
-            if (
-                along_position < 0.18 * geometry.along_extent
-                or along_position > 0.82 * geometry.along_extent
-            ):
-                continue
-            score = float(total_flux[y_index, x_index])
-            candidates.append(((int(y_index), int(x_index)), score))
-        candidates.sort(key=lambda item: item[1], reverse=True)
-
-        selected: list[tuple[int, int]] = []
-        minimum_separation = 120.0
-        for cell, _score in candidates:
-            if any(
-                math.hypot(cell[1] - other[1], cell[0] - other[0])
-                < minimum_separation / max(geometry.cell_scale, 1.0)
-                for other in selected
-            ):
-                continue
-            selected.append(cell)
-            if len(selected) >= self.config.spur_count:
-                break
-        return tuple(selected)
 
     def _measure_parallel_channels(
         self,
@@ -5220,11 +4668,6 @@ class CaveNetworkGenerator:
         index = int(rng.choice(len(candidates), p=probabilities))
         return candidates[index][0]
 
-    @staticmethod
-    def _sample_branch_kind(rng) -> str:
-        kinds = ("island_bypass", "chamber_braid", "inner_bypass")
-        probabilities = (0.48, 0.34, 0.18)
-        return str(rng.choice(kinds, p=probabilities))
 
     @staticmethod
     def _sample_float_range(rng, value_range: tuple[float, float]) -> float:

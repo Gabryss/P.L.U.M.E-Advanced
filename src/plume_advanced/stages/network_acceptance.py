@@ -7,6 +7,7 @@ import platform
 from copy import copy
 from dataclasses import asdict, replace
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
@@ -169,7 +170,7 @@ def generate_accepted_network(
 
     from plume_advanced.evaluation.artifacts import host_semantic_hash
 
-    report = {
+    report: dict[str, Any] = {
         "schema": QUALITY_VERSION,
         "status": "searching",
         "accepted": False,
@@ -259,6 +260,7 @@ def generate_accepted_network(
                 publish(
                     f"Accepted network candidate {attempt + 1}, repair {repair_pass}; {len(record['checks'])} checks passed"
                 )
+                assert candidate is not None
                 return replace(candidate, quality_report=report)
             publish(f"Rejected candidate {attempt + 1}, repair {repair_pass}: {', '.join(failed)}")
             if candidate is None:

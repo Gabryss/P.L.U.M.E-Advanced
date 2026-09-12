@@ -2,7 +2,7 @@
 # Sections leave more room between routes and resolve shallow interiors.
 # Persistent parallel routes in one host, with conserved formation history.
 # Stage figures are rendered by scripts/render_run_diagnostics.py after the mesh.
-schema_version = 3
+schema_version = 4
 procedural_seed = 20260911
 
 [world]
@@ -25,7 +25,7 @@ cooling_rate_scale = 1.0
 dev_mode = false
 quality = "standard"
 dev_max_route_length_m = 1500.0
-dev_max_braid_zones = 2
+dev_max_lobe_paths = 6
 # The batch renders all stage figures from saved checkpoints after generation.
 render_diagnostics = false
 # Safety default: prompt before writing into a non-empty generation directory.
@@ -89,7 +89,6 @@ phase = [-3.14159, 3.14159]
 random_seed = 2302742253
 target_route_length_m = 3000.0
 minimum_passage_radius = 1.5
-growth_model = "hybrid_lobe"
 emplacement_backend = "internal"
 growth_cost_weight = 3.2
 chamber_radius = 10.0
@@ -221,12 +220,8 @@ clustered_debris_fraction = 0.45
 collapse_cluster_radius_scale = 4.0
 collapse_cluster_spacing_scale = 0.90
 # Floor-area density keeps wide galleries from looking emptier than narrow ones.
-debris_density_basis = "floor_area"
 rock_density_per_100m2 = 0.45
 boulder_density_per_100m2 = 0.04
-# Retained for reproducible legacy length-based projects.
-rock_density_per_100m = 2.00
-boulder_density_per_100m = 0.18
 geological_event_density_per_100m = 0.12
 collapse_event_fraction = 0.35
 choke_event_fraction = 0.30
@@ -305,11 +300,13 @@ junction_irregularity_amplitude = 0.30
 junction_irregularity_frequency = 0.095
 structural_event_blend = 0.35
 weld_tolerance = 1e-5
-cave_normal_scale = 2.0
+embedded_texture_max_size = 4096
+cave_texture_scale_m = 4.0
+cave_normal_scale = 1.0
 cave_smoothing_iterations = 2
 cave_displacement_scale_m = 0.0
 cave_displacement_midlevel = 0.5
-cave_diffuse_texture = ""
-cave_normal_texture = ""
-cave_roughness_texture = ""
+cave_diffuse_texture = "../texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg"
+cave_normal_texture = "../texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr"
+cave_roughness_texture = "../texture/dark_rock_8k/textures/dark_rock_rough_8k.exr"
 cave_displacement_texture = ""

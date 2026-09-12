@@ -22,7 +22,6 @@ from plume_advanced.stages.host_field import (
     TerrainWave,
 )
 from plume_advanced.stages.network import (
-    BraidGrammarConfig,
     CaveNetworkConfig,
     EmplacementHistoryConfig,
     LobeGrowthConfig,
@@ -46,7 +45,7 @@ from plume_advanced.world import (
     resolve_world_config,
 )
 
-CURRENT_SCHEMA_VERSION = 3
+CURRENT_SCHEMA_VERSION = 4
 SUPPORTED_TOP_LEVEL_KEYS = frozenset(
     {
         "schema_version",
@@ -118,13 +117,13 @@ def load_project_config(
     config_path = Path(path)
     with config_path.open("rb") as config_file:
         raw_config = tomllib.load(config_file)
-    source_schema_version = int(raw_config.get("schema_version", 1))
-    if source_schema_version not in {1, 2, CURRENT_SCHEMA_VERSION}:
+    source_schema_version = raw_config.get("schema_version")
+    if type(source_schema_version) is not int or source_schema_version != CURRENT_SCHEMA_VERSION:
         raise ValueError(
             f"Unsupported schema_version {source_schema_version}; "
-            f"supported versions are 1, 2, and {CURRENT_SCHEMA_VERSION}"
+            f"expected {CURRENT_SCHEMA_VERSION}. Start from a current config preset; "
+            "see docs/legacy-cleanup.md for removed settings and historical reproduction."
         )
-    raw_config = _migrate_project_config(raw_config, source_schema_version)
     unknown_top_level = set(raw_config) - SUPPORTED_TOP_LEVEL_KEYS
     if unknown_top_level:
         raise ValueError(
@@ -217,57 +216,6 @@ def load_project_config(
         events=events,
         geometry=geometry,
     )
-
-
-def _migrate_project_config(
-    raw_config: dict[str, Any],
-    source_schema_version: int,
-) -> dict[str, Any]:
-    """Normalize supported historical schemas into the active schema."""
-
-    migrated = dict(raw_config)
-    if source_schema_version >= CURRENT_SCHEMA_VERSION:
-        return migrated
-
-    export = dict(migrated.get("export", {}))
-    unsupported_enabled = [
-        key for key in ("generate_lods", "generate_wall_shell") if bool(export.get(key, False))
-    ]
-    if export.get("generate_visual", True) is False:
-        unsupported_enabled.append("generate_visual = false")
-    if unsupported_enabled:
-        raise ValueError(
-            "Cannot migrate removed export capabilities: " + ", ".join(unsupported_enabled)
-        )
-    for key in (
-        "quality",
-        "generate_visual",
-        "generate_lods",
-        "generate_wall_shell",
-        "wall_thickness_m",
-    ):
-        export.pop(key, None)
-    if export:
-        migrated["export"] = export
-    elif "export" in migrated:
-        migrated["export"] = {}
-
-    world = dict(migrated.get("world", {}))
-    for key in (
-        "atmosphere",
-        "erosion_regime",
-        "surface_deposit",
-        "cohesion_mpa",
-        "friction_angle_degrees",
-        "mean_joint_spacing_m",
-    ):
-        world.pop(key, None)
-    if world:
-        migrated["world"] = world
-    elif "world" in migrated:
-        migrated["world"] = {}
-    migrated["schema_version"] = CURRENT_SCHEMA_VERSION
-    return migrated
 
 
 def project_config_manifest(project_config: ProjectConfig) -> dict[str, Any]:
@@ -636,60 +584,7 @@ def _build_network_config(
             CaveNetworkConfig.max_uphill_step,
         )
     ) * _resolved_vertical_scale(world, flow_regime)
-    config_data["spur_max_steps"] = max(
-        1,
-        int(
-            round(
-                float(
-                    config_data.get(
-                        "spur_max_steps",
-                        CaveNetworkConfig.spur_max_steps,
-                    )
-                )
-                * spatial_scale
-            )
-        ),
-    )
-    distributary_scale = 0.70 + flow_regime.distributary_tendency
-    config_data["spur_count"] = max(
-        0,
-        int(
-            round(
-                float(config_data.get("spur_count", CaveNetworkConfig.spur_count))
-                * distributary_scale
-            )
-        ),
-    )
-    braid_grammar_data = dict(config_data.pop("braid_grammar", {}))
-    _reject_unknown_keys(
-        "network.braid_grammar",
-        braid_grammar_data,
-        BraidGrammarConfig,
-    )
-    branch_length_scale = math.sqrt(spatial_scale)
-    branch_length_range = _to_range_tuple(
-        braid_grammar_data.get(
-            "half_length_fraction",
-            list(BraidGrammarConfig.half_length_fraction),
-        )
-    )
-    braid_grammar_data["half_length_fraction"] = [
-        float(np.clip(value * branch_length_scale, 0.02, 0.24)) for value in branch_length_range
-    ]
     branch_abundance_scale = 0.75 + 0.50 * flow_regime.distributary_tendency
-    for key, default_range, minimum in (
-        ("zone_count", BraidGrammarConfig.zone_count, 0),
-        ("branches_per_zone", BraidGrammarConfig.branches_per_zone, 2),
-    ):
-        value_range = _to_range_tuple(braid_grammar_data.get(key, list(default_range)))
-        braid_grammar_data[key] = [
-            max(minimum, int(round(value * branch_abundance_scale))) for value in value_range
-        ]
-    braid_grammar_values: Any = {
-        key: _to_range_tuple(value) if isinstance(value, list) else value
-        for key, value in braid_grammar_data.items()
-    }
-    config_data["braid_grammar"] = BraidGrammarConfig(**braid_grammar_values)
     lobe_growth_data = dict(config_data.pop("lobe_growth", {}))
     _reject_unknown_keys(
         "network.lobe_growth",
@@ -995,28 +890,18 @@ def _apply_dev_mode(
         seed_point=(seed_x, seed_y),
     )
 
-    grammar = network.braid_grammar
-    zone_min, zone_max = grammar.zone_count
-    zone_cap = int(round(run.dev_max_braid_zones * representative_extent_scale))
-    if zone_cap == 0:
-        zone_count = (0, 0)
-    else:
-        zone_count = (min(zone_min, zone_cap), min(zone_max, zone_cap))
-    grammar = replace(grammar, zone_count=zone_count)
     lobe_growth = network.lobe_growth
     path_min, path_max = lobe_growth.path_count
-    path_cap = max(1, 3 * max(zone_cap, 1))
+    path_cap = max(1, int(round(run.dev_max_lobe_paths * representative_extent_scale)))
     lobe_growth = replace(
         lobe_growth,
         path_count=(min(path_min, path_cap), min(path_max, path_cap)),
     )
     network = replace(
         network,
-        braid_grammar=grammar,
         lobe_growth=lobe_growth,
         target_route_length_m=min(network.target_route_length_m, target_height),
         trace_max_steps=max(48, target_grid.ny),
-        spur_count=min(network.spur_count, max(1, zone_cap)),
         channel_count_samples=max(
             8,
             int(round(network.channel_count_samples * representative_extent_scale)),
@@ -1072,10 +957,10 @@ def _validate_pipeline_configs(
         raise ValueError("network source-band dimensions must be positive")
     if network.sink_margin < 0.0:
         raise ValueError("network.sink_margin cannot be negative")
-    if network.trace_max_steps <= 0 or network.spur_max_steps <= 0:
+    if network.trace_max_steps <= 0:
         raise ValueError("network trace step limits must be positive")
-    if network.spur_count < 0 or network.occupancy_smoothing_passes < 0:
-        raise ValueError("network spur and smoothing counts cannot be negative")
+    if network.occupancy_smoothing_passes < 0:
+        raise ValueError("network smoothing count cannot be negative")
     if network.channel_count_samples < 2:
         raise ValueError("network.channel_count_samples must be at least 2")
     if network.max_uphill_step < 0.0:
@@ -1101,8 +986,6 @@ def _validate_pipeline_configs(
         raise ValueError("network.cooling_k_per_m cannot be negative")
     if not 0.0 < network.chamber_radius_fraction <= 1.0:
         raise ValueError("network.chamber_radius_fraction must be in (0, 1]")
-    if network.growth_model not in {"hybrid_lobe", "legacy_braid"}:
-        raise ValueError("network.growth_model must be hybrid_lobe or legacy_braid")
     if network.emplacement_backend not in {
         "internal",
         "downflow_reference",
@@ -1125,7 +1008,7 @@ def _validate_pipeline_configs(
         if network.emplacement_history.stacked_lobe_fraction != 0:
             raise ValueError("independent_growth currently requires stacked_lobe_fraction = 0 (one layer)")
     if network.systems.count > 1 and (
-        network.emplacement_backend != "internal" or network.growth_model != "hybrid_lobe"
+        network.emplacement_backend != "internal"
     ):
         raise ValueError("network.systems.count > 1 requires internal emplacement and hybrid_lobe growth")
     if not 0.0 <= network.network_density <= 3.0:
@@ -1261,33 +1144,6 @@ def _validate_pipeline_configs(
         raise ValueError("network.emplacement_history.drained_pool_min_spacing_m must be positive")
     if history.drained_pool_max_width_m <= 0.0:
         raise ValueError("network.emplacement_history.drained_pool_max_width_m must be positive")
-    grammar = network.braid_grammar
-    for name, value_range in (
-        ("zone_count", grammar.zone_count),
-        ("half_length_fraction", grammar.half_length_fraction),
-        ("branches_per_zone", grammar.branches_per_zone),
-        ("lateral_offset_scale", grammar.lateral_offset_scale),
-        ("start_shift_fraction", grammar.start_shift_fraction),
-        ("end_shift_fraction", grammar.end_shift_fraction),
-        ("skew", grammar.skew),
-        ("wobble", grammar.wobble),
-        ("ladder_rung_count", grammar.ladder_rung_count),
-        ("chamber_radius_scale", grammar.chamber_radius_scale),
-    ):
-        if value_range[0] > value_range[1]:
-            raise ValueError(f"network.braid_grammar.{name} must have min <= max")
-    if grammar.zone_count[0] < 0 or grammar.branches_per_zone[0] < 2:
-        raise ValueError("network braid counts must be non-negative with at least two branches")
-    if grammar.ladder_rung_count[0] < 0:
-        raise ValueError("network.braid_grammar.ladder_rung_count cannot be negative")
-    if not 0.0 <= grammar.min_center_spacing <= 1.0:
-        raise ValueError("network.braid_grammar.min_center_spacing must be in [0, 1]")
-    for name, probability in (
-        ("underpass_probability", grammar.underpass_probability),
-        ("ladder_probability", grammar.ladder_probability),
-    ):
-        if not 0.0 <= probability <= 1.0:
-            raise ValueError(f"network.braid_grammar.{name} must be in [0, 1]")
     if not 0.0 < section_field.minimum_tube_width <= section_field.maximum_tube_width:
         raise ValueError(
             "section_field widths must satisfy 0 < minimum_tube_width <= maximum_tube_width"
@@ -1384,8 +1240,6 @@ def _validate_pipeline_configs(
         raise ValueError("floor_map.minimum_clearance_m cannot be negative")
 
     density_names = (
-        "rock_density_per_100m",
-        "boulder_density_per_100m",
         "rock_density_per_100m2",
         "boulder_density_per_100m2",
         "geological_event_density_per_100m",
@@ -1394,8 +1248,6 @@ def _validate_pipeline_configs(
     for name in density_names:
         if getattr(events, name) < 0.0:
             raise ValueError(f"events.{name} cannot be negative")
-    if events.debris_density_basis not in {"floor_area", "length"}:
-        raise ValueError("events.debris_density_basis must be floor_area or length")
     if events.rock_population_multiplier <= 0.0:
         raise ValueError("events.rock_population_multiplier must be positive")
     for name in (
@@ -1497,7 +1349,7 @@ def _validate_pipeline_configs(
         value = getattr(geometry, name)
         if not math.isfinite(value) or value < 0.0:
             raise ValueError(f"geometry.{name} must be finite and non-negative")
-    for name in ("surface_feature_scale_m", "surface_normal_filter_voxels"):
+    for name in ("surface_feature_scale_m", "surface_normal_filter_voxels", "cave_texture_scale_m"):
         value = getattr(geometry, name)
         if not math.isfinite(value) or value <= 0.0:
             raise ValueError(f"geometry.{name} must be finite and positive")

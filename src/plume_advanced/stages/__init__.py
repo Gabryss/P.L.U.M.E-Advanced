@@ -23,7 +23,6 @@ from .host_field import (
     TerrainWave,
 )
 from .network import (
-    BraidGrammarConfig,
     CaveJunction,
     CaveNetwork,
     CaveNetworkConfig,
@@ -44,7 +43,6 @@ from .section_field import (
 
 __all__ = [
     "CaveJunction",
-    "BraidGrammarConfig",
     "CaveGeometry",
     "CaveNetwork",
     "CaveNetworkConfig",

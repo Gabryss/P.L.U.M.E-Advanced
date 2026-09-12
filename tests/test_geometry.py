@@ -2,6 +2,7 @@
 
 import unittest
 from collections import Counter
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -17,7 +18,10 @@ from plume_advanced.stages.section_field import SectionFieldGenerator
 
 class GeometryTests(unittest.TestCase):
     def test_geometry_stage_stamps_voxels_and_builds_isosurface_mesh(self) -> None:
-        project_config = load_project_config(ROOT / "config" / "project.toml")
+        # A resolved inspection preset exercises connectivity at the current
+        # Earth scale. The coarse general preview cannot resolve every branch.
+        project_config = load_project_config(ROOT / "config" / "earth_short_single.toml")
+        project_config = replace(project_config, geometry=replace(project_config.geometry, density_margin=4.0))
         host_field = HostFieldGenerator(project_config.host_field).generate()
         cave_network = CaveNetworkGenerator(project_config.network).generate(host_field)
         section_field = SectionFieldGenerator(project_config.section_field).generate(

@@ -1,7 +1,7 @@
 # Three interacting Earth systems: seed 20260910; no optional events or rocks.
 # Heights are formation settings; the roof stability model remains active.
 # Run with: plume-generate --config config/earth_interacting_systems.toml --output outputs/earth_systems_seed20260910/stage_b_network.png
-schema_version = 3
+schema_version = 4
 procedural_seed = 20260910
 
 [world]
@@ -24,7 +24,7 @@ cooling_rate_scale = 1.0
 dev_mode = false
 quality = "standard"
 dev_max_route_length_m = 1500.0
-dev_max_braid_zones = 2
+dev_max_lobe_paths = 6
 render_diagnostics = false
 # Safety default: prompt before writing into a non-empty generation directory.
 # Set true only for unattended/debug batches that intentionally replace files.
@@ -80,7 +80,6 @@ angle_degrees = [-65.0, 85.0]
 phase = [-3.14159, 3.14159]
 
 [network]
-growth_model = "hybrid_lobe"
 emplacement_backend = "internal"
 growth_cost_weight = 3.2
 chamber_radius = 10.0
@@ -89,7 +88,7 @@ paint_flux_chambers = false
 channel_count_samples = 28
 
 # Several independently seeded arterial systems grow together.
-# source_count/lobe/braid controls belong to the single-system grammar.
+# source_count/lobe controls belong to the single-system grammar.
 [network.systems]
 count = 3
 source_spacing_widths = 12.0
@@ -185,12 +184,8 @@ clustered_debris_fraction = 0.45
 collapse_cluster_radius_scale = 4.0
 collapse_cluster_spacing_scale = 0.90
 # Floor-area density keeps wide galleries from looking emptier than narrow ones.
-debris_density_basis = "floor_area"
 rock_density_per_100m2 = 0.45
 boulder_density_per_100m2 = 0.04
-# Retained for reproducible legacy length-based projects.
-rock_density_per_100m = 2.00
-boulder_density_per_100m = 0.18
 geological_event_density_per_100m = 0.12
 collapse_event_fraction = 0.35
 choke_event_fraction = 0.30

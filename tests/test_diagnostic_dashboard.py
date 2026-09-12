@@ -184,7 +184,6 @@ def test_dashboard_accepts_bounded_seeded_stage_b_c_fixture(tmp_path: Path) -> N
         source_count=2,
         target_route_length_m=800.0,
         trace_max_steps=100,
-        spur_count=1,
     )
     network = CaveNetworkGenerator(network_config).generate(host)
     section_config = replace(

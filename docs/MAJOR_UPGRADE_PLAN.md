@@ -1,3 +1,5 @@
+> Historical design plan. The current interface is schema 4; see [the cleanup review](legacy-cleanup.md). Superseded migration and braid proposals below are retained as design history.
+
 # PLUME-Advanced major upgrade plan
 
 Status: active on `major-procedural-upgrade`.

@@ -143,7 +143,7 @@ def test_source_seed_and_host_change_preferences_and_event_positions(example):
     ]
     # A spatial cost gradient affects routes even with exactly the same seed.
     bias = np.broadcast_to(
-        np.linspace(0, 4, host.routing_cost.shape[1]), host.routing_cost.shape
+        np.linspace(0, 4, host.growth_cost.shape[1]), host.growth_cost.shape
     ).copy()
     _, changed, _ = independent_preferences(gen, replace(host, growth_cost=bias), geo)
     assert np.max(np.abs(tracks - changed)) > 0.1

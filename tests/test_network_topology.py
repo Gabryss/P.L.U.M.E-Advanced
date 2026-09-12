@@ -214,10 +214,10 @@ def test_invalid_style_controls_rejected(kwargs):
 
 def test_topology_config_is_explicit_and_rejects_unknown_keys(tmp_path):
     path = tmp_path / "config.toml"
-    path.write_text('[network.topology]\nstyle = "trunk_dominated"\nisland_count = [1, 2]\n')
+    path.write_text('schema_version = 4\n[network.topology]\nstyle = "trunk_dominated"\nisland_count = [1, 2]\n')
     config = load_project_config(path)
     assert config.network.topology.island_count == (1, 2)
-    path.write_text("[network.topology]\nislands = 2\n")
+    path.write_text("schema_version = 4\n[network.topology]\nislands = 2\n")
     with pytest.raises(ValueError, match="islands"):
         load_project_config(path)
 

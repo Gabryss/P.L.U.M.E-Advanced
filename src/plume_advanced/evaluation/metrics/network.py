@@ -233,7 +233,7 @@ def host_exposure(network: CaveNetwork, host_field: HostField) -> dict[str, floa
         "fracture": host_field.routing_fracture_penalty,
         "capacity": host_field.routing_capacity_penalty,
         "stability": host_field.routing_stability_penalty,
-        "total": host_field.routing_cost,
+        "total": host_field.growth_cost,
     }
     raw_fields = {
         "slope_degrees": host_field.slope_degrees,

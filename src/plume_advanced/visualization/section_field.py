@@ -122,7 +122,7 @@ class SectionFieldPlotter:
         ax.set_aspect("equal")
 
     def _draw_route_profile_panel(self, *, ax, cave_network: CaveNetwork, section_field: SectionField) -> None:
-        route_samples = self._collect_route_samples(cave_network, section_field)
+        route_samples = self._collect_route_samples(section_field)
         if not route_samples:
             ax.set_title("Dominant Route Profile")
             ax.axis("off")
@@ -301,7 +301,7 @@ class SectionFieldPlotter:
         ax.grid(True, alpha=0.16)
 
     def _draw_control_panel(self, *, ax, cave_network: CaveNetwork, section_field: SectionField) -> None:
-        route_samples = self._collect_route_samples(cave_network, section_field)
+        route_samples = self._collect_route_samples(section_field)
         if not route_samples:
             ax.set_title("Section Controls")
             ax.axis("off")
@@ -337,7 +337,6 @@ class SectionFieldPlotter:
 
     def _collect_route_samples(
         self,
-        cave_network: CaveNetwork,
         section_field: SectionField,
     ) -> list[SectionSample]:
         field_lookup = {
@@ -359,7 +358,7 @@ class SectionFieldPlotter:
         *,
         count: int,
     ) -> list[SectionSample]:
-        route_samples = self._collect_route_samples(cave_network, section_field)
+        route_samples = self._collect_route_samples(section_field)
         if not route_samples or count <= 0:
             return []
         selected_indices = np.linspace(

@@ -11,6 +11,7 @@ import math
 from collections import defaultdict
 from copy import copy
 from dataclasses import replace
+from typing import Any
 
 import numpy as np
 
@@ -118,14 +119,14 @@ def generate_gallery_growth(generator, host):
 
     cfg = generator.config
     if cfg.systems.count < 2 or (
-        cfg.emplacement_backend != "internal" or cfg.growth_model != "hybrid_lobe"
+        cfg.emplacement_backend != "internal"
     ):
         raise ValueError("Independent gallery growth requires multiple internal systems")
     if cfg.emplacement_history.stacked_lobe_fraction:
         raise ValueError("Independent gallery growth currently supports one layer")
     geometry = generator._build_flow_geometry(host)
     along, tracks, width = independent_preferences(generator, host, geometry)
-    interactions = []
+    interactions: list[dict[str, Any]] = []
     interconnected = cfg.topology.style == "interconnected"
     connection_check = None
     if interconnected:
@@ -144,10 +145,10 @@ def generate_gallery_growth(generator, host):
             )
         )
 
-    nodes = [
-        CaveNode(i, *world(np.array([a]), np.array([c]))[0], a, c, kind)
-        for i, (a, c, kind) in enumerate(planned)
-    ]
+    nodes = []
+    for i, (a, c, kind) in enumerate(planned):
+        position = world(np.array([a]), np.array([c]))[0]
+        nodes.append(CaveNode(i, float(position[0]), float(position[1]), a, c, kind))
     phases = generator._sample_int_range(
         procedural_rng(cfg.random_seed, "emplacement-phase-count"),
         cfg.emplacement_history.phase_count,
@@ -287,7 +288,7 @@ def grow_phase_history(generator, host, nodes, segments, phases):
     )
     events = []
     width = 2 * cfg.base_passage_radius
-    sites = []
+    sites: list[tuple[float, float]] = []
     for phase in range(phases):
         # Old passages must actually have become inactive before reopening.
         for index, s in enumerate(segments):
@@ -425,7 +426,7 @@ def trace_blind_breakout(generator, host, parent, index, rng, flux):
     reach = float(rng.uniform(*cfg.topology.side_branch_length_widths)) * base
     step = max(0.4, 0.15 * base)
     limit = generator._sample_int_range(rng, cfg.lobe_growth.maximum_steps)
-    xy = [np.array([p.x, p.y])]
+    path_xy = [np.array([p.x, p.y])]
     direction = tangent.copy()
     distance = 0.0
     reason = "pulse_extent"
@@ -442,20 +443,20 @@ def trace_blind_breakout(generator, host, parent, index, rng, flux):
                 for o in offsets
             ]
         )
-        locations = xy[-1] + step * options
+        locations = path_xy[-1] + step * options
         costs = np.array([host.sample(*q).growth_cost for q in locations]) * cfg.growth_cost_weight
         costs += cfg.lobe_growth.inertia_weight * (1 - options @ direction)
         weights = np.exp(-(costs - costs.min()) / max(cfg.lobe_growth.candidate_temperature, 0.01))
         chosen = int(rng.choice(len(options), p=weights / weights.sum()))
         direction = 0.8 * direction + 0.2 * options[chosen]
         direction /= np.linalg.norm(direction)
-        xy.append(xy[-1] + step * direction)
+        path_xy.append(path_xy[-1] + step * direction)
         distance += step
         temperature -= cfg.cooling_k_per_m * cfg.lobe_growth.exposed_cooling_multiplier * step
         if temperature <= cfg.lobe_growth.retirement_temperature_k:
             reason = "cooled_below_retirement_temperature"
             break
-    xy = np.asarray(xy)
+    xy = np.asarray(path_xy)
     arc = np.r_[0, np.cumsum(np.linalg.norm(np.diff(xy, axis=0), axis=1))]
     widths = np.full(
         len(xy),
@@ -492,7 +493,7 @@ def refresh_phase_discharge(generator, nodes, segments):
     flows = {s.segment_id: [0.0] * phase_count for s in segments}
     order = generator._topological_node_ids(nodes, segments)
     entry_ids = {n.node_id for n in nodes if n.kind == "entry"}
-    source_supply = defaultdict(float)
+    source_supply: defaultdict[int, float] = defaultdict(float)
     for s in segments:
         if s.start_node_id in entry_ids:
             source_supply[s.start_node_id] += s.mean_flux
@@ -604,7 +605,7 @@ def assess_gallery_history(network, check):
     front_edges = [s for s in network.segments if s.metadata.get("topology_role") != "side_branch"]
     nodes = {n.node_id: n for n in network.nodes}
     previous = -float("inf")
-    previous_by_source = defaultdict(lambda: -float("inf"))
+    previous_by_source: defaultdict[int, float] = defaultdict(lambda: -float("inf"))
     for event in events:
         node_id = event["node_id"]
         before = sorted(s.metadata["system_ids"] for s in front_edges if s.end_node_id == node_id)
@@ -667,7 +668,7 @@ def add_pool_history(generator, host, geometry, nodes, segments):
     ]
     paths = []
     for s in eligible:
-        cells = []
+        cells: list[tuple[int, int]] = []
         for p in s.points:
             cell = generator._world_to_cell(host, p.x, p.y)
             if not cells or cells[-1] != cell:

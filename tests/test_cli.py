@@ -54,7 +54,7 @@ def test_pipeline_failure_writes_failed_manifest(
     config_path = tmp_path / "project.toml"
     config_path.write_text(
         """
-schema_version = 2
+schema_version = 4
 procedural_seed = 7
 
 [run]
@@ -106,7 +106,7 @@ def test_pipeline_resume_reuses_stage_before_continuing_orchestration(
     config_path = tmp_path / "project.toml"
     config_path.write_text(
         """
-schema_version = 3
+schema_version = 4
 procedural_seed = 11
 
 [run]
@@ -141,7 +141,7 @@ cave_displacement_texture = ""
     def fail_if_host_rebuilt(_generator):
         raise AssertionError("validated host checkpoint was not reused")
 
-    def stop_after_host_resume(_generator, _host_field):
+    def stop_after_host_resume(_generator, _host_field, **_quality_options):
         raise RuntimeError("stop after resumed host")
 
     monkeypatch.setattr(cli.HostFieldGenerator, "generate", fail_if_host_rebuilt)

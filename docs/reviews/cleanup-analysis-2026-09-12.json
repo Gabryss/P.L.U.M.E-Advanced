@@ -1,0 +1,3032 @@
+{
+  "schema": "plume.cleanup-review.v1",
+  "date": "2026-09-12",
+  "scope": "Current working tree; no production edits or delivered asset changes",
+  "checkpoint_commit": "32cbcee331e496deebb34002002ae82e09b05cf2",
+  "branch": "lava-emplacement-history",
+  "python": "3.13.5",
+  "report": "cleanup-analysis-2026-09-12.md",
+  "report_sha256": "1f1a38100ec214d83ba7cbdaa84c08143d16c51449e8679a032fe70c8b6e9e66",
+  "findings": [
+    {
+      "id": "C01",
+      "priority": "P1",
+      "finding": "CI omits a dependency imported during test collection",
+      "recommended_treatment": "Correct test environment"
+    },
+    {
+      "id": "C02",
+      "priority": "P1",
+      "finding": "Evaluation and production use different acceptance scopes",
+      "recommended_treatment": "Share an explicit acceptance policy"
+    },
+    {
+      "id": "C03",
+      "priority": "P1",
+      "finding": "Checkpoint identity ignores numerical dependency changes",
+      "recommended_treatment": "Include runtime identity"
+    },
+    {
+      "id": "C04",
+      "priority": "P1",
+      "finding": "Provenance validation does not bind the selected asset",
+      "recommended_treatment": "Verify the actual asset and revision chain"
+    },
+    {
+      "id": "C05",
+      "priority": "P2",
+      "finding": "Source/provenance helpers disagree and can report misleading values",
+      "recommended_treatment": "Consolidate source and dependency identity"
+    },
+    {
+      "id": "C06",
+      "priority": "P2",
+      "finding": "`level_transition_fraction` is accepted but unused",
+      "recommended_treatment": "Retire the ineffective setting"
+    },
+    {
+      "id": "C07",
+      "priority": "P2",
+      "finding": "Obsolete route-texture calculations still execute",
+      "recommended_treatment": "Retain route centres; remove unused frame payload"
+    },
+    {
+      "id": "C08",
+      "priority": "P2",
+      "finding": "Inspection/export/validation workflows duplicate pipeline behavior",
+      "recommended_treatment": "Extract shared services and validation profiles"
+    },
+    {
+      "id": "C09",
+      "priority": "P2",
+      "finding": "Large modules and untyped cross-module calls impede safe changes",
+      "recommended_treatment": "Extract coherent responsibilities incrementally"
+    },
+    {
+      "id": "C10",
+      "priority": "P2",
+      "finding": "Presets duplicate thousands of lines and mix inputs with resolved metadata",
+      "recommended_treatment": "Clarify the configuration contract and scenario catalog"
+    },
+    {
+      "id": "C11",
+      "priority": "P2",
+      "finding": "Current documentation contradicts itself and includes lost local evidence",
+      "recommended_treatment": "Correct current claims; label historical records"
+    },
+    {
+      "id": "C12",
+      "priority": "P2",
+      "finding": "Render-quality problems lack a repeatable regression check",
+      "recommended_treatment": "Preserve a controlled visual test alongside numeric checks"
+    },
+    {
+      "id": "C13",
+      "priority": "P3",
+      "finding": "Generated material dominates local disk use",
+      "recommended_treatment": "Separate disposable caches from inspection/research assets"
+    },
+    {
+      "id": "C14",
+      "priority": "P3",
+      "finding": "Primitive geometry remains an explicit legacy option",
+      "recommended_treatment": "Decide its supported scope before removing it"
+    }
+  ],
+  "findings_applied": false,
+  "verification": {
+    "pytest": {
+      "exit_code": 0,
+      "passed": 413,
+      "subtests_passed": 59,
+      "skipped": 1,
+      "skip": "optional Manim test module",
+      "elapsed_seconds": 703.03
+    },
+    "coverage": {
+      "covered_lines": 13327,
+      "num_statements": 15838,
+      "percent_covered": 84.14572547038767,
+      "percent_covered_display": "84",
+      "missing_lines": 2511,
+      "excluded_lines": 17,
+      "percent_statements_covered": 84.14572547038767,
+      "percent_statements_covered_display": "84"
+    },
+    "ruff": {
+      "exit_code": 0,
+      "scope": "src scripts tests"
+    },
+    "mypy": {
+      "exit_code": 0,
+      "source_files": 85
+    },
+    "compilation": "passed",
+    "lockfile_offline_consistency": "passed",
+    "installed_dependency_compatibility": {
+      "passed": true,
+      "packages": 42
+    },
+    "build": {
+      "passed": true,
+      "offline": true,
+      "backend": "existing cached setuptools, supplied through PYTHONPATH",
+      "wheel_modules": 85,
+      "packaged_default": true,
+      "unexpected_wheel_paths": [],
+      "sdist_entries": 162,
+      "frozen_or_build_files_in_sdist": []
+    },
+    "wheel_import": {
+      "passed": true,
+      "extracted_wheel_verified_as_import_source": true,
+      "default_schema": 4,
+      "default_rocks": false
+    },
+    "new_full_caves_generated": 0,
+    "native_engine_renders_rerun": false,
+    "production_hashes_unchanged": true
+  },
+  "structure": {
+    "inventory": [
+      {
+        "path": "scripts/analyze_lava_tube_references.py",
+        "lines": 464,
+        "functions": 13
+      },
+      {
+        "path": "scripts/assemble_manim_video.py",
+        "lines": 150,
+        "functions": 1
+      },
+      {
+        "path": "scripts/check_mesh_topology.py",
+        "lines": 113,
+        "functions": 2
+      },
+      {
+        "path": "scripts/check_tube_sections.py",
+        "lines": 101,
+        "functions": 1
+      },
+      {
+        "path": "scripts/compare_surface_scales.py",
+        "lines": 153,
+        "functions": 2
+      },
+      {
+        "path": "scripts/compare_tube_calibration.py",
+        "lines": 211,
+        "functions": 6
+      },
+      {
+        "path": "scripts/create_blender_inspection.py",
+        "lines": 232,
+        "functions": 4
+      },
+      {
+        "path": "scripts/emplacement_backend_benchmark.py",
+        "lines": 613,
+        "functions": 15
+      },
+      {
+        "path": "scripts/generate_body_figures.py",
+        "lines": 115,
+        "functions": 2
+      },
+      {
+        "path": "scripts/generate_network_diagnostics.py",
+        "lines": 151,
+        "functions": 4
+      },
+      {
+        "path": "scripts/generate_paper_event_figures.py",
+        "lines": 294,
+        "functions": 6
+      },
+      {
+        "path": "scripts/generate_readme_figures.py",
+        "lines": 256,
+        "functions": 8
+      },
+      {
+        "path": "scripts/generate_tube_only.py",
+        "lines": 128,
+        "functions": 3
+      },
+      {
+        "path": "scripts/inspect_surface_relief.py",
+        "lines": 154,
+        "functions": 2
+      },
+      {
+        "path": "scripts/package_inspection_exports.py",
+        "lines": 85,
+        "functions": 1
+      },
+      {
+        "path": "scripts/prepare_manim_assets.py",
+        "lines": 136,
+        "functions": 4
+      },
+      {
+        "path": "scripts/render_event_rocks.py",
+        "lines": 91,
+        "functions": 1
+      },
+      {
+        "path": "scripts/render_host_field.py",
+        "lines": 58,
+        "functions": 2
+      },
+      {
+        "path": "scripts/render_manim_video.py",
+        "lines": 177,
+        "functions": 3
+      },
+      {
+        "path": "scripts/render_run_diagnostics.py",
+        "lines": 454,
+        "functions": 16
+      },
+      {
+        "path": "scripts/render_tube_views.py",
+        "lines": 139,
+        "functions": 2
+      },
+      {
+        "path": "scripts/texture_inspection.py",
+        "lines": 87,
+        "functions": 1
+      },
+      {
+        "path": "scripts/validate_body_matrix.py",
+        "lines": 351,
+        "functions": 3
+      },
+      {
+        "path": "scripts/validate_inspection_asset.py",
+        "lines": 62,
+        "functions": 1
+      },
+      {
+        "path": "scripts/validate_interconnected.py",
+        "lines": 220,
+        "functions": 3
+      },
+      {
+        "path": "scripts/validate_network_reproducibility.py",
+        "lines": 116,
+        "functions": 1
+      },
+      {
+        "path": "scripts/validate_network_systems.py",
+        "lines": 89,
+        "functions": 1
+      },
+      {
+        "path": "scripts/validate_trunk_topology.py",
+        "lines": 86,
+        "functions": 1
+      },
+      {
+        "path": "scripts/validate_tube_resolution.py",
+        "lines": 226,
+        "functions": 3
+      },
+      {
+        "path": "src/plume_advanced/__init__.py",
+        "lines": 16,
+        "functions": 0
+      },
+      {
+        "path": "src/plume_advanced/cli.py",
+        "lines": 888,
+        "functions": 15
+      },
+      {
+        "path": "src/plume_advanced/config.py",
+        "lines": 1395,
+        "functions": 24
+      },
+      {
+        "path": "src/plume_advanced/evaluation/__init__.py",
+        "lines": 21,
+        "functions": 0
+      },
+      {
+        "path": "src/plume_advanced/evaluation/_common.py",
+        "lines": 102,
+        "functions": 7
+      },
+      {
+        "path": "src/plume_advanced/evaluation/aggregate.py",
+        "lines": 70,
+        "functions": 2
+      },
+      {
+        "path": "src/plume_advanced/evaluation/artifacts.py",
+        "lines": 366,
+        "functions": 11
+      },
+      {
+        "path": "src/plume_advanced/evaluation/cli.py",
+        "lines": 211,
+        "functions": 4
+      },
+      {
+        "path": "src/plume_advanced/evaluation/config.py",
+        "lines": 137,
+        "functions": 8
+      },
+      {
+        "path": "src/plume_advanced/evaluation/continuity.py",
+        "lines": 186,
+        "functions": 4
+      },
+      {
+        "path": "src/plume_advanced/evaluation/datasets/__init__.py",
+        "lines": 5,
+        "functions": 0
+      },
+      {
+        "path": "src/plume_advanced/evaluation/datasets/pdc.py",
+        "lines": 303,
+        "functions": 9
+      },
+      {
+        "path": "src/plume_advanced/evaluation/experiments/__init__.py",
+        "lines": 1,
+        "functions": 0
+      },
+      {
+        "path": "src/plume_advanced/evaluation/experiments/common.py",
+        "lines": 67,
+        "functions": 6
+      },
+      {
+        "path": "src/plume_advanced/evaluation/experiments/controllability.py",
+        "lines": 136,
+        "functions": 2
+      },
+      {
+        "path": "src/plume_advanced/evaluation/experiments/determinism.py",
+        "lines": 114,
+        "functions": 2
+      },
+      {
+        "path": "src/plume_advanced/evaluation/experiments/export_consistency.py",
+        "lines": 163,
+        "functions": 4
+      },
+      {
+        "path": "src/plume_advanced/evaluation/experiments/host_ablation.py",
+        "lines": 162,
+        "functions": 5
+      },
+      {
+        "path": "src/plume_advanced/evaluation/experiments/morphometry.py",
+        "lines": 290,
+        "functions": 4
+      },
+      {
+        "path": "src/plume_advanced/evaluation/experiments/sampling_ablation.py",
+        "lines": 110,
+        "functions": 3
+      },
+      {
+        "path": "src/plume_advanced/evaluation/experiments/scalability.py",
+        "lines": 173,
+        "functions": 4
+      },
+      {
+        "path": "src/plume_advanced/evaluation/experiments/scalability_worker.py",
+        "lines": 96,
+        "functions": 2
+      },
+      {
+        "path": "src/plume_advanced/evaluation/latex.py",
+        "lines": 118,
+        "functions": 4
+      },
+      {
+        "path": "src/plume_advanced/evaluation/local_geometry.py",
+        "lines": 198,
+        "functions": 5
+      },
+      {
+        "path": "src/plume_advanced/evaluation/metrics/__init__.py",
+        "lines": 29,
+        "functions": 0
+      },
+      {
+        "path": "src/plume_advanced/evaluation/metrics/contours.py",
+        "lines": 105,
+        "functions": 7
+      },
+      {
+        "path": "src/plume_advanced/evaluation/metrics/emplacement.py",
+        "lines": 438,
+        "functions": 12
+      },
+      {
+        "path": "src/plume_advanced/evaluation/metrics/morphometry.py",
+        "lines": 75,
+        "functions": 2
+      },
+      {
+        "path": "src/plume_advanced/evaluation/metrics/network.py",
+        "lines": 571,
+        "functions": 18
+      },
+      {
+        "path": "src/plume_advanced/evaluation/metrics/sections.py",
+        "lines": 198,
+        "functions": 7
+      },
+      {
+        "path": "src/plume_advanced/evaluation/morphology_bootstrap.py",
+        "lines": 62,
+        "functions": 3
+      },
+      {
+        "path": "src/plume_advanced/evaluation/plotting.py",
+        "lines": 180,
+        "functions": 8
+      },
+      {
+        "path": "src/plume_advanced/evaluation/provenance.py",
+        "lines": 168,
+        "functions": 9
+      },
+      {
+        "path": "src/plume_advanced/evaluation/runner.py",
+        "lines": 231,
+        "functions": 14
+      },
+      {
+        "path": "src/plume_advanced/evaluation/schema.py",
+        "lines": 60,
+        "functions": 3
+      },
+      {
+        "path": "src/plume_advanced/evaluation/serialization.py",
+        "lines": 39,
+        "functions": 2
+      },
+      {
+        "path": "src/plume_advanced/evaluation/statistics.py",
+        "lines": 239,
+        "functions": 15
+      },
+      {
+        "path": "src/plume_advanced/evaluation/visualization/__init__.py",
+        "lines": 6,
+        "functions": 0
+      },
+      {
+        "path": "src/plume_advanced/evaluation/visualization/dashboard.py",
+        "lines": 507,
+        "functions": 18
+      },
+      {
+        "path": "src/plume_advanced/evaluation/visualization/emplacement.py",
+        "lines": 158,
+        "functions": 1
+      },
+      {
+        "path": "src/plume_advanced/exporters/__init__.py",
+        "lines": 11,
+        "functions": 0
+      },
+      {
+        "path": "src/plume_advanced/exporters/atomic.py",
+        "lines": 53,
+        "functions": 1
+      },
+      {
+        "path": "src/plume_advanced/exporters/materials.py",
+        "lines": 142,
+        "functions": 1
+      },
+      {
+        "path": "src/plume_advanced/exporters/scene.py",
+        "lines": 129,
+        "functions": 3
+      },
+      {
+        "path": "src/plume_advanced/exporters/targets.py",
+        "lines": 1206,
+        "functions": 21
+      },
+      {
+        "path": "src/plume_advanced/media/__init__.py",
+        "lines": 15,
+        "functions": 0
+      },
+      {
+        "path": "src/plume_advanced/media/manim_data.py",
+        "lines": 344,
+        "functions": 13
+      },
+      {
+        "path": "src/plume_advanced/media/manim_typography.py",
+        "lines": 33,
+        "functions": 1
+      },
+      {
+        "path": "src/plume_advanced/output_guard.py",
+        "lines": 81,
+        "functions": 2
+      },
+      {
+        "path": "src/plume_advanced/pipeline/__init__.py",
+        "lines": 5,
+        "functions": 0
+      },
+      {
+        "path": "src/plume_advanced/pipeline/checkpoints.py",
+        "lines": 164,
+        "functions": 6
+      },
+      {
+        "path": "src/plume_advanced/procedural.py",
+        "lines": 33,
+        "functions": 3
+      },
+      {
+        "path": "src/plume_advanced/run_manifest.py",
+        "lines": 162,
+        "functions": 6
+      },
+      {
+        "path": "src/plume_advanced/stability.py",
+        "lines": 72,
+        "functions": 3
+      },
+      {
+        "path": "src/plume_advanced/stages/__init__.py",
+        "lines": 75,
+        "functions": 0
+      },
+      {
+        "path": "src/plume_advanced/stages/events.py",
+        "lines": 2460,
+        "functions": 62
+      },
+      {
+        "path": "src/plume_advanced/stages/floor_map.py",
+        "lines": 723,
+        "functions": 15
+      },
+      {
+        "path": "src/plume_advanced/stages/geometry.py",
+        "lines": 3000,
+        "functions": 56
+      },
+      {
+        "path": "src/plume_advanced/stages/geometry_export.py",
+        "lines": 1845,
+        "functions": 50
+      },
+      {
+        "path": "src/plume_advanced/stages/geometry_types.py",
+        "lines": 597,
+        "functions": 31
+      },
+      {
+        "path": "src/plume_advanced/stages/host_field.py",
+        "lines": 939,
+        "functions": 29
+      },
+      {
+        "path": "src/plume_advanced/stages/network.py",
+        "lines": 4772,
+        "functions": 83
+      },
+      {
+        "path": "src/plume_advanced/stages/network_acceptance.py",
+        "lines": 270,
+        "functions": 3
+      },
+      {
+        "path": "src/plume_advanced/stages/network_gallery_growth.py",
+        "lines": 712,
+        "functions": 11
+      },
+      {
+        "path": "src/plume_advanced/stages/network_interconnected.py",
+        "lines": 473,
+        "functions": 9
+      },
+      {
+        "path": "src/plume_advanced/stages/network_metadata.py",
+        "lines": 18,
+        "functions": 1
+      },
+      {
+        "path": "src/plume_advanced/stages/network_quality.py",
+        "lines": 635,
+        "functions": 10
+      },
+      {
+        "path": "src/plume_advanced/stages/network_systems.py",
+        "lines": 530,
+        "functions": 12
+      },
+      {
+        "path": "src/plume_advanced/stages/network_topology.py",
+        "lines": 578,
+        "functions": 8
+      },
+      {
+        "path": "src/plume_advanced/stages/section_field.py",
+        "lines": 2092,
+        "functions": 49
+      },
+      {
+        "path": "src/plume_advanced/stages/surface_relief.py",
+        "lines": 171,
+        "functions": 5
+      },
+      {
+        "path": "src/plume_advanced/stages/voxel_topology.py",
+        "lines": 59,
+        "functions": 2
+      },
+      {
+        "path": "src/plume_advanced/validation.py",
+        "lines": 1004,
+        "functions": 27
+      },
+      {
+        "path": "src/plume_advanced/visualization/__init__.py",
+        "lines": 23,
+        "functions": 0
+      },
+      {
+        "path": "src/plume_advanced/visualization/drained_pools.py",
+        "lines": 255,
+        "functions": 8
+      },
+      {
+        "path": "src/plume_advanced/visualization/events.py",
+        "lines": 150,
+        "functions": 7
+      },
+      {
+        "path": "src/plume_advanced/visualization/floor_map.py",
+        "lines": 272,
+        "functions": 6
+      },
+      {
+        "path": "src/plume_advanced/visualization/geometry.py",
+        "lines": 568,
+        "functions": 19
+      },
+      {
+        "path": "src/plume_advanced/visualization/host_field.py",
+        "lines": 190,
+        "functions": 3
+      },
+      {
+        "path": "src/plume_advanced/visualization/interconnected.py",
+        "lines": 139,
+        "functions": 1
+      },
+      {
+        "path": "src/plume_advanced/visualization/network.py",
+        "lines": 602,
+        "functions": 11
+      },
+      {
+        "path": "src/plume_advanced/visualization/network_systems.py",
+        "lines": 144,
+        "functions": 2
+      },
+      {
+        "path": "src/plume_advanced/visualization/network_topology.py",
+        "lines": 134,
+        "functions": 2
+      },
+      {
+        "path": "src/plume_advanced/visualization/section_field.py",
+        "lines": 370,
+        "functions": 10
+      },
+      {
+        "path": "src/plume_advanced/world.py",
+        "lines": 427,
+        "functions": 10
+      },
+      {
+        "path": "tests/test_checkpoints.py",
+        "lines": 110,
+        "functions": 6
+      },
+      {
+        "path": "tests/test_cli.py",
+        "lines": 164,
+        "functions": 8
+      },
+      {
+        "path": "tests/test_config.py",
+        "lines": 599,
+        "functions": 27
+      },
+      {
+        "path": "tests/test_diagnostic_dashboard.py",
+        "lines": 289,
+        "functions": 11
+      },
+      {
+        "path": "tests/test_emplacement_backend_benchmark.py",
+        "lines": 34,
+        "functions": 1
+      },
+      {
+        "path": "tests/test_evaluation_campaign.py",
+        "lines": 88,
+        "functions": 9
+      },
+      {
+        "path": "tests/test_evaluation_config.py",
+        "lines": 16,
+        "functions": 1
+      },
+      {
+        "path": "tests/test_evaluation_contours.py",
+        "lines": 38,
+        "functions": 3
+      },
+      {
+        "path": "tests/test_evaluation_control_resolution.py",
+        "lines": 48,
+        "functions": 3
+      },
+      {
+        "path": "tests/test_evaluation_diagnostics.py",
+        "lines": 168,
+        "functions": 7
+      },
+      {
+        "path": "tests/test_evaluation_emplacement.py",
+        "lines": 229,
+        "functions": 6
+      },
+      {
+        "path": "tests/test_evaluation_export_consistency.py",
+        "lines": 117,
+        "functions": 8
+      },
+      {
+        "path": "tests/test_evaluation_geometry_report.py",
+        "lines": 31,
+        "functions": 1
+      },
+      {
+        "path": "tests/test_evaluation_network_metrics.py",
+        "lines": 92,
+        "functions": 2
+      },
+      {
+        "path": "tests/test_evaluation_reporting.py",
+        "lines": 70,
+        "functions": 1
+      },
+      {
+        "path": "tests/test_evaluation_runner.py",
+        "lines": 125,
+        "functions": 9
+      },
+      {
+        "path": "tests/test_evaluation_statistics.py",
+        "lines": 30,
+        "functions": 2
+      },
+      {
+        "path": "tests/test_events.py",
+        "lines": 917,
+        "functions": 23
+      },
+      {
+        "path": "tests/test_export_targets.py",
+        "lines": 494,
+        "functions": 14
+      },
+      {
+        "path": "tests/test_floor_map.py",
+        "lines": 133,
+        "functions": 2
+      },
+      {
+        "path": "tests/test_geometry.py",
+        "lines": 159,
+        "functions": 1
+      },
+      {
+        "path": "tests/test_geometry_export.py",
+        "lines": 410,
+        "functions": 8
+      },
+      {
+        "path": "tests/test_host_field.py",
+        "lines": 141,
+        "functions": 5
+      },
+      {
+        "path": "tests/test_local_geometry.py",
+        "lines": 158,
+        "functions": 6
+      },
+      {
+        "path": "tests/test_manim_data.py",
+        "lines": 153,
+        "functions": 6
+      },
+      {
+        "path": "tests/test_manim_typography.py",
+        "lines": 44,
+        "functions": 4
+      },
+      {
+        "path": "tests/test_material_revision.py",
+        "lines": 90,
+        "functions": 4
+      },
+      {
+        "path": "tests/test_mesh_continuity.py",
+        "lines": 476,
+        "functions": 24
+      },
+      {
+        "path": "tests/test_network.py",
+        "lines": 944,
+        "functions": 23
+      },
+      {
+        "path": "tests/test_network_gallery_growth.py",
+        "lines": 285,
+        "functions": 14
+      },
+      {
+        "path": "tests/test_network_interconnected.py",
+        "lines": 256,
+        "functions": 13
+      },
+      {
+        "path": "tests/test_network_quality.py",
+        "lines": 352,
+        "functions": 25
+      },
+      {
+        "path": "tests/test_network_systems.py",
+        "lines": 302,
+        "functions": 14
+      },
+      {
+        "path": "tests/test_network_topology.py",
+        "lines": 228,
+        "functions": 16
+      },
+      {
+        "path": "tests/test_output_guard.py",
+        "lines": 105,
+        "functions": 5
+      },
+      {
+        "path": "tests/test_pdc_loader.py",
+        "lines": 86,
+        "functions": 6
+      },
+      {
+        "path": "tests/test_performance_regressions.py",
+        "lines": 76,
+        "functions": 3
+      },
+      {
+        "path": "tests/test_run_manifest.py",
+        "lines": 101,
+        "functions": 4
+      },
+      {
+        "path": "tests/test_sampling_policy.py",
+        "lines": 97,
+        "functions": 4
+      },
+      {
+        "path": "tests/test_section_field.py",
+        "lines": 303,
+        "functions": 3
+      },
+      {
+        "path": "tests/test_stability.py",
+        "lines": 224,
+        "functions": 13
+      },
+      {
+        "path": "tests/test_surface_morphology.py",
+        "lines": 100,
+        "functions": 6
+      },
+      {
+        "path": "tests/test_surface_normals.py",
+        "lines": 39,
+        "functions": 2
+      },
+      {
+        "path": "tests/test_surface_relief.py",
+        "lines": 109,
+        "functions": 8
+      },
+      {
+        "path": "tests/test_tiled_geometry.py",
+        "lines": 171,
+        "functions": 4
+      },
+      {
+        "path": "tests/test_validation.py",
+        "lines": 217,
+        "functions": 4
+      },
+      {
+        "path": "tests/test_visualization.py",
+        "lines": 124,
+        "functions": 4
+      },
+      {
+        "path": "tests/test_voxel_queries.py",
+        "lines": 94,
+        "functions": 4
+      },
+      {
+        "path": "tests/test_voxel_topology.py",
+        "lines": 53,
+        "functions": 3
+      },
+      {
+        "path": "tests/test_world_contracts.py",
+        "lines": 77,
+        "functions": 5
+      }
+    ],
+    "totals": {
+      "src/": {
+        "files": 85,
+        "lines": 35071
+      },
+      "scripts/": {
+        "files": 29,
+        "lines": 5512
+      },
+      "tests/": {
+        "files": 50,
+        "lines": 9766
+      }
+    },
+    "largest_files": [
+      {
+        "path": "src/plume_advanced/stages/network.py",
+        "lines": 4772,
+        "functions": 83
+      },
+      {
+        "path": "src/plume_advanced/stages/geometry.py",
+        "lines": 3000,
+        "functions": 56
+      },
+      {
+        "path": "src/plume_advanced/stages/events.py",
+        "lines": 2460,
+        "functions": 62
+      },
+      {
+        "path": "src/plume_advanced/stages/section_field.py",
+        "lines": 2092,
+        "functions": 49
+      },
+      {
+        "path": "src/plume_advanced/stages/geometry_export.py",
+        "lines": 1845,
+        "functions": 50
+      },
+      {
+        "path": "src/plume_advanced/config.py",
+        "lines": 1395,
+        "functions": 24
+      },
+      {
+        "path": "src/plume_advanced/exporters/targets.py",
+        "lines": 1206,
+        "functions": 21
+      },
+      {
+        "path": "src/plume_advanced/validation.py",
+        "lines": 1004,
+        "functions": 27
+      },
+      {
+        "path": "tests/test_network.py",
+        "lines": 944,
+        "functions": 23
+      },
+      {
+        "path": "src/plume_advanced/stages/host_field.py",
+        "lines": 939,
+        "functions": 29
+      },
+      {
+        "path": "tests/test_events.py",
+        "lines": 917,
+        "functions": 23
+      },
+      {
+        "path": "src/plume_advanced/cli.py",
+        "lines": 888,
+        "functions": 15
+      },
+      {
+        "path": "src/plume_advanced/stages/floor_map.py",
+        "lines": 723,
+        "functions": 15
+      },
+      {
+        "path": "src/plume_advanced/stages/network_gallery_growth.py",
+        "lines": 712,
+        "functions": 11
+      },
+      {
+        "path": "src/plume_advanced/stages/network_quality.py",
+        "lines": 635,
+        "functions": 10
+      },
+      {
+        "path": "scripts/emplacement_backend_benchmark.py",
+        "lines": 613,
+        "functions": 15
+      },
+      {
+        "path": "src/plume_advanced/visualization/network.py",
+        "lines": 602,
+        "functions": 11
+      },
+      {
+        "path": "tests/test_config.py",
+        "lines": 599,
+        "functions": 27
+      },
+      {
+        "path": "src/plume_advanced/stages/geometry_types.py",
+        "lines": 597,
+        "functions": 31
+      },
+      {
+        "path": "src/plume_advanced/stages/network_topology.py",
+        "lines": 578,
+        "functions": 8
+      },
+      {
+        "path": "src/plume_advanced/evaluation/metrics/network.py",
+        "lines": 571,
+        "functions": 18
+      },
+      {
+        "path": "src/plume_advanced/visualization/geometry.py",
+        "lines": 568,
+        "functions": 19
+      },
+      {
+        "path": "src/plume_advanced/stages/network_systems.py",
+        "lines": 530,
+        "functions": 12
+      },
+      {
+        "path": "src/plume_advanced/evaluation/visualization/dashboard.py",
+        "lines": 507,
+        "functions": 18
+      },
+      {
+        "path": "tests/test_export_targets.py",
+        "lines": 494,
+        "functions": 14
+      }
+    ],
+    "largest_functions": [
+      {
+        "file": "src/plume_advanced/cli.py",
+        "name": "_run_pipeline",
+        "line": 274,
+        "lines": 556
+      },
+      {
+        "file": "src/plume_advanced/stages/network.py",
+        "name": "_build_lobe_growth_paths",
+        "line": 1710,
+        "lines": 526
+      },
+      {
+        "file": "src/plume_advanced/config.py",
+        "name": "_validate_pipeline_configs",
+        "line": 913,
+        "lines": 483
+      },
+      {
+        "file": "src/plume_advanced/stages/events.py",
+        "name": "_place_rock_populations",
+        "line": 887,
+        "lines": 302
+      },
+      {
+        "file": "src/plume_advanced/stages/network_quality.py",
+        "name": "assess_network",
+        "line": 193,
+        "lines": 273
+      },
+      {
+        "file": "src/plume_advanced/stages/events.py",
+        "name": "generate",
+        "line": 292,
+        "lines": 252
+      },
+      {
+        "file": "src/plume_advanced/stages/geometry.py",
+        "name": "_junction_stamp_points",
+        "line": 1405,
+        "lines": 247
+      },
+      {
+        "file": "src/plume_advanced/stages/network_topology.py",
+        "name": "generate_trunk_network",
+        "line": 92,
+        "lines": 229
+      },
+      {
+        "file": "src/plume_advanced/stages/network.py",
+        "name": "_generate_candidate",
+        "line": 1034,
+        "lines": 221
+      },
+      {
+        "file": "src/plume_advanced/stages/network.py",
+        "name": "summary",
+        "line": 245,
+        "lines": 216
+      },
+      {
+        "file": "src/plume_advanced/stages/section_field.py",
+        "name": "_build_segment_samples",
+        "line": 763,
+        "lines": 210
+      },
+      {
+        "file": "src/plume_advanced/stages/network.py",
+        "name": "_trace_lobe_front",
+        "line": 2608,
+        "lines": 201
+      },
+      {
+        "file": "src/plume_advanced/validation.py",
+        "name": "_uv_checks",
+        "line": 465,
+        "lines": 200
+      },
+      {
+        "file": "src/plume_advanced/evaluation/metrics/network.py",
+        "name": "network_metrics",
+        "line": 26,
+        "lines": 188
+      },
+      {
+        "file": "src/plume_advanced/stages/events.py",
+        "name": "_build_event",
+        "line": 1758,
+        "lines": 185
+      },
+      {
+        "file": "src/plume_advanced/stages/network.py",
+        "name": "_annotate_drained_pool_chambers",
+        "line": 1418,
+        "lines": 176
+      },
+      {
+        "file": "src/plume_advanced/stages/geometry.py",
+        "name": "_stamp_junction_volume",
+        "line": 2498,
+        "lines": 175
+      },
+      {
+        "file": "src/plume_advanced/stages/network_quality.py",
+        "name": "assess_sections",
+        "line": 468,
+        "lines": 168
+      },
+      {
+        "file": "src/plume_advanced/stages/network_gallery_growth.py",
+        "name": "generate_gallery_growth",
+        "line": 117,
+        "lines": 164
+      },
+      {
+        "file": "src/plume_advanced/evaluation/metrics/emplacement.py",
+        "name": "emplacement_metrics",
+        "line": 274,
+        "lines": 162
+      },
+      {
+        "file": "src/plume_advanced/stages/section_field.py",
+        "name": "_harmonize_connections",
+        "line": 457,
+        "lines": 158
+      },
+      {
+        "file": "src/plume_advanced/evaluation/experiments/morphometry.py",
+        "name": "run_morphometry",
+        "line": 40,
+        "lines": 156
+      },
+      {
+        "file": "src/plume_advanced/stages/network.py",
+        "name": "_build_junctions",
+        "line": 3866,
+        "lines": 156
+      },
+      {
+        "file": "src/plume_advanced/stages/section_field.py",
+        "name": "_apply_junction_blending",
+        "line": 1573,
+        "lines": 156
+      },
+      {
+        "file": "src/plume_advanced/stages/network_topology.py",
+        "name": "assess_topology",
+        "line": 381,
+        "lines": 152
+      }
+    ],
+    "unreferenced_names_candidates": [
+      {
+        "file": "src/plume_advanced/validation.py",
+        "name": "pytest_collection_finish",
+        "line": 862,
+        "lines": 3
+      },
+      {
+        "file": "src/plume_advanced/validation.py",
+        "name": "pytest_runtest_logreport",
+        "line": 866,
+        "lines": 6
+      },
+      {
+        "file": "src/plume_advanced/validation.py",
+        "name": "pytest_sessionfinish",
+        "line": 873,
+        "lines": 4
+      }
+    ],
+    "exact_body_duplicates": [
+      [
+        {
+          "file": "src/plume_advanced/evaluation/provenance.py",
+          "name": "_git",
+          "line": 140,
+          "lines": 12
+        },
+        {
+          "file": "src/plume_advanced/run_manifest.py",
+          "name": "_git_value",
+          "line": 115,
+          "lines": 12
+        }
+      ],
+      [
+        {
+          "file": "src/plume_advanced/stages/events.py",
+          "name": "_emit_progress",
+          "line": 2407,
+          "lines": 9
+        },
+        {
+          "file": "src/plume_advanced/stages/geometry.py",
+          "name": "_emit_progress",
+          "line": 2983,
+          "lines": 9
+        }
+      ]
+    ],
+    "config_fields_without_name_references_candidates": [],
+    "config_field_count": 405,
+    "cross_module_private_imports": [
+      {
+        "file": "scripts/generate_paper_event_figures.py",
+        "line": 26,
+        "module": "plume_advanced.stages.geometry_export",
+        "level": 0,
+        "name": "_smooth_visual_surface"
+      },
+      {
+        "file": "scripts/generate_tube_only.py",
+        "line": 25,
+        "module": "plume_advanced.stages.geometry_export",
+        "level": 0,
+        "name": "_smooth_visual_surface"
+      },
+      {
+        "file": "scripts/package_inspection_exports.py",
+        "line": 18,
+        "module": "plume_advanced.exporters.targets",
+        "level": 0,
+        "name": "_write_engine_import_guide"
+      },
+      {
+        "file": "scripts/package_inspection_exports.py",
+        "line": 18,
+        "module": "plume_advanced.exporters.targets",
+        "level": 0,
+        "name": "_write_target_descriptor"
+      },
+      {
+        "file": "scripts/texture_inspection.py",
+        "line": 14,
+        "module": "plume_advanced.exporters.targets",
+        "level": 0,
+        "name": "_write_engine_import_guide"
+      },
+      {
+        "file": "scripts/texture_inspection.py",
+        "line": 14,
+        "module": "plume_advanced.exporters.targets",
+        "level": 0,
+        "name": "_write_target_descriptor"
+      },
+      {
+        "file": "src/plume_advanced/evaluation/morphology_bootstrap.py",
+        "line": 7,
+        "module": "plume_advanced.evaluation.statistics",
+        "level": 0,
+        "name": "_interval"
+      },
+      {
+        "file": "src/plume_advanced/exporters/materials.py",
+        "line": 13,
+        "module": "plume_advanced.stages.geometry_export",
+        "level": 0,
+        "name": "_StrictGlbBuilder"
+      },
+      {
+        "file": "src/plume_advanced/stages/events.py",
+        "line": 2441,
+        "module": "rocky.pipeline",
+        "level": 0,
+        "name": "_choose_texture_set"
+      },
+      {
+        "file": "src/plume_advanced/stages/events.py",
+        "line": 2441,
+        "module": "rocky.pipeline",
+        "level": 0,
+        "name": "_discover_texture_sets"
+      },
+      {
+        "file": "src/plume_advanced/stages/network_gallery_growth.py",
+        "line": 660,
+        "module": "plume_advanced.stages.network",
+        "level": 0,
+        "name": "_SelectedPath"
+      },
+      {
+        "file": "src/plume_advanced/stages/network_interconnected.py",
+        "line": 57,
+        "module": "plume_advanced.stages.network_systems",
+        "level": 0,
+        "name": "_cross_bounds"
+      }
+    ],
+    "source_sha256": {
+      "src/plume_advanced/__init__.py": "66905de1e925c2ca2804da425db3c30241cd6ffb04e9daf67102c3e91e9910c0",
+      "src/plume_advanced/cli.py": "4243de01cf2264063a8e856c87988cae2b198ce8dbaf3f4bb3e889dfb13dbedf",
+      "src/plume_advanced/config.py": "b9b2236bb9d9483a98c0887f96463b5c34b61b81c30358842c332c9c626740c6",
+      "src/plume_advanced/evaluation/__init__.py": "31726a7623e307a4dd308af90f0c16c08735091cad6ff98f5f39705a9e1f73a8",
+      "src/plume_advanced/evaluation/_common.py": "48b7484e8aa546a29976d841f2a431360d80ffb9e40721d5359c92fda8a14805",
+      "src/plume_advanced/evaluation/aggregate.py": "f02aa009b12c018ffd9c63b03320826dee686f2efdb93fd0a120b67ad2b2f14d",
+      "src/plume_advanced/evaluation/artifacts.py": "c022b44602c4db5f50b591465bcaacbd78a25e453dba5f4a891ff8836befaba3",
+      "src/plume_advanced/evaluation/cli.py": "b958d52bbb0a4eed4b4a2b142e0614abaed1d67ed2c2a40e4f820b936d26672e",
+      "src/plume_advanced/evaluation/config.py": "8f9da26fdaf70c4bcb6e12c1156ac478ec40d48fb7970a4b2434bdd1e51a1b72",
+      "src/plume_advanced/evaluation/continuity.py": "84ac414a3b684c8b9a1c1abce1d630d1a5f3afb5a55a6ccdf62b5a2083eded0b",
+      "src/plume_advanced/evaluation/datasets/__init__.py": "d054fa2e2fa960fb3e1b0a98cdb5e09b401cd9bee39333d137cf1eaa12549ea5",
+      "src/plume_advanced/evaluation/datasets/pdc.py": "28524bceab83f24a6b910a47059a0f645b0eebd903b137cafaafde8e16a21754",
+      "src/plume_advanced/evaluation/experiments/__init__.py": "0d139693c24f7e38e2302eb95e21ead07362a954bcce4c6a6f3d923313df0f26",
+      "src/plume_advanced/evaluation/experiments/common.py": "d63ae4a8fe379cb9778c68cd6253f31de4cf32931cb49f25f432a54fef5f0768",
+      "src/plume_advanced/evaluation/experiments/controllability.py": "75fe321ff909393b8662f9d86e9eb8c12c41f704dc76b5f76328dfe304a053c9",
+      "src/plume_advanced/evaluation/experiments/determinism.py": "57bfcc09bc52c87cda098912c0c9b0430be5e26b65dadd79aa55cd957dce594d",
+      "src/plume_advanced/evaluation/experiments/export_consistency.py": "3bf91b3e2bad511954f5dfab17b07f3cd7887a22e0e9acc158167ce3c62b4674",
+      "src/plume_advanced/evaluation/experiments/host_ablation.py": "8071244bfe9a5ec376e99d399a531a640534983d76eb1e4223e279c9bf26e83c",
+      "src/plume_advanced/evaluation/experiments/morphometry.py": "5577a547f017c9c05d47103e606c6d59ac08bf9e6c950fb0bd20327c8ac203ff",
+      "src/plume_advanced/evaluation/experiments/sampling_ablation.py": "fe90d8217b6ee70b0ed86301ada362b4a7e95b6e6c8c53012c2e0c6c2b797828",
+      "src/plume_advanced/evaluation/experiments/scalability.py": "edc9768b7658b227944101d6d3bda3fc0d834219cd060f976de2dc32cf19035f",
+      "src/plume_advanced/evaluation/experiments/scalability_worker.py": "17b644ae8225f785d3ee054cc1bac48ebc85b4c5d9157974daf70d4626c42ea3",
+      "src/plume_advanced/evaluation/latex.py": "a8feeefccbd2fb40e8f2d36dfc816ee05c3568f0ff899d21a4a3a259507c8a26",
+      "src/plume_advanced/evaluation/local_geometry.py": "a951840a98e3ab1ae2cbdccb413dbc78701f45775e0d5940114a062a6f5fa77f",
+      "src/plume_advanced/evaluation/metrics/__init__.py": "1bbed006b5bd0d8093f7bbe2e734d1fe6b1f5412cb6ecb03a68e2108f0aca0a7",
+      "src/plume_advanced/evaluation/metrics/contours.py": "b64f344fa85d5ceefb521caa4ba1f167c92b1ecf49efe00dd870a7adbf46dd08",
+      "src/plume_advanced/evaluation/metrics/emplacement.py": "caecad000fcddde262bcf40af294e35f15a31ca6709914694af6cc1266f02eba",
+      "src/plume_advanced/evaluation/metrics/morphometry.py": "8a12ea156013804057ac9f56fb80fd6a21011441fc6793b7da3a79a5e760197b",
+      "src/plume_advanced/evaluation/metrics/network.py": "950b9b58941da0dff8c50a2de06f58c4c46c783caf197b1179af6b6c129e5d2a",
+      "src/plume_advanced/evaluation/metrics/sections.py": "b89f2537bae55b7ded538c4b7802c6b95d8f0c5e4ff070a34a33f5b22a19e6f0",
+      "src/plume_advanced/evaluation/morphology_bootstrap.py": "4c46b84111bd7a9eae2d923e2195e73ff82f264b813768ac2c17e5c998908563",
+      "src/plume_advanced/evaluation/plotting.py": "e39007b3c806dfb34ab41e713b4ed15589ab1b1466fc2a8084a659ce285a03e1",
+      "src/plume_advanced/evaluation/provenance.py": "fee13343ebb01639d908efffcecd9dc9e0350fa446dd968bdafcfc01eee561d3",
+      "src/plume_advanced/evaluation/runner.py": "a03686898ec885a08eeae8e48ce3b72b16bd7254c2c1aef2494c08441809b9f2",
+      "src/plume_advanced/evaluation/schema.py": "703658787afbb53056a465d7b83e2b5271a3daf39127009ffd2abee758c8b24e",
+      "src/plume_advanced/evaluation/serialization.py": "aee1ac1ddbd284db25c99e2ea6471a1872923607059ce948ecaf78fe9553cd6f",
+      "src/plume_advanced/evaluation/statistics.py": "485f307fd5dc8d146fd23a0f5daaf6e1077c7d42e55a93d6201d7205422f89dd",
+      "src/plume_advanced/evaluation/visualization/__init__.py": "7385caf62c89403c38e589cbf13b8ee948b61535b70ef707398a985f402cb446",
+      "src/plume_advanced/evaluation/visualization/dashboard.py": "648cddf719845e2c63a75b6a3f50fda6939a90c63ba5ca0e58078c1a07401b2f",
+      "src/plume_advanced/evaluation/visualization/emplacement.py": "3d1ce67674773a503f61ae695d588ddee7666d85defa6e8d0f1ecfe8b9759cd9",
+      "src/plume_advanced/exporters/__init__.py": "4dc5fb372c4011192f0eefa3032c8cc26f40e858816e62c4d53950202be4c935",
+      "src/plume_advanced/exporters/atomic.py": "e2554dbf074e620913541c9c21018574452de0f62c1c3da94576804be8e55087",
+      "src/plume_advanced/exporters/materials.py": "1e056cc879500ffd9797624054023467fdb04507ef252d7527386054b48b06c5",
+      "src/plume_advanced/exporters/scene.py": "a8e6b6dda027416fca198804478b988789d2c559f3f0b3236e720481f0894a75",
+      "src/plume_advanced/exporters/targets.py": "598255d42291490616ab62a774b68e936195b4525fcefccf3034c30f0ecb155f",
+      "src/plume_advanced/media/__init__.py": "1a9944ec6c7acd33cf30f541109b28cf9a9e56d98dd70e7f879a7f6cc3b1a17f",
+      "src/plume_advanced/media/manim_data.py": "5e8aa4cb57a09e131e0af218605fe99890fe4efbf4a54929bfddf84fb3f4a164",
+      "src/plume_advanced/media/manim_typography.py": "fabfa62f97f0bf6bc3acf71e2f8145b73e27970c9c58e9238c8bb38237accd26",
+      "src/plume_advanced/output_guard.py": "7ef8d43aab71acd286f7edce3eb3889ce1f3276782f51310db90c5b5b892f89e",
+      "src/plume_advanced/pipeline/__init__.py": "e476058131b5455831f40c811011091dd9f4b9a12f30b6d72c7880cc9cfc1c29",
+      "src/plume_advanced/pipeline/checkpoints.py": "7d70385b322a41ce8dcb25e68322cf340cce41c32b430a32df33eb60e23a4dc6",
+      "src/plume_advanced/procedural.py": "6d314ca0eeb7517de384f8bbe718c640fd9cbe6414d6300d3046dd2fe4a930db",
+      "src/plume_advanced/run_manifest.py": "aeb01fc402ba5ab6c2bb39873a0a0f1fb71b1467bafbfc415512f4a91733afbe",
+      "src/plume_advanced/stability.py": "146c6cada09a52112bda3060afeaf96d984ac5396f4d4fefac81f5bdbab5dc28",
+      "src/plume_advanced/stages/__init__.py": "6745eadbf63e2f37d26cdc06666cd8141811ecadcdefb6dbec62bd7db3984137",
+      "src/plume_advanced/stages/events.py": "fc3e6551d6f57ab786e934981cf976d98400382b40ecbb152d652e4985c2ac45",
+      "src/plume_advanced/stages/floor_map.py": "e49ea890fa849e7a845339d2e5a08cb5b5dcfd1f8383fb94d30ab8835031e510",
+      "src/plume_advanced/stages/geometry.py": "5df478e635f44595b10555e911abe070df9f67629e9c33408ff246e71bcd9157",
+      "src/plume_advanced/stages/geometry_export.py": "2eb83dc818e5b33caf009d7b345fe2ca51cf1c60833ae670443852b40324e3d7",
+      "src/plume_advanced/stages/geometry_types.py": "b73ea0b2a1edf758fb1eff6df2e889d8bf5f10f2a2d29e11b144e1db1c939a20",
+      "src/plume_advanced/stages/host_field.py": "f6c9da3275a45f76341c0b66d45ab90e0eb5fda22355dc9c0a3ef2354e7bfa57",
+      "src/plume_advanced/stages/network.py": "dd35547eaed8a4ee3ab4859f4c714bd912276304dbea29436944e2e7312c41f5",
+      "src/plume_advanced/stages/network_acceptance.py": "397c174923514b52705bedec9376d1c18006bf13616a2fcf5405b84cf6bfdbbf",
+      "src/plume_advanced/stages/network_gallery_growth.py": "139d28a6a1eec48cb2b09f67556ed9ccec61cd04299ac54e9c99cf35f23dddf2",
+      "src/plume_advanced/stages/network_interconnected.py": "7085a1ae96036e20ca53cab9b959abb76312c374612464788e91fa8571b5d8a7",
+      "src/plume_advanced/stages/network_metadata.py": "517182a6f72f1a8a9ec37d4f5da1e4f594500dacc78ba084ad7b482ceba41ef0",
+      "src/plume_advanced/stages/network_quality.py": "0d1e6a9d980cec9ec7f3ded35bfbe57341cda30c4abbf4e168069c452ffefcd4",
+      "src/plume_advanced/stages/network_systems.py": "3b102ad7813578df4dfab5d7979f28ff280720d44b46a28d3d7246bd56253722",
+      "src/plume_advanced/stages/network_topology.py": "f250fc1b109ed33ae664da0bc5ab2e4cae756e9b255db653fe6027290d08fc5f",
+      "src/plume_advanced/stages/section_field.py": "c10da8c41d337140b504c91ceb2d6e17de7a22b3ac9026a352560c3cbffcac66",
+      "src/plume_advanced/stages/surface_relief.py": "2b9998316c6eb97df874630eb4265529dd34ec06bbb351516e5fcb1ce20c75a7",
+      "src/plume_advanced/stages/voxel_topology.py": "b826e388813bebbaf8c3a7467826723a192671c5e584a668d3973a3418c55a17",
+      "src/plume_advanced/validation.py": "33b228536d28ea07709d093aa65590e9eee990cc27a7fe4716a2b05f0a11d696",
+      "src/plume_advanced/visualization/__init__.py": "d1132359c9be7894f38b22f1b654ffbc5862ce56f75ad080aaa64903deb5ac02",
+      "src/plume_advanced/visualization/drained_pools.py": "203facea97c649a5225d24038b37615494f80f5749b9efd4aacdb86e177dfc36",
+      "src/plume_advanced/visualization/events.py": "06360b9043909e522a44f1bbb94954557e2802282b27787d8b65b72e67680618",
+      "src/plume_advanced/visualization/floor_map.py": "72f565b258a5421a9a47008c266bce0bb10a2c332a9630fb28416d11461681ea",
+      "src/plume_advanced/visualization/geometry.py": "5e095c20095b6b25259ac9c335d64deb9066db429f5774dfa1c671423e2ceec9",
+      "src/plume_advanced/visualization/host_field.py": "863bd6fa1289832b427cb51ecd6e3ab514fa98c437af68884f04325b02b55632",
+      "src/plume_advanced/visualization/interconnected.py": "2aec17f544a6373c969e94517437e5ac8ceb9982672f207db1acfd8852d08e07",
+      "src/plume_advanced/visualization/network.py": "45126de6a2a073f69f8da11bdbc682e8aff8b3258c76b0b224f0d99910a5492a",
+      "src/plume_advanced/visualization/network_systems.py": "2013f7b8ad31579e018d4d66e8f5226b0b9473f633b198030728d014b0b5c7ec",
+      "src/plume_advanced/visualization/network_topology.py": "6a01349afccaf31958bbf3602a666f998523539162a19ab20f3eb4658480b731",
+      "src/plume_advanced/visualization/section_field.py": "66ffe597277fb994a1aa393538bd88b454dae00fc46c604f7ec4d247181db105",
+      "src/plume_advanced/world.py": "82915ccddd72a005123b70bcb525770016f6062284bc7dc21f1b2917fb52545c"
+    }
+  },
+  "configurations": [
+    {
+      "file": "config/earth_full_inspection_seed20260910.toml",
+      "lines": 342,
+      "explicit_leaf_settings": 261,
+      "schema": 4,
+      "style": "general",
+      "generation_mode": "layout",
+      "systems": 1,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        220,
+        560
+      ]
+    },
+    {
+      "file": "config/earth_independent_gallery.toml",
+      "lines": 296,
+      "explicit_leaf_settings": 229,
+      "schema": 4,
+      "style": "trunk_dominated",
+      "generation_mode": "independent_growth",
+      "systems": 3,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        120,
+        270
+      ]
+    },
+    {
+      "file": "config/earth_interacting_systems.toml",
+      "lines": 271,
+      "explicit_leaf_settings": 208,
+      "schema": 4,
+      "style": "general",
+      "generation_mode": "layout",
+      "systems": 3,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        220,
+        560
+      ]
+    },
+    {
+      "file": "config/earth_long_interconnected.toml",
+      "lines": 306,
+      "explicit_leaf_settings": 236,
+      "schema": 4,
+      "style": "interconnected",
+      "generation_mode": "independent_growth",
+      "systems": 3,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        160,
+        1360
+      ]
+    },
+    {
+      "file": "config/earth_long_interconnected_full.toml",
+      "lines": 312,
+      "explicit_leaf_settings": 240,
+      "schema": 4,
+      "style": "interconnected",
+      "generation_mode": "independent_growth",
+      "systems": 3,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": true,
+      "grid": [
+        160,
+        1360
+      ]
+    },
+    {
+      "file": "config/earth_long_multi.toml",
+      "lines": 298,
+      "explicit_leaf_settings": 230,
+      "schema": 4,
+      "style": "trunk_dominated",
+      "generation_mode": "independent_growth",
+      "systems": 3,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        160,
+        1360
+      ]
+    },
+    {
+      "file": "config/earth_long_single.toml",
+      "lines": 298,
+      "explicit_leaf_settings": 230,
+      "schema": 4,
+      "style": "trunk_dominated",
+      "generation_mode": "layout",
+      "systems": 1,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        160,
+        1360
+      ]
+    },
+    {
+      "file": "config/earth_short_interconnected.toml",
+      "lines": 304,
+      "explicit_leaf_settings": 235,
+      "schema": 4,
+      "style": "interconnected",
+      "generation_mode": "independent_growth",
+      "systems": 3,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        120,
+        270
+      ]
+    },
+    {
+      "file": "config/earth_short_interconnected_full.toml",
+      "lines": 307,
+      "explicit_leaf_settings": 237,
+      "schema": 4,
+      "style": "interconnected",
+      "generation_mode": "independent_growth",
+      "systems": 3,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": true,
+      "grid": [
+        120,
+        270
+      ]
+    },
+    {
+      "file": "config/earth_short_multi.toml",
+      "lines": 296,
+      "explicit_leaf_settings": 229,
+      "schema": 4,
+      "style": "trunk_dominated",
+      "generation_mode": "independent_growth",
+      "systems": 3,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        120,
+        270
+      ]
+    },
+    {
+      "file": "config/earth_short_single.toml",
+      "lines": 296,
+      "explicit_leaf_settings": 229,
+      "schema": 4,
+      "style": "trunk_dominated",
+      "generation_mode": "layout",
+      "systems": 1,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        120,
+        270
+      ]
+    },
+    {
+      "file": "config/earth_tube_only.toml",
+      "lines": 348,
+      "explicit_leaf_settings": 264,
+      "schema": 4,
+      "style": "general",
+      "generation_mode": "layout",
+      "systems": 1,
+      "dev": true,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": true,
+      "grid": [
+        220,
+        141
+      ]
+    },
+    {
+      "file": "config/earth_valentine_multi_inspection_seed20260910.toml",
+      "lines": 273,
+      "explicit_leaf_settings": 205,
+      "schema": 4,
+      "style": "trunk_dominated",
+      "generation_mode": "layout",
+      "systems": 3,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        100,
+        2189
+      ]
+    },
+    {
+      "file": "config/earth_valentine_topology.toml",
+      "lines": 273,
+      "explicit_leaf_settings": 205,
+      "schema": 4,
+      "style": "trunk_dominated",
+      "generation_mode": "layout",
+      "systems": 1,
+      "dev": false,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        100,
+        2189
+      ]
+    },
+    {
+      "file": "config/project.toml",
+      "lines": 339,
+      "explicit_leaf_settings": 257,
+      "schema": 4,
+      "style": "general",
+      "generation_mode": "layout",
+      "systems": 1,
+      "dev": true,
+      "section_profiles": true,
+      "events": true,
+      "rocks": true,
+      "textured": true,
+      "grid": [
+        220,
+        141
+      ]
+    },
+    {
+      "file": "src/plume_advanced/default_project.toml",
+      "lines": 99,
+      "explicit_leaf_settings": 75,
+      "schema": 4,
+      "style": "general",
+      "generation_mode": "layout",
+      "systems": 1,
+      "dev": true,
+      "section_profiles": true,
+      "events": false,
+      "rocks": false,
+      "textured": false,
+      "grid": [
+        80,
+        37
+      ]
+    }
+  ],
+  "documentation_links": {
+    "checked": 146,
+    "missing": [
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 29,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_comparison/comparison.png"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 52,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_comparison/mesh_section_check.png"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 69,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_comparison/body_comparison.json"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 88,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_comparison/current_earth/summary.json"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 88,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_comparison/comparison_metrics.json"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 88,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_comparison/generated_contour_metrics.csv"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 88,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_comparison/isolated_segment.ply"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 90,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_comparison/analyze_comparison.py"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 5,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/earth_tube_relief_seed2/lava_tube_geometry.glb"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 22,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/shallow_sections.png"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 30,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/resolution_final/sample_197/voxel_0.0125m/lava_tube_geometry.glb"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 30,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/resolution_final/summary.json"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 30,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/resolution_screen.json"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 50,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/calibration/comparison.png"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 50,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/calibration/summary.json"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 63,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/surface_scales/comparison.png"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 63,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/surface_scales/summary.json"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 87,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/body_matrix/summary.json"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 87,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/body_matrix/clip_audit.json"
+      },
+      {
+        "file": "docs/geometry_validation_2026-09-07.md",
+        "line": 87,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/geometry_validation/body_matrix/collapse_counterfactual.json"
+      },
+      {
+        "file": "docs/gravity_and_realism.md",
+        "line": 74,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_improvements/gravity_and_sections.png"
+      },
+      {
+        "file": "docs/gravity_and_realism.md",
+        "line": 181,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_improvements/validation_metrics.json"
+      },
+      {
+        "file": "docs/gravity_and_realism.md",
+        "line": 187,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_improvements/current_earth/verified_cave_surface.ply"
+      },
+      {
+        "file": "docs/gravity_and_realism.md",
+        "line": 191,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/realism_improvements/verified_mesh_review.png"
+      }
+    ],
+    "editor_only_absolute_source_links": [
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 27,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/config.py:725"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 46,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/stages/section_field.py:1136"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 46,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/stages/section_field.py:1741"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 48,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/stages/geometry.py:2092"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 56,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/world.py:148"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 56,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/world.py:216"
+      },
+      {
+        "file": "docs/realism_comparison_2026-09-06.md",
+        "line": 71,
+        "target": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/world.py:112"
+      }
+    ]
+  },
+  "tracked_worktree_groups": {
+    ".gitattributes": {
+      "files": 1,
+      "bytes": 97
+    },
+    ".github": {
+      "files": 1,
+      "bytes": 1372
+    },
+    ".gitignore": {
+      "files": 1,
+      "bytes": 5239
+    },
+    "LICENSE": {
+      "files": 1,
+      "bytes": 1494
+    },
+    "README.md": {
+      "files": 1,
+      "bytes": 55756
+    },
+    "config": {
+      "files": 15,
+      "bytes": 146273
+    },
+    "docs": {
+      "files": 65,
+      "bytes": 35403615
+    },
+    "paper": {
+      "files": 793,
+      "bytes": 110380609
+    },
+    "pyproject.toml": {
+      "files": 1,
+      "bytes": 1697
+    },
+    "scripts": {
+      "files": 28,
+      "bytes": 243370
+    },
+    "src": {
+      "files": 85,
+      "bytes": 1409344
+    },
+    "tests": {
+      "files": 50,
+      "bytes": 382473
+    },
+    "texture": {
+      "files": 5,
+      "bytes": 243538464
+    },
+    "uv.lock": {
+      "files": 1,
+      "bytes": 324062
+    }
+  },
+  "tracked_python_files_under_paper": 501,
+  "surface_frame_field_read_sites": {
+    "longitudinal_m": [],
+    "longitudinal_rate": [],
+    "profile_perimeter_m": []
+  },
+  "targeted_probes": {
+    "checkpoint_fingerprint_ignores_lock_change": true,
+    "checkpoint_probe_scope": "Same resolved config and production source, changed lock file; no dependencies installed or changed.",
+    "empty_working_directory_source_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "unrecorded_asset_reproducibility_checks": {
+      "before_asset_change": [
+        true,
+        true
+      ],
+      "after_asset_change": [
+        true,
+        true
+      ],
+      "scope": "Reproducibility phase only, minimal GLB; other validation phases not run."
+    },
+    "git_failure_reported_as_clean": {
+      "generation": true,
+      "evaluation": true
+    },
+    "evaluation_network_keyword_arguments": {},
+    "surface_frame_and_inert_config": "Read-site evidence in structure.json and contracts.json; no source changed."
+  },
+  "script_help": [
+    {
+      "script": "scripts/analyze_lava_tube_references.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/assemble_manim_video.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/check_mesh_topology.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/check_tube_sections.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/compare_surface_scales.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/compare_tube_calibration.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/emplacement_backend_benchmark.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/generate_body_figures.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/generate_network_diagnostics.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/generate_paper_event_figures.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/generate_readme_figures.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/generate_tube_only.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/inspect_surface_relief.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/package_inspection_exports.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/prepare_manim_assets.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/render_event_rocks.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/render_host_field.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/render_manim_video.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/render_run_diagnostics.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/render_tube_views.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/texture_inspection.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/validate_body_matrix.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/validate_inspection_asset.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/validate_interconnected.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/validate_network_reproducibility.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/validate_network_systems.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/validate_trunk_topology.py",
+      "exit_code": 0
+    },
+    {
+      "script": "scripts/validate_tube_resolution.py",
+      "exit_code": 0
+    }
+  ],
+  "coverage_by_module": {
+    "src/plume_advanced/__init__.py": {
+      "covered_lines": 6,
+      "num_statements": 6,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/cli.py": {
+      "covered_lines": 168,
+      "num_statements": 349,
+      "percent_covered": 48.137535816618914,
+      "percent_covered_display": "48",
+      "missing_lines": 181,
+      "excluded_lines": 0,
+      "percent_statements_covered": 48.137535816618914,
+      "percent_statements_covered_display": "48"
+    },
+    "src/plume_advanced/config.py": {
+      "covered_lines": 524,
+      "num_statements": 658,
+      "percent_covered": 79.63525835866261,
+      "percent_covered_display": "80",
+      "missing_lines": 134,
+      "excluded_lines": 0,
+      "percent_statements_covered": 79.63525835866261,
+      "percent_statements_covered_display": "80"
+    },
+    "src/plume_advanced/evaluation/__init__.py": {
+      "covered_lines": 6,
+      "num_statements": 6,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/evaluation/_common.py": {
+      "covered_lines": 21,
+      "num_statements": 63,
+      "percent_covered": 33.333333333333336,
+      "percent_covered_display": "33",
+      "missing_lines": 42,
+      "excluded_lines": 0,
+      "percent_statements_covered": 33.333333333333336,
+      "percent_statements_covered_display": "33"
+    },
+    "src/plume_advanced/evaluation/aggregate.py": {
+      "covered_lines": 8,
+      "num_statements": 25,
+      "percent_covered": 32.0,
+      "percent_covered_display": "32",
+      "missing_lines": 17,
+      "excluded_lines": 0,
+      "percent_statements_covered": 32.0,
+      "percent_statements_covered_display": "32"
+    },
+    "src/plume_advanced/evaluation/artifacts.py": {
+      "covered_lines": 81,
+      "num_statements": 104,
+      "percent_covered": 77.88461538461539,
+      "percent_covered_display": "78",
+      "missing_lines": 23,
+      "excluded_lines": 0,
+      "percent_statements_covered": 77.88461538461539,
+      "percent_statements_covered_display": "78"
+    },
+    "src/plume_advanced/evaluation/cli.py": {
+      "covered_lines": 88,
+      "num_statements": 119,
+      "percent_covered": 73.94957983193277,
+      "percent_covered_display": "74",
+      "missing_lines": 31,
+      "excluded_lines": 0,
+      "percent_statements_covered": 73.94957983193277,
+      "percent_statements_covered_display": "74"
+    },
+    "src/plume_advanced/evaluation/config.py": {
+      "covered_lines": 69,
+      "num_statements": 86,
+      "percent_covered": 80.23255813953489,
+      "percent_covered_display": "80",
+      "missing_lines": 17,
+      "excluded_lines": 0,
+      "percent_statements_covered": 80.23255813953489,
+      "percent_statements_covered_display": "80"
+    },
+    "src/plume_advanced/evaluation/continuity.py": {
+      "covered_lines": 70,
+      "num_statements": 79,
+      "percent_covered": 88.60759493670886,
+      "percent_covered_display": "89",
+      "missing_lines": 9,
+      "excluded_lines": 0,
+      "percent_statements_covered": 88.60759493670886,
+      "percent_statements_covered_display": "89"
+    },
+    "src/plume_advanced/evaluation/datasets/__init__.py": {
+      "covered_lines": 2,
+      "num_statements": 2,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/evaluation/datasets/pdc.py": {
+      "covered_lines": 120,
+      "num_statements": 126,
+      "percent_covered": 95.23809523809524,
+      "percent_covered_display": "95",
+      "missing_lines": 6,
+      "excluded_lines": 0,
+      "percent_statements_covered": 95.23809523809524,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/evaluation/experiments/__init__.py": {
+      "covered_lines": 0,
+      "num_statements": 0,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/evaluation/experiments/common.py": {
+      "covered_lines": 23,
+      "num_statements": 32,
+      "percent_covered": 71.875,
+      "percent_covered_display": "72",
+      "missing_lines": 9,
+      "excluded_lines": 0,
+      "percent_statements_covered": 71.875,
+      "percent_statements_covered_display": "72"
+    },
+    "src/plume_advanced/evaluation/experiments/controllability.py": {
+      "covered_lines": 15,
+      "num_statements": 52,
+      "percent_covered": 28.846153846153847,
+      "percent_covered_display": "29",
+      "missing_lines": 37,
+      "excluded_lines": 0,
+      "percent_statements_covered": 28.846153846153847,
+      "percent_statements_covered_display": "29"
+    },
+    "src/plume_advanced/evaluation/experiments/determinism.py": {
+      "covered_lines": 34,
+      "num_statements": 45,
+      "percent_covered": 75.55555555555556,
+      "percent_covered_display": "76",
+      "missing_lines": 11,
+      "excluded_lines": 0,
+      "percent_statements_covered": 75.55555555555556,
+      "percent_statements_covered_display": "76"
+    },
+    "src/plume_advanced/evaluation/experiments/export_consistency.py": {
+      "covered_lines": 70,
+      "num_statements": 74,
+      "percent_covered": 94.5945945945946,
+      "percent_covered_display": "95",
+      "missing_lines": 4,
+      "excluded_lines": 0,
+      "percent_statements_covered": 94.5945945945946,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/evaluation/experiments/host_ablation.py": {
+      "covered_lines": 33,
+      "num_statements": 68,
+      "percent_covered": 48.529411764705884,
+      "percent_covered_display": "49",
+      "missing_lines": 35,
+      "excluded_lines": 0,
+      "percent_statements_covered": 48.529411764705884,
+      "percent_statements_covered_display": "49"
+    },
+    "src/plume_advanced/evaluation/experiments/morphometry.py": {
+      "covered_lines": 22,
+      "num_statements": 97,
+      "percent_covered": 22.68041237113402,
+      "percent_covered_display": "23",
+      "missing_lines": 75,
+      "excluded_lines": 0,
+      "percent_statements_covered": 22.68041237113402,
+      "percent_statements_covered_display": "23"
+    },
+    "src/plume_advanced/evaluation/experiments/sampling_ablation.py": {
+      "covered_lines": 15,
+      "num_statements": 47,
+      "percent_covered": 31.914893617021278,
+      "percent_covered_display": "32",
+      "missing_lines": 32,
+      "excluded_lines": 0,
+      "percent_statements_covered": 31.914893617021278,
+      "percent_statements_covered_display": "32"
+    },
+    "src/plume_advanced/evaluation/experiments/scalability.py": {
+      "covered_lines": 45,
+      "num_statements": 96,
+      "percent_covered": 46.875,
+      "percent_covered_display": "47",
+      "missing_lines": 51,
+      "excluded_lines": 0,
+      "percent_statements_covered": 46.875,
+      "percent_statements_covered_display": "47"
+    },
+    "src/plume_advanced/evaluation/experiments/scalability_worker.py": {
+      "covered_lines": 0,
+      "num_statements": 65,
+      "percent_covered": 0.0,
+      "percent_covered_display": "0",
+      "missing_lines": 65,
+      "excluded_lines": 0,
+      "percent_statements_covered": 0.0,
+      "percent_statements_covered_display": "0"
+    },
+    "src/plume_advanced/evaluation/latex.py": {
+      "covered_lines": 62,
+      "num_statements": 74,
+      "percent_covered": 83.78378378378379,
+      "percent_covered_display": "84",
+      "missing_lines": 12,
+      "excluded_lines": 0,
+      "percent_statements_covered": 83.78378378378379,
+      "percent_statements_covered_display": "84"
+    },
+    "src/plume_advanced/evaluation/local_geometry.py": {
+      "covered_lines": 79,
+      "num_statements": 88,
+      "percent_covered": 89.77272727272727,
+      "percent_covered_display": "90",
+      "missing_lines": 9,
+      "excluded_lines": 0,
+      "percent_statements_covered": 89.77272727272727,
+      "percent_statements_covered_display": "90"
+    },
+    "src/plume_advanced/evaluation/metrics/__init__.py": {
+      "covered_lines": 6,
+      "num_statements": 6,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/evaluation/metrics/contours.py": {
+      "covered_lines": 67,
+      "num_statements": 72,
+      "percent_covered": 93.05555555555556,
+      "percent_covered_display": "93",
+      "missing_lines": 5,
+      "excluded_lines": 0,
+      "percent_statements_covered": 93.05555555555556,
+      "percent_statements_covered_display": "93"
+    },
+    "src/plume_advanced/evaluation/metrics/emplacement.py": {
+      "covered_lines": 207,
+      "num_statements": 223,
+      "percent_covered": 92.82511210762331,
+      "percent_covered_display": "93",
+      "missing_lines": 16,
+      "excluded_lines": 0,
+      "percent_statements_covered": 92.82511210762331,
+      "percent_statements_covered_display": "93"
+    },
+    "src/plume_advanced/evaluation/metrics/morphometry.py": {
+      "covered_lines": 30,
+      "num_statements": 36,
+      "percent_covered": 83.33333333333333,
+      "percent_covered_display": "83",
+      "missing_lines": 6,
+      "excluded_lines": 0,
+      "percent_statements_covered": 83.33333333333333,
+      "percent_statements_covered_display": "83"
+    },
+    "src/plume_advanced/evaluation/metrics/network.py": {
+      "covered_lines": 218,
+      "num_statements": 257,
+      "percent_covered": 84.8249027237354,
+      "percent_covered_display": "85",
+      "missing_lines": 39,
+      "excluded_lines": 0,
+      "percent_statements_covered": 84.8249027237354,
+      "percent_statements_covered_display": "85"
+    },
+    "src/plume_advanced/evaluation/metrics/sections.py": {
+      "covered_lines": 52,
+      "num_statements": 78,
+      "percent_covered": 66.66666666666667,
+      "percent_covered_display": "67",
+      "missing_lines": 26,
+      "excluded_lines": 0,
+      "percent_statements_covered": 66.66666666666667,
+      "percent_statements_covered_display": "67"
+    },
+    "src/plume_advanced/evaluation/morphology_bootstrap.py": {
+      "covered_lines": 47,
+      "num_statements": 50,
+      "percent_covered": 94.0,
+      "percent_covered_display": "94",
+      "missing_lines": 3,
+      "excluded_lines": 0,
+      "percent_statements_covered": 94.0,
+      "percent_statements_covered_display": "94"
+    },
+    "src/plume_advanced/evaluation/plotting.py": {
+      "covered_lines": 67,
+      "num_statements": 114,
+      "percent_covered": 58.771929824561404,
+      "percent_covered_display": "59",
+      "missing_lines": 47,
+      "excluded_lines": 0,
+      "percent_statements_covered": 58.771929824561404,
+      "percent_statements_covered_display": "59"
+    },
+    "src/plume_advanced/evaluation/provenance.py": {
+      "covered_lines": 60,
+      "num_statements": 63,
+      "percent_covered": 95.23809523809524,
+      "percent_covered_display": "95",
+      "missing_lines": 3,
+      "excluded_lines": 0,
+      "percent_statements_covered": 95.23809523809524,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/evaluation/runner.py": {
+      "covered_lines": 105,
+      "num_statements": 111,
+      "percent_covered": 94.5945945945946,
+      "percent_covered_display": "95",
+      "missing_lines": 6,
+      "excluded_lines": 0,
+      "percent_statements_covered": 94.5945945945946,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/evaluation/schema.py": {
+      "covered_lines": 40,
+      "num_statements": 42,
+      "percent_covered": 95.23809523809524,
+      "percent_covered_display": "95",
+      "missing_lines": 2,
+      "excluded_lines": 0,
+      "percent_statements_covered": 95.23809523809524,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/evaluation/serialization.py": {
+      "covered_lines": 19,
+      "num_statements": 21,
+      "percent_covered": 90.47619047619048,
+      "percent_covered_display": "90",
+      "missing_lines": 2,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.47619047619048,
+      "percent_statements_covered_display": "90"
+    },
+    "src/plume_advanced/evaluation/statistics.py": {
+      "covered_lines": 73,
+      "num_statements": 113,
+      "percent_covered": 64.60176991150442,
+      "percent_covered_display": "65",
+      "missing_lines": 40,
+      "excluded_lines": 0,
+      "percent_statements_covered": 64.60176991150442,
+      "percent_statements_covered_display": "65"
+    },
+    "src/plume_advanced/evaluation/visualization/__init__.py": {
+      "covered_lines": 3,
+      "num_statements": 3,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/evaluation/visualization/dashboard.py": {
+      "covered_lines": 253,
+      "num_statements": 287,
+      "percent_covered": 88.15331010452962,
+      "percent_covered_display": "88",
+      "missing_lines": 34,
+      "excluded_lines": 0,
+      "percent_statements_covered": 88.15331010452962,
+      "percent_statements_covered_display": "88"
+    },
+    "src/plume_advanced/evaluation/visualization/emplacement.py": {
+      "covered_lines": 71,
+      "num_statements": 82,
+      "percent_covered": 86.58536585365853,
+      "percent_covered_display": "87",
+      "missing_lines": 11,
+      "excluded_lines": 0,
+      "percent_statements_covered": 86.58536585365853,
+      "percent_statements_covered_display": "87"
+    },
+    "src/plume_advanced/exporters/__init__.py": {
+      "covered_lines": 3,
+      "num_statements": 3,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/exporters/atomic.py": {
+      "covered_lines": 26,
+      "num_statements": 31,
+      "percent_covered": 83.87096774193549,
+      "percent_covered_display": "84",
+      "missing_lines": 5,
+      "excluded_lines": 0,
+      "percent_statements_covered": 83.87096774193549,
+      "percent_statements_covered_display": "84"
+    },
+    "src/plume_advanced/exporters/materials.py": {
+      "covered_lines": 91,
+      "num_statements": 100,
+      "percent_covered": 91.0,
+      "percent_covered_display": "91",
+      "missing_lines": 9,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.0,
+      "percent_statements_covered_display": "91"
+    },
+    "src/plume_advanced/exporters/scene.py": {
+      "covered_lines": 52,
+      "num_statements": 63,
+      "percent_covered": 82.53968253968254,
+      "percent_covered_display": "83",
+      "missing_lines": 11,
+      "excluded_lines": 0,
+      "percent_statements_covered": 82.53968253968254,
+      "percent_statements_covered_display": "83"
+    },
+    "src/plume_advanced/exporters/targets.py": {
+      "covered_lines": 316,
+      "num_statements": 342,
+      "percent_covered": 92.39766081871345,
+      "percent_covered_display": "92",
+      "missing_lines": 26,
+      "excluded_lines": 0,
+      "percent_statements_covered": 92.39766081871345,
+      "percent_statements_covered_display": "92"
+    },
+    "src/plume_advanced/media/__init__.py": {
+      "covered_lines": 2,
+      "num_statements": 2,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/media/manim_data.py": {
+      "covered_lines": 159,
+      "num_statements": 186,
+      "percent_covered": 85.48387096774194,
+      "percent_covered_display": "85",
+      "missing_lines": 27,
+      "excluded_lines": 0,
+      "percent_statements_covered": 85.48387096774194,
+      "percent_statements_covered_display": "85"
+    },
+    "src/plume_advanced/media/manim_typography.py": {
+      "covered_lines": 0,
+      "num_statements": 13,
+      "percent_covered": 0.0,
+      "percent_covered_display": "0",
+      "missing_lines": 13,
+      "excluded_lines": 0,
+      "percent_statements_covered": 0.0,
+      "percent_statements_covered_display": "0"
+    },
+    "src/plume_advanced/output_guard.py": {
+      "covered_lines": 29,
+      "num_statements": 30,
+      "percent_covered": 96.66666666666667,
+      "percent_covered_display": "97",
+      "missing_lines": 1,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.66666666666667,
+      "percent_statements_covered_display": "97"
+    },
+    "src/plume_advanced/pipeline/__init__.py": {
+      "covered_lines": 2,
+      "num_statements": 2,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/pipeline/checkpoints.py": {
+      "covered_lines": 83,
+      "num_statements": 87,
+      "percent_covered": 95.40229885057471,
+      "percent_covered_display": "95",
+      "missing_lines": 4,
+      "excluded_lines": 0,
+      "percent_statements_covered": 95.40229885057471,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/procedural.py": {
+      "covered_lines": 15,
+      "num_statements": 15,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/run_manifest.py": {
+      "covered_lines": 57,
+      "num_statements": 60,
+      "percent_covered": 95.0,
+      "percent_covered_display": "95",
+      "missing_lines": 3,
+      "excluded_lines": 0,
+      "percent_statements_covered": 95.0,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/stability.py": {
+      "covered_lines": 32,
+      "num_statements": 35,
+      "percent_covered": 91.42857142857143,
+      "percent_covered_display": "91",
+      "missing_lines": 3,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.42857142857143,
+      "percent_statements_covered_display": "91"
+    },
+    "src/plume_advanced/stages/__init__.py": {
+      "covered_lines": 6,
+      "num_statements": 6,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/stages/events.py": {
+      "covered_lines": 1018,
+      "num_statements": 1119,
+      "percent_covered": 90.97408400357462,
+      "percent_covered_display": "91",
+      "missing_lines": 101,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.97408400357462,
+      "percent_statements_covered_display": "91"
+    },
+    "src/plume_advanced/stages/floor_map.py": {
+      "covered_lines": 270,
+      "num_statements": 288,
+      "percent_covered": 93.75,
+      "percent_covered_display": "94",
+      "missing_lines": 18,
+      "excluded_lines": 0,
+      "percent_statements_covered": 93.75,
+      "percent_statements_covered_display": "94"
+    },
+    "src/plume_advanced/stages/geometry.py": {
+      "covered_lines": 1054,
+      "num_statements": 1242,
+      "percent_covered": 84.86312399355877,
+      "percent_covered_display": "85",
+      "missing_lines": 188,
+      "excluded_lines": 0,
+      "percent_statements_covered": 84.86312399355877,
+      "percent_statements_covered_display": "85"
+    },
+    "src/plume_advanced/stages/geometry_export.py": {
+      "covered_lines": 705,
+      "num_statements": 782,
+      "percent_covered": 90.153452685422,
+      "percent_covered_display": "90",
+      "missing_lines": 77,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.153452685422,
+      "percent_statements_covered_display": "90"
+    },
+    "src/plume_advanced/stages/geometry_types.py": {
+      "covered_lines": 356,
+      "num_statements": 365,
+      "percent_covered": 97.53424657534246,
+      "percent_covered_display": "98",
+      "missing_lines": 9,
+      "excluded_lines": 13,
+      "percent_statements_covered": 97.53424657534246,
+      "percent_statements_covered_display": "98"
+    },
+    "src/plume_advanced/stages/host_field.py": {
+      "covered_lines": 353,
+      "num_statements": 365,
+      "percent_covered": 96.71232876712328,
+      "percent_covered_display": "97",
+      "missing_lines": 12,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.71232876712328,
+      "percent_statements_covered_display": "97"
+    },
+    "src/plume_advanced/stages/network.py": {
+      "covered_lines": 2023,
+      "num_statements": 2201,
+      "percent_covered": 91.91276692412539,
+      "percent_covered_display": "92",
+      "missing_lines": 178,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.91276692412539,
+      "percent_statements_covered_display": "92"
+    },
+    "src/plume_advanced/stages/network_acceptance.py": {
+      "covered_lines": 125,
+      "num_statements": 126,
+      "percent_covered": 99.2063492063492,
+      "percent_covered_display": "99",
+      "missing_lines": 1,
+      "excluded_lines": 0,
+      "percent_statements_covered": 99.2063492063492,
+      "percent_statements_covered_display": "99"
+    },
+    "src/plume_advanced/stages/network_gallery_growth.py": {
+      "covered_lines": 324,
+      "num_statements": 331,
+      "percent_covered": 97.88519637462235,
+      "percent_covered_display": "98",
+      "missing_lines": 7,
+      "excluded_lines": 0,
+      "percent_statements_covered": 97.88519637462235,
+      "percent_statements_covered_display": "98"
+    },
+    "src/plume_advanced/stages/network_interconnected.py": {
+      "covered_lines": 255,
+      "num_statements": 272,
+      "percent_covered": 93.75,
+      "percent_covered_display": "94",
+      "missing_lines": 17,
+      "excluded_lines": 0,
+      "percent_statements_covered": 93.75,
+      "percent_statements_covered_display": "94"
+    },
+    "src/plume_advanced/stages/network_metadata.py": {
+      "covered_lines": 8,
+      "num_statements": 9,
+      "percent_covered": 88.88888888888889,
+      "percent_covered_display": "89",
+      "missing_lines": 1,
+      "excluded_lines": 0,
+      "percent_statements_covered": 88.88888888888889,
+      "percent_statements_covered_display": "89"
+    },
+    "src/plume_advanced/stages/network_quality.py": {
+      "covered_lines": 326,
+      "num_statements": 346,
+      "percent_covered": 94.21965317919076,
+      "percent_covered_display": "94",
+      "missing_lines": 20,
+      "excluded_lines": 4,
+      "percent_statements_covered": 94.21965317919076,
+      "percent_statements_covered_display": "94"
+    },
+    "src/plume_advanced/stages/network_systems.py": {
+      "covered_lines": 236,
+      "num_statements": 279,
+      "percent_covered": 84.58781362007169,
+      "percent_covered_display": "85",
+      "missing_lines": 43,
+      "excluded_lines": 0,
+      "percent_statements_covered": 84.58781362007169,
+      "percent_statements_covered_display": "85"
+    },
+    "src/plume_advanced/stages/network_topology.py": {
+      "covered_lines": 316,
+      "num_statements": 328,
+      "percent_covered": 96.34146341463415,
+      "percent_covered_display": "96",
+      "missing_lines": 12,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.34146341463415,
+      "percent_statements_covered_display": "96"
+    },
+    "src/plume_advanced/stages/section_field.py": {
+      "covered_lines": 835,
+      "num_statements": 868,
+      "percent_covered": 96.19815668202764,
+      "percent_covered_display": "96",
+      "missing_lines": 33,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.19815668202764,
+      "percent_statements_covered_display": "96"
+    },
+    "src/plume_advanced/stages/surface_relief.py": {
+      "covered_lines": 122,
+      "num_statements": 124,
+      "percent_covered": 98.38709677419355,
+      "percent_covered_display": "98",
+      "missing_lines": 2,
+      "excluded_lines": 0,
+      "percent_statements_covered": 98.38709677419355,
+      "percent_statements_covered_display": "98"
+    },
+    "src/plume_advanced/stages/voxel_topology.py": {
+      "covered_lines": 37,
+      "num_statements": 38,
+      "percent_covered": 97.36842105263158,
+      "percent_covered_display": "97",
+      "missing_lines": 1,
+      "excluded_lines": 0,
+      "percent_statements_covered": 97.36842105263158,
+      "percent_statements_covered_display": "97"
+    },
+    "src/plume_advanced/validation.py": {
+      "covered_lines": 252,
+      "num_statements": 316,
+      "percent_covered": 79.74683544303798,
+      "percent_covered_display": "80",
+      "missing_lines": 64,
+      "excluded_lines": 0,
+      "percent_statements_covered": 79.74683544303798,
+      "percent_statements_covered_display": "80"
+    },
+    "src/plume_advanced/visualization/__init__.py": {
+      "covered_lines": 7,
+      "num_statements": 7,
+      "percent_covered": 100.0,
+      "percent_covered_display": "100",
+      "missing_lines": 0,
+      "excluded_lines": 0,
+      "percent_statements_covered": 100.0,
+      "percent_statements_covered_display": "100"
+    },
+    "src/plume_advanced/visualization/drained_pools.py": {
+      "covered_lines": 113,
+      "num_statements": 119,
+      "percent_covered": 94.95798319327731,
+      "percent_covered_display": "95",
+      "missing_lines": 6,
+      "excluded_lines": 0,
+      "percent_statements_covered": 94.95798319327731,
+      "percent_statements_covered_display": "95"
+    },
+    "src/plume_advanced/visualization/events.py": {
+      "covered_lines": 64,
+      "num_statements": 77,
+      "percent_covered": 83.11688311688312,
+      "percent_covered_display": "83",
+      "missing_lines": 13,
+      "excluded_lines": 0,
+      "percent_statements_covered": 83.11688311688312,
+      "percent_statements_covered_display": "83"
+    },
+    "src/plume_advanced/visualization/floor_map.py": {
+      "covered_lines": 73,
+      "num_statements": 98,
+      "percent_covered": 74.48979591836735,
+      "percent_covered_display": "74",
+      "missing_lines": 25,
+      "excluded_lines": 0,
+      "percent_statements_covered": 74.48979591836735,
+      "percent_statements_covered_display": "74"
+    },
+    "src/plume_advanced/visualization/geometry.py": {
+      "covered_lines": 38,
+      "num_statements": 294,
+      "percent_covered": 12.92517006802721,
+      "percent_covered_display": "13",
+      "missing_lines": 256,
+      "excluded_lines": 0,
+      "percent_statements_covered": 12.92517006802721,
+      "percent_statements_covered_display": "13"
+    },
+    "src/plume_advanced/visualization/host_field.py": {
+      "covered_lines": 53,
+      "num_statements": 55,
+      "percent_covered": 96.36363636363636,
+      "percent_covered_display": "96",
+      "missing_lines": 2,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.36363636363636,
+      "percent_statements_covered_display": "96"
+    },
+    "src/plume_advanced/visualization/interconnected.py": {
+      "covered_lines": 0,
+      "num_statements": 68,
+      "percent_covered": 0.0,
+      "percent_covered_display": "0",
+      "missing_lines": 68,
+      "excluded_lines": 0,
+      "percent_statements_covered": 0.0,
+      "percent_statements_covered_display": "0"
+    },
+    "src/plume_advanced/visualization/network.py": {
+      "covered_lines": 279,
+      "num_statements": 320,
+      "percent_covered": 87.1875,
+      "percent_covered_display": "87",
+      "missing_lines": 41,
+      "excluded_lines": 0,
+      "percent_statements_covered": 87.1875,
+      "percent_statements_covered_display": "87"
+    },
+    "src/plume_advanced/visualization/network_systems.py": {
+      "covered_lines": 0,
+      "num_statements": 73,
+      "percent_covered": 0.0,
+      "percent_covered_display": "0",
+      "missing_lines": 73,
+      "excluded_lines": 0,
+      "percent_statements_covered": 0.0,
+      "percent_statements_covered_display": "0"
+    },
+    "src/plume_advanced/visualization/network_topology.py": {
+      "covered_lines": 0,
+      "num_statements": 68,
+      "percent_covered": 0.0,
+      "percent_covered_display": "0",
+      "missing_lines": 68,
+      "excluded_lines": 0,
+      "percent_statements_covered": 0.0,
+      "percent_statements_covered_display": "0"
+    },
+    "src/plume_advanced/visualization/section_field.py": {
+      "covered_lines": 174,
+      "num_statements": 192,
+      "percent_covered": 90.625,
+      "percent_covered_display": "91",
+      "missing_lines": 18,
+      "excluded_lines": 0,
+      "percent_statements_covered": 90.625,
+      "percent_statements_covered_display": "91"
+    },
+    "src/plume_advanced/world.py": {
+      "covered_lines": 159,
+      "num_statements": 174,
+      "percent_covered": 91.37931034482759,
+      "percent_covered_display": "91",
+      "missing_lines": 15,
+      "excluded_lines": 0,
+      "percent_statements_covered": 91.37931034482759,
+      "percent_statements_covered_display": "91"
+    }
+  },
+  "audit_logs": {
+    "tmp/cleanup_review_20260912/pytest.log": {
+      "sha256": "2400c14c97de920d6ca6c4408940434cf877ce1d787b81faf5e6c701b15f9a99",
+      "bytes": 13698
+    },
+    "tmp/cleanup_review_20260912/coverage.json": {
+      "sha256": "9b3a3dd260a155041df44c5b17ea17a9af123b50ce7ce67450f12b6a7cd40bcd",
+      "bytes": 669014
+    },
+    "tmp/cleanup_review_20260912/build.log": {
+      "sha256": "6f7e46767c4a159b00a4aa17db44805b9d9c33c081299a8df3ec2802e620dfc1",
+      "bytes": 40793
+    },
+    "tmp/cleanup_review_20260912/ci_missing_psutil.log": {
+      "sha256": "0698a050710caea26b93ae2a7846e08969f6c00816cc3e0dfbca136876330439",
+      "bytes": 999
+    },
+    "tmp/cleanup_review_20260912/reproduce_findings.py": {
+      "sha256": "988b6db504b9618268fe95548393b8784d04f5da9385f5ac4f2334bde011b73f",
+      "bytes": 3407
+    },
+    "tmp/cleanup_review_20260912/audit_structure.py": {
+      "sha256": "d79767d3ec5cd2939a11d50da0d9d7d6e0668892213b5b76caa1eef7cf831992",
+      "bytes": 3800
+    },
+    "tmp/cleanup_review_20260912/audit_contracts.py": {
+      "sha256": "493691e09eb412230dc37a791ea83732aec57117979d1e90ee69f7cdb27a785c",
+      "bytes": 3750
+    }
+  },
+  "limitations": [
+    "Static searches require manual interpretation for callbacks, public APIs, metadata and supported modes.",
+    "Local full test run includes paper dependencies; missing psutil was separately simulated during test collection.",
+    "Python 3.12 CI and native Blender/Unity/Unreal/Flowy were not run in this audit.",
+    "Frozen scientific records and generated assets were inventoried, not rewritten."
+  ]
+}

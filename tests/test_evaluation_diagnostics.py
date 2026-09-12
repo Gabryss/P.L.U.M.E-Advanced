@@ -10,7 +10,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from plume_advanced.evaluation.metrics.continuity import longitudinal_continuity  # noqa: E402
+from plume_advanced.evaluation.continuity import longitudinal_continuity  # noqa: E402
 from plume_advanced.evaluation.serialization import diagnostics_to_json  # noqa: E402
 
 try:

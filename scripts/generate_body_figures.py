@@ -78,7 +78,8 @@ def main(argv: list[str] | None = None) -> int:
             run_output.mkdir()
             command = (
                 sys.executable,
-                str(ROOT / "scripts" / "generate_cave.py"),
+                "-m",
+                "plume_advanced.cli",
                 "--config",
                 str(args.config),
                 "--body",

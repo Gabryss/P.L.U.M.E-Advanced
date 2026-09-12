@@ -11,7 +11,7 @@ import hashlib
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from scipy.spatial import cKDTree
@@ -151,7 +151,7 @@ def _crossings(chains: dict, network: CaveNetwork) -> list[dict]:
     if not pieces:
         return []
     pairs = cKDTree(centers).query_pairs(2 * max(radii) + 1e-6, output_type="ndarray")
-    found = {}
+    found: dict[tuple[int, int], list[dict[str, Any]]] = {}
     node_xy = {n.node_id: np.array([n.x, n.y]) for n in network.nodes}
     for first, second in sorted(map(tuple, pairs.tolist())):
         s, i, a, b, w = pieces[first]
@@ -226,7 +226,7 @@ def assess_network(
         len(network.segments),
     )
     indegree = {node: 0 for node in nodes}
-    outgoing_edges = {node: [] for node in nodes}
+    outgoing_edges: dict[int, list[int]] = {node: [] for node in nodes}
     for s in network.segments:
         if s.start_node_id in nodes and s.end_node_id in nodes:
             outgoing_edges[s.start_node_id].append(s.end_node_id)
@@ -429,14 +429,14 @@ def assess_network(
         )
         if start and end:
             extent = float(np.hypot(end.x - start.x, end.y - start.y))
-    target = network.config.target_route_length_m
+    target_extent = network.config.target_route_length_m
     if host is not None:
-        target = min(target, float(np.hypot(np.ptp(host.x_coords), np.ptp(host.y_coords))))
+        target_extent = min(target_extent, float(np.hypot(np.ptp(host.x_coords), np.ptp(host.y_coords))))
     check(
         "minimum_route_extent",
-        extent >= controls.minimum_route_extent_fraction * target,
+        extent >= controls.minimum_route_extent_fraction * target_extent,
         extent,
-        controls.minimum_route_extent_fraction * target,
+        controls.minimum_route_extent_fraction * target_extent,
     )
     if checks[0]["passed"] and not invalid and len(chains) == len(network.segments):
         crossings = _crossings(chains, network)
@@ -582,7 +582,7 @@ def assess_sections(network: CaveNetwork, sections: SectionField) -> dict:
                     and max(a[5] - b[6], b[5] - a[6]) < controls.minimum_crossing_clearance_m
                 ):
                     proximity.extend([int(a[0]), int(b[0])])
-    connections = {}
+    connections: dict[int, list[tuple[int, float]]] = {}
     for segment in network.segments:
         if segment.segment_id not in fields or not fields[segment.segment_id].samples:
             continue

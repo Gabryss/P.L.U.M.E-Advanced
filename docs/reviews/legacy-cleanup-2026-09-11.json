@@ -1,0 +1,162 @@
+{
+  "checkpoint_commit": "32cbcee331e496deebb34002002ae82e09b05cf2",
+  "checkpoint_remote_branch": "origin/lava-emplacement-history",
+  "project_schema_version": 4,
+  "experiment_schema_version": 1,
+  "baseline": {
+    "project_test_failures": 9,
+    "type_errors": 47,
+    "extra_texture_harness_failure_rechecked_passed": true,
+    "project_failure_tests": [
+      "tests/test_cli.py::test_pipeline_resume_reuses_stage_before_continuing_orchestration",
+      "tests/test_events.py::GeologicalEventTests::test_geometry_consumes_event_field",
+      "tests/test_geometry.py::GeometryTests::test_geometry_stage_stamps_voxels_and_builds_isosurface_mesh",
+      "tests/test_local_geometry.py::test_local_cut_matches_full_mesh_and_retains_adjacent_branch",
+      "tests/test_stability.py::test_failed_roof_collapses_even_without_optional_events[dense]",
+      "tests/test_stability.py::test_failed_roof_collapses_even_without_optional_events[tiled]",
+      "tests/test_stability.py::test_geometry_scale_cannot_bypass_roof_stability",
+      "tests/test_stability.py::test_room_union_keeps_an_existing_loop_pillar[dense]",
+      "tests/test_stability.py::test_room_union_keeps_an_existing_loop_pillar[tiled]"
+    ]
+  },
+  "semantic_comparison": {
+    "acceptance_enabled": false,
+    "all_equal": true,
+    "before": {
+      "general": {
+        "host": "01f578f2fe8e28b4583bb94b7fd837cd7b3cc0e3357ad076c57460be946833dd",
+        "network": "0a7e420e5ddadb3abc7510cad9b579967daf7c838f67e0a0cd529cd6cae3c2ca",
+        "sections": "4b0e9ad915c483e457b9defe8d6a36455ac376f164a8415a84d401864c9a4d0f",
+        "segments": 11,
+        "samples": 75
+      },
+      "trunk": {
+        "host": "cf92eb12c804662625f50faad22fdaf6f76f5f4d0783c4ab82b5bcdd23778f14",
+        "network": "0f6e1c18d4262afc64e18c6b24c66a5f96e62e0bb878dc0b54ccd428c5a79648",
+        "sections": "da0c3bde1ef16344bceec503176fb6df763037247b8ea0b5ff5c31f22af8bc57",
+        "segments": 8,
+        "samples": 490
+      },
+      "independent": {
+        "host": "fd17bd5c36e39d69c23eb3f3c1d40d47a6e884db3a04b9999d33a688d05fb647",
+        "network": "0d30ea0d4efa553b91c7a6a4018fb31239f1af29da65f9b817fb5ea3b5e4f85d",
+        "sections": "68e3dd0ffc470967ae108c08d5e60c074efbc27bb69aa4d583ccf6fc90c25e30",
+        "segments": 8,
+        "samples": 533
+      },
+      "interconnected": {
+        "host": "042fac24abaef59bcfea3a5efd31864f46c77c80bd6df2ea63450a7ece139b8a",
+        "network": "6808a3cdb9ea71448633be06a2cbeb3aa20e920d31f2839954d3c6692df8e31b",
+        "sections": "b03b0dea7069656496f402de91837aae36a62d614b784f11ae287a564eb69dd7",
+        "segments": 10,
+        "samples": 989
+      }
+    },
+    "after": {
+      "general": {
+        "host": "01f578f2fe8e28b4583bb94b7fd837cd7b3cc0e3357ad076c57460be946833dd",
+        "network": "0a7e420e5ddadb3abc7510cad9b579967daf7c838f67e0a0cd529cd6cae3c2ca",
+        "sections": "4b0e9ad915c483e457b9defe8d6a36455ac376f164a8415a84d401864c9a4d0f",
+        "segments": 11,
+        "samples": 75
+      },
+      "trunk": {
+        "host": "cf92eb12c804662625f50faad22fdaf6f76f5f4d0783c4ab82b5bcdd23778f14",
+        "network": "0f6e1c18d4262afc64e18c6b24c66a5f96e62e0bb878dc0b54ccd428c5a79648",
+        "sections": "da0c3bde1ef16344bceec503176fb6df763037247b8ea0b5ff5c31f22af8bc57",
+        "segments": 8,
+        "samples": 490
+      },
+      "independent": {
+        "host": "fd17bd5c36e39d69c23eb3f3c1d40d47a6e884db3a04b9999d33a688d05fb647",
+        "network": "0d30ea0d4efa553b91c7a6a4018fb31239f1af29da65f9b817fb5ea3b5e4f85d",
+        "sections": "68e3dd0ffc470967ae108c08d5e60c074efbc27bb69aa4d583ccf6fc90c25e30",
+        "segments": 8,
+        "samples": 533
+      },
+      "interconnected": {
+        "host": "042fac24abaef59bcfea3a5efd31864f46c77c80bd6df2ea63450a7ece139b8a",
+        "network": "6808a3cdb9ea71448633be06a2cbeb3aa20e920d31f2839954d3c6692df8e31b",
+        "sections": "b03b0dea7069656496f402de91837aae36a62d614b784f11ae287a564eb69dd7",
+        "segments": 10,
+        "samples": 989
+      }
+    },
+    "case_configs": {
+      "general": "src/plume_advanced/default_project.toml",
+      "trunk": "config/earth_short_single.toml",
+      "independent": "config/earth_independent_gallery.toml",
+      "interconnected": "config/earth_short_interconnected.toml"
+    },
+    "environment": {
+      "numpy": "2.5.1",
+      "scipy": "1.18.0",
+      "scikit-image": "0.26.0",
+      "trimesh": "4.12.2"
+    },
+    "seeds": {
+      "general": {
+        "host": 1364250741,
+        "network": 2236472020,
+        "sections": 3809103037
+      },
+      "trunk": {
+        "host": 1196268724,
+        "network": 2302742251,
+        "sections": 1086912834
+      },
+      "independent": {
+        "host": 1885518597,
+        "network": 3289236979,
+        "sections": 3898275614
+      },
+      "interconnected": {
+        "host": 1885518597,
+        "network": 3289236979,
+        "sections": 3898275614
+      }
+    }
+  },
+  "validation": {
+    "final_suite_complete": true,
+    "typecheck": "84 source files pass",
+    "script_help": "27 commands pass; Blender utility compiles",
+    "package_build": "wheel and sdist passed",
+    "installed_wheel": "imports and packaged schema-4 config passed",
+    "dependency_check": "42 packages compatible",
+    "documentation_links": "all changed guides and README pass",
+    "lockfile": "uv lock --check --offline passed; only openpyxl and et-xmlfile removed",
+    "python_version": "3.13.5",
+    "internal_import_graph": "no missing modules across package, scripts, tests and media scenes",
+    "evaluation_alias_followup": "13 passed after removing unused aliases",
+    "known_skip": "Manim typography module: optional video dependency is not installed",
+    "tests_passed": 410,
+    "subtests_passed": 59,
+    "skipped_modules": 1,
+    "test_duration_seconds": 702.76,
+    "coverage_percent": 84.05364179483921,
+    "coverage_required_percent": 70,
+    "lint": "passed",
+    "compileall": "passed",
+    "diff_check": "passed"
+  },
+  "review_scope": {
+    "python_files_scanned": 162,
+    "changed_source_files": 27,
+    "net_source_lines_removed": 874,
+    "frozen_paper_files_modified": false,
+    "unused_name_candidates_remaining": "3 pytest framework hooks; retained",
+    "active_source_sha256": "c8c9d5ed00297514a8a0f64222f402d9bf51b3bffd33a4ab8b9af9eb336107f6"
+  },
+  "build_artifacts": {
+    "plume_advanced-0.1.0-py3-none-any.whl": "00182041b27809efd2a7cf67937013a6a22da47d8047b2c821c0dc7533332ea9",
+    ".gitignore": "684888c0ebb17f374298b65ee2807526c066094c701bcc7ebbe1c1095f494fc1",
+    "plume_advanced-0.1.0.tar.gz": "3e0631a98655f8e55eb9b0a4e292500a39ce9bd402c2b288824623f0e5026266"
+  },
+  "delivery": {
+    "checkpoint_pushed": true,
+    "cleanup_committed": false,
+    "cleanup_state": "local changes ready for review",
+    "existing_inspection_exports_preserved": true
+  }
+}

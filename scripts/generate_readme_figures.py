@@ -84,7 +84,7 @@ def host_plot(host, out, label):
     panels = [(host.elevation, "Terrain elevation", "m", "terrain"),
               (host.cover_thickness, "Available cover", "m", "cividis"),
               (host.roof_competence, "Roof competence proxy", "index", "viridis"),
-              (host.routing_cost, "Combined routing cost", "index", "magma_r")]
+              (host.growth_cost, "Combined routing cost", "index", "magma_r")]
     for ax, (values, title, units, cmap) in zip(axes.flat, panels, strict=True):
         im = ax.imshow(values.T, origin="lower", extent=(y0, y1, x0, x1),
                        aspect="auto", cmap=cmap)

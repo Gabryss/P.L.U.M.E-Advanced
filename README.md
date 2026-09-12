@@ -74,7 +74,7 @@ Install only the additional features you need:
 |---|---|---|
 | Development and tests | `uv sync --locked --group dev` | pytest, pytest-cov, Ruff, mypy |
 | Rocky rock props | `uv sync --locked --extra rocks` | Pinned [Rocky](https://github.com/Gabryss/Rocky) Git dependency; Git/network access during installation |
-| Reference data and paper experiments | `uv sync --locked --extra paper` | laspy/lazrs, psutil, openpyxl; reference data obtained separately |
+| Reference data and paper experiments | `uv sync --locked --extra paper` | laspy/lazrs, psutil; reference data obtained separately |
 | Explanatory animations | `uv sync --locked --extra video` | Manim 0.21.x; system setup in the [video project](paper/media/video/README.md) |
 
 Combine selections in one command when needed, for example `uv sync --locked --group dev --extra rocks --extra paper`. The equivalent pip extras are `.[rocks]`, `.[paper]`, and `.[video]`; `dev` is a uv dependency group, not a pip extra.
@@ -135,6 +135,8 @@ uv run --no-sync plume-generate \
 ```
 
 `config/project.toml` is the **general environment scenario**: it enables Rocky props, structural events, texture displacement, diagnostics, and all application exports. Install the rocks extra and provide its textures before running it. Its height distribution and resolution differ from `earth_tube_only.toml`; the general default is not the low Earth inspection scenario.
+
+**Portable rock materials:** the full short/long interconnected presets now embed a 4K rock tile with color, normal and roughness maps. See [material setup and existing-run retexturing](docs/materials.md) for configuration, Blender/Unity import settings and the distinction between texture detail and geometry. No-rocks runs can still have textured cave walls.
 
 For an untextured full pipeline, copy a configuration and set the following keys **inside its existing tables**; do not append duplicate TOML tables:
 
@@ -397,7 +399,7 @@ Use [config/project.toml](config/project.toml) for the general environment and [
 
 Without `--config`, the main command first looks for `config/project.toml` in the working directory, then in the source checkout, then uses the packaged default. Always pass a configuration explicitly for a reproducible experiment.
 
-- `schema_version = 3` is current. Versions 1 and 2 have compatibility migrations; unknown keys and invalid parameter combinations are rejected.
+- `schema_version = 4` is required. Retired schemas and unknown keys are rejected; use a maintained preset. See the [cleanup and migration guide](docs/legacy-cleanup.md) for removed controls and historical reproduction.
 - Distances use metres unless stated otherwise; gravity uses m/s², density kg/m³, temperatures K, and ages s. Some controls and recorded flow quantities are procedural scales rather than calibrated physical measurements.
 - The root `procedural_seed` derives separate named seeds for host, network, sections, events, and geometry. Explicit stage `random_seed` values override the derived values. Keeping the configuration, code, dependencies, and inputs fixed is necessary for reproducibility.
 - Omitted values come from dataclass and body defaults. Some supplied distances are also scaled by the body or flow regime. Development mode then crops generation extent. The resolved JSON, rather than the handwritten TOML alone, describes the actual run.
@@ -422,23 +424,22 @@ for all thresholds, reproduction rules and the inexpensive preview workflow.
 |---|---|---|
 | `[world]` | Body, material, gravity, formation limits, strength | `body`, `material`, `gravity_m_s2`, `maximum_passage_width_m`, `maximum_room_width_m`, `roof_safety_factor` |
 | `[flow_regime]` | Dimensionless eruption scenario | `supply_rate_scale`, `duration_scale`, `inflation`, `distributary_tendency`, `cooling_rate_scale` |
-| `[run]` | Extent, quality, plots, overwrite behavior | `dev_mode`, `dev_max_route_length_m`, `quality`, `render_diagnostics` |
+| `[run]` | Extent, quality, plots, overwrite behavior | `dev_mode`, `dev_max_route_length_m`, `dev_max_lobe_paths`, `quality`, `render_diagnostics` |
 | `[export]` | Destination package and collision output | `target`, `format`, `generate_collision` |
 | `[host_field]` and nested tables | Host domain, terrain variation, routing contributions | `apply_body_scaling`, `grid`, `ranges`, `wave_ranges`, `routing_weights` |
-| `[network]` | Sources, branch opportunities, growth backend | `growth_model`, `emplacement_backend`, `network_density`, `lobe_launch_rate`, `loop_probability`, `capture_probability`, `chamber_gain` |
+| `[network]` | Sources, branch opportunities, growth backend | `emplacement_backend`, `network_density`, `lobe_launch_rate`, `loop_probability`, `capture_probability`, `chamber_gain` |
 | `[network.quality]` | Deterministic morphology acceptance before meshing | `enabled`, `max_attempts`, `repair_passes`, bend, width, repetition, crossing and grade limits |
 | `[network.systems]` | Several arterial systems growing together | `count`, source spacing, routing variation, capture/release distances, minimum passage persistence |
 | `[network.topology]` | General, dominant-gallery or interconnected morphology | `style`, `generation_mode`, width variation; gallery-specific island and dominance rules |
 | `[network.interconnection]` | Sustained parallel routes and distributed connections | Parallel fraction and persistence, per-window coverage, maximum single-channel run, source independence, junction angles and event spacing over distance |
 | `[network.lobe_growth]` | Breakout paths, competition, cooling, coalescence | `path_count`, growth weights, flux budgets, thermal thresholds |
 | `[network.emplacement_history]` | Successive phases, reoccupation, stacking, pools | Phase count, stacked-level fraction, retirement, `drained_pool_*` |
-| `[network.braid_grammar]` | Explicit legacy network mode | Compatibility controls for `growth_model = "legacy_braid"` |
 | `[section_field]` | Sample spacing, profile shapes, vertical placement | `sampling_policy`, height ratios, width variation, floor/roof shape, junction transitions |
 | `[floor_map]` | Intrinsic floor sampling and clearance filtering | `lateral_spacing_m`, `plan_resolution_m`, `minimum_clearance_m` |
 | `[events]` | Optional structural modifiers and loose debris | `enabled`, `include_rock_props`, `enabled_kinds`, density, sizes, `use_rocky_meshes` |
 | `[geometry]` | Volume resolution, sweeps, relief, meshing, visual finish | `resolution_policy`, `voxel_size`, `storage_mode`, `surface_*`, `cave_*` |
 
-The normal network path is `growth_model = "hybrid_lobe"` with `emplacement_backend = "internal"`. `downflow_reference` is a lightweight perturbed-terrain comparator. `flowy` requires a compatible external executable configured with `flowy_executable`; it is not installed by the core environment. In the general single-system grammar, `network_density` ranges from 0 to 3: zero disables lobe branches, while source/backbone geometry can remain. Branch-opportunity controls alter stochastic tendencies, not guaranteed branch counts. The `trunk_dominated` style requires internal emplacement. Its default `generation_mode = "layout"` uses prescribed topology construction; `generation_mode = "independent_growth"` uses independent routes plus the supported history controls listed in [the integrated-mode guide](docs/independent_gallery_growth.md). Other legacy lobe/braid controls are inactive in that mode.
+The general single-system generator uses flux-driven lobe growth with `emplacement_backend = "internal"`. `downflow_reference` is a lightweight perturbed-terrain comparator. `flowy` requires a compatible external executable configured with `flowy_executable`; it is not installed by the core environment. In the general single-system grammar, `network_density` ranges from 0 to 3: zero disables lobe branches, while source/backbone geometry can remain. Branch-opportunity controls alter stochastic tendencies, not guaranteed branch counts. The `trunk_dominated` style requires internal emplacement. Its default `generation_mode = "layout"` uses prescribed topology construction; `generation_mode = "independent_growth"` uses independent routes plus the supported history controls listed in [the integrated-mode guide](docs/independent_gallery_growth.md). General-mode lobe controls that are not listed there do not affect independent gallery growth.
 
 ### Body defaults versus physical limits
 

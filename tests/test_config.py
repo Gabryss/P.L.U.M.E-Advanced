@@ -13,15 +13,41 @@ from plume_advanced.stages.section_field import SectionField, SectionFieldConfig
 
 
 class ProjectConfigurationTests(unittest.TestCase):
+    def test_historical_and_missing_schemas_require_current_presets(self) -> None:
+        for declaration in ("", "schema_version = 1", "schema_version = 2", "schema_version = 3",
+                            "schema_version = 4.0", 'schema_version = "4"'):
+            with self.subTest(declaration=declaration):
+                with self.assertRaisesRegex(ValueError, "expected 4.*current config preset"):
+                    self._load_minimal(declaration)
+
+    def test_retired_controls_are_rejected_in_current_schema(self) -> None:
+        for section, setting in (
+            ("network", 'growth_model = "legacy_braid"'),
+            ("network", "spur_count = 4"),
+            ("network.braid_grammar", "zone_count = [1, 2]"),
+            ("run", "dev_max_braid_zones = 2"),
+            ("events", 'debris_density_basis = "length"'),
+            ("events", "rock_density_per_100m = 2.0"),
+        ):
+            with self.subTest(section=section, setting=setting):
+                with self.assertRaisesRegex(ValueError, "Unknown configuration keys"):
+                    self._load_minimal(f"schema_version = 4\n[{section}]\n{setting}\n")
+
+    def test_all_maintained_presets_load(self) -> None:
+        paths = sorted((ROOT / "config").glob("*.toml"))
+        paths.append(ROOT / "src/plume_advanced/default_project.toml")
+        for path in paths:
+            with self.subTest(path=path.name):
+                self.assertEqual(load_project_config(path).schema_version, 4)
+
     def test_project_uses_resolved_earth_profile_and_named_seeds(self) -> None:
         config = load_project_config(ROOT / "config" / "project.toml")
 
-        self.assertEqual(config.schema_version, 3)
+        self.assertEqual(config.schema_version, 4)
         self.assertEqual(config.world.body.name, "earth")
         self.assertEqual(config.section_field.maximum_tube_width, 10.0)
         self.assertEqual(config.section_field.chamber_max_tube_width, 28.0)
         self.assertEqual(config.network.maximum_passage_radius, 5.0)
-        self.assertEqual(config.network.growth_model, "hybrid_lobe")
         self.assertEqual(config.network.network_density, 3.0)
         self.assertEqual(config.network.lobe_growth.path_count, (6, 6))
         self.assertEqual(config.network.emplacement_history.phase_count, (3, 5))
@@ -85,7 +111,7 @@ class ProjectConfigurationTests(unittest.TestCase):
     def test_body_selection_changes_generation_limits_and_stability(self) -> None:
         earth = self._load_minimal(
             """
-            schema_version = 2
+            schema_version = 4
             procedural_seed = 7
             [world]
             body = "earth"
@@ -93,7 +119,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         )
         moon = self._load_minimal(
             """
-            schema_version = 2
+            schema_version = 4
             procedural_seed = 7
             [world]
             body = "moon"
@@ -108,8 +134,8 @@ class ProjectConfigurationTests(unittest.TestCase):
             earth.host_field.grid.width,
         )
         self.assertGreater(
-            moon.network.braid_grammar.half_length_fraction[1],
-            earth.network.braid_grammar.half_length_fraction[1],
+            moon.network.source_band_length,
+            earth.network.source_band_length,
         )
         self.assertLess(
             moon.world.roof_demand_ratio(10.0, 8.0),
@@ -147,12 +173,12 @@ class ProjectConfigurationTests(unittest.TestCase):
             configs["moon"].host_field.grid.height,
         )
         self.assertLess(
-            configs["earth"].network.braid_grammar.half_length_fraction[1],
-            configs["mars"].network.braid_grammar.half_length_fraction[1],
+            configs["earth"].network.source_band_length,
+            configs["mars"].network.source_band_length,
         )
         self.assertLess(
-            configs["mars"].network.braid_grammar.half_length_fraction[1],
-            configs["moon"].network.braid_grammar.half_length_fraction[1],
+            configs["mars"].network.source_band_length,
+            configs["moon"].network.source_band_length,
         )
         self.assertEqual(
             [configs[body].geometry.voxel_size for body in configs],
@@ -168,7 +194,7 @@ class ProjectConfigurationTests(unittest.TestCase):
     def test_body_resolution_policy_tracks_run_quality(self) -> None:
         standard = self._load_minimal(
             """
-            schema_version = 2
+            schema_version = 4
             [world]
             body = "earth"
             [run]
@@ -179,7 +205,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         )
         production = self._load_minimal(
             """
-            schema_version = 2
+            schema_version = 4
             [world]
             body = "earth"
             [run]
@@ -199,7 +225,7 @@ class ProjectConfigurationTests(unittest.TestCase):
     def test_fixed_geometry_resolution_remains_available(self) -> None:
         fixed = self._load_minimal(
             """
-            schema_version = 2
+            schema_version = 4
             [geometry]
             resolution_policy = "fixed"
             voxel_size = 2.25
@@ -213,7 +239,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "cannot be combined"):
             self._load_minimal(
                 """
-                schema_version = 2
+                schema_version = 4
                 [geometry]
                 resolution_policy = "body"
                 voxel_size = 2.0
@@ -223,7 +249,7 @@ class ProjectConfigurationTests(unittest.TestCase):
     def test_flow_regime_changes_morphology_without_changing_body_physics(self) -> None:
         baseline = self._load_minimal(
             """
-            schema_version = 2
+            schema_version = 4
             procedural_seed = 7
             [world]
             body = "mars"
@@ -237,7 +263,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         )
         sustained = self._load_minimal(
             """
-            schema_version = 2
+            schema_version = 4
             procedural_seed = 7
             [world]
             body = "mars"
@@ -264,12 +290,12 @@ class ProjectConfigurationTests(unittest.TestCase):
             baseline.network.chamber_radius_fraction,
         )
         self.assertGreater(
-            sustained.network.spur_count,
-            baseline.network.spur_count,
+            sustained.network.source_flux,
+            baseline.network.source_flux,
         )
         self.assertGreater(
-            sustained.network.braid_grammar.zone_count[1],
-            baseline.network.braid_grammar.zone_count[1],
+            sustained.network.lobe_growth.path_count[1],
+            baseline.network.lobe_growth.path_count[1],
         )
 
     def test_world_body_override_uses_the_selected_bodys_default_material(self) -> None:
@@ -285,7 +311,7 @@ class ProjectConfigurationTests(unittest.TestCase):
     def test_run_config_can_explicitly_bypass_output_confirmation(self) -> None:
         config = self._load_minimal(
             """
-            schema_version = 2
+            schema_version = 4
             [run]
             overwrite_outputs = true
             """
@@ -296,7 +322,7 @@ class ProjectConfigurationTests(unittest.TestCase):
     def test_event_disable_returns_empty_field_without_optional_provider(self) -> None:
         config = self._load_minimal(
             """
-            schema_version = 2
+            schema_version = 4
             [events]
             enabled = false
             use_rocky_meshes = true
@@ -321,7 +347,7 @@ class ProjectConfigurationTests(unittest.TestCase):
             config_path.write_text(
                 textwrap.dedent(
                     """
-                    schema_version = 2
+                    schema_version = 4
                     [events]
                     enabled = false
                     rocky_source_path = "../vendor/Rocky/src"
@@ -350,7 +376,7 @@ class ProjectConfigurationTests(unittest.TestCase):
     def test_manifest_records_canonical_coordinates_and_resolved_world(self) -> None:
         config = self._load_minimal(
             """
-            schema_version = 2
+            schema_version = 4
             [world]
             body = "mars"
             [export]
@@ -367,44 +393,12 @@ class ProjectConfigurationTests(unittest.TestCase):
         self.assertEqual(manifest["geometry"]["resolution_policy"], "fixed")
         self.assertEqual(manifest["canonical_coordinates"]["up_axis"], "Z")
 
-    def test_schema_v1_minimal_configuration_migrates_to_current(self) -> None:
-        config = self._load_minimal("procedural_seed = 11")
-
-        self.assertEqual(config.schema_version, 3)
-        self.assertEqual(config.world.body.name, "earth")
-        self.assertFalse(config.run.dev_mode)
-
-    def test_schema_v2_removed_scaffolding_migrates_when_it_was_inactive(self) -> None:
-        config = self._load_minimal(
-            """
-            schema_version = 2
-            [export]
-            quality = "preview"
-            generate_visual = true
-            generate_lods = false
-            generate_wall_shell = false
-            wall_thickness_m = 0.5
-            """
-        )
-
-        self.assertEqual(config.schema_version, 3)
-        self.assertEqual(config.export.target, "blender")
-
-    def test_schema_v2_enabled_removed_capability_cannot_be_migrated(self) -> None:
-        with self.assertRaisesRegex(ValueError, "generate_lods"):
-            self._load_minimal(
-                """
-                schema_version = 2
-                [export]
-                generate_lods = true
-                """
-            )
 
     def test_invalid_body_has_actionable_error(self) -> None:
         with self.assertRaisesRegex(ValueError, "world.body must be one of"):
             self._load_minimal(
                 """
-                schema_version = 2
+                schema_version = 4
                 [world]
                 body = "venus"
                 """
@@ -419,7 +413,7 @@ class ProjectConfigurationTests(unittest.TestCase):
                 ):
                     self._load_minimal(
                         f"""
-                        schema_version = 2
+                        schema_version = 4
                         [network]
                         network_density = {value}
                         """
@@ -448,7 +442,7 @@ class ProjectConfigurationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     self._load_minimal(
                         f"""
-                        schema_version = 2
+                        schema_version = 4
                         [network.lobe_growth]
                         {name} = {value}
                         """
@@ -458,7 +452,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unknown top-level"):
             self._load_minimal(
                 """
-                schema_version = 2
+                schema_version = 4
                 [geomtry]
                 voxel_size = 2.0
                 """
@@ -468,25 +462,16 @@ class ProjectConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, r"geometry\.voxl_size"):
             self._load_minimal(
                 """
-                schema_version = 2
+                schema_version = 4
                 [geometry]
                 voxl_size = 2.0
-                """
-            )
-
-        with self.assertRaisesRegex(ValueError, r"network\.braid_grammar\.zon_count"):
-            self._load_minimal(
-                """
-                schema_version = 2
-                [network.braid_grammar]
-                zon_count = [2, 3]
                 """
             )
 
         with self.assertRaisesRegex(ValueError, r"network\.lobe_growth\.path_cout"):
             self._load_minimal(
                 """
-                schema_version = 2
+                schema_version = 4
                 [network.lobe_growth]
                 path_cout = [6, 8]
                 """
@@ -498,7 +483,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         ):
             self._load_minimal(
                 """
-                schema_version = 2
+                schema_version = 4
                 [network.emplacement_history]
                 phase_cout = [3, 5]
                 """
@@ -507,7 +492,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, r"host_field\.grid\.widht"):
             self._load_minimal(
                 """
-                schema_version = 2
+                schema_version = 4
                 [host_field.grid]
                 widht = 1200.0
                 """
@@ -517,7 +502,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "supports format"):
             self._load_minimal(
                 """
-                schema_version = 2
+                schema_version = 4
                 [export]
                 target = "blender"
                 format = "usd"
@@ -527,7 +512,7 @@ class ProjectConfigurationTests(unittest.TestCase):
     def test_all_export_target_uses_automatic_native_formats(self) -> None:
         config = self._load_minimal(
             """
-            schema_version = 2
+            schema_version = 4
             [export]
             target = "all"
             format = "auto"
@@ -541,7 +526,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "rock_population_multiplier"):
             self._load_minimal(
                 """
-                schema_version = 2
+                schema_version = 4
                 [events]
                 rock_population_multiplier = 0.0
                 """
@@ -549,7 +534,7 @@ class ProjectConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "boulder_max_height_fraction"):
             self._load_minimal(
                 """
-                schema_version = 2
+                schema_version = 4
                 [events]
                 boulder_max_height_fraction = 1.1
                 """
@@ -566,7 +551,7 @@ class ProjectConfigurationTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaisesRegex(ValueError, key):
                 self._load_minimal(
                     f"""
-                    schema_version = 3
+                    schema_version = 4
                     [export]
                     {key} = {value}
                     """
@@ -584,7 +569,7 @@ class ProjectConfigurationTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaisesRegex(ValueError, key):
                 self._load_minimal(
                     f"""
-                    schema_version = 3
+                    schema_version = 4
                     [world]
                     {key} = {value}
                     """
@@ -607,7 +592,7 @@ class ProjectConfigurationTests(unittest.TestCase):
             ("surface_normal_filter_voxels", "nan"),
         ):
             with self.subTest(key=key), self.assertRaisesRegex(ValueError, key):
-                self._load_minimal(f"schema_version = 3\n[geometry]\n{key} = {value}\n")
+                self._load_minimal(f"schema_version = 4\n[geometry]\n{key} = {value}\n")
 
 
 if __name__ == "__main__":

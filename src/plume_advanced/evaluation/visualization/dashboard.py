@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
-from plume_advanced.evaluation.metrics.continuity import longitudinal_continuity
+from plume_advanced.evaluation.continuity import longitudinal_continuity
 from plume_advanced.evaluation.metrics.morphometry import contour_morphometry
 from plume_advanced.evaluation.metrics.network import network_metrics
 from plume_advanced.evaluation.metrics.sections import (
@@ -285,7 +285,7 @@ def render_diagnostic_dashboard(
     _plot_density(axes[1, 1], payload["density_sweep"])
     _plot_section_evolution(axes[1, 2], section_field)
     _plot_section_continuity(axes[2, 0], payload["sections"])
-    _plot_morphospace(axes[2, 1], payload["sections"], section_field)
+    _plot_morphospace(axes[2, 1], section_field)
     _plot_pdc(axes[2, 2], payload["sections"])
     figure.suptitle(title, fontsize=12)
     figure.savefig(output, dpi=150, metadata={"Title": title, "Software": "PLUME evaluation"})
@@ -445,7 +445,7 @@ def _continuity_panel_values(segment_reports):
     return values
 
 
-def _plot_morphospace(axis, sections, field):
+def _plot_morphospace(axis, field):
     records = _section_records(field) if field is not None else []
     if records:
         axis.scatter(

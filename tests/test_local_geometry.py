@@ -15,6 +15,7 @@ from plume_advanced.evaluation.local_geometry import (
 from plume_advanced.stages.geometry import GeometryGenerator
 from plume_advanced.stages.geometry_types import GeometryConfig
 from plume_advanced.stages.network import CaveNetwork, CaveNetworkConfig
+from plume_advanced.stages.network_quality import NetworkQualityConfig
 from plume_advanced.stages.section_field import (
     SectionField,
     SectionFieldConfig,
@@ -56,7 +57,8 @@ def fixture():
     # A neighboring branch widens the measured section on just one side.
     branch = tuple(replace(s, segment_id=1, y=2.0) for s in main)
     network = CaveNetwork(
-        config=CaveNetworkConfig(),
+        # Local sweep equivalence is tested independently of network generation.
+        config=CaveNetworkConfig(quality=NetworkQualityConfig(enabled=False)),
         nodes=(),
         segments=(),
         junctions=(),

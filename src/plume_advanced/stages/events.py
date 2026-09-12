@@ -36,9 +36,6 @@ class GeologicalEventConfig:
     include_rock_props: bool = False
     enabled_kinds: tuple[str, ...] = ("rock", "boulder", "collapse", "choke", "infill")
     rock_population_multiplier: float = 10.0
-    debris_density_basis: str = "floor_area"
-    rock_density_per_100m: float = 2.00
-    boulder_density_per_100m: float = 0.18
     rock_density_per_100m2: float = 0.45
     boulder_density_per_100m2: float = 0.04
     geological_event_density_per_100m: float = 0.12
@@ -325,7 +322,7 @@ class GeologicalEventGenerator:
             collapse_count,
             choke_count,
             infill_count,
-        ) = self._counts_from_density(samples, floor_atlas)
+        ) = self._counts_from_density(samples)
         self._emit_progress(
             progress,
             "planning",
@@ -548,43 +545,26 @@ class GeologicalEventGenerator:
     def _counts_from_density(
         self,
         samples: list[SectionSample],
-        floor_atlas: FloorAtlas | None = None,
     ) -> tuple[int, int, int, int, int]:
         total_length = self._total_sampled_length(samples)
         length_units = total_length / 100.0
         population_multiplier = (
             self.config.rock_population_multiplier if self.config.include_rock_props else 0.0
         )
-        if self.config.debris_density_basis == "floor_area":
-            floor_area = self._sampled_floor_area(samples)
-            area_units = floor_area / 100.0
-            rock_count = max(
-                0,
-                int(round(self.config.rock_density_per_100m2 * area_units * population_multiplier)),
-            )
-            boulder_count = max(
-                0,
-                int(
-                    round(
-                        self.config.boulder_density_per_100m2 * area_units * population_multiplier
-                    )
-                ),
-            )
-        else:
-            rock_count = max(
-                0,
-                int(
-                    round(self.config.rock_density_per_100m * length_units * population_multiplier)
-                ),
-            )
-            boulder_count = max(
-                0,
-                int(
-                    round(
-                        self.config.boulder_density_per_100m * length_units * population_multiplier
-                    )
-                ),
-            )
+        floor_area = self._sampled_floor_area(samples)
+        area_units = floor_area / 100.0
+        rock_count = max(
+            0,
+            int(round(self.config.rock_density_per_100m2 * area_units * population_multiplier)),
+        )
+        boulder_count = max(
+            0,
+            int(
+                round(
+                    self.config.boulder_density_per_100m2 * area_units * population_multiplier
+                )
+            ),
+        )
         geological_event_count = max(
             0, int(round(self.config.geological_event_density_per_100m * length_units))
         )

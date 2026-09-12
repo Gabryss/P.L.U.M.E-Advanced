@@ -64,14 +64,14 @@ def render_interconnected(host, network, sections, output_path):
         xy = origin[:, None, None] + axis[:, None, None] * a + cross[:, None, None] * c
         ix = (xy[0] - host.x_coords[0]) / (host.x_coords[1] - host.x_coords[0])
         iy = (xy[1] - host.y_coords[0]) / (host.y_coords[1] - host.y_coords[0])
-        costs = map_coordinates(host.routing_cost, [iy, ix], order=1, mode="nearest")
+        costs = map_coordinates(host.growth_cost, [iy, ix], order=1, mode="nearest")
         ax.imshow(
             costs,
             extent=[start, end, ymin, ymax],
             origin="lower",
             cmap="Greys",
             vmin=0,
-            vmax=max(1, float(host.routing_cost.max())),
+            vmax=max(1, float(host.growth_cost.max())),
             alpha=0.30,
             aspect="equal",
         )
@@ -89,7 +89,7 @@ def render_interconnected(host, network, sections, output_path):
         for event in network.backend_provenance["interaction_events"]:
             n = nodes[event["node_id"]]
             xy = np.array([n.x, n.y]) - origin
-            ac = [xy @ axis, xy @ cross]
+            ac = np.array([xy @ axis, xy @ cross])
             if start <= ac[0] <= end:
                 ax.scatter(
                     *ac,

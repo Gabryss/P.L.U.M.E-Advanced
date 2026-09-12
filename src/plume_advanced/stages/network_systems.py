@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from dataclasses import asdict, dataclass
+from typing import Any
 
 import numpy as np
 from scipy.interpolate import CubicSpline
@@ -104,7 +105,7 @@ def preferred_tracks(generator, host, geometry, *, corridor=None, preserve_ident
         )
     correlation = controls.correlation_length_widths * width
     knots = np.linspace(0, along[-1], max(4, int(np.ceil(along[-1] / correlation)) + 1))
-    tracks = []
+    track_rows = []
     for system_id, source in enumerate(sources):
         rng = procedural_rng(config.random_seed, "network-system", system_id)
         noise = rng.normal(0, controls.lateral_variation_widths * width, len(knots))
@@ -124,7 +125,7 @@ def preferred_tracks(generator, host, geometry, *, corridor=None, preserve_ident
         y = geometry.seed_y + along[:, None] * geometry.flow_y + candidates * geometry.cross_y
         ix = (x - host.x_coords[0]) / (host.x_coords[1] - host.x_coords[0])
         iy = (y - host.y_coords[0]) / (host.y_coords[1] - host.y_coords[0])
-        cost = map_coordinates(host.routing_cost, [iy, ix], order=1, mode="nearest")
+        cost = map_coordinates(host.growth_cost, [iy, ix], order=1, mode="nearest")
         cost = (
             config.growth_cost_weight * cost + ((candidates - target[:, None]) / (2 * width)) ** 2
         )
@@ -134,22 +135,28 @@ def preferred_tracks(generator, host, geometry, *, corridor=None, preserve_ident
         fade = np.clip(along / max(correlation * 0.5, 1), 0, 1)
         fade = fade * fade * (3 - 2 * fade)
         preferred = source * (1 - fade) + preferred * fade
-        tracks.append(np.clip(preferred, lower, upper))
-    tracks = np.asarray(tracks)
+        track_rows.append(np.clip(preferred, lower, upper))
+    tracks = np.asarray(track_rows)
     if preserve_identity:
         # Project crossing preferences onto lateral order without swapping
         # source IDs or replacing one system's random stream with another's.
-        for index in range(len(along)):
-            blocks = []
-            for value in tracks[:, index]:
-                blocks.append([float(value), 1])
-                while len(blocks) > 1 and blocks[-2][0] > blocks[-1][0]:
-                    b, a = blocks.pop(), blocks.pop()
-                    blocks.append([(a[0] * a[1] + b[0] * b[1]) / (a[1] + b[1]), a[1] + b[1]])
-            tracks[:, index] = [mean for mean, count in blocks for _ in range(count)]
+        enforce_source_order(tracks)
     else:
         tracks = np.sort(tracks, axis=0)
     return along, tracks, width
+
+
+def enforce_source_order(tracks: np.ndarray) -> None:
+    """Project each station onto lateral source order without swapping identities."""
+    for index in range(tracks.shape[1]):
+        blocks: list[tuple[float, int]] = []
+        for value in tracks[:, index]:
+            blocks.append((float(value), 1))
+            while len(blocks) > 1 and blocks[-2][0] > blocks[-1][0]:
+                right, left = blocks.pop(), blocks.pop()
+                count = left[1] + right[1]
+                blocks.append(((left[0] * left[1] + right[0] * right[1]) / count, count))
+        tracks[:, index] = [mean for mean, count in blocks for _ in range(count)]
 
 
 def plan_interactions(along, tracks, width, controls, *, events=None, local_spacing=False, connection_check=None):
@@ -160,7 +167,7 @@ def plan_interactions(along, tracks, width, controls, *, events=None, local_spac
     event can be either a merge or a split; four-way contact is not implicit.
     """
     nodes = [(float(along[0]), float(tracks[i, 0]), "entry") for i in range(len(tracks))]
-    active = {(i,): (i, 0) for i in range(len(tracks))}
+    active: dict[tuple[int, ...], tuple[int, int]] = {(i,): (i, 0) for i in range(len(tracks))}
     records = []
     last_event = -float("inf")
 
@@ -275,7 +282,7 @@ def generate_system_network(generator, host):
     from plume_advanced.stages.network import CaveNode, CavePoint, CaveSegment
 
     config = generator.config
-    if config.emplacement_backend != "internal" or config.growth_model != "hybrid_lobe":
+    if config.emplacement_backend != "internal":
         raise ValueError(
             "Multiple systems currently require internal emplacement and hybrid_lobe growth"
         )
@@ -283,7 +290,7 @@ def generate_system_network(generator, host):
     along, tracks, width = preferred_tracks(generator, host, geometry)
     planned_nodes, records = plan_interactions(along, tracks, width, config.systems)
 
-    def world(a, c):
+    def world(a: float, c: float) -> tuple[float, float]:
         return (
             geometry.seed_x + a * geometry.flow_x + c * geometry.cross_x,
             geometry.seed_y + a * geometry.flow_y + c * geometry.cross_y,
@@ -360,11 +367,11 @@ def generate_system_network(generator, host):
     )
 
 
-def annotate_source_lineage(nodes, segments, topological_ids):
+def annotate_source_lineage(segments, topological_ids):
     """Track transported source identities, including both arms after a split."""
     from dataclasses import replace
 
-    incoming = defaultdict(set)
+    incoming: defaultdict[int, set[int]] = defaultdict(set)
     outgoing = defaultdict(list)
     for segment in segments:
         outgoing[segment.start_node_id].append(segment)
@@ -424,9 +431,9 @@ def assess_systems(network, check):
 
     incoming, outgoing = defaultdict(list), defaultdict(list)
     identity, lineage, persistence = [], [], []
-    sources = []
+    sources: list[int | None] = []
     membership = {}
-    run_lengths = defaultdict(float)
+    run_lengths: defaultdict[Any, float] = defaultdict(float)
     for segment in _front_segments(network):
         run_lengths[segment.metadata.get("front_run_id", segment.segment_id)] += (
             segment.total_length
@@ -479,7 +486,8 @@ def assess_systems(network, check):
             identity.extend(s.segment_id for s in before + after)
     check(
         "system_sources",
-        all(type(i) is int for i in sources) and sorted(sources) == list(range(controls.count)),
+        all(type(i) is int for i in sources)
+        and sorted(i for i in sources if isinstance(i, int)) == list(range(controls.count)),
         len(sources),
         controls.count,
     )
@@ -488,7 +496,7 @@ def assess_systems(network, check):
         order = CaveNetworkGenerator._topological_node_ids(
             list(network.nodes), list(network.segments)
         )
-        expected = annotate_source_lineage(network.nodes, network.segments, order)
+        expected = annotate_source_lineage(network.segments, order)
         lineage = [
             s.segment_id
             for s, wanted in zip(network.segments, expected)

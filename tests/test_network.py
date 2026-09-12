@@ -196,15 +196,6 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertLess(float(np.std(np.diff(first, axis=0))), float(np.std(first)))
         self.assertLess(float(np.std(np.diff(first, axis=1))), float(np.std(first)))
 
-    def test_natural_split_envelope_has_broad_smooth_shoulders(self) -> None:
-        envelope = CaveNetworkGenerator._natural_split_envelope
-        self.assertEqual(envelope(0.0, 0.3, 1.0), 0.0)
-        self.assertEqual(envelope(1.0, 0.3, 1.0), 0.0)
-        self.assertLess(envelope(0.01, 0.3, 1.0), 0.03)
-        self.assertLess(envelope(0.99, 0.3, 1.0), 0.03)
-        self.assertGreater(envelope(0.35, 0.3, 1.0), 0.75)
-        self.assertGreater(envelope(0.65, 0.3, 1.0), 0.75)
-        self.assertGreater(envelope(0.50, 0.3, 1.0), envelope(0.35, 0.3, 1.0))
 
     def test_simplification_retains_branch_attachment_and_separate_underpass(self) -> None:
         paths = (
@@ -719,7 +710,6 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
             1.5,
         )
 
-        self.assertEqual(project_config.network.growth_model, "hybrid_lobe")
         segment_kinds = {segment.kind for segment in cave_network.segments}
         self.assertIn("source_feeder", segment_kinds)
         self.assertIn("backbone", segment_kinds)

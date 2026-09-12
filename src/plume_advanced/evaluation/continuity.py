@@ -184,7 +184,3 @@ def longitudinal_continuity(
         "short_period_fraction": float(short_period_fraction),
         "metrics": metrics,
     }
-
-
-continuity_diagnostics = longitudinal_continuity
-evaluate_continuity = longitudinal_continuity

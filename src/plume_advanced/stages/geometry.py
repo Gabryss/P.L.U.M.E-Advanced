@@ -76,7 +76,7 @@ class GeometryGenerator:
         event_field: GeologicalEventField | None = None,
         progress: GeometryProgressCallback | None = None,
     ) -> CaveGeometry:
-        """Compatibility one-pass API built from the two-pass workflow."""
+        """Convenience one-pass API built from the two-pass workflow."""
 
         base_geometry = self.build_base_volume(
             cave_network,
@@ -2122,6 +2122,8 @@ class GeometryGenerator:
         section_z = local_x * binormal[..., 0] + local_y * binormal[..., 1] + local_z * binormal[..., 2]
         start_profile = np.array(start.profile_points, dtype=float) * self._profile_scale(start)
         end_profile = np.array(end.profile_points, dtype=float) * self._profile_scale(end)
+        if start_profile.shape != end_profile.shape:
+            raise ValueError("Section lofts require profiles with matching vertex counts")
         t_values = np.clip(projection.reshape(-1), 0.0, 1.0)
         # Only the narrow band can affect the isosurface or confluence fillet.
         # Conservative interpolated bounds reject distant queries; keep exact
@@ -2130,11 +2132,6 @@ class GeometryGenerator:
                          + t_values[:, None] * end_profile.min(axis=0))
         upper_profile = ((1.0 - t_values[:, None]) * start_profile.max(axis=0)
                          + t_values[:, None] * end_profile.max(axis=0))
-        if start_profile.shape != end_profile.shape:
-            # The legacy fallback unions both contours rather than lofting
-            # corresponding vertices, so its bounds must cover both in full.
-            lower_profile[:] = np.minimum(start_profile.min(axis=0), end_profile.min(axis=0))
-            upper_profile[:] = np.maximum(start_profile.max(axis=0), end_profile.max(axis=0))
         query = np.column_stack((section_x.ravel(), section_z.ravel()))
         outside_box = np.maximum(np.maximum(lower_profile - query, query - upper_profile), 0.0)
         signed_distance = np.linalg.norm(outside_box, axis=1)
@@ -2253,10 +2250,7 @@ class GeometryGenerator:
         end_profile: np.ndarray,
     ) -> np.ndarray:
         if start_profile.shape != end_profile.shape:
-            return np.minimum(
-                self._profile_signed_distance(x_values, z_values, start_profile),
-                self._profile_signed_distance(x_values, z_values, end_profile),
-            )
+            raise ValueError("Section lofts require profiles with matching vertex counts")
 
         # Evaluate each query against its own interpolated polygon. Rounding
         # the interpolation parameter produces 100 discrete terraces per span.

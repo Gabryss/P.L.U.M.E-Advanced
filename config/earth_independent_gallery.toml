@@ -1,7 +1,7 @@
 # Full Earth gallery inspection: three independently routed sources, seed 20260910, no rocks.
 # Heights are formation settings; the roof stability model remains active.
 # Run with: plume-generate --config config/earth_independent_gallery.toml --output outputs/earth_independent_gallery_seed20260910/stage_b_network.png
-schema_version = 3
+schema_version = 4
 procedural_seed = 20260910
 
 [world]
@@ -24,7 +24,7 @@ cooling_rate_scale = 1.0
 dev_mode = false
 quality = "standard"
 dev_max_route_length_m = 1500.0
-dev_max_braid_zones = 2
+dev_max_lobe_paths = 6
 # Save stage figures alongside the inspection asset.
 render_diagnostics = true
 # Safety default: prompt before writing into a non-empty generation directory.
@@ -83,7 +83,6 @@ phase = [-3.14159, 3.14159]
 [network]
 target_route_length_m = 380.0
 minimum_passage_radius = 1.5
-growth_model = "hybrid_lobe"
 emplacement_backend = "internal"
 growth_cost_weight = 3.2
 chamber_radius = 10.0
@@ -209,12 +208,8 @@ clustered_debris_fraction = 0.45
 collapse_cluster_radius_scale = 4.0
 collapse_cluster_spacing_scale = 0.90
 # Floor-area density keeps wide galleries from looking emptier than narrow ones.
-debris_density_basis = "floor_area"
 rock_density_per_100m2 = 0.45
 boulder_density_per_100m2 = 0.04
-# Retained for reproducible legacy length-based projects.
-rock_density_per_100m = 2.00
-boulder_density_per_100m = 0.18
 geological_event_density_per_100m = 0.12
 collapse_event_fraction = 0.35
 choke_event_fraction = 0.30
