@@ -6,6 +6,7 @@ from dataclasses import replace
 
 import numpy as np
 
+from plume_advanced.acceptance import AcceptancePolicy
 from plume_advanced.evaluation.local_geometry import section_resolution_report
 from plume_advanced.progress import report_progress
 from plume_advanced.stages.geometry import GeometryGenerator
@@ -40,7 +41,8 @@ def compare_mesh_clearance(previous, current, points, tolerance):
                                 and previous.expected_surface_genus == current.expected_surface_genus))
 
 
-def build_with_resolution_checks(network, sections, controls, progress=None):
+def build_with_resolution_checks(network, sections, controls, progress=None, *,
+                                 acceptance: AcceptancePolicy = AcceptancePolicy()):
     """Preserve network/sections/seed; record every attempted effective grid size.
 
     The eight-sample rule triggers a convergence study. Refinement keeps one
@@ -49,7 +51,7 @@ def build_with_resolution_checks(network, sections, controls, progress=None):
     ordinary topology, stability and capsule gates. Resource exhaustion fails.
     """
     if not controls.resolution_refinement_attempts:
-        return GeometryGenerator(controls).build_base_volume(network, sections, progress=progress)
+        return GeometryGenerator(controls, acceptance=acceptance).build_base_volume(network, sections, progress=progress)
     initial = section_resolution_report(sections, controls.voxel_size)
     journal = dict(schema="plume.resolution-repair.v1", passed=False,
                    requested_voxel_size_m=controls.voxel_size, attempts=[],
@@ -73,7 +75,7 @@ def build_with_resolution_checks(network, sections, controls, progress=None):
         record = dict(voxel_size_m=size, accepted=False)
         journal["attempts"].append(record)
         try:
-            current = GeometryGenerator(config).build_base_volume(network, sections, progress=progress)
+            current = GeometryGenerator(config, acceptance=acceptance).build_base_volume(network, sections, progress=progress)
         except ResolutionBudgetError as error:
             record.update(failure=str(error), allocation=error.report)
             journal["failure"] = "Allocated-grid budget exhausted"

@@ -7,9 +7,11 @@ from pathlib import Path
 
 import numpy as np
 
+from plume_advanced.acceptance import AcceptancePolicy, enforce_acceptance, evaluate_acceptance
 from plume_advanced.evaluation.local_geometry import section_resolution_report
 from plume_advanced.identity import sha256_file
 from plume_advanced.progress import report_progress
+from plume_advanced.world import ExportConfig
 
 
 def _write(path: Path, value: object) -> Path:
@@ -28,7 +30,8 @@ def evaluate_sections(sections, voxel_size: float, output: Path) -> dict:
 
 
 def complete_inspection(
-    geometry, export_result, resolution: dict, output: Path
+    geometry, export_result, resolution: dict, output: Path, *,
+    acceptance: AcceptancePolicy = AcceptancePolicy(), export_config: ExportConfig | None = None,
 ) -> tuple[Path, Path]:
     package_path = next(p for p in export_result.files if p.name == "pipeline_inspection.json")
     package = json.loads(package_path.read_text(encoding="utf-8"))
@@ -53,6 +56,12 @@ def complete_inspection(
     texture_path = package_path.parent / "texture_recovery.json"
     if json.loads(texture_path.read_text()) != textures:
         raise ValueError("Texture recovery journal differs from inspected package")
+    # Re-evaluate on every completion/resume; a saved passed flag is not sufficient.
+    saved_acceptance = package.get("acceptance", {})
+    evaluated = evaluate_acceptance(acceptance, geometry, package, resolution, export_config)
+    enforce_acceptance(evaluated)
+    if saved_acceptance != evaluated:
+        raise ValueError("Acceptance policy/evidence changed since package inspection")
     if textures["outcome"] == "repaired":
         warnings.append("Texture maps or material package repaired; see texture_recovery.json for changes.")
     recovery_path = output / "pipeline_recovery.json"
@@ -82,6 +91,7 @@ def complete_inspection(
     report = dict(
         schema="plume.pipeline-quality.v1",
         passed=True,
+        acceptance=evaluated,
         warnings=warnings,
         resolution=resolution,
         resolution_repair=dict(geometry.resolution_repair),
@@ -92,7 +102,7 @@ def complete_inspection(
         texture_recovery=textures,
         export_inspection=package,
         asset=export_result.primary_asset.name,
-        scope="Embedded numerical evaluation, mesh inspection and bounded repairs; not geological realism, continuous navigation, exhaustive self-intersection or native-engine certification",
+        scope="Embedded numerical evaluation, mesh inspection and bounded repairs; not geological realism, ground-contact navigation, exhaustive self-intersection or native-engine certification",
     )
     report_path = _write(output / "pipeline_quality_report.json", report)
     figure = render_inspection(

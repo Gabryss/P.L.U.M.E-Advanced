@@ -11,6 +11,12 @@ from typing import Any
 
 import numpy as np
 
+from plume_advanced.acceptance import (
+    AcceptancePolicy,
+    apply_acceptance_defaults,
+    build_acceptance_policy,
+    validate_acceptance_configuration,
+)
 from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.events import GeologicalEventConfig
 from plume_advanced.stages.floor_map import FloorMapConfig
@@ -60,6 +66,7 @@ SUPPORTED_TOP_LEVEL_KEYS = frozenset(
         "floor_map",
         "events",
         "geometry",
+        "acceptance",
     }
 )
 
@@ -109,6 +116,7 @@ class ProjectConfig:
     floor_map: FloorMapConfig
     events: GeologicalEventConfig
     geometry: GeometryConfig
+    acceptance: AcceptancePolicy = AcceptancePolicy()
 
 
 def load_project_config(
@@ -171,7 +179,11 @@ def load_project_config(
     world = resolve_world_config(raw_config.get("world"))
     flow_regime = build_flow_regime_config(raw_config.get("flow_regime"))
     run = build_run_config(raw_config.get("run"))
-    export = build_export_config(raw_config.get("export"))
+    acceptance = build_acceptance_policy(raw_config.get("acceptance"))
+    geometry_data, export_data = apply_acceptance_defaults(
+        acceptance, raw_config.get("geometry", {}), raw_config.get("export", {})
+    )
+    export = build_export_config(export_data)
 
     host_field = _build_host_field_config(
         raw_config.get("host_field", {}),
@@ -203,7 +215,7 @@ def load_project_config(
     )
     events = _resolve_event_asset_paths(events, config_path.parent)
     geometry = _build_geometry_config(
-        raw_config.get("geometry", {}),
+        geometry_data,
         procedural_seed=stage_seeds.geometry,
         world=world,
         run=run,
@@ -219,6 +231,7 @@ def load_project_config(
         events=events,
         geometry=geometry,
     )
+    validate_acceptance_configuration(acceptance, geometry, export)
 
     return ProjectConfig(
         schema_version=schema_version,
@@ -234,6 +247,7 @@ def load_project_config(
         floor_map=floor_map,
         events=events,
         geometry=geometry,
+        acceptance=acceptance,
     )
 
 

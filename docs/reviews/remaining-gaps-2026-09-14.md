@@ -37,6 +37,12 @@ an inspection example and a simulation-ready delivery are the problem.
 
 ## 1. Define acceptance profiles before another broad campaign
 
+**Implementation follow-up:** [acceptance profiles](../acceptance.md) now provide
+the shared policy, publication gate and preset alignment described here. The
+inventory below records the state before that implementation. Native publication
+integration and measured surface-fidelity validation remain open; requiring an
+unavailable native check stops a run rather than passing it.
+
 Relevant code: [`GeometryConfig`](../../src/plume_advanced/stages/geometry_types.py),
 [`ExportConfig`](../../src/plume_advanced/world.py),
 [`complete_inspection`](../../src/plume_advanced/pipeline/inspection.py),

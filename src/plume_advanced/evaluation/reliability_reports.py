@@ -26,6 +26,7 @@ def write_json(path: Path, payload: object) -> None:
 
 def diagnose(error: BaseException, stage: str) -> dict[str, str]:
     """Classify known conditions; unknown exceptions never become seed retries."""
+    from plume_advanced.acceptance import AcceptanceError
     from plume_advanced.exporters.targets import ExportBudgetError
     from plume_advanced.exporters.texture_recovery import TextureRecoveryError
     from plume_advanced.pipeline.recovery import PipelineRecoveryError
@@ -39,7 +40,15 @@ def diagnose(error: BaseException, stage: str) -> dict[str, str]:
         "version, run the regression suite, and investigate the first traceback. "
         "Changing seeds or weakening checks would hide the defect."
     )
-    if isinstance(error, GenerationDomainError):
+    if isinstance(error, AcceptanceError):
+        category = "acceptance_requirements"
+        action = (
+            "Read the named checks in pipeline_quality_report.json inspection or the preflight "
+            "inspection. Failed or unavailable requirements block publication. Supply the missing "
+            "validation capability or correct generation inputs in a new campaign; do not mark "
+            "an unchecked requirement passed or silently downgrade the profile."
+        )
+    elif isinstance(error, GenerationDomainError):
         category = "host_domain"
         action = (
             "Enlarge host_field.grid or reduce the requested extent/source spacing in a "

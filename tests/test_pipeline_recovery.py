@@ -8,6 +8,7 @@ import pytest
 import trimesh
 from test_network_quality import network_fixture
 
+from plume_advanced.acceptance import AcceptancePolicy, build_acceptance_policy
 from plume_advanced.evaluation.artifacts import (
     host_semantic_hash,
     network_semantic_hash,
@@ -53,7 +54,8 @@ def inputs():
         surface_wall_relief_m=0,
     )
     project = SimpleNamespace(
-        procedural_seed=17, network=network.config, section_field=sections.config, geometry=config
+        procedural_seed=17, network=network.config, section_field=sections.config, geometry=config,
+        acceptance=AcceptancePolicy(),
     )
     return project, host, network, sections
 
@@ -450,8 +452,9 @@ def test_actual_stamping_after_local_width_repair_preserves_original_routes(
 
 
 @pytest.mark.integration
+@pytest.mark.parametrize("profile", ["research", "inspection"])
 def test_cli_regeneration_publishes_matching_artifacts_and_resume_reuses_triple(
-    inputs, monkeypatch, tmp_path
+    inputs, monkeypatch, tmp_path, profile
 ):
     """Real exports and checkpoints must use the replacement, including after resume."""
     import json
@@ -464,6 +467,7 @@ def test_cli_regeneration_publishes_matching_artifacts_and_resume_reuses_triple(
     project = load_project_config(cli.PACKAGED_CONFIG)
     project = replace(
         project,
+        acceptance=build_acceptance_policy({"profile": profile}),
         export=replace(project.export, target="blender"),
         host_field=host.config,
         network=network.config,
@@ -477,6 +481,8 @@ def test_cli_regeneration_publishes_matching_artifacts_and_resume_reuses_triple(
             cave_displacement_texture="",
             cave_smoothing_iterations=0,
             cave_displacement_scale_m=0,
+            required_route_height_m=.5 if profile == "inspection" else 0.,
+            required_route_width_m=.5 if profile == "inspection" else 0.,
         ),
     )
     monkeypatch.setattr(cli, "load_project_config", lambda *a, **kw: project)
@@ -529,6 +535,10 @@ def test_cli_regeneration_publishes_matching_artifacts_and_resume_reuses_triple(
     )
     manifest = json.loads((directory / "run_manifest.json").read_text())
     assert manifest["status"] == "complete"
+    quality = json.loads((directory / "pipeline_quality_report.json").read_text())
+    assert quality["acceptance"]["policy"]["profile"] == profile
+    assert quality["acceptance"]["checks"]["clearance"]["status"] == (
+        "passed" if profile == "inspection" else "not_requested")
     assert "pipeline_recovery.json" in {row["path"] for row in manifest["outputs"]}
     for row in manifest["outputs"]:
         assert sha256_file(directory / row["path"]) == row["sha256"]

@@ -1,5 +1,12 @@
 # Reliability, testing and simulation budgets
 
+Full generation and full campaign workers share explicit [acceptance profiles](acceptance.md).
+They distinguish passed, failed, unavailable and unrequested checks. The packaged
+default and six main comparison presets require clearance, collision and finite
+export limits. The simulation profile additionally requires resolution evidence
+and restricts procedural relief reduction. See that guide before changing a
+profile or interpreting a successful stage-only campaign as a complete result.
+
 The [upstream recovery implementation and validation](reviews/upstream-recovery-2026-09-13.md) records automatic section/width repair, deterministic replacement networks in the same host, and a complete passing cold replay of the earlier seed-1 failure.
 
 The [13 September inspection and repair batch](reviews/inspection-repair-batch-2026-09-13.md) records nine full passes, one unresolved mesh rejection, exact replay evidence and the collider-reporting correction.
@@ -38,6 +45,7 @@ The shared export mesh/content checks still run.
 | Collision mesh | Components, genus and sampled route containment after simplification | Retain the inspected original collider when simplification fails; file/triangle budgets still apply |
 | Serialized package | Portable GLB geometry, material and shading checks; GLB, OBJ and PLUME ASCII USD geometry compared with inspected arrays | Reject a damaged package before replacing an existing export; no generic retry for a broken serializer |
 | Run completion | Inspection evidence, serialized file hashes and unchanged pipeline inputs/source | Write the quality report and measured-passage figure, then mark the manifest complete |
+| Acceptance policy | Required clearance, collider, resolution, relief, texture and budget evidence | Reject unmet or unavailable requirements before package publication; recheck policy and evidence at completion/resume |
 
 The root seed stays fixed. Density and export repairs keep their input network;
 if density repair is exhausted, the upstream recovery stage below can repair
@@ -314,6 +322,8 @@ centres are retained, so disconnected real branches still fail validation.
 
 If detail changes topology or obstructs sampled centres, the generator retries
 from the **same immutable swept volume** at relief scales 1, 0.5, 0.25 and 0.
+An acceptance policy with `minimum_relief_scale > 0` skips global or local
+reduction candidates below its bound, retaining their rejection in the journal.
 When closing was requested, a candidate also omits closing. If these fail,
 one final candidate removes grid-scale air bridges with a one-voxel grayscale
 opening after the requested closing. Opening can only shrink the air volume;

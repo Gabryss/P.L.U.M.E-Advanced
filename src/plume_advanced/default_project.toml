@@ -12,7 +12,7 @@ overwrite_outputs = false
 [export]
 target = "neutral"
 format = "glb"
-generate_collision = false
+generate_collision = true
 
 [host_field]
 apply_body_scaling = false
@@ -129,3 +129,6 @@ cave_diffuse_texture = ""
 cave_normal_texture = ""
 cave_roughness_texture = ""
 cave_displacement_texture = ""
+
+[acceptance]
+profile = "inspection"

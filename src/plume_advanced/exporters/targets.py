@@ -17,6 +17,13 @@ from xml.sax.saxutils import escape
 import numpy as np
 import trimesh
 
+from plume_advanced.acceptance import (
+    AcceptancePolicy,
+    enforce_acceptance,
+    evaluate_acceptance,
+    require_available_acceptance,
+    validate_acceptance_configuration,
+)
 from plume_advanced.progress import report_progress
 from plume_advanced.stages.geometry_export import (
     build_cave_visual_surface,
@@ -59,12 +66,16 @@ def export_target_asset(
     output_root: str | Path,
     *,
     asset_name: str = "plume_cave",
+    acceptance: AcceptancePolicy = AcceptancePolicy(),
+    resolution: dict | None = None,
 ) -> ExportResult:
     """Prepare once, stage a complete package, and publish it atomically."""
 
     output = Path(output_root)
     safe_name = _safe_asset_name(asset_name)
     _validate_export_request(export_config)
+    validate_acceptance_configuration(acceptance, cave_geometry.config, export_config)
+    require_available_acceptance(acceptance)
     source_maps = [getattr(cave_geometry.config, f"cave_{role}_texture")
                    for role in ("diffuse", "normal", "roughness", "displacement")]
     source_maps.extend(path for event in cave_geometry.event_meshes for _, path in event.material_maps)
@@ -135,6 +146,11 @@ def export_target_asset(
         inspection = dict(scene.inspection)
         inspection["textures"] = texture_report
         inspection["serialized"] = inspect_package(scene, staged.files, staging)
+        report_progress("Acceptance policy", detail=f"evaluating {acceptance.profile} requirements")
+        inspection["acceptance"] = evaluate_acceptance(
+            acceptance, cave_geometry, inspection, resolution, export_config
+        )
+        enforce_acceptance(inspection["acceptance"])
         inspection_path = staging / "pipeline_inspection.json"
         inspection_path.write_text(json.dumps(inspection, indent=2, allow_nan=False) + "\n")
         staged = replace(staged, files=staged.files + (inspection_path,))

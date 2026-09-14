@@ -325,6 +325,8 @@ def test_real_stage_checkpoint_resume_after_artifact_write_failure(tmp_path, mon
     monkeypatch.setattr(SectionFieldGenerator, "generate", reject_recomputation)
     result = reliability.execute_case(case, tmp_path / "resumed", checkpoint_directory=checkpoints)
     assert result["status"] == "passed"
+    assert result["acceptance"]["status"] == "not_evaluated"
+    assert result["acceptance"]["policy"]["profile"] == "inspection"
     assert (tmp_path / "resumed/stage_c_sections.npz").is_file()
     assert (tmp_path / "resumed/network_quality.json").is_file()
     events = [

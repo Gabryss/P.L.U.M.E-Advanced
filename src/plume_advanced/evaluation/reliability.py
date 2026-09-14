@@ -22,6 +22,10 @@ from pathlib import Path
 from threading import Event, Thread
 from typing import Any
 
+from plume_advanced.acceptance import (
+    require_available_acceptance,
+    validate_acceptance_configuration,
+)
 from plume_advanced.evaluation.reliability_reports import (
     diagnose,
     process_diagnostic,
@@ -74,6 +78,9 @@ def execute_case(
         if case.voxel_size <= 0 or not math.isfinite(case.voxel_size):
             raise ValueError("voxel size must be finite and positive")
         project = replace(project, geometry=replace(project.geometry, voxel_size=case.voxel_size))
+    validate_acceptance_configuration(project.acceptance, project.geometry, project.export)
+    if case.scope == "full":
+        require_available_acceptance(project.acceptance)
     from plume_advanced.pipeline import StageCheckpointStore, pipeline_fingerprint
 
     output.mkdir(parents=True, exist_ok=True)
@@ -106,6 +113,10 @@ def execute_case(
     timings = {}
     state = dict(stage="configuration", step="starting", completed=0, total=None, detail="")
     warnings = []
+    acceptance_result = dict(policy=asdict(project.acceptance), status="not_evaluated",
+                             scope=case.scope)
+    if case.scope != "full" and project.acceptance.profile != "research":
+        warnings.append("Stage-only evaluation: the full acceptance profile was not evaluated.")
     last_status = 0.0
 
     @contextmanager
@@ -292,6 +303,8 @@ def execute_case(
                         geometry,
                         replace(project.export, target="blender", file_format="glb"),
                         output / "export",
+                        acceptance=project.acceptance,
+                        resolution=resolution,
                     )
                     metrics["asset_bytes"] = exported.primary_asset.stat().st_size
                     identity["glb"] = sha256_file(exported.primary_asset)
@@ -299,8 +312,10 @@ def execute_case(
                         next(path for path in exported.files if path.name == "texture_recovery.json")
                     )
                 with stage("pipeline_inspection"):
-                    inspection_files = complete_inspection(geometry, exported, resolution, output)
+                    inspection_files = complete_inspection(geometry, exported, resolution, output,
+                        acceptance=project.acceptance, export_config=project.export)
                     inspection = json.loads(inspection_files[0].read_text())
+                    acceptance_result = inspection["acceptance"]
                     warnings = list(dict.fromkeys([*warnings, *inspection["warnings"]]))
                     metrics.update(
                         inspected_centers=inspection["export_inspection"]["visual"][
@@ -374,6 +389,7 @@ def execute_case(
                         write_json(output / "export_topology.json", topology)
             return dict(
                 status="passed",
+                acceptance=acceptance_result,
                 identity=identity,
                 metrics=metrics,
                 timings_s=timings,

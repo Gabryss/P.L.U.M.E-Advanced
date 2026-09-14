@@ -36,7 +36,7 @@ overwrite_outputs = false
 # NVIDIA Omniverse from the same canonical cave mesh.
 target = "blender"
 format = "glb"
-generate_collision = false
+generate_collision = true
 
 [host_field]
 # Explicit metric host extent for this inspection case.
@@ -292,3 +292,6 @@ cave_diffuse_texture = ""
 cave_normal_texture = ""
 cave_roughness_texture = ""
 cave_displacement_texture = ""
+
+[acceptance]
+profile = "inspection"

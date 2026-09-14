@@ -265,3 +265,5 @@ cave_normal_texture = ""
 cave_roughness_texture = ""
 cave_displacement_texture = ""
 
+[acceptance]
+profile = "research"

@@ -44,6 +44,9 @@ def test_export_evaluation_meshes_packages_and_reuses_matching_case(
     case = output / "cases" / "seed-000001-all-targets.json"
     original = case.read_bytes()
     record = json.loads(original)
+    assert record["acceptance"]["passed"]
+    assert record["acceptance"]["policy"]["profile"] == "inspection"
+    assert record["acceptance"]["checks"]["export_budgets"]["status"] == "passed"
     assert len(record["target_checks"]) == 5
     assert all(check["visual_asset_present"] for check in record["target_checks"])
     asset = output / "packages" / "seed-000001" / "blender" / "plume_seed_000001.glb"

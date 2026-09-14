@@ -14,6 +14,7 @@ from scipy.interpolate import PchipInterpolator
 from scipy.spatial import cKDTree
 from skimage import measure
 
+from plume_advanced.acceptance import AcceptancePolicy
 from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.events import (
     GeologicalEvent,
@@ -61,8 +62,10 @@ class _JunctionEnvelope:
 class GeometryGenerator:
     """Build cave geometry by stamping a density grid and polygonizing it."""
 
-    def __init__(self, config: GeometryConfig | None = None) -> None:
+    def __init__(self, config: GeometryConfig | None = None, *,
+                 acceptance: AcceptancePolicy = AcceptancePolicy()) -> None:
         self.config = config or GeometryConfig()
+        self.acceptance = acceptance
         roughness_rng = procedural_rng(self.config.random_seed, "wall-roughness")
         self._roughness_phase = tuple(
             float(value) for value in roughness_rng.uniform(0.0, 2.0 * math.pi, size=3)
@@ -242,6 +245,13 @@ class GeometryGenerator:
         records = []
         regions = []
         for index, (scale, closing_radius, opening_radius, local_regions) in enumerate(candidates, 1):
+            if has_relief and scale * min([1., *(r["scale"] for r in local_regions)]) < self.acceptance.minimum_relief_scale:
+                records.append(tuple(dict(
+                    accepted=False, relief_scale=scale, local_relief_regions=list(local_regions),
+                    reason="Candidate exceeds acceptance.minimum_relief_scale reduction budget",
+                    minimum_relief_scale=self.acceptance.minimum_relief_scale,
+                ).items()))
+                continue
             self._emit_progress(
                 progress,
                 "surface-acceptance",

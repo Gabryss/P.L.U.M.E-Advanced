@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 import trimesh
 
+from plume_advanced.acceptance import AcceptancePolicy
 from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.artifacts import (
     export_geometry_report,
@@ -35,6 +36,8 @@ def main() -> None:
     parser.add_argument("--checkpoint", type=Path, help="Optional local geometry checkpoint for inspection")
     args = parser.parse_args()
     config = load_project_config(args.config)
+    if config.acceptance != AcceptancePolicy():
+        parser.error("Use plume-generate for acceptance requirements; this helper supports unrestricted research only")
     if config.events.enabled or config.events.include_rock_props:
         parser.error("Use a configuration with events and rock props disabled")
     out = args.output_directory

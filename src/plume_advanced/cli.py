@@ -12,6 +12,7 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
+from plume_advanced.acceptance import require_available_acceptance
 from plume_advanced.progress import TerminalProgress, report_progress
 
 SOURCE_ROOT = Path(__file__).resolve().parents[2]
@@ -249,6 +250,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         print(error, file=sys.stderr)
         return 2
 
+    require_available_acceptance(project_config.acceptance)
     progress = TerminalProgress(total_stages=12, trace_path=args.output.with_name("progress.jsonl"))
     progress.start("Configuration", "loaded TOML and checked output")
     resolved_config_path = write_project_config_manifest(
@@ -640,6 +642,8 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         project_config.export,
         selected_output.parent / f"export_{project_config.export.target}",
         asset_name=selected_output.stem,
+        acceptance=project_config.acceptance,
+        resolution=resolution_report,
     )
     progress.finish(f"wrote {export_result.primary_asset.name}")
     stage_timings["export_s"] = time.perf_counter() - stage_started
@@ -768,7 +772,8 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     ):
         raise ValueError("Pipeline inputs or executing code changed during generation")
     inspection_paths = complete_inspection(
-        cave_geometry, export_result, resolution_report, args.output.parent
+        cave_geometry, export_result, resolution_report, args.output.parent,
+        acceptance=project_config.acceptance, export_config=project_config.export,
     )
     manifest_outputs.extend(inspection_paths)
     completed_outputs.extend(inspection_paths)

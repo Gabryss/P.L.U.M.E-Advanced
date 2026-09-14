@@ -342,3 +342,6 @@ cave_diffuse_texture = "../texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg"
 cave_normal_texture = "../texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr"
 cave_roughness_texture = "../texture/dark_rock_8k/textures/dark_rock_rough_8k.exr"
 cave_displacement_texture = "../texture/dark_rock_8k/textures/dark_rock_disp_8k.png"
+
+[acceptance]
+profile = "research"

@@ -297,7 +297,8 @@ def build_accepted_base(
                     record["assessment"] = assessment
                     if not assessment["accepted"]:
                         raise NetworkQualityError(assessment)
-                geometry = build_with_resolution_checks(network, sections, controls, progress=progress)
+                geometry = build_with_resolution_checks(network, sections, controls, progress=progress,
+                                                        acceptance=project.acceptance)
                 record["resolution_repair"] = dict(geometry.resolution_repair)
                 if kind.startswith("local_") or kind == "route_clearance_repair":
                     # In addition to all new centres, protect the original local

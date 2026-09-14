@@ -56,5 +56,8 @@ jobs:
           config = cli.load_project_config(package.joinpath("default_project.toml"))
           assert config.geometry.required_route_height_m == 0.5
           assert config.geometry.required_route_width_m == 0.5
+          assert config.acceptance.profile == "inspection"
+          assert config.export.generate_collision
+          assert config.export.max_visual_triangles > 0 and config.export.max_asset_bytes > 0
           assert all(package.joinpath("material_assets", name).read_bytes() for name in ASSET_FILES)
           PY

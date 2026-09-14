@@ -6,6 +6,13 @@ command to trigger them. The separate `plume-check` command adds multi-seed
 campaigns, process limits and cold reproducibility replays when you want broader
 regression evidence.
 
+Choose an [acceptance profile](acceptance.md) in your configuration. The packaged
+default and the six main short/long comparison presets use `inspection`, requiring
+0.5 m height × 0.5 m width with the existing 0.02 m margin, a dedicated checked
+collider, and finite export limits. `simulation` also requires resolution evidence
+and limits procedural relief reduction. A seed that cannot meet the requirements
+within its repair budget stops; the policy is never weakened automatically.
+
 Texture inspection and bounded repair are also automatic in full runs. See
 [the material repair contract](materials.md#automatic-texture-inspection-and-repair).
 Inspect `export_TARGET/texture_recovery.json` for map repairs and package retries;
@@ -75,6 +82,11 @@ This checks configuration loading, required input files and EXR conversion-tool
 availability. It reports disabled export budgets. It does not generate a network,
 measure clearances, check image contents or import into an engine. Fix any missing
 texture files before running the full textured scenario.
+
+Preflight also rejects contradictory acceptance controls and unavailable required
+capabilities. In particular, native tools are still separate from publication:
+`acceptance.require_native = true` stops full runs as unavailable. Stage-only
+campaigns explicitly report that the full acceptance profile was not evaluated.
 
 ## Generate and check ten small caves
 

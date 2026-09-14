@@ -9,7 +9,7 @@ import sys
 from contextlib import contextmanager
 from dataclasses import asdict
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from plume_advanced.identity import runtime_identity, sha256_file
 
@@ -78,10 +78,11 @@ def plan_identity(cases: list[ReliabilityCase], *, source: str, replay: bool) ->
 
 
 def preflight(cases: list[ReliabilityCase], output: Path | None = None) -> dict:
+    from plume_advanced.acceptance import require_available_acceptance
     from plume_advanced.config import load_project_config
     from plume_advanced.evaluation.reliability_reports import diagnose
 
-    records = []
+    records: list[dict[str, Any]] = []
     for case in cases:
         try:
             if case.voxel_size is not None and (
@@ -97,6 +98,7 @@ def preflight(cases: list[ReliabilityCase], output: Path | None = None) -> dict:
                     raise FileNotFoundError(path)
             warnings = []
             if case.scope == "full":
+                require_available_acceptance(project.acceptance)
                 voxel = case.voxel_size or project.geometry.voxel_size
                 warnings.append(
                     f"Voxel size {voxel:g} m: passage resolution is measured after sections; configuration alone cannot certify it."
@@ -110,11 +112,15 @@ def preflight(cases: list[ReliabilityCase], output: Path | None = None) -> dict:
                     warnings.append(
                         "Some export budgets are disabled. Set export.max_visual_triangles and max_asset_bytes to your simulation limits."
                     )
-            records.append(dict(case=asdict(case), status="passed", warnings=warnings))
+            elif project.acceptance.profile != "research":
+                warnings.append("Stage-only evaluation: the full acceptance profile was not evaluated.")
+            records.append(dict(case=asdict(case), status="passed", warnings=warnings,
+                                acceptance_policy=asdict(project.acceptance)))
         except Exception as error:
             records.append(
                 dict(
-                    case=asdict(case), status="failed", diagnostic=diagnose(error, "configuration")
+                    case=asdict(case), status="failed", diagnostic=diagnose(error, "configuration"),
+                    inspection=getattr(error, "report", None),
                 )
             )
     free = None

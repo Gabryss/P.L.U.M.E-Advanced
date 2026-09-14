@@ -3,23 +3,25 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import trimesh
 
+from plume_advanced.acceptance import require_available_acceptance
 from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.artifacts import geometry_semantic_hash
 from plume_advanced.evaluation.config import EvaluationConfig
 from plume_advanced.evaluation.experiments.common import config_hash, for_seed, generate_sections
+from plume_advanced.evaluation.local_geometry import section_resolution_report
 from plume_advanced.evaluation.provenance import capture_provenance
 from plume_advanced.evaluation.runner import ResultStore, run_case
 from plume_advanced.evaluation.schema import ExperimentResult
 from plume_advanced.exporters import export_target_asset
 from plume_advanced.pipeline.recovery import build_accepted_base
 from plume_advanced.stages.geometry import GeometryGenerator
-from plume_advanced.world import ExportConfig
 
 
 def run_export_consistency(config: EvaluationConfig, *, force: bool = False) -> dict:
@@ -51,6 +53,7 @@ def run_export_consistency(config: EvaluationConfig, *, force: bool = False) -> 
         )
 
         def operation(project=project, seed=seed):
+            require_available_acceptance(project.acceptance)
             host, network, sections = generate_sections(project)
             accepted = build_accepted_base(project, host, network, sections)
             geometry = GeometryGenerator(accepted.geometry.config).finalize(accepted.geometry)
@@ -60,9 +63,11 @@ def run_export_consistency(config: EvaluationConfig, *, force: bool = False) -> 
             output = asset_root / f"seed-{seed:06d}"
             result = export_target_asset(
                 geometry,
-                ExportConfig(target="all", file_format="auto", generate_collision=True),
+                replace(project.export, target="all", file_format="auto", generate_collision=True),
                 output,
                 asset_name=f"plume_seed_{seed:06d}",
+                acceptance=project.acceptance,
+                resolution=section_resolution_report(accepted.sections, geometry.voxel_grid.voxel_size),
             )
             manifest = json.loads(result.primary_asset.read_text(encoding="utf-8"))
             checks = [
@@ -70,6 +75,7 @@ def run_export_consistency(config: EvaluationConfig, *, force: bool = False) -> 
                 for target in targets
             ]
             return {
+                "acceptance": json.loads((output / "pipeline_inspection.json").read_text())["acceptance"],
                 "canonical_scene_hash": canonical_hash,
                 "canonical_bbox_m": canonical_bounds.tolist(),
                 "target_checks": checks,

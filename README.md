@@ -14,6 +14,12 @@ Ordinary `plume-generate` runs include evaluation, actual-mesh inspection and bo
 
 See the [reliability and testing guide](docs/reliability.md) for seed campaigns, detailed progress, native Blender tests, and simulation export budgets.
 
+[Acceptance profiles](docs/acceptance.md) declare which results a full run must
+demonstrate before publication. The packaged default and short/long comparison
+presets require the requested 0.5 m × 0.5 m route clearance, a checked collider
+and finite export limits. Simulation additionally requires resolution evidence
+and a declared limit on procedural relief reduction.
+
 ### Purpose and scientific contribution
 
 The project's contribution is an integrated, testable generation method:
@@ -107,6 +113,11 @@ and `pipeline_recovery.json` beside the output; the prepared asset is
 use `config/earth_short_interconnected_full.toml` with a fresh output directory
 after providing its texture inputs. See [self-service generation and diagnosis](docs/self-service.md).
 
+Inspect the report's `acceptance.checks`: an unchecked requirement is labelled
+`not_requested`, and missing required evidence blocks export. These presets use
+`acceptance.profile = "inspection"`; select `simulation` for the stronger
+numerical requirements described in the [profile guide](docs/acceptance.md).
+
 ### Geometry-only research workflow
 
 Start from the dedicated low Earth scenario, which includes the current surface relief and disables optional events and rocks:
@@ -136,7 +147,7 @@ It writes:
 | `inspection_views.png`, `inspection_cameras.json` | Views rendered from the GLB and their reproducible cameras |
 | `mesh_section_checks.json` | Transverse spot checks through the exported surface |
 
-The helper refuses configurations with `events.enabled` or `events.include_rock_props` enabled. Mandatory roof screening still runs. It does not run the main command's checkpoint, floor-atlas, material, or target-package stages. Choose a fresh output directory: this helper does not implement the main command's overwrite confirmation.
+The helper requires unrestricted research acceptance and refuses configurations with `events.enabled` or `events.include_rock_props` enabled. Mandatory roof screening still runs. It does not run the main command's checkpoint, floor-atlas, material, or target-package stages. Choose a fresh output directory: this helper does not implement the main command's overwrite confirmation.
 
 For a different realization, copy `config/earth_tube_only.toml` to `config/my_earth_tube.toml`, change the **top-level** `procedural_seed`, and pass that file to `--config`. The README example uses seed 4; the bundled inspection configuration retains seed 2 for comparison. Keep copies inside `config/`, or adjust relative asset paths when moving them elsewhere.
 
@@ -344,8 +355,8 @@ reproducibility for the short and long presets.
 
 ### Independent systems with gallery validation and history
 
-[config/earth_independent_gallery.toml](config/earth_independent_gallery.toml) is the
-recommended preset for the current compact, rock-free inspection. Three independently
+[config/earth_independent_gallery.toml](config/earth_independent_gallery.toml) is a
+research preset for compact, rock-free gallery studies. Three independently
 seeded systems share a host, merge according to their route preferences, and can split
 and rejoin around local rock islands. Four formation phases add finite-budget blind
 breakouts, inactive intervals, passage reuse and conditional drained pools.
@@ -467,7 +478,8 @@ for all thresholds, reproduction rules and the inexpensive preview workflow.
 | `[world]` | Body, material, gravity, formation limits, strength | `body`, `material`, `gravity_m_s2`, `maximum_passage_width_m`, `maximum_room_width_m`, `roof_safety_factor` |
 | `[flow_regime]` | Dimensionless eruption scenario | `supply_rate_scale`, `duration_scale`, `inflation`, `distributary_tendency`, `cooling_rate_scale` |
 | `[run]` | Extent, quality, plots, overwrite behavior | `dev_mode`, `dev_max_route_length_m`, `dev_max_lobe_paths`, `quality`, `render_diagnostics` |
-| `[export]` | Destination package and collision output | `target`, `format`, `generate_collision` |
+| `[acceptance]` | Required evidence before publication, independent of `run.quality` | `profile`, `require_textures`, `require_native`, `minimum_relief_scale`; see [all controls and limits](docs/acceptance.md) |
+| `[export]` | Destination package, collision output and finite size limits | `target`, `format`, `generate_collision`, `max_visual_triangles`, `max_asset_bytes` |
 | `[host_field]` and nested tables | Host domain, terrain variation, routing contributions | `apply_body_scaling`, `grid`, `ranges`, `wave_ranges`, `routing_weights` |
 | `[network]` | Sources, branch opportunities, growth backend | `emplacement_backend`, `network_density`, `lobe_launch_rate`, `loop_probability`, `capture_probability`, `chamber_gain` |
 | `[geometry]` recovery controls | Upstream feedback after failed surface repair | `recovery_local_attempts` (0–2), `recovery_network_attempts` (0–8); both default to 2 |

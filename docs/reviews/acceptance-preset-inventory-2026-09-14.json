@@ -1,0 +1,471 @@
+{
+  "schema": "plume.acceptance-inventory.v1",
+  "source_sha256": "fe1fd41c8b43f724c09949c4858f716409d433e3b385012e0bbccf570e19a52b",
+  "configurations": [
+    {
+      "path": "config/earth_full_inspection_seed20260910.toml",
+      "acceptance": {
+        "profile": "research",
+        "require_clearance": false,
+        "require_collision": false,
+        "require_export_budgets": false,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.0,
+        "width_m": 0.0,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": false,
+        "max_visual_triangles": 0,
+        "max_asset_bytes": 0
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_independent_gallery.toml",
+      "acceptance": {
+        "profile": "research",
+        "require_clearance": false,
+        "require_collision": false,
+        "require_export_budgets": false,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.0,
+        "width_m": 0.0,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": false,
+        "max_visual_triangles": 0,
+        "max_asset_bytes": 0
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_interacting_systems.toml",
+      "acceptance": {
+        "profile": "research",
+        "require_clearance": false,
+        "require_collision": false,
+        "require_export_budgets": false,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.0,
+        "width_m": 0.0,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": false,
+        "max_visual_triangles": 0,
+        "max_asset_bytes": 0
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_long_interconnected.toml",
+      "acceptance": {
+        "profile": "research",
+        "require_clearance": false,
+        "require_collision": false,
+        "require_export_budgets": false,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.0,
+        "width_m": 0.0,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": false,
+        "max_visual_triangles": 0,
+        "max_asset_bytes": 0
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_long_interconnected_full.toml",
+      "acceptance": {
+        "profile": "inspection",
+        "require_clearance": true,
+        "require_collision": true,
+        "require_export_budgets": true,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.5,
+        "width_m": 0.5,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": true,
+        "max_visual_triangles": 2000000,
+        "max_asset_bytes": 268435456
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_long_multi.toml",
+      "acceptance": {
+        "profile": "inspection",
+        "require_clearance": true,
+        "require_collision": true,
+        "require_export_budgets": true,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.5,
+        "width_m": 0.5,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": true,
+        "max_visual_triangles": 2000000,
+        "max_asset_bytes": 268435456
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_long_single.toml",
+      "acceptance": {
+        "profile": "inspection",
+        "require_clearance": true,
+        "require_collision": true,
+        "require_export_budgets": true,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.5,
+        "width_m": 0.5,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": true,
+        "max_visual_triangles": 2000000,
+        "max_asset_bytes": 268435456
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_short_interconnected.toml",
+      "acceptance": {
+        "profile": "research",
+        "require_clearance": false,
+        "require_collision": false,
+        "require_export_budgets": false,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.0,
+        "width_m": 0.0,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": false,
+        "max_visual_triangles": 0,
+        "max_asset_bytes": 0
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_short_interconnected_full.toml",
+      "acceptance": {
+        "profile": "inspection",
+        "require_clearance": true,
+        "require_collision": true,
+        "require_export_budgets": true,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.5,
+        "width_m": 0.5,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": true,
+        "max_visual_triangles": 2000000,
+        "max_asset_bytes": 268435456
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_short_multi.toml",
+      "acceptance": {
+        "profile": "inspection",
+        "require_clearance": true,
+        "require_collision": true,
+        "require_export_budgets": true,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.5,
+        "width_m": 0.5,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": true,
+        "max_visual_triangles": 2000000,
+        "max_asset_bytes": 268435456
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_short_single.toml",
+      "acceptance": {
+        "profile": "inspection",
+        "require_clearance": true,
+        "require_collision": true,
+        "require_export_budgets": true,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.5,
+        "width_m": 0.5,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": true,
+        "max_visual_triangles": 2000000,
+        "max_asset_bytes": 268435456
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_tube_only.toml",
+      "acceptance": {
+        "profile": "research",
+        "require_clearance": false,
+        "require_collision": false,
+        "require_export_budgets": false,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.0,
+        "width_m": 0.0,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "neutral",
+        "file_format": "glb",
+        "generate_collision": false,
+        "max_visual_triangles": 0,
+        "max_asset_bytes": 0
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_valentine_multi_inspection_seed20260910.toml",
+      "acceptance": {
+        "profile": "research",
+        "require_clearance": false,
+        "require_collision": false,
+        "require_export_budgets": false,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.0,
+        "width_m": 0.0,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": false,
+        "max_visual_triangles": 0,
+        "max_asset_bytes": 0
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/earth_valentine_topology.toml",
+      "acceptance": {
+        "profile": "research",
+        "require_clearance": false,
+        "require_collision": false,
+        "require_export_budgets": false,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.0,
+        "width_m": 0.0,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "blender",
+        "file_format": "glb",
+        "generate_collision": false,
+        "max_visual_triangles": 0,
+        "max_asset_bytes": 0
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "config/project.toml",
+      "acceptance": {
+        "profile": "research",
+        "require_clearance": false,
+        "require_collision": false,
+        "require_export_budgets": false,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.5,
+        "width_m": 0.5,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "all",
+        "file_format": "auto",
+        "generate_collision": true,
+        "max_visual_triangles": 0,
+        "max_asset_bytes": 0
+      },
+      "refinement_attempts": 0
+    },
+    {
+      "path": "src/plume_advanced/default_project.toml",
+      "acceptance": {
+        "profile": "inspection",
+        "require_clearance": true,
+        "require_collision": true,
+        "require_export_budgets": true,
+        "require_resolution": false,
+        "require_textures": false,
+        "require_native": false,
+        "route_height_m": 0.5,
+        "route_width_m": 0.5,
+        "route_margin_m": 0.02,
+        "minimum_relief_scale": 0.0
+      },
+      "clearance": {
+        "height_m": 0.5,
+        "width_m": 0.5,
+        "margin_m": 0.02
+      },
+      "export": {
+        "target": "neutral",
+        "file_format": "glb",
+        "generate_collision": true,
+        "max_visual_triangles": 2000000,
+        "max_asset_bytes": 268435456
+      },
+      "refinement_attempts": 0
+    }
+  ],
+  "scope": "Resolved controls only; not a generation campaign or a claim that all presets pass their budgets"
+}
