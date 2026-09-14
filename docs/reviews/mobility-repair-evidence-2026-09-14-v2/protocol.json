@@ -1,0 +1,46 @@
+{
+  "schema": "plume.mobility-repair-campaign.v2",
+  "source_sha256": "37be7b85ad32ad9792766839894c28bd1be4b98a6e6cc1587b833fcc30972336",
+  "seeds": [
+    1,
+    42,
+    4294967295
+  ],
+  "recipes": [
+    {
+      "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/mobility-repair-evidence-2026-09-14-v2/single_250m_4k.toml",
+      "sha256": "af62e5d93f09781f5fc2269e4f26bdd6f5bce8d88f60aae579f1a454e48c3419",
+      "baseline_sha256": "840f34d859f325f02cdff0b247aedf598c97a85d0bc054cb24ec1807f22b3f7b"
+    },
+    {
+      "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/mobility-repair-evidence-2026-09-14-v2/multi_250m_4k.toml",
+      "sha256": "26f9e3a00f520453ddbd4cc2811c6a08c9f9ee3c0e86b8d91d40d2f4e8913998",
+      "baseline_sha256": "f0a02e14a4f721ff577b6b12781509591d51cc624f89976d673bf6e78659e765"
+    }
+  ],
+  "voxel_size_m": 0.12,
+  "required_capsule_m": [
+    0.5,
+    0.5
+  ],
+  "margin_m": 0.02,
+  "texture_resolution": 4096,
+  "tile_size_m": 4,
+  "rocks": false,
+  "scope": "full",
+  "cold_replays": true,
+  "maximum_worker_seconds": 3600,
+  "maximum_worker_address_space_mib": 8192,
+  "resolution_policy": "Keep original 12 cm production grid; separately test opt-in bounded convergence on a real 20 m fixture and record the interrupted development 250 m study without claiming convergence.",
+  "native_scope": "Every accepted original in Unity and Unreal; all planned branch views plus independently imported dedicated collider; editor workload timings and memory, not application frame rate.",
+  "files": {
+    "pyproject.toml": "4115b9a0f451f9af3c32d94f8ca249c0ef4be45067bedafb4dfdc47305c21f8e",
+    "uv.lock": "5e55003072a706c46849b829380d5811281917cede940612cec8700346c5998e",
+    "scripts/check_native_engines.py": "983b81ba1e8aa0c9e49aecd717d7db0dff740aa98d00e5ea68e43795e07e4258",
+    "tests/fixtures/unity/PlumeNativeCheck.cs": "e39ad9e072d93c3f919001635f0644b45f4b6857f1df447f6e42011e280a1239",
+    "tests/fixtures/unreal/native_check.py": "43b854e927308efeb1488229507f1bc56e3bac54b56d697f85ff236664c07e48",
+    "tests/fixtures/geometry/collider_float32_seed1.npz": "a0d9c962f975f6198753fa882335d873dd2147e09540e6ae0f19fa170fc55cdf",
+    "src/plume_advanced/exporters/collision.py": "0bc828f35ac8c0974662f3bda1736856ca4339c9f94188893bb1612fac9c04ef"
+  },
+  "revision_reason": "Native Unreal inspection rejected lost collider triangles. Production now checks and repairs local float32 metre/centimetre triangle damage before full collider acceptance; failed v1 and export-only development evidence are retained."
+}

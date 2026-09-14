@@ -1,0 +1,56 @@
+{
+  "schema": "plume.mobility-repair-campaign.v3",
+  "source_sha256": "9a4e20c4b9d5db9734a95e1942838f48b850703132d3874baf3d5b37ce0476c4",
+  "seeds": [
+    1,
+    42,
+    4294967295
+  ],
+  "recipes": [
+    {
+      "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/mobility-repair-evidence-2026-09-14-v3/single_250m_4k.toml",
+      "sha256": "b50e23421419a0c780a69a03b2e37918591453450e59456215ed432938fd12d2",
+      "baseline_sha256": "840f34d859f325f02cdff0b247aedf598c97a85d0bc054cb24ec1807f22b3f7b"
+    },
+    {
+      "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/mobility-repair-evidence-2026-09-14-v3/multi_250m_4k.toml",
+      "sha256": "e73c344c0dad7ee169fa64a6d9708bba058586409562f482ccd4ec6af0a94702",
+      "baseline_sha256": "f0a02e14a4f721ff577b6b12781509591d51cc624f89976d673bf6e78659e765"
+    }
+  ],
+  "voxel_size_m": 0.12,
+  "required_capsule_m": [
+    0.5,
+    0.5
+  ],
+  "margin_m": 0.02,
+  "texture_resolution": 4096,
+  "tile_size_m": 4,
+  "rocks": false,
+  "scope": "full",
+  "cold_replays": true,
+  "maximum_worker_seconds": 3600,
+  "maximum_worker_address_space_mib": 8192,
+  "resolution_policy": "Keep original 12 cm production grid; separately test opt-in bounded convergence on a real 20 m fixture and record the interrupted development 250 m study without claiming convergence.",
+  "native_scope": "Every accepted original in Unity and Unreal; all planned branch views plus independently imported dedicated collider; editor workload timings and memory, not application frame rate.",
+  "files": {
+    "pyproject.toml": "4115b9a0f451f9af3c32d94f8ca249c0ef4be45067bedafb4dfdc47305c21f8e",
+    "uv.lock": "5e55003072a706c46849b829380d5811281917cede940612cec8700346c5998e",
+    "scripts/check_native_engines.py": "983b81ba1e8aa0c9e49aecd717d7db0dff740aa98d00e5ea68e43795e07e4258",
+    "tests/fixtures/unity/PlumeNativeCheck.cs": "e39ad9e072d93c3f919001635f0644b45f4b6857f1df447f6e42011e280a1239",
+    "tests/fixtures/unreal/native_check.py": "43b854e927308efeb1488229507f1bc56e3bac54b56d697f85ff236664c07e48",
+    "tests/fixtures/geometry/collider_float32_seed1.npz": "a0d9c962f975f6198753fa882335d873dd2147e09540e6ae0f19fa170fc55cdf",
+    "src/plume_advanced/exporters/collision.py": "0bc828f35ac8c0974662f3bda1736856ca4339c9f94188893bb1612fac9c04ef",
+    "src/plume_advanced/stages/route_placement.py": "7e7bb5b23c72d2305ca3fff4490e49141c4788b5446afbf0b33883ff50a91ada",
+    "src/plume_advanced/stages/route_clearance.py": "3675ad26931af54aca5ef68b9052c79e4c9ed34a75bef108a04b7374ac5c48da",
+    "tests/fixtures/geometry/route_placement_seed42.npz": "beeb1efa5fcac9dfe528dbde9fa786d98b72361b403e56f48c778770c8e292da",
+    "tests/test_route_placement.py": "d0d78fa11ed9bc0ec69d3783c2006b74c564c19de0452bdd7e03150873833874",
+    "tests/fixtures/blender/triplanar_check.py": "42fb009ff2804b5cdeac6139ee63c98faad5bd6bd342635b225ea8a5d88a7f3f",
+    "tests/fixtures/blender/material_check.py": "9dfb02a26b999c6a5f32f7cd1b3ca3b718cf1e489f48e9ef0799c5120b6b531c",
+    "src/plume_advanced/default_project.toml": "8afad2120b8633bb1e02e4e54812386debb5ce480ae725a4f11e276a05710be8"
+  },
+  "revision_reason": "V2 multi seed 42 rejected all bounded candidates because its midpoint route intersected a step. A local vertical search proved a valid corridor through the exact rejected mesh. Production now performs that bounded search and independently resweeps the whole path before modifying geometry. V1/V2 failures remain retained.",
+  "worker_layout": "Three concurrent seed groups; each runs multi then single, with a cold replay after each original.",
+  "route_placement_repair_attempts": 3,
+  "route_placement_max_sweeps": 20000
+}

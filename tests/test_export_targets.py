@@ -21,6 +21,40 @@ from plume_advanced.world import ExportConfig
 
 
 class TargetExporterTests(unittest.TestCase):
+    def test_textured_all_targets_share_one_continuous_material_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            maps = {}
+            for role, color in (
+                ("diffuse", (90, 82, 72)),
+                ("normal", (128, 128, 255)),
+                ("roughness", (220, 220, 220)),
+            ):
+                path = root / f"{role}.png"
+                Image.new("RGB", (4, 4), color).save(path)
+                maps[f"cave_{role}_texture"] = str(path)
+            geometry = self._geometry()
+            geometry = replace(geometry, config=replace(geometry.config, **maps))
+            result = export_target_asset(
+                geometry,
+                ExportConfig(target="all", file_format="auto", generate_collision=False),
+                root / "export",
+                asset_name="tube",
+            )
+            manifest = json.loads(result.primary_asset.read_text())
+            shared = [root / "export" / name for name in manifest["shared_files"]]
+            self.assertTrue(shared)
+            self.assertTrue(all(path.is_file() for path in shared))
+            self.assertTrue(set(shared) <= set(result.files))
+            self.assertEqual(len(tuple((root / "export").rglob("plume_triplanar_body.hlsl"))), 1)
+            self.assertEqual(
+                len(tuple((root / "export/continuous_material/textures").glob("*.png"))), 3
+            )
+            recorded = {result.primary_asset, root / "export/export_size_report.json", *shared}
+            for target in manifest["targets"].values():
+                recorded.update(root / "export" / name for name in target["files"])
+            self.assertEqual(recorded, set(result.files))
+
     def test_unassembled_geometry_is_rejected_before_export(self) -> None:
         geometry = replace(self._geometry(), assembled_vertices=(), assembled_faces=())
         with tempfile.TemporaryDirectory() as temporary:
@@ -38,11 +72,14 @@ class TargetExporterTests(unittest.TestCase):
             marker = output / "previous-package.txt"
             marker.write_text("complete", encoding="utf-8")
 
-            with patch.object(
-                target_module,
-                "_export_glb_or_obj",
-                side_effect=RuntimeError("synthetic adapter failure"),
-            ), self.assertRaisesRegex(RuntimeError, "synthetic adapter failure"):
+            with (
+                patch.object(
+                    target_module,
+                    "_export_glb_or_obj",
+                    side_effect=RuntimeError("synthetic adapter failure"),
+                ),
+                self.assertRaisesRegex(RuntimeError, "synthetic adapter failure"),
+            ):
                 export_target_asset(
                     self._geometry(),
                     ExportConfig(target="neutral", file_format="glb"),
@@ -90,9 +127,12 @@ class TargetExporterTests(unittest.TestCase):
                 output.mkdir()
                 marker = output / "existing.txt"
                 marker.write_text("preserve", encoding="utf-8")
-                with self.subTest(target=config.target), self.assertRaisesRegex(
-                    ValueError,
-                    message,
+                with (
+                    self.subTest(target=config.target),
+                    self.assertRaisesRegex(
+                        ValueError,
+                        message,
+                    ),
                 ):
                     export_target_asset(
                         self._geometry(),
@@ -113,16 +153,10 @@ class TargetExporterTests(unittest.TestCase):
             )
 
             self.assertEqual(result.primary_asset.name, "plume_cave_scene.glb")
-            self.assertTrue(
-                (Path(temp_dir) / "plume_cave_scene_fallback.obj").is_file()
-            )
-            self.assertTrue(
-                (Path(temp_dir) / "plume_cave_scene_fallback.mtl").is_file()
-            )
+            self.assertTrue((Path(temp_dir) / "plume_cave_scene_fallback.obj").is_file())
+            self.assertTrue((Path(temp_dir) / "plume_cave_scene_fallback.mtl").is_file())
             descriptor = json.loads(
-                (Path(temp_dir) / "plume_cave_scene.neutral.json").read_text(
-                    encoding="utf-8"
-                )
+                (Path(temp_dir) / "plume_cave_scene.neutral.json").read_text(encoding="utf-8")
             )
             conventions = descriptor["target_conventions"]
             self.assertEqual(conventions["application_length_unit"], "metre")
@@ -150,21 +184,15 @@ class TargetExporterTests(unittest.TestCase):
             self.assertGreater(len(collision.faces), 0)
             self.assertTrue(collision.is_winding_consistent)
             self.assertTrue((output / "tube_import_blender.py").is_file())
-            instructions = (output / "README_IMPORT_BLENDER.txt").read_text(
-                encoding="utf-8"
-            )
+            instructions = (output / "README_IMPORT_BLENDER.txt").read_text(encoding="utf-8")
             self.assertIn("Do not use File > Open", instructions)
             self.assertIn("File > Import > glTF 2.0", instructions)
             validation = json.loads(
-                (output / "tube.blender_validation.json").read_text(
-                    encoding="utf-8"
-                )
+                (output / "tube.blender_validation.json").read_text(encoding="utf-8")
             )
             self.assertTrue(validation["valid"])
             self.assertGreater(validation["geometry_count"], 0)
-            descriptor = json.loads(
-                (output / "tube.blender.json").read_text(encoding="utf-8")
-            )
+            descriptor = json.loads((output / "tube.blender.json").read_text(encoding="utf-8"))
             self.assertEqual(descriptor["target"], "blender")
             self.assertIn("not File > Open", descriptor["target_conventions"]["note"])
 
@@ -178,9 +206,7 @@ class TargetExporterTests(unittest.TestCase):
             )
 
             self.assertEqual(result.primary_asset.suffix, ".glb")
-            descriptor = json.loads(
-                (Path(temp_dir) / "tube.ue5.json").read_text(encoding="utf-8")
-            )
+            descriptor = json.loads((Path(temp_dir) / "tube.ue5.json").read_text(encoding="utf-8"))
             self.assertEqual(
                 descriptor["target_conventions"]["application_units_per_asset_metre"],
                 100.0,
@@ -211,9 +237,7 @@ class TargetExporterTests(unittest.TestCase):
             output = Path(temp_dir)
             self.assertEqual(result.primary_asset, output / "tube.glb")
             self.assertFalse((output / "tube_collision.obj").exists())
-            descriptor = json.loads(
-                (output / "tube.unity.json").read_text(encoding="utf-8")
-            )
+            descriptor = json.loads((output / "tube.unity.json").read_text(encoding="utf-8"))
             conventions = descriptor["target_conventions"]
             self.assertEqual(conventions["application_coordinates"], "left-handed Y-up")
             self.assertEqual(conventions["application_length_unit"], "metre")
@@ -246,11 +270,15 @@ class TargetExporterTests(unittest.TestCase):
             self.assertTrue((Path(temp_dir) / "blender" / "tube.glb").is_file())
             self.assertTrue((Path(temp_dir) / "ue5" / "tube.glb").is_file())
             self.assertTrue((Path(temp_dir) / "unity" / "tube.glb").is_file())
-            self.assertTrue(
-                (Path(temp_dir) / "gazebo" / "tube" / "model.sdf").is_file()
-            )
+            self.assertTrue((Path(temp_dir) / "gazebo" / "tube" / "model.sdf").is_file())
             self.assertTrue((Path(temp_dir) / "omniverse" / "tube.usd").is_file())
-            recorded_files: set[Path] = {result.primary_asset, Path(temp_dir) / "export_size_report.json"}
+            recorded_files: set[Path] = {
+                result.primary_asset,
+                Path(temp_dir) / "export_size_report.json",
+            }
+            recorded_files.update(
+                Path(temp_dir) / name for name in manifest.get("shared_files", ())
+            )
             for target, record in manifest["targets"].items():
                 primary = Path(temp_dir) / record["primary_asset"]
                 files = [Path(temp_dir) / value for value in record["files"]]
@@ -262,8 +290,8 @@ class TargetExporterTests(unittest.TestCase):
             self.assertEqual(set(result.files), recorded_files)
 
     def test_gazebo_package_contains_relocatable_sdf_model(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            source_texture = Path(temp_dir) / "source_diffuse.png"
+        with tempfile.TemporaryDirectory() as temp_dir, tempfile.TemporaryDirectory() as source_dir:
+            source_texture = Path(source_dir) / "source_diffuse.png"
             Image.new("RGB", (4, 4), (90, 82, 72)).save(source_texture)
             geometry = self._geometry()
             geometry = replace(
@@ -290,19 +318,19 @@ class TargetExporterTests(unittest.TestCase):
             self.assertIn("model://tube/meshes/tube_collision.obj", sdf)
             self.assertIn("<static>true</static>", sdf)
             self.assertTrue((Path(temp_dir) / "tube.world.sdf").is_file())
-            descriptor = json.loads(
-                (package / "plume_export.json").read_text(encoding="utf-8")
-            )
+            descriptor = json.loads((package / "plume_export.json").read_text(encoding="utf-8"))
             self.assertEqual(descriptor["gazebo_release"], "Jetty")
             self.assertEqual(descriptor["sdformat_major"], 16)
-            copied_texture = package / "materials" / "textures" / source_texture.name
-            self.assertTrue(copied_texture.is_file())
+            copied_textures = list((package / "materials" / "textures").glob("diffuse_*.png"))
+            self.assertEqual(len(copied_textures), 1)
+            with Image.open(copied_textures[0]) as copied:
+                self.assertEqual(copied.getpixel((0, 0)), (90, 82, 72))
             material = (package / "meshes" / "tube.mtl").read_text(encoding="utf-8")
-            self.assertIn("../materials/textures/source_diffuse.png", material)
+            self.assertIn("../materials/textures/" + copied_textures[0].name, material)
 
     def test_omniverse_package_declares_usd_units_and_axis(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            texture_dir = Path(temp_dir) / "source_textures"
+        with tempfile.TemporaryDirectory() as temp_dir, tempfile.TemporaryDirectory() as source_dir:
+            texture_dir = Path(source_dir) / "source_textures"
             texture_dir.mkdir()
             diffuse = texture_dir / "diffuse.png"
             normal = texture_dir / "normal.png"
@@ -389,11 +417,7 @@ class TargetExporterTests(unittest.TestCase):
             self.assertTrue((Path(temp_dir) / "tube_textures" / "cave_base_color.png").is_file())
             self.assertTrue((Path(temp_dir) / "tube_textures" / "cave_normal.png").is_file())
             self.assertTrue(
-                (
-                    Path(temp_dir)
-                    / "tube_textures"
-                    / "cave_metallic_roughness.png"
-                ).is_file()
+                (Path(temp_dir) / "tube_textures" / "cave_metallic_roughness.png").is_file()
             )
 
     def test_collision_can_be_disabled_for_gazebo_and_omniverse(self) -> None:
@@ -410,9 +434,7 @@ class TargetExporterTests(unittest.TestCase):
                 asset_name="tube",
             )
             gazebo_sdf = gazebo.primary_asset.read_text(encoding="utf-8")
-            self.assertFalse(
-                (root / "gazebo" / "tube" / "meshes" / "tube_collision.obj").exists()
-            )
+            self.assertFalse((root / "gazebo" / "tube" / "meshes" / "tube_collision.obj").exists())
             self.assertEqual(gazebo_sdf.count("model://tube/meshes/tube.obj"), 2)
 
             omniverse = export_target_asset(

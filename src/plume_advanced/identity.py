@@ -14,6 +14,7 @@ DEPENDENCIES = (
     "scipy",
     "scikit-image",
     "trimesh",
+    "fast-simplification",
     "xatlas",
     "pillow",
     "rich",
@@ -52,11 +53,16 @@ def runtime_identity() -> dict:
 
 
 def package_source_hash(package_root: Path | None = None) -> str:
-    """Identify executing code independently of the caller's working directory."""
+    """Identify Python and shipped material resources independently of the CWD."""
     package = package_root if package_root is not None else Path(__file__).parent
-    paths = sorted(package.rglob("*.py"))
-    if not paths:
+    python_paths = set(package.rglob("*.py"))
+    if not python_paths:
         raise ValueError(f"No Python source in package: {package}")
+    resources = {
+        path for path in (package / "material_assets").rglob("*")
+        if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc"
+    }
+    paths = sorted(python_paths | resources)
     digest = hashlib.sha256()
     for path in paths:
         digest.update(path.relative_to(package).as_posix().encode())

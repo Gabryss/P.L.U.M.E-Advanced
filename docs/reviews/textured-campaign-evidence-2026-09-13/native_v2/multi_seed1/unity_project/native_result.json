@@ -1,0 +1,53 @@
+{
+    "passed": true,
+    "unity": "6000.6.0f1",
+    "api": "Vulkan",
+    "graphics": "NVIDIA GeForce RTX 3070",
+    "failure": "",
+    "triangles": 1217552,
+    "vertices": 654929,
+    "passageSamples": 541,
+    "passagePassed": 541,
+    "maximumVertexErrorM": 0.0,
+    "maximumClearanceErrorM": 0.00000858306884765625,
+    "uvRenderDifference": 0.0,
+    "normalRenderDifference": 0.03404733166098595,
+    "shaderErrors": [],
+    "textures": [
+        {
+            "property": "_ColorMap",
+            "type": "Default",
+            "compression": "Uncompressed",
+            "wrap": "Repeat",
+            "srgb": true,
+            "width": 4096,
+            "height": 4096
+        },
+        {
+            "property": "_NormalMap",
+            "type": "Default",
+            "compression": "Uncompressed",
+            "wrap": "Repeat",
+            "srgb": false,
+            "width": 4096,
+            "height": 4096
+        },
+        {
+            "property": "_RoughnessMap",
+            "type": "Default",
+            "compression": "Uncompressed",
+            "wrap": "Repeat",
+            "srgb": false,
+            "width": 4096,
+            "height": 4096
+        }
+    ],
+    "viewLightIntensity": [
+        1.5,
+        6.0
+    ],
+    "viewClippedFraction": [
+        0.002763671800494194,
+        0.00003255208503105678
+    ]
+}

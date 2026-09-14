@@ -17,6 +17,7 @@ from plume_advanced.evaluation.provenance import capture_provenance
 from plume_advanced.evaluation.runner import ResultStore, run_case
 from plume_advanced.evaluation.schema import ExperimentResult
 from plume_advanced.exporters import export_target_asset
+from plume_advanced.pipeline.recovery import build_accepted_base
 from plume_advanced.stages.geometry import GeometryGenerator
 from plume_advanced.world import ExportConfig
 
@@ -50,8 +51,9 @@ def run_export_consistency(config: EvaluationConfig, *, force: bool = False) -> 
         )
 
         def operation(project=project, seed=seed):
-            _host, network, sections = generate_sections(project)
-            geometry = GeometryGenerator(project.geometry).generate(network, sections)
+            host, network, sections = generate_sections(project)
+            accepted = build_accepted_base(project, host, network, sections)
+            geometry = GeometryGenerator(accepted.geometry.config).finalize(accepted.geometry)
             canonical_hash = geometry_semantic_hash(geometry)
             vertices = np.asarray(geometry.assembled_vertices, dtype=float)
             canonical_bounds = np.stack((vertices.min(axis=0), vertices.max(axis=0)))

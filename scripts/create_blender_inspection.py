@@ -8,6 +8,7 @@ inspection scene with an overview and interior cameras. No geometry is added.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import struct
 import sys
@@ -36,10 +37,37 @@ def configure_inspection_view(*, textured: bool, preview_samples: int = 64) -> s
     return "plume_textured_inspection.blend" if textured else "plume_full_inspection.blend"
 
 
+def choose_inspection_target(cave, sections, index, eye):
+    """Aim along sampled passage geometry and verify the sight line stays in air."""
+    ids = np.flatnonzero(sections["segment_id"] == sections["segment_id"][index])
+    arc = sections["arc_length_m"]
+    inverse = cave.matrix_world.inverted()
+    for sign in (1., -1.):
+        for reach in (6., 4., 2.):
+            candidate = int(ids[np.argmin(abs(arc[ids] - (arc[index] + sign * reach)))])
+            target = sections["center_xyz_m"][candidate].copy()
+            direction = Vector(target) - Vector(eye)
+            distance = direction.length
+            if candidate == index or distance < 1.:
+                continue
+            hit, location, _, _ = cave.ray_cast(
+                inverse @ Vector(eye),
+                (inverse.to_3x3() @ direction).normalized(), distance=distance)
+            if not hit or (cave.matrix_world @ location - Vector(eye)).length >= .98 * distance:
+                return target
+    return None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run_directory", type=Path)
     parser.add_argument("--quality", choices=("preview", "standard", "high"), default="standard")
+    parser.add_argument("--mapping", choices=("uv", "triplanar"), default="uv",
+                        help="UV reproduces the portable GLB; triplanar uses the native continuous shader")
+    parser.add_argument("--survey", action="store_true",
+                        help="Measure roof/floor ray hits at every saved section centre")
+    parser.add_argument("--interior-only", action="store_true",
+                        help="Refresh interior previews; retain existing overview figures")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
     root = args.run_directory.resolve()
     samples, threshold = {"preview": (32, 0.1), "standard": (256, 0.02), "high": (1024, 0.005)}[args.quality]
@@ -85,6 +113,18 @@ def main() -> None:
         assert not expected or material_bindings[socket], f"Unconnected material input: {socket}"
     bpy.ops.file.pack_all()
     assert all(image.packed_file for image in material_images.values())
+    if args.mapping == "triplanar":
+        helper = Path(__file__).resolve().parents[1] / "src/plume_advanced/material_assets/blender_materials.py"
+        spec = importlib.util.spec_from_file_location("plume_blender_materials", helper)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Cannot load material helper: {helper}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        metadata = json.loads(source.with_suffix(".manifest.json").read_text())["cave"]["material"]
+        cave.data.materials[0] = module.build_triplanar_material(
+            imported_material, tile_size_m=metadata["uv_scale_m"],
+            normal_strength=metadata["normal_scale"],
+        )
     sections = np.load(root / "stage_c_sections.npz")
     scene = bpy.context.scene
     scene.unit_settings.system = "METRIC"
@@ -94,6 +134,7 @@ def main() -> None:
     scene.cycles.samples = samples
     scene.cycles.adaptive_threshold = threshold
     scene.cycles.use_denoising = True
+    scene.view_settings.exposure = 3.0
     scene.render.resolution_x = 1400
     scene.render.resolution_y = 900
     scene.render.resolution_percentage = 100
@@ -164,6 +205,21 @@ def main() -> None:
                                                 distance=15.0)
         return hit, cave.matrix_world @ location, (inverse_world.transposed().to_3x3() @ normal).normalized()
 
+    if args.survey:
+        rows = []
+        for index, eye in enumerate(sections["center_xyz_m"]):
+            hit_up, roof, normal_up = vertical_hit(eye, 1)
+            hit_down, floor, normal_down = vertical_hit(eye, -1)
+            inside = bool(hit_up and hit_down and normal_up.z < 0 and normal_down.z > 0
+                          and roof.z > eye[2] > floor.z)
+            rows.append(dict(sample_index=index, segment_id=int(sections["segment_id"][index]),
+                             inside=inside, input_height_m=float(sections["height_m"][index]),
+                             mesh_vertical_clearance_m=float(roof.z-floor.z) if inside else None))
+        (root/"blender_section_survey.json").write_text(json.dumps(dict(
+            passed=all(row["inside"] for row in rows), samples=len(rows), rows=rows,
+            scope="Vertical roof/floor rays at every saved section centre on the imported smoothed mesh; not a continuous traversability proof.",
+        ), indent=2)+"\n")
+
     for fraction in (0.25, 0.70):
         desired = int(len(eligible) * fraction)
         for index in eligible[np.argsort(np.abs(np.arange(len(eligible)) - desired), kind="stable")]:
@@ -179,7 +235,9 @@ def main() -> None:
                     and roof.z - floor.z > 1.2):
                 continue
             eye[2] = floor.z + (roof.z - floor.z) * 0.48
-            target = eye + sections["tangent"][index] * 6.0
+            target = choose_inspection_target(cave, sections, index, eye)
+            if target is None:
+                continue
             cam = add_camera(f"Interior {len(interiors) + 1}", eye, target)
             interiors.append(cam)
             accepted_indices.append(index)
@@ -196,12 +254,20 @@ def main() -> None:
     cave.select_set(True)
     bpy.context.view_layer.objects.active = cave
     native = output / configure_inspection_view(textured=expected_images > 0)
-    scene.render.filepath = str(root / "previews" / "inspection_render.png")
+    if args.mapping == "triplanar":
+        native = output / "plume_continuous_inspection.blend"
+    previews = root / "previews"
+    if args.mapping == "triplanar":
+        previews = previews / "continuous"
+    previews.mkdir(parents=True, exist_ok=True)
+    scene.render.filepath = str(previews / "inspection_render.png")
     bpy.ops.wm.save_as_mainfile(filepath=str(native))
     report = {
         "blender_version": bpy.app.version_string,
         "source_asset": str(source.relative_to(root)),
         "native_scene": str(native.relative_to(root)),
+        "material_mapping": args.mapping,
+        "material_matches_portable_glb": args.mapping == "uv",
         "mesh_objects": [obj.name for obj in meshes],
         "vertices": len(cave.data.vertices),
         "triangles": actual_triangles,
@@ -218,6 +284,7 @@ def main() -> None:
         "scale": list(cave.scale),
         "inspection_torch_power_w": 600.0,
         "render_quality": args.quality,
+        "interior_exposure_ev": 3.0,
         "render_samples": samples,
         "render_noise_threshold": threshold,
         "cameras": cameras,
@@ -225,13 +292,12 @@ def main() -> None:
         "startup_shading": "MATERIAL" if expected_images else "SOLID",
         "scope": "Actual Blender import and two interior roof/floor ray checks; no Unity or UE import test.",
     }
-    (root / "blender_import_check.json").write_text(json.dumps(report, indent=2) + "\n")
+    report_name = "blender_continuous_check.json" if args.mapping == "triplanar" else "blender_import_check.json"
+    (root / report_name).write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report), flush=True)
-    # Save honest images of the imported file, using the same geometry and
-    # material as delivered to the other applications.
-    previews = root / "previews"
-    previews.mkdir(exist_ok=True)
-    for camera in (overview, plan, *interiors):
+    # UV previews reproduce the GLB; native projected previews have their own path.
+    for camera in (interiors if args.interior_only else (overview, plan, *interiors)):
+        scene.view_settings.exposure = 0.0 if camera in (overview, plan) else 3.0
         scene.camera = camera
         sun.hide_render = camera not in (overview, plan)
         scene.render.filepath = str(previews / (camera.name.lower().replace(" ", "_") + ".png"))

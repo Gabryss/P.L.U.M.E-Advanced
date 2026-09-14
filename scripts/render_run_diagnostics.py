@@ -157,6 +157,31 @@ def render_imported_mesh_sheet(root, geometry, path):
     plt.close(fig)
 
 
+def load_saved_stages(root: Path):
+    """Read the accepted realization, never the provisional B/C checkpoints."""
+    from plume_advanced.pipeline.recovery import AcceptedBase
+
+    checkpoint_root = root / ".plume-checkpoints"
+    metadata = json.loads((checkpoint_root / "host_field.json").read_text())
+    store = StageCheckpointStore(checkpoint_root, metadata["fingerprint"])
+    accepted = store.load("accepted_base")
+    if not isinstance(accepted, AcceptedBase) or not accepted.report.get("accepted"):
+        raise ValueError("Missing, incompatible or damaged accepted_base checkpoint")
+    context = "_" + accepted.context_sha256[:16]
+    stages = {"host_field": "host_field", "accepted_base": "accepted_base",
+              **{name: name + context for name in
+                 ("final_geometry", "final_floor_atlas", "geological_events")}}
+    artifacts, evidence = {}, {}
+    for name, checkpoint_name in stages.items():
+        artifacts[name] = accepted if name == "accepted_base" else store.load(checkpoint_name)
+        if artifacts[name] is None:
+            raise ValueError(f"Missing, incompatible or damaged checkpoint: {checkpoint_name}")
+        evidence[name] = json.loads((checkpoint_root / f"{checkpoint_name}.json").read_text())
+    return (artifacts["host_field"], accepted.network, accepted.sections,
+            artifacts["final_geometry"], artifacts["final_floor_atlas"],
+            artifacts["geological_events"]), evidence, store
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run_directory", type=Path)
@@ -166,21 +191,7 @@ def main() -> int:
     if manifest.get("status") != "complete":
         raise ValueError("Stage figures require a completed run.")
 
-    checkpoint_root = root / ".plume-checkpoints"
-    metadata = json.loads((checkpoint_root / "host_field.json").read_text())
-    store = StageCheckpointStore(checkpoint_root, metadata["fingerprint"])
-    stages = (
-        "host_field", "network", "section_field", "final_geometry",
-        "final_floor_atlas", "geological_events",
-    )
-    artifacts = {}
-    checkpoint_evidence = {}
-    for stage in stages:
-        artifacts[stage] = store.load(stage)
-        if artifacts[stage] is None:
-            raise ValueError(f"Missing, incompatible or damaged checkpoint: {stage}")
-        checkpoint_evidence[stage] = json.loads((checkpoint_root / f"{stage}.json").read_text())
-    host, network, sections, geometry, floor, events = (artifacts[key] for key in stages)
+    (host, network, sections, geometry, floor, events), checkpoint_evidence, store = load_saved_stages(root)
 
     # The recorded checkpoint fingerprint is deliberately used here. This is an
     # artifact renderer, not a request to resume generation under today's config.

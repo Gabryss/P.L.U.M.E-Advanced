@@ -1,0 +1,14 @@
+{
+  "source_glb": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/textured_campaign_20260913/single_250/case_0001/attempt_0000/export/plume_cave.glb",
+  "glb_sha256": "22d52c1e0cc69881ea6af57b0a747b1dded00266c5e3311b4f93dfb5b2a38882",
+  "quality_sha256": "3996abc2245dff666d0a9ec3bd875951e11d0645659caf593d4b986039e40747",
+  "measurements_source": "export_inspection.visual",
+  "adapter_source": "dabac227d7a865fc160ceb5ec39d86ff5df0ff0f50c63a51d6eadad882f984c9",
+  "samples": 327,
+  "triangles": 751584,
+  "vertices": 401537,
+  "fixture_sha256": {
+    "unity/PlumeNativeCheck.cs": "15f315ba280af414de3246b67d27e4a6810b6a42790ad88c5be93a401433463c",
+    "unreal/native_check.py": "6472628f061739e7e61c4e72ee2520d93c0a31dc444fac59eaa85f8fbf238fd5"
+  }
+}

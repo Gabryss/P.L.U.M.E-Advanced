@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 
 import numpy as np
-import trimesh
 
 from plume_advanced.progress import report_progress
 from plume_advanced.stages.geometry_export import (
@@ -14,6 +13,11 @@ from plume_advanced.stages.geometry_export import (
     canonical_visual_to_gltf,
 )
 from plume_advanced.stages.geometry_types import CaveGeometry
+from plume_advanced.stages.mesh_inspection import (
+    MeshInspectionError,
+    inspect_surface,
+    route_inspection_arguments,
+)
 
 
 @dataclass(frozen=True)
@@ -25,25 +29,136 @@ class PreparedExportScene:
     gltf_visual: CavePrimitivePayload
     collision_vertices: np.ndarray
     collision_faces: np.ndarray
+    inspection: dict = field(default_factory=dict)
 
 
-def prepare_export_scene(cave_geometry: CaveGeometry, *, generate_collision: bool = True) -> PreparedExportScene:
-    canonical_visual = build_cave_visual_surface(
-        cave_geometry,
-        convert_to_gltf=False,
+def prepare_export_scene(
+    cave_geometry: CaveGeometry, *, generate_collision: bool = True
+) -> PreparedExportScene:
+    if not cave_geometry.assembled_vertices or not cave_geometry.assembled_faces:
+        raise ValueError(
+            "Cave export requires the assembled Stage-E mesh; generate geometry before exporting."
+        )
+    expected = (
+        cave_geometry.expected_surface_genus if not cave_geometry.structural_event_ids else None
     )
+    arguments: dict = dict(
+        points=cave_geometry.route_centers,
+        expected_genus=expected,
+        require_centers=not cave_geometry.structural_event_ids,
+        protected_points=cave_geometry.protected_route_points,
+        **route_inspection_arguments(cave_geometry),
+    )
+    raw = inspect_surface(
+        cave_geometry.assembled_vertices, cave_geometry.assembled_faces, **arguments
+    )
+    config = cave_geometry.config
+    candidates = [(config.cave_smoothing_iterations, config.cave_displacement_scale_m)]
+    if config.cave_displacement_texture and config.cave_displacement_scale_m:
+        candidates.extend(
+            [
+                (config.cave_smoothing_iterations, config.cave_displacement_scale_m * 0.5),
+                (config.cave_smoothing_iterations, 0.0),
+            ]
+        )
+    candidates.append((0, 0.0))
+    candidates = list(dict.fromkeys(candidates))
+    attempts = []
+    for index, (smoothing, displacement) in enumerate(candidates):
+        report_progress(
+            "Visual surface acceptance",
+            index,
+            len(candidates),
+            f"smoothing {smoothing}; displacement {displacement:g} m",
+        )
+        effective = replace(
+            cave_geometry,
+            config=replace(
+                config, cave_smoothing_iterations=smoothing, cave_displacement_scale_m=displacement
+            ),
+        )
+        attempt: dict = dict(smoothing_iterations=smoothing, displacement_scale_m=displacement)
+        try:
+            canonical_visual = build_cave_visual_surface(effective, convert_to_gltf=False)
+            inspected = inspect_surface(
+                canonical_visual["positions"],
+                canonical_visual["faces"],
+                weld_seams=True,
+                **arguments,
+            )
+            # Even a standalone imported mesh without a network must keep its topology.
+            if any(
+                inspected["topology"][key] != raw["topology"][key]
+                for key in ("components", "euler")
+            ):
+                inspected.update(
+                    passed=False, failures=["Visual processing changed raw mesh topology"]
+                )
+                raise MeshInspectionError(inspected)
+        except MeshInspectionError as error:
+            attempt.update(accepted=False, inspection=error.report)
+            attempts.append(attempt)
+            continue
+        attempt["accepted"] = True
+        attempts.append(attempt)
+        break
+    else:
+        raise MeshInspectionError(
+            dict(passed=False, failures=["All bounded visual repairs failed"], attempts=attempts)
+        )
+    report_progress(
+        "Visual surface acceptance",
+        len(candidates),
+        len(candidates),
+        f"accepted after {len(attempts)} attempt(s)",
+    )
+    collision_report: dict = dict(enabled=generate_collision, used_raw_fallback=False)
     if generate_collision:
-        report_progress("Collision mesh", detail="clustering and checking the closed surface")
-        collision_vertices, collision_faces = simplified_collision_arrays(cave_geometry)
+        report_progress("Collision mesh", detail="reducing edges and measuring surface/passage error")
+        collision_vertices, collision_faces = simplified_collision_arrays(
+            cave_geometry, report=collision_report
+        )
+        try:
+            collider = inspect_surface(collision_vertices, collision_faces, **arguments)
+            if any(
+                collider["topology"][key] != raw["topology"][key] for key in ("components", "euler")
+            ):
+                collider.update(
+                    passed=False, failures=["Collision simplification changed cave topology"]
+                )
+                raise MeshInspectionError(collider)
+        except MeshInspectionError as error:
+            fallback_report: dict = {}
+            collision_vertices, collision_faces = simplified_collision_arrays(
+                replace(cave_geometry, config=replace(config, collision_repair_attempts=0)),
+                report=fallback_report,
+            )
+            collision_report.update(fallback_report)
+            collision_report.update(
+                used_raw_fallback=True,
+                fallback_reason="Simplified collider failed topology or passage inspection",
+                rejected_inspection=error.report,
+            )
+            collider = fallback_report["inspection"]
+        collision_report["inspection"] = collider
     else:
         collision_vertices = np.empty((0, 3), dtype=np.float64)
         collision_faces = np.empty((0, 3), dtype=np.int64)
     return PreparedExportScene(
-        geometry=cave_geometry,
+        geometry=effective,
         canonical_visual=canonical_visual,
         gltf_visual=canonical_visual_to_gltf(canonical_visual),
         collision_vertices=collision_vertices,
         collision_faces=collision_faces,
+        inspection=dict(
+            schema="plume.export-inspection.v1",
+            passed=True,
+            raw=raw,
+            visual=inspected,
+            visual_attempts=attempts,
+            collision=collision_report,
+            scope="Actual canonical and float32 visual mesh inspection before serialization",
+        ),
     )
 
 
@@ -73,58 +188,22 @@ def canonical_cave_mesh(cave_geometry: CaveGeometry) -> tuple[np.ndarray, np.nda
 
 def simplified_collision_arrays(
     cave_geometry: CaveGeometry,
+    *,
+    report: dict | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
-    vertices, faces = canonical_cave_mesh(cave_geometry)
-    if len(vertices) == 0 or len(faces) == 0:
-        raise ValueError("Cannot create collision geometry from an empty cave mesh")
-    bounds = np.ptp(vertices, axis=0)
-    cell_size = max(
-        cave_geometry.voxel_grid.voxel_size * 2.5,
-        float(np.max(bounds)) / 240.0,
-        1e-6,
+    """Return an independently inspected, error-limited collision surface."""
+    from plume_advanced.exporters.collision import simplify_collision
+
+    arguments = dict(
+        points=cave_geometry.route_centers,
+        expected_genus=cave_geometry.expected_surface_genus
+        if not cave_geometry.structural_event_ids else None,
+        require_centers=not cave_geometry.structural_event_ids,
+        protected_points=cave_geometry.protected_route_points,
+        **route_inspection_arguments(cave_geometry),
     )
-    keys = np.floor((vertices - vertices.min(axis=0)) / cell_size).astype(np.int64)
-    unique_keys, inverse = np.unique(keys, axis=0, return_inverse=True)
-    clustered = np.zeros((len(unique_keys), 3), dtype=np.float64)
-    counts = np.bincount(inverse)
-    for axis in range(3):
-        clustered[:, axis] = np.bincount(
-            inverse,
-            weights=vertices[:, axis],
-            minlength=len(unique_keys),
-        ) / np.maximum(counts, 1)
-    remapped = inverse[faces]
-    valid = (
-        (remapped[:, 0] != remapped[:, 1])
-        & (remapped[:, 1] != remapped[:, 2])
-        & (remapped[:, 2] != remapped[:, 0])
-    )
-    simplified_faces: list[tuple[int, int, int]] = []
-    seen_faces: set[tuple[int, int, int]] = set()
-    for face in remapped[valid]:
-        oriented = tuple(int(value) for value in face)
-        if len(oriented) != 3:
-            continue
-        triangle = (oriented[0], oriented[1], oriented[2])
-        sorted_triangle = sorted(triangle)
-        signature = (
-            sorted_triangle[0],
-            sorted_triangle[1],
-            sorted_triangle[2],
-        )
-        if signature in seen_faces:
-            continue
-        seen_faces.add(signature)
-        simplified_faces.append(triangle)
-    if not simplified_faces:
-        return vertices, faces
-    candidate_faces = np.asarray(simplified_faces, dtype=np.int64)
-    candidate = trimesh.Trimesh(vertices=clustered, faces=candidate_faces, process=False)
-    # Spatial clustering can join opposite walls or delete a narrow passage's
-    # triangles. Preserve the canonical collider when that opens the surface.
-    if not candidate.is_watertight or not candidate.is_winding_consistent:
-        return vertices, faces
-    return clustered, candidate_faces
+    return simplify_collision(*canonical_cave_mesh(cave_geometry), cave_geometry.config,
+                              arguments, report=report)
 
 
 __all__ = [

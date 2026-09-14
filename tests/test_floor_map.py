@@ -143,7 +143,9 @@ class FloorMapTests(unittest.TestCase):
         )
 
     def test_floor_atlas_lifts_intrinsic_cells_to_generated_surface(self) -> None:
-        config = load_project_config(ROOT / "config" / "project.toml")
+        # Measure a resolved gallery, retaining full network/surface screening.
+        config = load_project_config(ROOT / "config" / "earth_short_single.toml")
+        config = replace(config, geometry=replace(config.geometry, density_margin=4.0))
         host = HostFieldGenerator(config.host_field).generate()
         network = CaveNetworkGenerator(config.network).generate(host)
         sections = SectionFieldGenerator(config.section_field).generate(network)

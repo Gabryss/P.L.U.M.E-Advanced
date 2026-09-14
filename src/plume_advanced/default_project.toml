@@ -4,7 +4,7 @@ procedural_seed = 3
 [run]
 dev_mode = true
 quality = "preview"
-dev_max_route_length_m = 600.0
+dev_max_route_length_m = 1200.0
 dev_max_lobe_paths = 5
 render_diagnostics = false
 overwrite_outputs = false
@@ -36,10 +36,17 @@ nx = 80
 ny = 180
 
 [network]
+target_route_length_m = 250.0
 source_count = 3
 source_band_length = 60.0
 source_band_half_width = 120.0
 trace_max_steps = 180
+
+[network.topology]
+style = "trunk_dominated"
+generation_mode = "layout"
+island_count = [1, 1]
+side_branch_count = [1, 1]
 
 # Several arterial systems can grow together; count 1 preserves the existing grammar.
 [network.systems]
@@ -83,15 +90,40 @@ minor_cluster_count_range = [8, 18]
 minor_cluster_radius_range_m = [1.2, 3.0]
 
 [geometry]
+# Required inspection route: upright 0.5 m capsule, plus 2 cm clearance.
+# Optional side passages retain their geological dimensions.
+required_route_height_m = 0.5
+required_route_width_m = 0.5
+route_clearance_margin_m = 0.02
+route_inspection_spacing_m = 0.25
+route_repair_attempts = 2
+route_placement_repair_attempts = 3
+route_placement_max_sweeps = 20000
+# Refinement is explicit because it can multiply grid and mesh memory.
+resolution_refinement_attempts = 0
+resolution_min_voxel_size_m = 0.03
+resolution_convergence_m = 0.03
+resolution_max_allocated_voxels = 160000000
+collision_target_reduction = 0.8
+collision_max_error_m = 0.03
+collision_repair_attempts = 4
+surface_local_repair_attempts = 2
+# After ordinary surface repair: two local attempts, then at most two new
+# network seeds in the same host. Set both to zero to diagnose the initial network.
+recovery_local_attempts = 2
+recovery_network_attempts = 2
 resolution_policy = "fixed"
-voxel_size = 2.0
+# A two-metre lattice could erase an entire Earth passage or its rock island.
+voxel_size = 0.2
 storage_mode = "auto"
 max_dense_voxels = 12000000
 chunk_size = 48
 strict_texture_loading = true
-cave_normal_scale = 2.0
-cave_smoothing_iterations = 4
-cave_displacement_scale_m = 0.12
+texture_repair_attempts = 1  # 0: inspect only; 1: bounded map repair + one package rebuild
+cave_normal_convention = "opengl"  # "directx" explicitly flips Y during texture repair
+cave_normal_scale = 1.0
+cave_smoothing_iterations = 2
+cave_displacement_scale_m = 0.0
 cave_displacement_midlevel = 0.5
 cave_diffuse_texture = ""
 cave_normal_texture = ""

@@ -1,0 +1,17 @@
+[
+  {
+    "source": "single_full/case_0000/attempt_0000/export/plume_cave.glb",
+    "copy": "native_blender/export_blender/plume_cave.glb",
+    "sha256": "86845760c4f4261c14477e224a1af41d6d4612b6b73c43b56b6af2f62305cd00"
+  },
+  {
+    "source": "single_full/case_0000/attempt_0000/export/plume_cave.manifest.json",
+    "copy": "native_blender/export_blender/plume_cave.manifest.json",
+    "sha256": "488093d5204263d897dd61cc89f75164c28ad7b7db1f01053996d47d6a8f97a4"
+  },
+  {
+    "source": "single_full/case_0000/attempt_0000/stage_c_sections.npz",
+    "copy": "native_blender/stage_c_sections.npz",
+    "sha256": "1464554b5f462e09aa11aa4285503f6592a2c199a30c9e4c8b7715664716659d"
+  }
+]

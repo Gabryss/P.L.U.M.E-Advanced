@@ -1,0 +1,98 @@
+{
+  "source_sha256": "dabac227d7a865fc160ceb5ec39d86ff5df0ff0f50c63a51d6eadad882f984c9",
+  "runtime": {
+    "schema": "plume.runtime.v1",
+    "python": "3.13.5",
+    "implementation": "CPython",
+    "system": "Linux",
+    "machine": "x86_64",
+    "dependencies": {
+      "numpy": "2.5.1",
+      "scipy": "1.18.0",
+      "scikit-image": "0.26.0",
+      "trimesh": "4.12.2",
+      "xatlas": "0.0.11",
+      "pillow": "12.3.0",
+      "rich": "15.0.0",
+      "matplotlib": "3.11.1",
+      "rocky": "0.1.0",
+      "laspy": "2.7.0",
+      "lazrs": "0.8.2",
+      "psutil": "7.2.2"
+    }
+  },
+  "groups": {
+    "multi": [
+      {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/multi_250m_4k.toml",
+        "seed": 1,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/multi_250m_4k.toml",
+        "seed": 42,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/multi_250m_4k.toml",
+        "seed": 4294967295,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      }
+    ],
+    "single_250": [
+      {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/single_250m_4k.toml",
+        "seed": 1,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/single_250m_4k.toml",
+        "seed": 42,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/single_250m_4k.toml",
+        "seed": 4294967295,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      }
+    ]
+  },
+  "replay": true,
+  "python_hash_seeds": [
+    11,
+    37
+  ],
+  "voxel_size_m": 0.12,
+  "worker_timeout_s": 3600,
+  "worker_memory_limit_mib": 8192,
+  "maximum_parallel_generation_workers": 2,
+  "native_engines": [
+    "Unity 6000.6.0f1 URP 17.6.0 glTFast 6.20.0",
+    "Unreal 5.8.2 Vulkan SM5"
+  ],
+  "native_scope": "Every accepted original; full geometry, texture bindings, shader compilation, passage collision, two interiors and normal controls. Replays compare generation identities.",
+  "rocks": false,
+  "texture_budget": [
+    4096,
+    4096
+  ],
+  "root": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/textured_campaign_20260913",
+  "configs_sha256": {
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/single_250m_4k.toml": "840f34d859f325f02cdff0b247aedf598c97a85d0bc054cb24ec1807f22b3f7b",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/multi_250m_4k.toml": "f0a02e14a4f721ff577b6b12781509591d51cc624f89976d673bf6e78659e765"
+  },
+  "supersedes": "protocol.json",
+  "reason": "150 m trial cannot accommodate inherited required side branches and loops. Retain failed trials; restore original 250 m route length for all three unchanged seeds."
+}

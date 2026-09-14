@@ -1,0 +1,79 @@
+{
+  "source_sha256": "60074a71b013236cbec71132ca08d4d736187e313d0a1361d677592c3b3116a7",
+  "source_unchanged": true,
+  "inputs_unchanged": true,
+  "scope": "80 m Earth single network, root seed 17, 0.12 m voxels, 4096 px rock PBR tile; no rocks; full production evaluator plus cold replay",
+  "passed": true,
+  "replay_identical": true,
+  "python_hash_seeds": [
+    11,
+    37
+  ],
+  "identity": {
+    "glb": "843534b6928c8e8b9e7fe29173f21bc148cb3929b533f1596007f3b7e5a1f649",
+    "host": "249b102b9f4d60484011599b9d634b15b777e222eabbd7d4c5adc1fb2c61dbd9",
+    "mesh": "f17f0a2706a7104c89acd178752e192d966858237a0949b5ea7720478f988d92",
+    "network": "3241aed73ca6a6f63c3e619c467d9303dce2aaece1475679f37232dbe574a461",
+    "recovery": "0a756f54609f12717a056fcec306061ee984fd8af2caafec4dd9c4433a8d0872",
+    "sections": "d19c9243530428b7461a04e4f40c08604fa8acfb0568571894b62c832887f8cd",
+    "texture_recovery": "9ef963e40cce70ef161937fd74f575594aaa32806da11c01ab8c4f5c4ef846c8"
+  },
+  "metrics": {
+    "asset_bytes": 71637468,
+    "checks": 38,
+    "collision_raw_fallback": true,
+    "combined_length_m": 80.31964367598184,
+    "density_mib": 43.92677307128906,
+    "event_count": 0,
+    "floor_cells": 128,
+    "inspected_centers": 79,
+    "recovery_attempts": 1,
+    "recovery_outcome": "unchanged",
+    "repair_pass": 0,
+    "segment_count": 1,
+    "selected_attempt": 0,
+    "surface_attempts": 1,
+    "texture_map_repairs": 1,
+    "texture_package_attempts": 1,
+    "texture_recovery_outcome": "repaired",
+    "triangles": 208788,
+    "visual_attempts": 1
+  },
+  "peak_rss_mib": [
+    1128.81640625,
+    1139.94921875
+  ],
+  "verified_artifact_count": 86,
+  "portable_checks_per_run": 41,
+  "tests": {
+    "regression_passed": 763,
+    "regression_skipped": 18,
+    "deselected": 12,
+    "subtests_passed": 59,
+    "integration_passed": 3,
+    "dedicated_texture_tests": 40
+  },
+  "native_scope": {
+    "blender_version": "4.0.1",
+    "normal_cases": 27,
+    "uv_invariant": true,
+    "shared_images": true,
+    "unity_unreal": "package integrity checked; native editor/compiler execution not performed"
+  },
+  "geometry_warnings": [
+    "Texture maps or material package repaired; see texture_recovery.json for changes.",
+    "Collision simplification failed inspection; the original collider was retained."
+  ],
+  "evidence": {
+    "blender_material_check.json": "ce0ff3ad720965dfa4a6760624e62cfd464828985bf78ec786b74225cce83cca",
+    "integration.log": "aca1a1ba8b26ea03f637084f7968ecbbda05ce55eef5d4c81a0a6db869d24517",
+    "integration.xml": "c726698aeb0cd4cc1a94ed0c0b2781bdbc3b8517af88db26c0c3b655a4b21e94",
+    "lint.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "regression.log": "f17d2e070297a45840e09894b4e89f38ce0259e934489d1a1f2281bff3f26a96",
+    "regression.xml": "e46ce7f059a54bb9010b926668c258c31f0c1f194dd95ce58ebf0184bc170259",
+    "single_80m_4k.toml": "d592fb898943adcb39d62addd1bd4f09b2a12bec28071690738e346342361c44",
+    "texture_recovery.json": "9ef963e40cce70ef161937fd74f575594aaa32806da11c01ab8c4f5c4ef846c8",
+    "types.log": "617cf8721073cc56bb19755ea6d9726d11b044fd5fe38060da7b2fe164d29396"
+  },
+  "output_directory": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/texture_recovery_20260913/final"
+}

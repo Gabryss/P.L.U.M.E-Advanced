@@ -1,0 +1,73 @@
+1/24 single_250m_4k preset seed=0
+  Checking fresh-process replay
+  passed (verified saved result)
+2/24 single_250m_4k preset seed=1
+  Checking fresh-process replay
+  passed (verified saved result)
+3/24 single_250m_4k preset seed=2
+  Checking fresh-process replay
+  passed (verified saved result)
+4/24 single_250m_4k preset seed=3
+  Checking fresh-process replay
+  passed (verified saved result)
+5/24 single_250m_4k preset seed=7
+  Checking fresh-process replay
+  passed (verified saved result)
+6/24 single_250m_4k preset seed=17
+  Checking fresh-process replay
+  passed (verified saved result)
+7/24 single_250m_4k preset seed=42
+  Checking fresh-process replay
+  passed (verified saved result)
+8/24 single_250m_4k preset seed=73
+  Checking fresh-process replay
+  passed (verified saved result)
+9/24 single_250m_4k preset seed=101
+  Checking fresh-process replay
+  passed (verified saved result)
+10/24 single_250m_4k preset seed=255
+  Checking fresh-process replay
+  passed (verified saved result)
+11/24 single_250m_4k preset seed=65535
+  Checking fresh-process replay
+  passed (verified saved result)
+12/24 single_250m_4k preset seed=4294967295
+  Checking fresh-process replay
+  passed (verified saved result)
+13/24 multi_250m_4k preset seed=0
+  Checking fresh-process replay
+  passed (verified saved result)
+14/24 multi_250m_4k preset seed=1
+  Checking fresh-process replay
+  passed (verified saved result)
+15/24 multi_250m_4k preset seed=2
+  Checking fresh-process replay
+  passed (verified saved result)
+16/24 multi_250m_4k preset seed=3
+  Checking fresh-process replay
+  passed (verified saved result)
+17/24 multi_250m_4k preset seed=7
+  Checking fresh-process replay
+  passed (verified saved result)
+18/24 multi_250m_4k preset seed=17
+  Checking fresh-process replay
+  passed (verified saved result)
+19/24 multi_250m_4k preset seed=42
+  Checking fresh-process replay
+  passed (verified saved result)
+20/24 multi_250m_4k preset seed=73
+  Checking fresh-process replay
+  passed (verified saved result)
+21/24 multi_250m_4k preset seed=101
+  Checking fresh-process replay
+  passed (verified saved result)
+22/24 multi_250m_4k preset seed=255
+  Checking fresh-process replay
+  passed (verified saved result)
+23/24 multi_250m_4k preset seed=65535
+  Checking fresh-process replay
+  passed (verified saved result)
+24/24 multi_250m_4k preset seed=4294967295
+  Checking fresh-process replay
+  passed (verified saved result)
+Report: /home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/all_repairs_campaign_20260913/final/seed_screen/report.html

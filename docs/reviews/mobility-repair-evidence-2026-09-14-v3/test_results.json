@@ -1,0 +1,40 @@
+{
+  "source_sha256": "9a4e20c4b9d5db9734a95e1942838f48b850703132d3874baf3d5b37ce0476c4",
+  "full_suite": {
+    "passed": 899,
+    "skipped": 20,
+    "subtests_passed": 59,
+    "seconds": 862.75
+  },
+  "focused_clearance_path_collision_resolution": {
+    "passed": 97,
+    "seconds": 3.72
+  },
+  "additional_material": {
+    "passed": 25,
+    "skipped": 2,
+    "seconds": 5.34,
+    "blender_tests": 2,
+    "blender_normal_cases": 27,
+    "urp_variants": 15,
+    "skip_reason": "Optional glslang compiler not configured"
+  },
+  "mypy": {
+    "passed": true,
+    "source_files": 110
+  },
+  "ruff": {
+    "passed": true,
+    "final_scope": "Entire repository, including campaign evidence scripts"
+  },
+  "log_sha256": {
+    "full_suite.txt": "3fda62bcfeff5ca52a1e713d2cd8df66069672507188dcf9bef7a5196c5004e4",
+    "focused_tests.log": "be2023a8db2993831b015cf69577f457f09af4cd5a1626c7938ceb4e8c91249d",
+    "native_material.txt": "10535f80e4b2fd94255fa8a3938b394ec91bb03f1d954334d80f62ee205e80e4",
+    "mypy.txt": "c68f50a89794521a4d43d1354657bb2b465570f85b8cf4a226fc9f9fa7200852",
+    "ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "resolution_original.log": "32d171afd652fa4d415989cfb97e6c194830d9e96a7bb958365c8739d0698e09",
+    "resolution_replay.log": "b9edb97a1b6f2a255a13e153898793002715cf870f44688a46711eb38025815f",
+    "final_ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  }
+}

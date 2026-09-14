@@ -1,0 +1,4 @@
+Native check: unity_bootstrap; log: /home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/native_engines_20260913/final/unity_bootstrap.log
+Native check: unity_evaluation; log: /home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/native_engines_20260913/final/unity_evaluation.log
+Native check: unreal_console; log: /home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/native_engines_20260913/final/unreal_console.log
+Native checks passed: /home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/native_engines_20260913/final/native_summary.json

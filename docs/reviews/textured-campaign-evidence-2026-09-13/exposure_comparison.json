@@ -1,0 +1,34 @@
+[
+  {
+    "engine": "Unity",
+    "version": "native",
+    "view": 1,
+    "clipped_fraction": 0.28809733072916666,
+    "passes_new_clipping_gate": false,
+    "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/textured_campaign_20260913/native/single_250_seed1/unity_project/interior_1.png"
+  },
+  {
+    "engine": "Unity",
+    "version": "native_v2",
+    "view": 1,
+    "clipped_fraction": 1.6276041666666668e-06,
+    "passes_new_clipping_gate": true,
+    "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/textured_campaign_20260913/native_v2/single_250_seed1/unity_project/interior_1.png"
+  },
+  {
+    "engine": "Unreal",
+    "version": "native",
+    "view": 1,
+    "clipped_fraction": 0.16922200520833333,
+    "passes_new_clipping_gate": false,
+    "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/textured_campaign_20260913/native/single_250_seed1/unreal_run_01/interior_1.png"
+  },
+  {
+    "engine": "Unreal",
+    "version": "native_v2",
+    "view": 1,
+    "clipped_fraction": 0.0002490234375,
+    "passes_new_clipping_gate": true,
+    "path": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/textured_campaign_20260913/native_v2/single_250_seed1/unreal_run_01/interior_1.png"
+  }
+]

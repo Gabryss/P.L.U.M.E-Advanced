@@ -1,0 +1,20 @@
+{
+  "condition_id": "all_targets",
+  "elapsed_s": 96.35563435900258,
+  "experiment_name": "export_consistency",
+  "experiment_schema_version": 1,
+  "failure_reason": "ExportInspectionError: Export inspection failed: omniverse/plume_seed_000001.usd: Serialized USD points differs from the inspected surface",
+  "git_commit": "dce51683a8f7036f1483bb214c5f24245c1323fc",
+  "git_dirty": true,
+  "input_dataset_id": "",
+  "input_dataset_sha256_or_version": "",
+  "model_schema_version": 1,
+  "platform": "Linux-6.8.0-60-generic-x86_64-with-glibc2.39",
+  "provenance_sha256": "f6f5fd1970b3d7448cba47b4a403e53b0424902545617f2da3412c08ea454272",
+  "python_version": "3.13.5",
+  "resolved_config_sha256": "d4d39bff32c224c6e56a71d85216aac4576c5e8e41d8105143b8ddcb7d87cb8f",
+  "run_id": "seed-000001-all-targets",
+  "seed": 1,
+  "started_at_utc": "2026-09-13T15:21:54.240649+00:00",
+  "status": "failed"
+}

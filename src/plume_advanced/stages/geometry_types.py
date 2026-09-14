@@ -29,6 +29,26 @@ class GeometryConfig:
     chunk_size: int = 64
     iso_level: float = 0.0
     density_closing_voxels: int = 0
+    # Whole-pipeline recovery budgets, after the ordinary surface candidates.
+    recovery_local_attempts: int = 2
+    recovery_network_attempts: int = 2
+    # Mobility is explicit: zero/zero leaves geological crawlways unconstrained.
+    required_route_height_m: float = 0.0
+    required_route_width_m: float = 0.0
+    route_inspection_spacing_m: float = 0.25
+    route_clearance_margin_m: float = 0.02
+    route_repair_attempts: int = 2
+    route_placement_repair_attempts: int = 3
+    route_placement_max_sweeps: int = 20000
+    # Bounded, consistent-grid refinement; never stitch unverified study patches.
+    resolution_refinement_attempts: int = 0
+    resolution_min_voxel_size_m: float = 0.03
+    resolution_convergence_m: float = 0.03
+    resolution_max_allocated_voxels: int = 160_000_000
+    collision_target_reduction: float = 0.8
+    collision_max_error_m: float = 0.03
+    collision_repair_attempts: int = 4
+    surface_local_repair_attempts: int = 2
     tunnel_radius_scale: float = 1.2
     chamber_radius_scale: float = 1.7
     junction_radius_scale: float = 1.7
@@ -48,6 +68,9 @@ class GeometryConfig:
     structural_event_blend: float = 0.35
     weld_tolerance: float = 1e-5
     strict_texture_loading: bool = True
+    # One normalization pass per map and at most one package rebuild. No seed retry.
+    texture_repair_attempts: int = 1
+    cave_normal_convention: str = "opengl"
     embedded_texture_max_size: int = 1024
     cave_texture_scale_m: float = 8.0
     cave_normal_scale: float = 2.0
@@ -58,6 +81,43 @@ class GeometryConfig:
     cave_normal_texture: str = "texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr"
     cave_roughness_texture: str = "texture/dark_rock_8k/textures/dark_rock_rough_8k.exr"
     cave_displacement_texture: str = "texture/dark_rock_8k/textures/dark_rock_disp_8k.png"
+
+    def __post_init__(self) -> None:
+        if type(self.texture_repair_attempts) is not int or self.texture_repair_attempts not in (0, 1):
+            raise ValueError("geometry.texture_repair_attempts must be 0 or 1")
+        if self.cave_normal_convention not in {"opengl", "directx"}:
+            raise ValueError("geometry.cave_normal_convention must be opengl or directx")
+        for name, maximum in (("recovery_local_attempts", 2), ("recovery_network_attempts", 8)):
+            value = getattr(self, name)
+            if type(value) is not int or not 0 <= value <= maximum:
+                raise ValueError(f"geometry.{name} must be an integer from 0 to {maximum}")
+        for name, maximum in (("route_placement_repair_attempts", 4),
+                              ("route_placement_max_sweeps", 200000),
+                              ("route_repair_attempts", 4), ("resolution_refinement_attempts", 3),
+                              ("collision_repair_attempts", 6), ("surface_local_repair_attempts", 3)):
+            value = getattr(self, name)
+            if type(value) is not int or not 0 <= value <= maximum:
+                raise ValueError(f"geometry.{name} must be an integer from 0 to {maximum}")
+        for name in ("route_inspection_spacing_m", "resolution_min_voxel_size_m",
+                     "resolution_convergence_m", "collision_max_error_m"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
+                raise ValueError(f"geometry.{name} must be finite and positive")
+        for name in ("required_route_height_m", "required_route_width_m", "route_clearance_margin_m"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+                raise ValueError(f"geometry.{name} must be finite and nonnegative")
+        if bool(self.required_route_height_m) != bool(self.required_route_width_m):
+            raise ValueError("geometry required route height and width must both be positive or both zero")
+        if self.required_route_height_m < self.required_route_width_m:
+            raise ValueError("geometry required route height must be at least width for an upright capsule")
+        if (type(self.resolution_max_allocated_voxels) is not int
+                or self.resolution_max_allocated_voxels < 8):
+            raise ValueError("geometry.resolution_max_allocated_voxels must be an integer of at least 8")
+        if (isinstance(self.collision_target_reduction, bool)
+                or not isinstance(self.collision_target_reduction, (int, float))
+                or not 0 < self.collision_target_reduction < 1):
+            raise ValueError("geometry.collision_target_reduction must be between zero and one")
 
     @property
     def characteristic_samples_across_passage(self) -> float:
@@ -119,10 +179,7 @@ class VoxelGrid:
     def contains(self, point: tuple[float, float, float] | np.ndarray) -> bool:
         lower, upper = self.bounds
         position = np.asarray(point, dtype=float)
-        return bool(
-            np.all(position >= np.asarray(lower))
-            and np.all(position <= np.asarray(upper))
-        )
+        return bool(np.all(position >= np.asarray(lower)) and np.all(position <= np.asarray(upper)))
 
     def sample_density(
         self,
@@ -173,8 +230,7 @@ class VoxelGrid:
             offset = np.zeros(3, dtype=float)
             offset[axis] = step
             gradient[axis] = (
-                self.sample_density(position + offset)
-                - self.sample_density(position - offset)
+                self.sample_density(position + offset) - self.sample_density(position - offset)
             ) / (2.0 * step)
         length = float(np.linalg.norm(gradient))
         if length <= 1e-12:
@@ -353,12 +409,22 @@ class TiledVoxelGrid:
                 upper = np.minimum(stop, target_start + np.asarray(target.shape))
                 if np.any(lower >= upper):
                     continue
-                source_slice = tuple(slice(int(a), int(b)) for a, b in zip(
-                    lower - start, upper - start, strict=True,
-                ))
-                target_slice = tuple(slice(int(a), int(b)) for a, b in zip(
-                    lower - target_start, upper - target_start, strict=True,
-                ))
+                source_slice = tuple(
+                    slice(int(a), int(b))
+                    for a, b in zip(
+                        lower - start,
+                        upper - start,
+                        strict=True,
+                    )
+                )
+                target_slice = tuple(
+                    slice(int(a), int(b))
+                    for a, b in zip(
+                        lower - target_start,
+                        upper - target_start,
+                        strict=True,
+                    )
+                )
                 target[target_slice] = source[source_slice]
 
     def sample_density(
@@ -445,7 +511,18 @@ class CaveGeometry:
     junction_records: tuple[tuple[tuple[str, object], ...], ...] = ()
     stability_records: tuple[tuple[tuple[str, object], ...], ...] = ()
     preserved_pillar_columns: int = 0
-
+    # None for standalone local studies without a complete accepted graph.
+    expected_surface_genus: int | None = None
+    effective_surface_relief_scale: float = 1.0
+    effective_local_relief_regions: tuple[tuple[tuple[str, object], ...], ...] = ()
+    effective_density_closing_voxels: int | None = None
+    effective_density_opening_voxels: int = 0
+    surface_quality_records: tuple[tuple[tuple[str, object], ...], ...] = ()
+    mesh_inspection: tuple[tuple[str, object], ...] = ()
+    # Explicit polylines avoid connecting unrelated branches in traversal tests.
+    required_route_paths: tuple[tuple[tuple[float, float, float], ...], ...] = ()
+    route_path_segment_ids: tuple[int, ...] = ()
+    resolution_repair: tuple[tuple[str, object], ...] = ()
 
     def summary(self) -> dict[str, float]:
         summary = {
@@ -454,21 +531,27 @@ class CaveGeometry:
             "event_mesh_count": float(len(self.event_meshes)),
             "structural_event_count": float(len(self.structural_event_ids)),
             "junction_record_count": float(len(self.junction_records)),
-            "stability_collapse_count": float(sum(
-                bool(dict(record)["failed"]) for record in self.stability_records
-            )),
+            "stability_collapse_count": float(
+                sum(bool(dict(record)["failed"]) for record in self.stability_records)
+            ),
             "stability_assessment_count": float(len(self.stability_records)),
             "preserved_pillar_column_count": float(self.preserved_pillar_columns),
             "stamped_segment_count": float(len(self.stamped_segment_ids)),
             "stamped_sample_count": float(self.stamped_sample_count),
             "voxel_size_m": float(self.voxel_grid.voxel_size),
-            "density_closing_voxels": float(self.config.density_closing_voxels),
+            "surface_relief_scale": self.effective_surface_relief_scale,
+            "effective_density_opening_voxels": self.effective_density_opening_voxels,
+            "surface_acceptance_attempts": float(len(self.surface_quality_records)),
+            "density_closing_voxels": float(
+                self.config.density_closing_voxels
+                if self.effective_density_closing_voxels is None
+                else self.effective_density_closing_voxels
+            ),
             "characteristic_passage_samples": float(
                 self.config.characteristic_samples_across_passage
             ),
             "minimum_section_width_samples": float(
-                self.minimum_section_width_m
-                / max(self.voxel_grid.voxel_size, 1e-9)
+                self.minimum_section_width_m / max(self.voxel_grid.voxel_size, 1e-9)
             ),
             "voxel_count": float(np.prod(self.voxel_grid.shape)),
             "density_memory_mib": float(
@@ -479,9 +562,7 @@ class CaveGeometry:
                 )
                 / (1024.0 * 1024.0)
             ),
-            "active_tile_count": float(
-                getattr(self.voxel_grid, "active_tile_count", 1)
-            ),
+            "active_tile_count": float(getattr(self.voxel_grid, "active_tile_count", 1)),
             "carved_voxel_count": float(self.voxel_grid.carved_voxel_count),
             "voxel_component_count": float(self.voxel_grid.component_count),
             "component_count": float(self.component_count),
@@ -490,12 +571,10 @@ class CaveGeometry:
             "event_vertex_count": float(sum(mesh.vertex_count for mesh in self.event_meshes)),
             "event_face_count": float(sum(mesh.face_count for mesh in self.event_meshes)),
             "export_vertex_count": float(
-                len(self.assembled_vertices)
-                + sum(mesh.vertex_count for mesh in self.event_meshes)
+                len(self.assembled_vertices) + sum(mesh.vertex_count for mesh in self.event_meshes)
             ),
             "export_face_count": float(
-                len(self.assembled_faces)
-                + sum(mesh.face_count for mesh in self.event_meshes)
+                len(self.assembled_faces) + sum(mesh.face_count for mesh in self.event_meshes)
             ),
         }
         summary.update({str(key): float(value) for key, value in self.junction_report})

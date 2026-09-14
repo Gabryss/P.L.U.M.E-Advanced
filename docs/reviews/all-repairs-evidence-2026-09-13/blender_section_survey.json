@@ -1,0 +1,511 @@
+{
+  "passed": true,
+  "samples": 72,
+  "rows": [
+    {
+      "sample_index": 0,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 3.0754271683999015,
+      "mesh_vertical_clearance_m": 2.6244964599609375
+    },
+    {
+      "sample_index": 1,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 3.133435077122808,
+      "mesh_vertical_clearance_m": 2.64312744140625
+    },
+    {
+      "sample_index": 2,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 3.1483671807116975,
+      "mesh_vertical_clearance_m": 2.6811981201171875
+    },
+    {
+      "sample_index": 3,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 3.1508524793293873,
+      "mesh_vertical_clearance_m": 2.6170196533203125
+    },
+    {
+      "sample_index": 4,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 3.1461805185667524,
+      "mesh_vertical_clearance_m": 2.4521636962890625
+    },
+    {
+      "sample_index": 5,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 3.1368697605202063,
+      "mesh_vertical_clearance_m": 2.4547882080078125
+    },
+    {
+      "sample_index": 6,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 3.1244130292115213,
+      "mesh_vertical_clearance_m": 2.3251190185546875
+    },
+    {
+      "sample_index": 7,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 3.0739761932964123,
+      "mesh_vertical_clearance_m": 2.36846923828125
+    },
+    {
+      "sample_index": 8,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 3.000269662815924,
+      "mesh_vertical_clearance_m": 2.439605712890625
+    },
+    {
+      "sample_index": 9,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.927806112740428,
+      "mesh_vertical_clearance_m": 2.3131256103515625
+    },
+    {
+      "sample_index": 10,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.838388939630981,
+      "mesh_vertical_clearance_m": 2.19140625
+    },
+    {
+      "sample_index": 11,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.6977269937373607,
+      "mesh_vertical_clearance_m": 2.121246337890625
+    },
+    {
+      "sample_index": 12,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.6713932366327344,
+      "mesh_vertical_clearance_m": 1.9639892578125
+    },
+    {
+      "sample_index": 13,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.642265950133262,
+      "mesh_vertical_clearance_m": 1.952117919921875
+    },
+    {
+      "sample_index": 14,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.6129039739716884,
+      "mesh_vertical_clearance_m": 1.8985137939453125
+    },
+    {
+      "sample_index": 15,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.56922793126937,
+      "mesh_vertical_clearance_m": 1.877044677734375
+    },
+    {
+      "sample_index": 16,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.5109433970458133,
+      "mesh_vertical_clearance_m": 1.828399658203125
+    },
+    {
+      "sample_index": 17,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.456192457190066,
+      "mesh_vertical_clearance_m": 1.611358642578125
+    },
+    {
+      "sample_index": 18,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.39788048027038,
+      "mesh_vertical_clearance_m": 1.6076507568359375
+    },
+    {
+      "sample_index": 19,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.3441452565089227,
+      "mesh_vertical_clearance_m": 1.7795562744140625
+    },
+    {
+      "sample_index": 20,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.2923389327712034,
+      "mesh_vertical_clearance_m": 1.8332977294921875
+    },
+    {
+      "sample_index": 21,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.242070208963773,
+      "mesh_vertical_clearance_m": 1.7189788818359375
+    },
+    {
+      "sample_index": 22,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.1961235680955817,
+      "mesh_vertical_clearance_m": 1.775482177734375
+    },
+    {
+      "sample_index": 23,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.150375488715034,
+      "mesh_vertical_clearance_m": 1.761199951171875
+    },
+    {
+      "sample_index": 24,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.108013764207481,
+      "mesh_vertical_clearance_m": 1.76324462890625
+    },
+    {
+      "sample_index": 25,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.0667437109499702,
+      "mesh_vertical_clearance_m": 1.7306976318359375
+    },
+    {
+      "sample_index": 26,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.026056807118466,
+      "mesh_vertical_clearance_m": 1.701873779296875
+    },
+    {
+      "sample_index": 27,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.9757328364998483,
+      "mesh_vertical_clearance_m": 1.689208984375
+    },
+    {
+      "sample_index": 28,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.9205895527313825,
+      "mesh_vertical_clearance_m": 1.558197021484375
+    },
+    {
+      "sample_index": 29,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.8667432931334629,
+      "mesh_vertical_clearance_m": 1.5332183837890625
+    },
+    {
+      "sample_index": 30,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.808756737170488,
+      "mesh_vertical_clearance_m": 1.4651031494140625
+    },
+    {
+      "sample_index": 31,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.7533404897940867,
+      "mesh_vertical_clearance_m": 1.444122314453125
+    },
+    {
+      "sample_index": 32,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.7003060701603538,
+      "mesh_vertical_clearance_m": 1.343841552734375
+    },
+    {
+      "sample_index": 33,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.64505143290482,
+      "mesh_vertical_clearance_m": 1.28021240234375
+    },
+    {
+      "sample_index": 34,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.5843391579785644,
+      "mesh_vertical_clearance_m": 1.250244140625
+    },
+    {
+      "sample_index": 35,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.5132318475669715,
+      "mesh_vertical_clearance_m": 1.176300048828125
+    },
+    {
+      "sample_index": 36,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.4381866329444875,
+      "mesh_vertical_clearance_m": 1.069610595703125
+    },
+    {
+      "sample_index": 37,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.4019220178588019,
+      "mesh_vertical_clearance_m": 0.9568023681640625
+    },
+    {
+      "sample_index": 38,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.3980377851632988,
+      "mesh_vertical_clearance_m": 0.90557861328125
+    },
+    {
+      "sample_index": 39,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.4108503756414397,
+      "mesh_vertical_clearance_m": 0.987823486328125
+    },
+    {
+      "sample_index": 40,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.4329726600007473,
+      "mesh_vertical_clearance_m": 0.9589996337890625
+    },
+    {
+      "sample_index": 41,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.4665735387432708,
+      "mesh_vertical_clearance_m": 1.083892822265625
+    },
+    {
+      "sample_index": 42,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.5082658052693145,
+      "mesh_vertical_clearance_m": 1.14093017578125
+    },
+    {
+      "sample_index": 43,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.5656514204379577,
+      "mesh_vertical_clearance_m": 1.220672607421875
+    },
+    {
+      "sample_index": 44,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.6254759666228344,
+      "mesh_vertical_clearance_m": 1.208465576171875
+    },
+    {
+      "sample_index": 45,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.685215171515651,
+      "mesh_vertical_clearance_m": 1.2545166015625
+    },
+    {
+      "sample_index": 46,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.7490939212345298,
+      "mesh_vertical_clearance_m": 1.4124755859375
+    },
+    {
+      "sample_index": 47,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.8181371761032343,
+      "mesh_vertical_clearance_m": 1.5416107177734375
+    },
+    {
+      "sample_index": 48,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.8927502288139366,
+      "mesh_vertical_clearance_m": 1.6006927490234375
+    },
+    {
+      "sample_index": 49,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.9654740643735225,
+      "mesh_vertical_clearance_m": 1.67132568359375
+    },
+    {
+      "sample_index": 50,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.042201133053765,
+      "mesh_vertical_clearance_m": 1.7633209228515625
+    },
+    {
+      "sample_index": 51,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.1125432449022785,
+      "mesh_vertical_clearance_m": 1.835601806640625
+    },
+    {
+      "sample_index": 52,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.170729102953946,
+      "mesh_vertical_clearance_m": 1.875640869140625
+    },
+    {
+      "sample_index": 53,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.226644454812424,
+      "mesh_vertical_clearance_m": 1.9472808837890625
+    },
+    {
+      "sample_index": 54,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.279466026477044,
+      "mesh_vertical_clearance_m": 1.9320831298828125
+    },
+    {
+      "sample_index": 55,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.329714716392942,
+      "mesh_vertical_clearance_m": 1.96429443359375
+    },
+    {
+      "sample_index": 56,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.37197387726929,
+      "mesh_vertical_clearance_m": 1.810211181640625
+    },
+    {
+      "sample_index": 57,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.408716329331163,
+      "mesh_vertical_clearance_m": 1.8641357421875
+    },
+    {
+      "sample_index": 58,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.4356091829443685,
+      "mesh_vertical_clearance_m": 1.911041259765625
+    },
+    {
+      "sample_index": 59,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.451178299224334,
+      "mesh_vertical_clearance_m": 1.955810546875
+    },
+    {
+      "sample_index": 60,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.4574715969726717,
+      "mesh_vertical_clearance_m": 2.0290069580078125
+    },
+    {
+      "sample_index": 61,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.44576271520923,
+      "mesh_vertical_clearance_m": 2.0026702880859375
+    },
+    {
+      "sample_index": 62,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.4241413868194104,
+      "mesh_vertical_clearance_m": 1.9451904296875
+    },
+    {
+      "sample_index": 63,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.3844346452129628,
+      "mesh_vertical_clearance_m": 1.9600372314453125
+    },
+    {
+      "sample_index": 64,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.323954882285223,
+      "mesh_vertical_clearance_m": 1.9021453857421875
+    },
+    {
+      "sample_index": 65,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.256687840519654,
+      "mesh_vertical_clearance_m": 1.8843231201171875
+    },
+    {
+      "sample_index": 66,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.1852738394612103,
+      "mesh_vertical_clearance_m": 1.802490234375
+    },
+    {
+      "sample_index": 67,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.1126022909739817,
+      "mesh_vertical_clearance_m": 1.7894439697265625
+    },
+    {
+      "sample_index": 68,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 2.03938497536372,
+      "mesh_vertical_clearance_m": 1.6332550048828125
+    },
+    {
+      "sample_index": 69,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.9574059262264347,
+      "mesh_vertical_clearance_m": 1.6220703125
+    },
+    {
+      "sample_index": 70,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.8624010546499017,
+      "mesh_vertical_clearance_m": 1.6105194091796875
+    },
+    {
+      "sample_index": 71,
+      "segment_id": 0,
+      "inside": true,
+      "input_height_m": 1.8230528851272627,
+      "mesh_vertical_clearance_m": 1.46820068359375
+    }
+  ],
+  "scope": "Vertical roof/floor rays at every saved section centre on the imported smoothed mesh; not a continuous traversability proof."
+}

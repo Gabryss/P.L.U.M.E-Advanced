@@ -117,6 +117,7 @@ def load_project_config(
     world_body: str | None = None,
     dev_mode: bool | None = None,
     flow_regime_overrides: dict[str, float] | None = None,
+    seed_override: int | None = None,
 ) -> ProjectConfig:
     """Load the project TOML configuration file.
 
@@ -129,6 +130,11 @@ def load_project_config(
     config_path = Path(path)
     with config_path.open("rb") as config_file:
         raw_config = tomllib.load(config_file)
+    if seed_override is not None:
+        if type(seed_override) is not int or seed_override < 0:
+            raise ValueError("seed_override must be a nonnegative integer")
+        # Resolve ranges from the requested seed too, exactly as editing TOML.
+        raw_config["procedural_seed"] = seed_override
     _validate_finite_values(raw_config)
     source_schema_version = raw_config.get("schema_version")
     if type(source_schema_version) is not int or source_schema_version != CURRENT_SCHEMA_VERSION:

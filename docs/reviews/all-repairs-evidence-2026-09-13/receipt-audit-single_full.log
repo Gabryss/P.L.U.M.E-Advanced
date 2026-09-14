@@ -1,0 +1,13 @@
+1/4 single_80m_4k preset seed=0
+  Checking fresh-process replay
+  passed (verified saved result)
+2/4 single_80m_4k preset seed=17
+  Checking fresh-process replay
+  passed (verified saved result)
+3/4 single_80m_4k preset seed=4294967295
+  Checking fresh-process replay
+  passed (verified saved result)
+4/4 single_250m_4k preset seed=17
+  Checking fresh-process replay
+  passed (verified saved result)
+Report: /home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/all_repairs_campaign_20260913/final/single_full/report.html

@@ -1,0 +1,80 @@
+{
+  "passed": true,
+  "version": "5.8.2-56702186+++UE5+Release-5.8",
+  "phase": "complete",
+  "imported_assets": [
+    "/Game/PLUME_Run01/Cave/plume_cave/Textures/plume_cave_texture_0.plume_cave_texture_0",
+    "/Game/PLUME_Run01/Cave/plume_cave/Textures/plume_cave_texture_1.plume_cave_texture_1",
+    "/Game/PLUME_Run01/Cave/plume_cave/Textures/plume_cave_texture_2.plume_cave_texture_2",
+    "/Game/PLUME_Run01/Cave/plume_cave/Materials/cave_wall_material.cave_wall_material",
+    "/Game/PLUME_Run01/Cave/plume_cave/StaticMeshes/plume_cave.plume_cave"
+  ],
+  "imported_nanite_enabled": true,
+  "imported_fallback_triangles": 1954,
+  "triangles": 838408,
+  "vertices": 455697,
+  "bounds_min_cm": [
+    -1503.072021484375,
+    -3010.366455078125,
+    15297.4716796875
+  ],
+  "bounds_max_cm": [
+    1887.6953125,
+    22383.53125,
+    16077.671875
+  ],
+  "maximum_bounds_error_cm": 6.103515625e-05,
+  "shader_statistics": {
+    "num_vertex_shader_instructions": 188,
+    "num_pixel_shader_instructions": 492,
+    "num_samplers": 6,
+    "num_vertex_texture_samples": 0,
+    "num_pixel_texture_samples": 3
+  },
+  "shader_count": 16,
+  "textures": [
+    {
+      "name": "ColorMap",
+      "width": 4096,
+      "height": 4096,
+      "srgb": true,
+      "compression": "<TextureCompressionSettings.TC_DEFAULT: 0>"
+    },
+    {
+      "name": "NormalMap",
+      "width": 4096,
+      "height": 4096,
+      "srgb": false,
+      "compression": "<TextureCompressionSettings.TC_VECTOR_DISPLACEMENTMAP: 5>"
+    },
+    {
+      "name": "RoughnessMap",
+      "width": 4096,
+      "height": 4096,
+      "srgb": false,
+      "compression": "<TextureCompressionSettings.TC_VECTOR_DISPLACEMENTMAP: 5>"
+    }
+  ],
+  "passage_samples": 393,
+  "passage_passed": 393,
+  "maximum_clearance_error_cm": 0.0005822812422593415,
+  "clearance_failures": [],
+  "view_exposure": [
+    {
+      "view": 1,
+      "intensity": 1500.0,
+      "clipped_fraction": 0.0,
+      "attempts": 1
+    },
+    {
+      "view": 2,
+      "intensity": 1500.0,
+      "clipped_fraction": 0.0,
+      "attempts": 1
+    }
+  ],
+  "normal_render_difference": 0.04409716264978213,
+  "material": "/Game/PLUME_Run01/Material/M_PLUME_Continuous.M_PLUME_Continuous",
+  "mesh": "/Game/PLUME_Run01/Cave/plume_cave/StaticMeshes/plume_cave.plume_cave",
+  "map": "/Game/PLUME_Run01/PLUME_Inspection"
+}

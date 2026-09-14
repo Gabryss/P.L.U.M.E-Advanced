@@ -1,0 +1,7 @@
+{
+  "components": 1,
+  "euler": -2,
+  "expected_genus": 2,
+  "genus": 2.0,
+  "triangles": 838408
+}

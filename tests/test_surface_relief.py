@@ -1,9 +1,11 @@
 """Accretion preserves the envelope, physical scale and tile continuity."""
 
 from dataclasses import replace
+from pathlib import Path
 
 import numpy as np
 import pytest
+from scipy import ndimage
 
 from plume_advanced.stages.geometry import GeometryGenerator
 from plume_advanced.stages.geometry_types import GeometryConfig, TiledVoxelGrid, VoxelGrid
@@ -107,3 +109,51 @@ def test_pocket_cleanup_does_not_invert_a_tiny_air_shell_into_an_air_speck():
     grid = VoxelGrid(origin=(0.,)*3, voxel_size=.2, density=density, iso_level=0.)
     GeometryGenerator._remove_small_solid_pockets(grid, include_void=True)
     assert np.all(grid.density < 0.)
+
+
+@pytest.mark.parametrize("iso,voxel_size", [(0., .08), (1.25, .2)])
+def test_thin_air_cleanup_is_bounded_preserves_routes_and_agrees_at_tile_seams(iso, voxel_size):
+    density = np.full((65, 65, 65), iso - 1., dtype=np.float32)
+    density[2:10, 2:25, 2:20] = iso + 1.  # resolved main cavity
+    density[14:26, 16:23, 16] = iso + .1  # detached sheet across two tile seams
+    density[32:40, 32:40, 32] = iso + .1  # similarly thin, but route-supported
+    density[4:24, 44:46, 16] = iso + .1  # longer than the bounded repair span
+    density[45:48, 45:48, 20:23] = iso + .1  # resolved separate cavity
+    density[0:7, 54:61, 10] = iso + .1  # thin but boundary-connected
+    density[3:7, 24:32, 10] = iso + .1  # thin shelf attached to main cavity
+    origin = np.array([-3., 7., 1.])
+    protected = (tuple(origin + np.array([34, 34, 32]) * voxel_size),)
+    grid = VoxelGrid(tuple(origin), voxel_size, density.copy(), iso)
+    tiles = {key: density[tuple(slice(k*16, k*16+17) for k in key)].copy()
+             for key in np.ndindex(4, 4, 4)}
+    tiled = TiledVoxelGrid(tuple(origin), voxel_size, grid.shape, iso, 16, tiles)
+    GeometryGenerator._remove_small_solid_pockets(
+        grid, include_void=True, protected_points=protected,
+    )
+    GeometryGenerator._remove_small_solid_pockets(
+        tiled, include_void=True, protected_points=protected,
+    )
+    expected = density.copy()
+    expected[14:26, 16:23, 16] = iso - 1.
+    np.testing.assert_array_equal(grid.density, expected)
+    for key, tile in tiled.tiles.items():
+        np.testing.assert_array_equal(tile, expected[tuple(slice(k*16, k*16+17) for k in key)])
+
+
+def test_full_resolution_seed20260912_air_sheet_regression():
+    # Local density from the rejected 8 cm full run: 45 isolated air samples,
+    # producing a 248-face shell less than one voxel thick beside the real tube.
+    path = Path(__file__).parent / "fixtures/geometry/seed20260912_air_sheet.npz"
+    with np.load(path) as data:
+        density = data["density"].copy()
+        grid = VoxelGrid(tuple(data["origin"]), float(data["voxel_size"]),
+                         density.copy(), float(data["iso_level"]))
+    labels, count = ndimage.label(density >= grid.iso_level)
+    assert count == 2
+    sizes = np.bincount(labels.ravel())
+    pocket = labels == (1 + np.argmin(sizes[1:]))
+    assert np.count_nonzero(pocket) == 45
+    GeometryGenerator._remove_small_solid_pockets(grid, include_void=True)
+    assert grid.component_count == 1
+    assert np.all(grid.density[pocket] < grid.iso_level)
+    np.testing.assert_array_equal(grid.density[~pocket], density[~pocket])

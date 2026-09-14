@@ -1,0 +1,20 @@
+{
+  "full_cases": 6,
+  "full_replays": 6,
+  "section_cases": 24,
+  "section_replays": 24,
+  "surface_repaired": 3,
+  "upstream_regenerated": 1,
+  "locally_repaired": 0,
+  "visual_repaired": 0,
+  "uv_repair_observed": 0,
+  "texture_repaired": 6,
+  "package_rebuilt": 0,
+  "collision_full_fallback": 6,
+  "zero_added_relief": 1,
+  "under_resolved_cases": 4,
+  "network_screen_rejected_variants": 399,
+  "screen_cases_needing_search_or_repair": 16,
+  "screen_cases_accepting_repaired_routes": 5,
+  "screen_cases_requiring_next_candidate": 13
+}

@@ -1,0 +1,2962 @@
+{
+  "schema": "plume.pipeline-recovery.v1",
+  "status": "accepted",
+  "accepted": true,
+  "root_seed": 1,
+  "original_network_seed": 3016166005,
+  "host_semantic_sha256": "18b72cf859d0c6c9ca4744553e9126b19d0bedd19c5dc41656b5f3f802e4c329",
+  "original_identity": {
+    "network": "d4706e0c3f46d13a259e24c6aa328b0374d3daba6cca7ccc29beafe63655013d",
+    "sections": "ba3a4e98437d631798222572768d8055b5449f321f84027963fc78badb647343"
+  },
+  "budgets": {
+    "local_attempts": 2,
+    "network_attempts": 2
+  },
+  "seed_policy": "derive_subseed(original network stage seed, 'pipeline-mesh-recovery-v1', retry starting at 1)",
+  "attempts": [
+    {
+      "kind": "original",
+      "index": 0,
+      "status": "rejected",
+      "identity": {
+        "network": "d4706e0c3f46d13a259e24c6aa328b0374d3daba6cca7ccc29beafe63655013d",
+        "sections": "ba3a4e98437d631798222572768d8055b5449f321f84027963fc78badb647343"
+      },
+      "assessment": {
+        "schema": "plume.network-quality.v1",
+        "accepted": true,
+        "scope": "network_and_sections",
+        "checks": [
+          {
+            "name": "directed_connectivity_and_flow",
+            "passed": true,
+            "severity": "error",
+            "value": "connected, source reachable, conserved",
+            "limit": null,
+            "segment_ids": []
+          },
+          {
+            "name": "unique_identifiers",
+            "passed": true,
+            "severity": "error",
+            "value": 10,
+            "limit": null,
+            "segment_ids": []
+          },
+          {
+            "name": "acyclic_flow_direction",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_sources",
+            "passed": true,
+            "severity": "error",
+            "value": 3,
+            "limit": 3,
+            "segment_ids": []
+          },
+          {
+            "name": "system_identity_at_connections",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_source_lineage",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_passage_persistence",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_merge_opportunity",
+            "passed": true,
+            "severity": "error",
+            "value": 2,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "system_split_opportunity",
+            "passed": true,
+            "severity": "error",
+            "value": 1,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "system_total_discharge",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 1e-08,
+            "segment_ids": []
+          },
+          {
+            "name": "growth_source_streams",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_chronology",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_activity_ledger",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_discharge_conservation",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 1e-08,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_breakout_budget",
+            "passed": true,
+            "severity": "error",
+            "value": 0.7613375394260976,
+            "limit": 0.8999999999999999,
+            "segment_ids": []
+          },
+          {
+            "name": "growth_interaction_evidence",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "finite_positive_geometry",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "graph_endpoint_agreement",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "host_bounds",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "local_turn_angle",
+            "passed": true,
+            "severity": "error",
+            "value": 11.337512426327654,
+            "limit": 55.0,
+            "segment_ids": []
+          },
+          {
+            "name": "bend_radius_relative_to_width",
+            "passed": true,
+            "severity": "error",
+            "value": 1.4506364726466117,
+            "limit": 0.65,
+            "segment_ids": []
+          },
+          {
+            "name": "segment_sinuosity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 3.0,
+            "segment_ids": []
+          },
+          {
+            "name": "arterial_transverse_runs",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 4.0,
+            "segment_ids": []
+          },
+          {
+            "name": "width_gradient",
+            "passed": true,
+            "severity": "error",
+            "value": 0.2879046128748255,
+            "limit": 0.6,
+            "segment_ids": []
+          },
+          {
+            "name": "small_scale_heading_wiggles",
+            "passed": true,
+            "severity": "error",
+            "value": 2.3483869192800415,
+            "limit": 12.0,
+            "segment_ids": []
+          },
+          {
+            "name": "width_cap_saturation",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 0.55,
+            "segment_ids": []
+          },
+          {
+            "name": "blind_branch_taper",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "repeated_loop_shapes",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 2,
+            "segment_ids": []
+          },
+          {
+            "name": "minimum_route_extent",
+            "passed": true,
+            "severity": "error",
+            "value": 252.53210128705763,
+            "limit": 87.5,
+            "segment_ids": []
+          },
+          {
+            "name": "unmodeled_plan_crossings",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_profiles_finite_positive",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_frames_orthonormal",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_bend_continuity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 55.0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_grade",
+            "passed": true,
+            "severity": "error",
+            "value": 0.2408271971824138,
+            "limit": 0.5,
+            "segment_ids": []
+          },
+          {
+            "name": "sustained_uphill_sections",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 8.0,
+            "segment_ids": []
+          },
+          {
+            "name": "crossing_roof_floor_clearance",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 1.0,
+            "segment_ids": []
+          },
+          {
+            "name": "nonlocal_passage_overlap",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.7,
+            "segment_ids": []
+          },
+          {
+            "name": "junction_floor_continuity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.01,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_junction_angles",
+            "passed": true,
+            "severity": "error",
+            "value": 18.497762856649754,
+            "limit": 45.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_split_supply",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.075,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_host_uphill_grade",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.08,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_parallel_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 1.0,
+            "limit": 0.4,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_minimum_window_parallel_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 1.0,
+            "limit": 0.2,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_longest_parallel_run_m",
+            "passed": true,
+            "severity": "error",
+            "value": 250.00000000000148,
+            "limit": 60.8,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_longest_single_run_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 0.4,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_minimum_source_independent_length_m",
+            "passed": true,
+            "severity": "error",
+            "value": 114.09510502708119,
+            "limit": 38.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_interactions_per_km",
+            "passed": true,
+            "severity": "error",
+            "value": 11.999999999999998,
+            "limit": 2.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_maximum_interaction_gap_m",
+            "passed": true,
+            "severity": "error",
+            "value": 102.04081632653063,
+            "limit": 162.50000000000003,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_section_components",
+            "passed": true,
+            "severity": "error",
+            "value": 1,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_section_cycles",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          }
+        ],
+        "shape_sha256": "c921788204840c66aa5de861759a85988e920320bbd60972fa0309fb0cf893c1",
+        "thresholds": {
+          "enabled": true,
+          "max_attempts": 64,
+          "repair_passes": 3,
+          "maximum_turn_degrees": 55.0,
+          "minimum_bend_radius_widths": 0.65,
+          "maximum_sinuosity": 3.0,
+          "maximum_width_cap_fraction": 0.55,
+          "maximum_width_gradient": 0.6,
+          "maximum_wiggle_degrees": 12.0,
+          "terminal_width_ratio": 0.45,
+          "maximum_similar_loop_pairs": 2,
+          "minimum_route_extent_fraction": 0.35,
+          "maximum_section_grade": 0.5,
+          "maximum_uphill_run_widths": 8.0,
+          "maximum_uphill_grade": 0.08,
+          "minimum_crossing_clearance_m": 1.0,
+          "minimum_passage_separation_widths": 0.7,
+          "maximum_transverse_run_widths": 4.0,
+          "minimum_downstream_alignment": 0.25
+        }
+      },
+      "error_type": "SurfaceTopologyError",
+      "reason": "No surface candidate realizes the accepted network after 6 attempts",
+      "inspection": {
+        "schema": "plume.surface-rejection.v1",
+        "attempts": [
+          {
+            "relief_scale": 1.0,
+            "closing_voxels": 1,
+            "opening_voxels": 0,
+            "unsupported_air_samples_removed": 32,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 1, 'euler': -8, 'genus': 5.0, 'expected_genus': 0, 'triangles': 1341688}",
+            "inspection": {
+              "components": 1,
+              "euler": -8,
+              "genus": 5.0,
+              "expected_genus": 0,
+              "triangles": 1341688
+            }
+          },
+          {
+            "relief_scale": 0.5,
+            "closing_voxels": 1,
+            "opening_voxels": 0,
+            "unsupported_air_samples_removed": 0,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 1, 'euler': -6, 'genus': 4.0, 'expected_genus': 0, 'triangles': 1342642}",
+            "inspection": {
+              "components": 1,
+              "euler": -6,
+              "genus": 4.0,
+              "expected_genus": 0,
+              "triangles": 1342642
+            }
+          },
+          {
+            "relief_scale": 0.25,
+            "closing_voxels": 1,
+            "opening_voxels": 0,
+            "unsupported_air_samples_removed": 0,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 1, 'euler': -4, 'genus': 3.0, 'expected_genus': 0, 'triangles': 1342828}",
+            "inspection": {
+              "components": 1,
+              "euler": -4,
+              "genus": 3.0,
+              "expected_genus": 0,
+              "triangles": 1342828
+            }
+          },
+          {
+            "relief_scale": 0.0,
+            "closing_voxels": 1,
+            "opening_voxels": 0,
+            "unsupported_air_samples_removed": 0,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 2, 'euler': 0, 'genus': 2.0, 'expected_genus': 0, 'triangles': 1347038}",
+            "inspection": {
+              "components": 2,
+              "euler": 0,
+              "genus": 2.0,
+              "expected_genus": 0,
+              "triangles": 1347038
+            }
+          },
+          {
+            "relief_scale": 0.0,
+            "closing_voxels": 0,
+            "opening_voxels": 0,
+            "unsupported_air_samples_removed": 0,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 2, 'euler': 0, 'genus': 2.0, 'expected_genus': 0, 'triangles': 1355634}",
+            "inspection": {
+              "components": 2,
+              "euler": 0,
+              "genus": 2.0,
+              "expected_genus": 0,
+              "triangles": 1355634
+            }
+          },
+          {
+            "relief_scale": 0.0,
+            "closing_voxels": 1,
+            "opening_voxels": 1,
+            "unsupported_air_samples_removed": 0,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 1, 'euler': -6, 'genus': 4.0, 'expected_genus': 0, 'triangles': 1279356}",
+            "inspection": {
+              "components": 1,
+              "euler": -6,
+              "genus": 4.0,
+              "expected_genus": 0,
+              "triangles": 1279356,
+              "defect_regions": [
+                {
+                  "kind": "handle_patch",
+                  "lower_m": [
+                    -55.72805696042061,
+                    -154.35460628445708,
+                    159.91263153843948
+                  ],
+                  "upper_m": [
+                    37.53051887003899,
+                    -142.3740551751431,
+                    163.81082763962814
+                  ],
+                  "center_m": [
+                    -9.09876904519081,
+                    -148.3643307298001,
+                    161.8617295890338
+                  ],
+                  "genus": 1,
+                  "boundary_loops": 5,
+                  "segment_ids": [
+                    4,
+                    7,
+                    8,
+                    9
+                  ]
+                },
+                {
+                  "kind": "handle_patch",
+                  "lower_m": [
+                    -55.81775002987862,
+                    -148.3527578919705,
+                    159.80010345273087
+                  ],
+                  "upper_m": [
+                    40.170518974943164,
+                    -136.3589781277951,
+                    165.44310703568527
+                  ],
+                  "center_m": [
+                    -7.823615527467727,
+                    -142.35586800988278,
+                    162.62160524420807
+                  ],
+                  "genus": 4,
+                  "boundary_loops": 5,
+                  "segment_ids": [
+                    4,
+                    7,
+                    8
+                  ]
+                },
+                {
+                  "kind": "handle_patch",
+                  "lower_m": [
+                    -55.84900742085457,
+                    -142.34544923718533,
+                    159.78623249821732
+                  ],
+                  "upper_m": [
+                    43.320039066953655,
+                    -130.36597852166258,
+                    166.95358123354978
+                  ],
+                  "center_m": [
+                    -6.264484176950457,
+                    -136.35571387942394,
+                    163.36990686588354
+                  ],
+                  "genus": 3,
+                  "boundary_loops": 6,
+                  "segment_ids": [
+                    4,
+                    7,
+                    8
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "defect_regions": [
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.72805696042061,
+              -154.35460628445708,
+              159.91263153843948
+            ],
+            "upper_m": [
+              37.53051887003899,
+              -142.3740551751431,
+              163.81082763962814
+            ],
+            "center_m": [
+              -9.09876904519081,
+              -148.3643307298001,
+              161.8617295890338
+            ],
+            "genus": 1,
+            "boundary_loops": 5,
+            "segment_ids": [
+              4,
+              7,
+              8,
+              9
+            ]
+          },
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.81775002987862,
+              -148.3527578919705,
+              159.80010345273087
+            ],
+            "upper_m": [
+              40.170518974943164,
+              -136.3589781277951,
+              165.44310703568527
+            ],
+            "center_m": [
+              -7.823615527467727,
+              -142.35586800988278,
+              162.62160524420807
+            ],
+            "genus": 4,
+            "boundary_loops": 5,
+            "segment_ids": [
+              4,
+              7,
+              8
+            ]
+          },
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.84900742085457,
+              -142.34544923718533,
+              159.78623249821732
+            ],
+            "upper_m": [
+              43.320039066953655,
+              -130.36597852166258,
+              166.95358123354978
+            ],
+            "center_m": [
+              -6.264484176950457,
+              -136.35571387942394,
+              163.36990686588354
+            ],
+            "genus": 3,
+            "boundary_loops": 6,
+            "segment_ids": [
+              4,
+              7,
+              8
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "kind": "local_section_resampling",
+      "index": 1,
+      "status": "rejected",
+      "localization": {
+        "regions": [
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.72805696042061,
+              -154.35460628445708,
+              159.91263153843948
+            ],
+            "upper_m": [
+              37.53051887003899,
+              -142.3740551751431,
+              163.81082763962814
+            ],
+            "center_m": [
+              -9.09876904519081,
+              -148.3643307298001,
+              161.8617295890338
+            ],
+            "genus": 1,
+            "boundary_loops": 5,
+            "segment_ids": [
+              4,
+              7,
+              8,
+              9
+            ]
+          },
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.81775002987862,
+              -148.3527578919705,
+              159.80010345273087
+            ],
+            "upper_m": [
+              40.170518974943164,
+              -136.3589781277951,
+              165.44310703568527
+            ],
+            "center_m": [
+              -7.823615527467727,
+              -142.35586800988278,
+              162.62160524420807
+            ],
+            "genus": 4,
+            "boundary_loops": 5,
+            "segment_ids": [
+              4,
+              7,
+              8
+            ]
+          },
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.84900742085457,
+              -142.34544923718533,
+              159.78623249821732
+            ],
+            "upper_m": [
+              43.320039066953655,
+              -130.36597852166258,
+              166.95358123354978
+            ],
+            "center_m": [
+              -6.264484176950457,
+              -136.35571387942394,
+              163.36990686588354
+            ],
+            "genus": 3,
+            "boundary_loops": 6,
+            "segment_ids": [
+              4,
+              7,
+              8
+            ]
+          }
+        ],
+        "segment_ids": [
+          4,
+          7,
+          8,
+          9
+        ],
+        "junction_ids": [
+          1,
+          2,
+          3
+        ],
+        "under_resolved_junction_hypotheses": [],
+        "limitation": "Patch localization is partial; a handle in a cyclic graph may be intentional. Full acceptance gates decide repairs."
+      },
+      "change": "Halve section sampling intervals on affected segments",
+      "identity": {
+        "network": "d4706e0c3f46d13a259e24c6aa328b0374d3daba6cca7ccc29beafe63655013d",
+        "sections": "92992bce7c49352e8ef92cdfccde49d67deca5f885fbe0d52d92e1f6879c9ec3"
+      },
+      "assessment": {
+        "schema": "plume.network-quality.v1",
+        "accepted": true,
+        "scope": "network_and_sections",
+        "checks": [
+          {
+            "name": "directed_connectivity_and_flow",
+            "passed": true,
+            "severity": "error",
+            "value": "connected, source reachable, conserved",
+            "limit": null,
+            "segment_ids": []
+          },
+          {
+            "name": "unique_identifiers",
+            "passed": true,
+            "severity": "error",
+            "value": 10,
+            "limit": null,
+            "segment_ids": []
+          },
+          {
+            "name": "acyclic_flow_direction",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_sources",
+            "passed": true,
+            "severity": "error",
+            "value": 3,
+            "limit": 3,
+            "segment_ids": []
+          },
+          {
+            "name": "system_identity_at_connections",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_source_lineage",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_passage_persistence",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_merge_opportunity",
+            "passed": true,
+            "severity": "error",
+            "value": 2,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "system_split_opportunity",
+            "passed": true,
+            "severity": "error",
+            "value": 1,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "system_total_discharge",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 1e-08,
+            "segment_ids": []
+          },
+          {
+            "name": "growth_source_streams",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_chronology",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_activity_ledger",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_discharge_conservation",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 1e-08,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_breakout_budget",
+            "passed": true,
+            "severity": "error",
+            "value": 0.7613375394260976,
+            "limit": 0.8999999999999999,
+            "segment_ids": []
+          },
+          {
+            "name": "growth_interaction_evidence",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "finite_positive_geometry",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "graph_endpoint_agreement",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "host_bounds",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "local_turn_angle",
+            "passed": true,
+            "severity": "error",
+            "value": 11.337512426327654,
+            "limit": 55.0,
+            "segment_ids": []
+          },
+          {
+            "name": "bend_radius_relative_to_width",
+            "passed": true,
+            "severity": "error",
+            "value": 1.4506364726466117,
+            "limit": 0.65,
+            "segment_ids": []
+          },
+          {
+            "name": "segment_sinuosity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 3.0,
+            "segment_ids": []
+          },
+          {
+            "name": "arterial_transverse_runs",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 4.0,
+            "segment_ids": []
+          },
+          {
+            "name": "width_gradient",
+            "passed": true,
+            "severity": "error",
+            "value": 0.2879046128748255,
+            "limit": 0.6,
+            "segment_ids": []
+          },
+          {
+            "name": "small_scale_heading_wiggles",
+            "passed": true,
+            "severity": "error",
+            "value": 2.3483869192800415,
+            "limit": 12.0,
+            "segment_ids": []
+          },
+          {
+            "name": "width_cap_saturation",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 0.55,
+            "segment_ids": []
+          },
+          {
+            "name": "blind_branch_taper",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "repeated_loop_shapes",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 2,
+            "segment_ids": []
+          },
+          {
+            "name": "minimum_route_extent",
+            "passed": true,
+            "severity": "error",
+            "value": 252.53210128705763,
+            "limit": 87.5,
+            "segment_ids": []
+          },
+          {
+            "name": "unmodeled_plan_crossings",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_profiles_finite_positive",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_frames_orthonormal",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_bend_continuity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 55.0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_grade",
+            "passed": true,
+            "severity": "error",
+            "value": 0.2408271971824138,
+            "limit": 0.5,
+            "segment_ids": []
+          },
+          {
+            "name": "sustained_uphill_sections",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 8.0,
+            "segment_ids": []
+          },
+          {
+            "name": "crossing_roof_floor_clearance",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 1.0,
+            "segment_ids": []
+          },
+          {
+            "name": "nonlocal_passage_overlap",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.7,
+            "segment_ids": []
+          },
+          {
+            "name": "junction_floor_continuity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.01,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_junction_angles",
+            "passed": true,
+            "severity": "error",
+            "value": 18.497762856649754,
+            "limit": 45.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_split_supply",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.075,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_host_uphill_grade",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.08,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_parallel_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 1.0,
+            "limit": 0.4,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_minimum_window_parallel_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 1.0,
+            "limit": 0.2,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_longest_parallel_run_m",
+            "passed": true,
+            "severity": "error",
+            "value": 250.00000000000148,
+            "limit": 60.8,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_longest_single_run_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 0.4,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_minimum_source_independent_length_m",
+            "passed": true,
+            "severity": "error",
+            "value": 114.09510502708119,
+            "limit": 38.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_interactions_per_km",
+            "passed": true,
+            "severity": "error",
+            "value": 11.999999999999998,
+            "limit": 2.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_maximum_interaction_gap_m",
+            "passed": true,
+            "severity": "error",
+            "value": 102.04081632653063,
+            "limit": 162.50000000000003,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_section_components",
+            "passed": true,
+            "severity": "error",
+            "value": 1,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_section_cycles",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          }
+        ],
+        "shape_sha256": "c921788204840c66aa5de861759a85988e920320bbd60972fa0309fb0cf893c1",
+        "thresholds": {
+          "enabled": true,
+          "max_attempts": 64,
+          "repair_passes": 3,
+          "maximum_turn_degrees": 55.0,
+          "minimum_bend_radius_widths": 0.65,
+          "maximum_sinuosity": 3.0,
+          "maximum_width_cap_fraction": 0.55,
+          "maximum_width_gradient": 0.6,
+          "maximum_wiggle_degrees": 12.0,
+          "terminal_width_ratio": 0.45,
+          "maximum_similar_loop_pairs": 2,
+          "minimum_route_extent_fraction": 0.35,
+          "maximum_section_grade": 0.5,
+          "maximum_uphill_run_widths": 8.0,
+          "maximum_uphill_grade": 0.08,
+          "minimum_crossing_clearance_m": 1.0,
+          "minimum_passage_separation_widths": 0.7,
+          "maximum_transverse_run_widths": 4.0,
+          "minimum_downstream_alignment": 0.25
+        }
+      },
+      "error_type": "SurfaceTopologyError",
+      "reason": "No surface candidate realizes the accepted network after 6 attempts",
+      "inspection": {
+        "schema": "plume.surface-rejection.v1",
+        "attempts": [
+          {
+            "relief_scale": 1.0,
+            "closing_voxels": 1,
+            "opening_voxels": 0,
+            "unsupported_air_samples_removed": 23,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 1, 'euler': -6, 'genus': 4.0, 'expected_genus': 0, 'triangles': 1342818}",
+            "inspection": {
+              "components": 1,
+              "euler": -6,
+              "genus": 4.0,
+              "expected_genus": 0,
+              "triangles": 1342818
+            }
+          },
+          {
+            "relief_scale": 0.5,
+            "closing_voxels": 1,
+            "opening_voxels": 0,
+            "unsupported_air_samples_removed": 0,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 1, 'euler': -10, 'genus': 6.0, 'expected_genus': 0, 'triangles': 1343670}",
+            "inspection": {
+              "components": 1,
+              "euler": -10,
+              "genus": 6.0,
+              "expected_genus": 0,
+              "triangles": 1343670
+            }
+          },
+          {
+            "relief_scale": 0.25,
+            "closing_voxels": 1,
+            "opening_voxels": 0,
+            "unsupported_air_samples_removed": 0,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 1, 'euler': -4, 'genus': 3.0, 'expected_genus': 0, 'triangles': 1343688}",
+            "inspection": {
+              "components": 1,
+              "euler": -4,
+              "genus": 3.0,
+              "expected_genus": 0,
+              "triangles": 1343688
+            }
+          },
+          {
+            "relief_scale": 0.0,
+            "closing_voxels": 1,
+            "opening_voxels": 0,
+            "unsupported_air_samples_removed": 0,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 4, 'euler': 6, 'genus': 1.0, 'expected_genus': 0, 'triangles': 1347716}",
+            "inspection": {
+              "components": 4,
+              "euler": 6,
+              "genus": 1.0,
+              "expected_genus": 0,
+              "triangles": 1347716
+            }
+          },
+          {
+            "relief_scale": 0.0,
+            "closing_voxels": 0,
+            "opening_voxels": 0,
+            "unsupported_air_samples_removed": 0,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 4, 'euler': 6, 'genus': 1.0, 'expected_genus': 0, 'triangles': 1356524}",
+            "inspection": {
+              "components": 4,
+              "euler": 6,
+              "genus": 1.0,
+              "expected_genus": 0,
+              "triangles": 1356524
+            }
+          },
+          {
+            "relief_scale": 0.0,
+            "closing_voxels": 1,
+            "opening_voxels": 1,
+            "unsupported_air_samples_removed": 0,
+            "accepted": false,
+            "reason": "Surface differs from accepted network: {'components': 1, 'euler': -8, 'genus': 5.0, 'expected_genus': 0, 'triangles': 1279846}",
+            "inspection": {
+              "components": 1,
+              "euler": -8,
+              "genus": 5.0,
+              "expected_genus": 0,
+              "triangles": 1279846,
+              "defect_regions": [
+                {
+                  "kind": "handle_patch",
+                  "lower_m": [
+                    -55.72793005463691,
+                    -154.36365140851103,
+                    159.91223969750473
+                  ],
+                  "upper_m": [
+                    37.53056614401727,
+                    -142.37480881627164,
+                    163.80821123414108
+                  ],
+                  "center_m": [
+                    -9.098681955309818,
+                    -148.36923011239134,
+                    161.8602254658229
+                  ],
+                  "genus": 2,
+                  "boundary_loops": 5
+                },
+                {
+                  "kind": "handle_patch",
+                  "lower_m": [
+                    -55.81950305459113,
+                    -148.35867734845243,
+                    159.80011751942703
+                  ],
+                  "upper_m": [
+                    40.170566248921446,
+                    -136.3665932172116,
+                    165.44307985596726
+                  ],
+                  "center_m": [
+                    -7.824468402834842,
+                    -142.362635282832,
+                    162.62159868769714
+                  ],
+                  "genus": 5,
+                  "boundary_loops": 5
+                },
+                {
+                  "kind": "handle_patch",
+                  "lower_m": [
+                    -55.849247679682684,
+                    -142.36537292416654,
+                    159.78582289509842
+                  ],
+                  "upper_m": [
+                    43.33581600668816,
+                    -130.3694132989224,
+                    166.95093067460127
+                  ],
+                  "center_m": [
+                    -6.256715836497261,
+                    -136.36739311154446,
+                    163.36837678484983
+                  ],
+                  "genus": 3,
+                  "boundary_loops": 6
+                }
+              ]
+            }
+          }
+        ],
+        "defect_regions": [
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.72793005463691,
+              -154.36365140851103,
+              159.91223969750473
+            ],
+            "upper_m": [
+              37.53056614401727,
+              -142.37480881627164,
+              163.80821123414108
+            ],
+            "center_m": [
+              -9.098681955309818,
+              -148.36923011239134,
+              161.8602254658229
+            ],
+            "genus": 2,
+            "boundary_loops": 5
+          },
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.81950305459113,
+              -148.35867734845243,
+              159.80011751942703
+            ],
+            "upper_m": [
+              40.170566248921446,
+              -136.3665932172116,
+              165.44307985596726
+            ],
+            "center_m": [
+              -7.824468402834842,
+              -142.362635282832,
+              162.62159868769714
+            ],
+            "genus": 5,
+            "boundary_loops": 5
+          },
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.849247679682684,
+              -142.36537292416654,
+              159.78582289509842
+            ],
+            "upper_m": [
+              43.33581600668816,
+              -130.3694132989224,
+              166.95093067460127
+            ],
+            "center_m": [
+              -6.256715836497261,
+              -136.36739311154446,
+              163.36837678484983
+            ],
+            "genus": 3,
+            "boundary_loops": 6
+          }
+        ]
+      }
+    },
+    {
+      "kind": "local_width_clearance",
+      "index": 2,
+      "status": "rejected",
+      "localization": {
+        "regions": [
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.72805696042061,
+              -154.35460628445708,
+              159.91263153843948
+            ],
+            "upper_m": [
+              37.53051887003899,
+              -142.3740551751431,
+              163.81082763962814
+            ],
+            "center_m": [
+              -9.09876904519081,
+              -148.3643307298001,
+              161.8617295890338
+            ],
+            "genus": 1,
+            "boundary_loops": 5,
+            "segment_ids": [
+              4,
+              7,
+              8,
+              9
+            ]
+          },
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.81775002987862,
+              -148.3527578919705,
+              159.80010345273087
+            ],
+            "upper_m": [
+              40.170518974943164,
+              -136.3589781277951,
+              165.44310703568527
+            ],
+            "center_m": [
+              -7.823615527467727,
+              -142.35586800988278,
+              162.62160524420807
+            ],
+            "genus": 4,
+            "boundary_loops": 5,
+            "segment_ids": [
+              4,
+              7,
+              8
+            ]
+          },
+          {
+            "kind": "handle_patch",
+            "lower_m": [
+              -55.84900742085457,
+              -142.34544923718533,
+              159.78623249821732
+            ],
+            "upper_m": [
+              43.320039066953655,
+              -130.36597852166258,
+              166.95358123354978
+            ],
+            "center_m": [
+              -6.264484176950457,
+              -136.35571387942394,
+              163.36990686588354
+            ],
+            "genus": 3,
+            "boundary_loops": 6,
+            "segment_ids": [
+              4,
+              7,
+              8
+            ]
+          }
+        ],
+        "segment_ids": [
+          4,
+          7,
+          8,
+          9
+        ],
+        "junction_ids": [
+          1,
+          2,
+          3
+        ],
+        "under_resolved_junction_hypotheses": [],
+        "limitation": "Patch localization is partial; a handle in a cyclic graph may be intentional. Full acceptance gates decide repairs."
+      },
+      "change": "Target 15% narrower conflicting widths within original minimum-width/gradient limits; resample routes and rebuild sections and flow state",
+      "identity": {
+        "network": "13a6ffd8a0c003a273e0bf85549c2f7cff234b56849fd566b846cf11ff5e4962",
+        "sections": "7a15158056eca3b3636682ef7bf948609a39d754040a76698b90922aa0c63224"
+      },
+      "assessment": {
+        "schema": "plume.network-quality.v1",
+        "accepted": false,
+        "scope": "network_and_sections",
+        "checks": [
+          {
+            "name": "directed_connectivity_and_flow",
+            "passed": true,
+            "severity": "error",
+            "value": "connected, source reachable, conserved",
+            "limit": null,
+            "segment_ids": []
+          },
+          {
+            "name": "unique_identifiers",
+            "passed": true,
+            "severity": "error",
+            "value": 10,
+            "limit": null,
+            "segment_ids": []
+          },
+          {
+            "name": "acyclic_flow_direction",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_sources",
+            "passed": true,
+            "severity": "error",
+            "value": 3,
+            "limit": 3,
+            "segment_ids": []
+          },
+          {
+            "name": "system_identity_at_connections",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_source_lineage",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_passage_persistence",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_merge_opportunity",
+            "passed": true,
+            "severity": "error",
+            "value": 2,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "system_split_opportunity",
+            "passed": true,
+            "severity": "error",
+            "value": 1,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "system_total_discharge",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 1e-08,
+            "segment_ids": []
+          },
+          {
+            "name": "growth_source_streams",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_chronology",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_activity_ledger",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_discharge_conservation",
+            "passed": true,
+            "severity": "error",
+            "value": 4.440892098500626e-16,
+            "limit": 1e-08,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_breakout_budget",
+            "passed": true,
+            "severity": "error",
+            "value": 0.7613375394260976,
+            "limit": 0.8999999999999999,
+            "segment_ids": []
+          },
+          {
+            "name": "growth_interaction_evidence",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "finite_positive_geometry",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "graph_endpoint_agreement",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "host_bounds",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "local_turn_angle",
+            "passed": true,
+            "severity": "error",
+            "value": 9.740550779364277,
+            "limit": 55.0,
+            "segment_ids": []
+          },
+          {
+            "name": "bend_radius_relative_to_width",
+            "passed": true,
+            "severity": "error",
+            "value": 0.8511396641063006,
+            "limit": 0.65,
+            "segment_ids": []
+          },
+          {
+            "name": "segment_sinuosity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 3.0,
+            "segment_ids": []
+          },
+          {
+            "name": "arterial_transverse_runs",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 4.0,
+            "segment_ids": []
+          },
+          {
+            "name": "width_gradient",
+            "passed": true,
+            "severity": "error",
+            "value": 0.24121977177622456,
+            "limit": 0.6,
+            "segment_ids": []
+          },
+          {
+            "name": "small_scale_heading_wiggles",
+            "passed": true,
+            "severity": "error",
+            "value": 2.330650393685503,
+            "limit": 12.0,
+            "segment_ids": []
+          },
+          {
+            "name": "width_cap_saturation",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 0.55,
+            "segment_ids": []
+          },
+          {
+            "name": "blind_branch_taper",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "repeated_loop_shapes",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 2,
+            "segment_ids": []
+          },
+          {
+            "name": "minimum_route_extent",
+            "passed": true,
+            "severity": "error",
+            "value": 252.53210128705763,
+            "limit": 87.5,
+            "segment_ids": []
+          },
+          {
+            "name": "unmodeled_plan_crossings",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_profiles_finite_positive",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_frames_orthonormal",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_bend_continuity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 55.0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_grade",
+            "passed": true,
+            "severity": "error",
+            "value": 0.24147822948742728,
+            "limit": 0.5,
+            "segment_ids": []
+          },
+          {
+            "name": "sustained_uphill_sections",
+            "passed": false,
+            "severity": "error",
+            "value": 1,
+            "limit": 8.0,
+            "segment_ids": [
+              8
+            ]
+          },
+          {
+            "name": "crossing_roof_floor_clearance",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 1.0,
+            "segment_ids": []
+          },
+          {
+            "name": "nonlocal_passage_overlap",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.7,
+            "segment_ids": []
+          },
+          {
+            "name": "junction_floor_continuity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.01,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_junction_angles",
+            "passed": true,
+            "severity": "error",
+            "value": 11.471578977993776,
+            "limit": 45.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_split_supply",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.075,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_host_uphill_grade",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.08,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_parallel_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 1.0,
+            "limit": 0.4,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_minimum_window_parallel_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 1.0,
+            "limit": 0.2,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_longest_parallel_run_m",
+            "passed": true,
+            "severity": "error",
+            "value": 250.00000000000148,
+            "limit": 60.8,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_longest_single_run_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 0.4,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_minimum_source_independent_length_m",
+            "passed": true,
+            "severity": "error",
+            "value": 114.07992335685796,
+            "limit": 38.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_interactions_per_km",
+            "passed": true,
+            "severity": "error",
+            "value": 11.999999999999998,
+            "limit": 2.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_maximum_interaction_gap_m",
+            "passed": true,
+            "severity": "error",
+            "value": 102.04081632653063,
+            "limit": 162.50000000000003,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_section_components",
+            "passed": true,
+            "severity": "error",
+            "value": 1,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_section_cycles",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          }
+        ],
+        "shape_sha256": "18327927b9e54e0293bc09e0903ed211a452aef206f7e52571332eab69440816",
+        "thresholds": {
+          "enabled": true,
+          "max_attempts": 64,
+          "repair_passes": 3,
+          "maximum_turn_degrees": 55.0,
+          "minimum_bend_radius_widths": 0.65,
+          "maximum_sinuosity": 3.0,
+          "maximum_width_cap_fraction": 0.55,
+          "maximum_width_gradient": 0.6,
+          "maximum_wiggle_degrees": 12.0,
+          "terminal_width_ratio": 0.45,
+          "maximum_similar_loop_pairs": 2,
+          "minimum_route_extent_fraction": 0.35,
+          "maximum_section_grade": 0.5,
+          "maximum_uphill_run_widths": 8.0,
+          "maximum_uphill_grade": 0.08,
+          "minimum_crossing_clearance_m": 1.0,
+          "minimum_passage_separation_widths": 0.7,
+          "maximum_transverse_run_widths": 4.0,
+          "minimum_downstream_alignment": 0.25
+        }
+      },
+      "error_type": "NetworkQualityError",
+      "reason": "Network morphology rejected before meshing: sustained_uphill_sections",
+      "inspection": {
+        "schema": "plume.network-quality.v1",
+        "accepted": false,
+        "scope": "network_and_sections",
+        "checks": [
+          {
+            "name": "directed_connectivity_and_flow",
+            "passed": true,
+            "severity": "error",
+            "value": "connected, source reachable, conserved",
+            "limit": null,
+            "segment_ids": []
+          },
+          {
+            "name": "unique_identifiers",
+            "passed": true,
+            "severity": "error",
+            "value": 10,
+            "limit": null,
+            "segment_ids": []
+          },
+          {
+            "name": "acyclic_flow_direction",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_sources",
+            "passed": true,
+            "severity": "error",
+            "value": 3,
+            "limit": 3,
+            "segment_ids": []
+          },
+          {
+            "name": "system_identity_at_connections",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_source_lineage",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_passage_persistence",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_merge_opportunity",
+            "passed": true,
+            "severity": "error",
+            "value": 2,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "system_split_opportunity",
+            "passed": true,
+            "severity": "error",
+            "value": 1,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "system_total_discharge",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 1e-08,
+            "segment_ids": []
+          },
+          {
+            "name": "growth_source_streams",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_chronology",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_activity_ledger",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_discharge_conservation",
+            "passed": true,
+            "severity": "error",
+            "value": 4.440892098500626e-16,
+            "limit": 1e-08,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_breakout_budget",
+            "passed": true,
+            "severity": "error",
+            "value": 0.7613375394260976,
+            "limit": 0.8999999999999999,
+            "segment_ids": []
+          },
+          {
+            "name": "growth_interaction_evidence",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "finite_positive_geometry",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "graph_endpoint_agreement",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "host_bounds",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "local_turn_angle",
+            "passed": true,
+            "severity": "error",
+            "value": 9.740550779364277,
+            "limit": 55.0,
+            "segment_ids": []
+          },
+          {
+            "name": "bend_radius_relative_to_width",
+            "passed": true,
+            "severity": "error",
+            "value": 0.8511396641063006,
+            "limit": 0.65,
+            "segment_ids": []
+          },
+          {
+            "name": "segment_sinuosity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 3.0,
+            "segment_ids": []
+          },
+          {
+            "name": "arterial_transverse_runs",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 4.0,
+            "segment_ids": []
+          },
+          {
+            "name": "width_gradient",
+            "passed": true,
+            "severity": "error",
+            "value": 0.24121977177622456,
+            "limit": 0.6,
+            "segment_ids": []
+          },
+          {
+            "name": "small_scale_heading_wiggles",
+            "passed": true,
+            "severity": "error",
+            "value": 2.330650393685503,
+            "limit": 12.0,
+            "segment_ids": []
+          },
+          {
+            "name": "width_cap_saturation",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 0.55,
+            "segment_ids": []
+          },
+          {
+            "name": "blind_branch_taper",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "repeated_loop_shapes",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 2,
+            "segment_ids": []
+          },
+          {
+            "name": "minimum_route_extent",
+            "passed": true,
+            "severity": "error",
+            "value": 252.53210128705763,
+            "limit": 87.5,
+            "segment_ids": []
+          },
+          {
+            "name": "unmodeled_plan_crossings",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_profiles_finite_positive",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_frames_orthonormal",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_bend_continuity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 55.0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_grade",
+            "passed": true,
+            "severity": "error",
+            "value": 0.24147822948742728,
+            "limit": 0.5,
+            "segment_ids": []
+          },
+          {
+            "name": "sustained_uphill_sections",
+            "passed": false,
+            "severity": "error",
+            "value": 1,
+            "limit": 8.0,
+            "segment_ids": [
+              8
+            ]
+          },
+          {
+            "name": "crossing_roof_floor_clearance",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 1.0,
+            "segment_ids": []
+          },
+          {
+            "name": "nonlocal_passage_overlap",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.7,
+            "segment_ids": []
+          },
+          {
+            "name": "junction_floor_continuity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.01,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_junction_angles",
+            "passed": true,
+            "severity": "error",
+            "value": 11.471578977993776,
+            "limit": 45.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_split_supply",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.075,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_host_uphill_grade",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.08,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_parallel_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 1.0,
+            "limit": 0.4,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_minimum_window_parallel_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 1.0,
+            "limit": 0.2,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_longest_parallel_run_m",
+            "passed": true,
+            "severity": "error",
+            "value": 250.00000000000148,
+            "limit": 60.8,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_longest_single_run_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 0.4,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_minimum_source_independent_length_m",
+            "passed": true,
+            "severity": "error",
+            "value": 114.07992335685796,
+            "limit": 38.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_interactions_per_km",
+            "passed": true,
+            "severity": "error",
+            "value": 11.999999999999998,
+            "limit": 2.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_maximum_interaction_gap_m",
+            "passed": true,
+            "severity": "error",
+            "value": 102.04081632653063,
+            "limit": 162.50000000000003,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_section_components",
+            "passed": true,
+            "severity": "error",
+            "value": 1,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_section_cycles",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          }
+        ],
+        "shape_sha256": "18327927b9e54e0293bc09e0903ed211a452aef206f7e52571332eab69440816",
+        "thresholds": {
+          "enabled": true,
+          "max_attempts": 64,
+          "repair_passes": 3,
+          "maximum_turn_degrees": 55.0,
+          "minimum_bend_radius_widths": 0.65,
+          "maximum_sinuosity": 3.0,
+          "maximum_width_cap_fraction": 0.55,
+          "maximum_width_gradient": 0.6,
+          "maximum_wiggle_degrees": 12.0,
+          "terminal_width_ratio": 0.45,
+          "maximum_similar_loop_pairs": 2,
+          "minimum_route_extent_fraction": 0.35,
+          "maximum_section_grade": 0.5,
+          "maximum_uphill_run_widths": 8.0,
+          "maximum_uphill_grade": 0.08,
+          "minimum_crossing_clearance_m": 1.0,
+          "minimum_passage_separation_widths": 0.7,
+          "maximum_transverse_run_widths": 4.0,
+          "minimum_downstream_alignment": 0.25
+        }
+      }
+    },
+    {
+      "kind": "network_regeneration",
+      "index": 1,
+      "status": "accepted",
+      "network_seed": 2493477688,
+      "identity": {
+        "network": "8b5b2303e93a9e2628254f6ba2054b9d2ad075ee9705ea93db5c8fcbbc4321c2",
+        "sections": "72a1d1237e217651ccb0a4ddd67de6f6c52862d52bb1a4cb0038493873e45925"
+      },
+      "assessment": {
+        "schema": "plume.network-quality.v1",
+        "accepted": true,
+        "scope": "network_and_sections",
+        "checks": [
+          {
+            "name": "directed_connectivity_and_flow",
+            "passed": true,
+            "severity": "error",
+            "value": "connected, source reachable, conserved",
+            "limit": null,
+            "segment_ids": []
+          },
+          {
+            "name": "unique_identifiers",
+            "passed": true,
+            "severity": "error",
+            "value": 8,
+            "limit": null,
+            "segment_ids": []
+          },
+          {
+            "name": "acyclic_flow_direction",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_sources",
+            "passed": true,
+            "severity": "error",
+            "value": 3,
+            "limit": 3,
+            "segment_ids": []
+          },
+          {
+            "name": "system_identity_at_connections",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_source_lineage",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_passage_persistence",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "system_merge_opportunity",
+            "passed": true,
+            "severity": "error",
+            "value": 2,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "system_split_opportunity",
+            "passed": true,
+            "severity": "error",
+            "value": 1,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "system_total_discharge",
+            "passed": true,
+            "severity": "error",
+            "value": 1.4802973661668753e-16,
+            "limit": 1e-08,
+            "segment_ids": []
+          },
+          {
+            "name": "growth_source_streams",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_chronology",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_activity_ledger",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_discharge_conservation",
+            "passed": true,
+            "severity": "error",
+            "value": 4.440892098500626e-16,
+            "limit": 1e-08,
+            "segment_ids": []
+          },
+          {
+            "name": "phase_breakout_budget",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 0.8999999999999999,
+            "segment_ids": []
+          },
+          {
+            "name": "growth_interaction_evidence",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "finite_positive_geometry",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "graph_endpoint_agreement",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "host_bounds",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "local_turn_angle",
+            "passed": true,
+            "severity": "error",
+            "value": 7.050733623663004,
+            "limit": 55.0,
+            "segment_ids": []
+          },
+          {
+            "name": "bend_radius_relative_to_width",
+            "passed": true,
+            "severity": "error",
+            "value": 3.139837584401676,
+            "limit": 0.65,
+            "segment_ids": []
+          },
+          {
+            "name": "segment_sinuosity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 3.0,
+            "segment_ids": []
+          },
+          {
+            "name": "arterial_transverse_runs",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 4.0,
+            "segment_ids": []
+          },
+          {
+            "name": "width_gradient",
+            "passed": true,
+            "severity": "error",
+            "value": 0.24893580327891873,
+            "limit": 0.6,
+            "segment_ids": []
+          },
+          {
+            "name": "small_scale_heading_wiggles",
+            "passed": true,
+            "severity": "error",
+            "value": 1.7807565962901184,
+            "limit": 12.0,
+            "segment_ids": []
+          },
+          {
+            "name": "width_cap_saturation",
+            "passed": true,
+            "severity": "error",
+            "value": 0.0,
+            "limit": 0.55,
+            "segment_ids": []
+          },
+          {
+            "name": "blind_branch_taper",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "repeated_loop_shapes",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 2,
+            "segment_ids": []
+          },
+          {
+            "name": "minimum_route_extent",
+            "passed": true,
+            "severity": "error",
+            "value": 256.6424422338755,
+            "limit": 87.5,
+            "segment_ids": []
+          },
+          {
+            "name": "unmodeled_plan_crossings",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_profiles_finite_positive",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_frames_orthonormal",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_bend_continuity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 55.0,
+            "segment_ids": []
+          },
+          {
+            "name": "section_grade",
+            "passed": true,
+            "severity": "error",
+            "value": 0.243912906586287,
+            "limit": 0.5,
+            "segment_ids": []
+          },
+          {
+            "name": "sustained_uphill_sections",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 8.0,
+            "segment_ids": []
+          },
+          {
+            "name": "crossing_roof_floor_clearance",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 1.0,
+            "segment_ids": []
+          },
+          {
+            "name": "nonlocal_passage_overlap",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.7,
+            "segment_ids": []
+          },
+          {
+            "name": "junction_floor_continuity",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.01,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_junction_angles",
+            "passed": true,
+            "severity": "error",
+            "value": 13.531901222473579,
+            "limit": 45.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_split_supply",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.075,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_host_uphill_grade",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0.08,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_parallel_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 0.6212121212121212,
+            "limit": 0.4,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_minimum_window_parallel_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 0.48484848484848486,
+            "limit": 0.2,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_longest_parallel_run_m",
+            "passed": true,
+            "severity": "error",
+            "value": 94.69696969697026,
+            "limit": 60.8,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_longest_single_run_fraction",
+            "passed": true,
+            "severity": "error",
+            "value": 0.378787878787881,
+            "limit": 0.4,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_minimum_source_independent_length_m",
+            "passed": true,
+            "severity": "error",
+            "value": 53.67045616619197,
+            "limit": 38.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_interactions_per_km",
+            "passed": true,
+            "severity": "error",
+            "value": 11.999999999999998,
+            "limit": 2.0,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_maximum_interaction_gap_m",
+            "passed": true,
+            "severity": "error",
+            "value": 107.14285714285717,
+            "limit": 162.50000000000003,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_section_components",
+            "passed": true,
+            "severity": "error",
+            "value": 1,
+            "limit": 1,
+            "segment_ids": []
+          },
+          {
+            "name": "interconnected_section_cycles",
+            "passed": true,
+            "severity": "error",
+            "value": 0,
+            "limit": 0,
+            "segment_ids": []
+          }
+        ],
+        "shape_sha256": "264ea8be16e7310ef8849252272ae7958874e3bb17dcaed3eb68d0963380d690",
+        "thresholds": {
+          "enabled": true,
+          "max_attempts": 64,
+          "repair_passes": 3,
+          "maximum_turn_degrees": 55.0,
+          "minimum_bend_radius_widths": 0.65,
+          "maximum_sinuosity": 3.0,
+          "maximum_width_cap_fraction": 0.55,
+          "maximum_width_gradient": 0.6,
+          "maximum_wiggle_degrees": 12.0,
+          "terminal_width_ratio": 0.45,
+          "maximum_similar_loop_pairs": 2,
+          "minimum_route_extent_fraction": 0.35,
+          "maximum_section_grade": 0.5,
+          "maximum_uphill_run_widths": 8.0,
+          "maximum_uphill_grade": 0.08,
+          "minimum_crossing_clearance_m": 1.0,
+          "minimum_passage_separation_widths": 0.7,
+          "maximum_transverse_run_widths": 4.0,
+          "minimum_downstream_alignment": 0.25
+        }
+      },
+      "surface_attempts": [
+        {
+          "relief_scale": 1.0,
+          "closing_voxels": 1,
+          "opening_voxels": 0,
+          "unsupported_air_samples_removed": 0,
+          "accepted": false,
+          "reason": "Surface differs from accepted network: {'components': 1, 'euler': -6, 'genus': 4.0, 'expected_genus': 0, 'triangles': 1242186}",
+          "inspection": {
+            "components": 1,
+            "euler": -6,
+            "genus": 4.0,
+            "expected_genus": 0,
+            "triangles": 1242186
+          }
+        },
+        {
+          "relief_scale": 0.5,
+          "closing_voxels": 1,
+          "opening_voxels": 0,
+          "unsupported_air_samples_removed": 0,
+          "accepted": false,
+          "reason": "Surface differs from accepted network: {'components': 1, 'euler': -2, 'genus': 2.0, 'expected_genus': 0, 'triangles': 1244682}",
+          "inspection": {
+            "components": 1,
+            "euler": -2,
+            "genus": 2.0,
+            "expected_genus": 0,
+            "triangles": 1244682
+          }
+        },
+        {
+          "relief_scale": 0.25,
+          "closing_voxels": 1,
+          "opening_voxels": 0,
+          "unsupported_air_samples_removed": 0,
+          "accepted": false,
+          "reason": "Surface differs from accepted network: {'components': 1, 'euler': -2, 'genus': 2.0, 'expected_genus': 0, 'triangles': 1246900}",
+          "inspection": {
+            "components": 1,
+            "euler": -2,
+            "genus": 2.0,
+            "expected_genus": 0,
+            "triangles": 1246900
+          }
+        },
+        {
+          "relief_scale": 0.0,
+          "closing_voxels": 1,
+          "opening_voxels": 0,
+          "unsupported_air_samples_removed": 0,
+          "accepted": false,
+          "reason": "Surface differs from accepted network: {'components': 2, 'euler': 2, 'genus': 1.0, 'expected_genus': 0, 'triangles': 1250960}",
+          "inspection": {
+            "components": 2,
+            "euler": 2,
+            "genus": 1.0,
+            "expected_genus": 0,
+            "triangles": 1250960
+          }
+        },
+        {
+          "relief_scale": 0.0,
+          "closing_voxels": 0,
+          "opening_voxels": 0,
+          "unsupported_air_samples_removed": 0,
+          "accepted": false,
+          "reason": "Surface differs from accepted network: {'components': 2, 'euler': 2, 'genus': 1.0, 'expected_genus': 0, 'triangles': 1258400}",
+          "inspection": {
+            "components": 2,
+            "euler": 2,
+            "genus": 1.0,
+            "expected_genus": 0,
+            "triangles": 1258400
+          }
+        },
+        {
+          "relief_scale": 0.0,
+          "closing_voxels": 1,
+          "opening_voxels": 1,
+          "unsupported_air_samples_removed": 0,
+          "accepted": true
+        }
+      ]
+    }
+  ],
+  "limitation": "Finite numerical recovery; not a guarantee for every seed or geological realism.",
+  "outcome": "regenerated",
+  "accepted_identity": {
+    "network": "8b5b2303e93a9e2628254f6ba2054b9d2ad075ee9705ea93db5c8fcbbc4321c2",
+    "sections": "72a1d1237e217651ccb0a4ddd67de6f6c52862d52bb1a4cb0038493873e45925"
+  },
+  "selected_attempt": 3,
+  "effective_network_seed": 3355024306,
+  "host_unchanged": true
+}

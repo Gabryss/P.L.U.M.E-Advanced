@@ -91,12 +91,15 @@ cave_displacement_texture = ""
             ]
         )
 
-    payload = json.loads(
-        output.with_name("run_manifest.json").read_text(encoding="utf-8")
-    )
+    payload = json.loads(output.with_name("run_manifest.json").read_text(encoding="utf-8"))
     assert payload["status"] == "failed"
     assert payload["failure"]["stage"] == "host_field"
     assert "synthetic host failure" in payload["failure"]["error"]
+    quality = json.loads(output.with_name("pipeline_quality_report.json").read_text())
+    assert not quality["passed"]
+    assert quality["stage"] == "host_field"
+    assert quality["error_type"] == "RuntimeError"
+    assert "synthetic host failure" in quality["error"]
 
 
 def test_pipeline_resume_reuses_stage_before_continuing_orchestration(
@@ -158,9 +161,7 @@ cave_displacement_texture = ""
             ]
         )
 
-    payload = json.loads(
-        output.with_name("run_manifest.json").read_text(encoding="utf-8")
-    )
+    payload = json.loads(output.with_name("run_manifest.json").read_text(encoding="utf-8"))
     assert payload["failure"]["stage"] == "network"
 
 
@@ -173,17 +174,30 @@ def test_complete_cli_finishes_progress_and_records_export_provenance(tmp_path: 
     output = tmp_path / "run" / "network.png"
     assert cli.main(["--config", str(cli.PACKAGED_CONFIG), "--output", str(output)]) == 0
     assert TerminalProgress._current is None
-    rows = [json.loads(line) for line in output.with_name("progress.jsonl").read_text().splitlines()]
+    rows = [
+        json.loads(line) for line in output.with_name("progress.jsonl").read_text().splitlines()
+    ]
     started = [row["stage"] for row in rows if row["event"] == "stage_start"]
     finished = [row["stage"] for row in rows if row["event"] == "stage_finish"]
-    assert len(started) == 11 and started == finished
+    assert len(started) == 12 and started == finished
     assert finished[-1] == "Finalize run"
+    assert "Pipeline acceptance" in finished
+    quality = json.loads(output.with_name("pipeline_quality_report.json").read_text())
+    assert quality["passed"] and quality["export_inspection"]["serialized"]["passed"]
+    assert output.with_name("pipeline_inspection.png").is_file()
     work = {row["step"] for row in rows if row["event"] == "work"}
     assert {"Host fields", "Cross sections", "UV charts", "Tangent triangles"} <= work
     payload = json.loads(output.with_name("run_manifest.json").read_text())
     assert payload["status"] == payload["current_stage"] == "complete"
     records = payload["outputs"]
     names = {Path(record["path"]).name for record in records}
-    assert {"network_quality_report.json", "export_size_report.json", "plume_cave_scene.glb"} <= names
+    assert {
+        "network_quality_report.json",
+        "export_size_report.json",
+        "plume_cave_scene.glb",
+        "pipeline_quality_report.json",
+        "pipeline_inspection.png",
+        "section_resolution_report.json",
+    } <= names
     for record in records:
         assert sha256_file(output.parent / record["path"]) == record["sha256"]

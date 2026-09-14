@@ -1,0 +1,1159 @@
+.........ssFFFFFFFFFFFFFFF                                               [100%]
+=================================== FAILURES ===================================
+_________ test_unity_urp_shader_compiles_against_unity_headers[base-0] _________
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles0')
+block_index = 0, variant = 'base'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles0/urp.hlsl:7:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Ver...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+_________ test_unity_urp_shader_compiles_against_unity_headers[base-1] _________
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles1')
+block_index = 1, variant = 'base'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles1/urp.hlsl:7:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Sha...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+_________ test_unity_urp_shader_compiles_against_unity_headers[base-2] _________
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles2')
+block_index = 2, variant = 'base'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles2/urp.hlsl:7:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Dep...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+_______ test_unity_urp_shader_compiles_against_unity_headers[shadows-0] ________
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles3')
+block_index = 0, variant = 'shadows'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles3/urp.hlsl:12:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Ver...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+_______ test_unity_urp_shader_compiles_against_unity_headers[shadows-1] ________
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles4')
+block_index = 1, variant = 'shadows'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles4/urp.hlsl:12:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Sha...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+_______ test_unity_urp_shader_compiles_against_unity_headers[shadows-2] ________
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles5')
+block_index = 2, variant = 'shadows'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles5/urp.hlsl:12:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Dep...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+____ test_unity_urp_shader_compiles_against_unity_headers[instanced_fog-0] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles6')
+block_index = 0, variant = 'instanced_fog'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles6/urp.hlsl:10:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Ver...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+____ test_unity_urp_shader_compiles_against_unity_headers[instanced_fog-1] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles7')
+block_index = 1, variant = 'instanced_fog'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles7/urp.hlsl:10:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Sha...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+____ test_unity_urp_shader_compiles_against_unity_headers[instanced_fog-2] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles8')
+block_index = 2, variant = 'instanced_fog'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles8/urp.hlsl:10:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Dep...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+____ test_unity_urp_shader_compiles_against_unity_headers[screen_shadows-0] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles9')
+block_index = 0, variant = 'screen_shadows'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles9/urp.hlsl:8:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Ver...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+____ test_unity_urp_shader_compiles_against_unity_headers[screen_shadows-1] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles10')
+block_index = 1, variant = 'screen_shadows'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles10/urp.hlsl:8:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Sha...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+____ test_unity_urp_shader_compiles_against_unity_headers[screen_shadows-2] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles11')
+block_index = 2, variant = 'screen_shadows'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles11/urp.hlsl:8:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Dep...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+_____ test_unity_urp_shader_compiles_against_unity_headers[forward_plus-0] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles12')
+block_index = 0, variant = 'forward_plus'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles12/urp.hlsl:9:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Ver...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+_____ test_unity_urp_shader_compiles_against_unity_headers[forward_plus-1] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles13')
+block_index = 1, variant = 'forward_plus'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles13/urp.hlsl:9:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Sha...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+_____ test_unity_urp_shader_compiles_against_unity_headers[forward_plus-2] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles14')
+block_index = 2, variant = 'forward_plus'
+
+    @pytest.mark.parametrize("block_index", [0, 1, 2])
+    @pytest.mark.parametrize("variant", ["base", "shadows", "instanced_fog", "screen_shadows", "forward_plus"])
+    def test_unity_urp_shader_compiles_against_unity_headers(tmp_path, block_index, variant):
+        """Compile real forward/depth/shadow passes, without pretending this launches Unity."""
+        import re
+    
+        compiler = os.environ.get("PLUME_DXC_BINARY")
+        headers = os.environ.get("PLUME_UNITY_HEADERS")
+        if not compiler or not headers:
+            pytest.skip("Set PLUME_DXC_BINARY and PLUME_UNITY_HEADERS for URP compile checks")
+        shader = (ASSETS / "unity/PlumeContinuousRock.shader").read_text()
+        common = re.search(r"HLSLINCLUDE(.*?)ENDHLSL", shader, re.S).group(1)
+        blocks = re.findall(r"HLSLPROGRAM(.*?)ENDHLSL", shader, re.S)
+        defines = {
+            "base": [],
+            "shadows": [
+                "_MAIN_LIGHT_SHADOWS",
+                "_ADDITIONAL_LIGHTS",
+                "_ADDITIONAL_LIGHT_SHADOWS",
+                "_SHADOWS_SOFT",
+                "_CASTING_PUNCTUAL_LIGHT_SHADOW",
+            ],
+            "instanced_fog": ["INSTANCING_ON", "FOG_EXP2", "_ADDITIONAL_LIGHTS_VERTEX"],
+            "screen_shadows": ["_MAIN_LIGHT_SHADOWS_SCREEN"],
+            "forward_plus": ["_FORWARD_PLUS", "_ADDITIONAL_LIGHTS"],
+        }[variant]
+        preamble = (
+            "#define SHADER_API_D3D11 1\n#define SHADER_TARGET 45\n"
+            "#define UNITY_VERSION 202230\n#define UNITY_COMPILER_DXC 1\n"
+            "#define UNITY_UNIFIED_SHADER_PRECISION_MODEL 1\n"
+        )
+        preamble += "".join(f"#define {name} 1\n" for name in defines)
+        path = tmp_path / "urp.hlsl"
+        path.write_text(preamble + common + blocks[block_index])
+        entries = [("Vert", "Frag"), ("ShadowVert", "ShadowFrag"), ("DepthVert", "DepthFrag")][
+            block_index
+        ]
+        for entry, target in zip(entries, ("vs_6_0", "ps_6_0"), strict=True):
+            output = tmp_path / f"{entry}.dxil"
+            result = subprocess.run(
+                [
+                    compiler,
+                    "-flegacy-macro-expansion",
+                    "-HV",
+                    "2018",
+                    "-T",
+                    target,
+                    "-E",
+                    entry,
+                    "-I",
+                    headers,
+                    "-I",
+                    str(ASSETS / "unity"),
+                    str(path),
+                    "-Fo",
+                    str(output),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+>           assert result.returncode == 0, result.stdout + result.stderr
+E           AssertionError: /tmp/pytest-of-gabriel/pytest-143/test_unity_urp_shader_compiles14/urp.hlsl:9:18: fatal error: 'Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl' file not found
+E                     #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+E                              ^
+E             
+E             
+E           assert 5 == 0
+E            +  where 5 = CompletedProcess(args=['/tmp/plume-dxc/bin/dxc', '-flegacy-macro-expansion', '-HV', '2018', '-T', 'vs_6_0', '-E', 'Dep...und\n        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"\n                 ^\n\n').returncode
+
+tests/test_projected_materials.py:234: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[base-0]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[base-1]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[base-2]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[shadows-0]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[shadows-1]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[shadows-2]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[instanced_fog-0]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[instanced_fog-1]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[instanced_fog-2]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[screen_shadows-0]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[screen_shadows-1]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[screen_shadows-2]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[forward_plus-0]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[forward_plus-1]
+FAILED tests/test_projected_materials.py::test_unity_urp_shader_compiles_against_unity_headers[forward_plus-2]
+15 failed, 9 passed, 2 skipped in 2.61s

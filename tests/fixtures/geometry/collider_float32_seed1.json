@@ -1,0 +1,7 @@
+{
+  "source": "outputs/mobility_repair_campaign_20260914/single/case_0000/attempt_0000/export/plume_cave_collision.obj",
+  "sha256": "5da8a574394013ab3022347ee1cea12f8041bbbb614c61d91dc52312f0585ebc",
+  "source_faces": 477482,
+  "patch_faces": 208,
+  "scope": "Open local neighbourhood of real collapsed/inverted float32 collider triangles; used to test precision repair, not whole-mesh topology."
+}

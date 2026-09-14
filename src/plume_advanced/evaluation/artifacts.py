@@ -44,15 +44,39 @@ def network_payload(network: CaveNetwork) -> dict[str, Any]:
 
     return {
         "schema": "plume.cave-network.v1",
-        **({"interconnection": {"controls": asdict(network.config.interconnection),
-                                  "metrics": spatial_metrics(network)}}
-           if network.config.topology.style == "interconnected" else {}),
-        **({"system_interactions": system_summary(network),
-            "system_provenance": network.backend_provenance} if network.config.systems.count > 1 and (network.config.topology.style == "general" or network.config.topology.generation_mode == "independent_growth") else {}),
-        **({"topology": {"controls": asdict(network.config.topology),
-                          "metrics": topology_metrics(network),
-                          "provenance": network.backend_provenance}}
-           if network.config.topology.style == "trunk_dominated" else {}),
+        **(
+            {
+                "interconnection": {
+                    "controls": asdict(network.config.interconnection),
+                    "metrics": spatial_metrics(network),
+                }
+            }
+            if network.config.topology.style == "interconnected"
+            else {}
+        ),
+        **(
+            {
+                "system_interactions": system_summary(network),
+                "system_provenance": network.backend_provenance,
+            }
+            if network.config.systems.count > 1
+            and (
+                network.config.topology.style == "general"
+                or network.config.topology.generation_mode == "independent_growth"
+            )
+            else {}
+        ),
+        **(
+            {
+                "topology": {
+                    "controls": asdict(network.config.topology),
+                    "metrics": topology_metrics(network),
+                    "provenance": network.backend_provenance,
+                }
+            }
+            if network.config.topology.style == "trunk_dominated"
+            else {}
+        ),
         "nodes": [asdict(node) for node in sorted(network.nodes, key=lambda item: item.node_id)],
         "segments": [
             {
@@ -136,7 +160,9 @@ def section_semantic_payload(section_field: SectionField, *, tolerance: float = 
                             "regime": sample.morphology_regime,
                             "family_score": round(sample.morphology_family_score / tolerance),
                             "parent_segment_id": sample.parent_morphology_segment_id,
-                            "junction_blend_length_m": round(sample.junction_blend_length_m / tolerance),
+                            "junction_blend_length_m": round(
+                                sample.junction_blend_length_m / tolerance
+                            ),
                         },
                         "flow_state": quantized_array(
                             (
@@ -227,7 +253,9 @@ def export_section_artifact(
         morphology_regime=np.asarray([sample.morphology_regime for sample in samples]),
         parent_morphology_segment_id=np.asarray(
             [
-                -1 if sample.parent_morphology_segment_id is None else sample.parent_morphology_segment_id
+                -1
+                if sample.parent_morphology_segment_id is None
+                else sample.parent_morphology_segment_id
                 for sample in samples
             ],
             dtype=np.int64,
@@ -302,6 +330,8 @@ def export_geometry_report(geometry: CaveGeometry, output_path: str | Path) -> P
         # junction outliers and preserving unresolved ratios as null.
         "junction_records": junction_records,
         "stability_records": [dict(record) for record in geometry.stability_records],
+        "surface_quality_records": [dict(record) for record in geometry.surface_quality_records],
+        "mesh_inspection": dict(geometry.mesh_inspection),
     }
     output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return output

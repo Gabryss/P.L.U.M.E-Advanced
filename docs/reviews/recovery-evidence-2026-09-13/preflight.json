@@ -1,0 +1,158 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "case": {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/recovery_campaign_20260913/recipes/single_250m.toml",
+        "seed": 1,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      "status": "passed",
+      "warnings": [
+        "Voxel size 0.12 m: passage resolution is measured after sections; configuration alone cannot certify it."
+      ]
+    },
+    {
+      "case": {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/recovery_campaign_20260913/recipes/single_250m.toml",
+        "seed": 17,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      "status": "passed",
+      "warnings": [
+        "Voxel size 0.12 m: passage resolution is measured after sections; configuration alone cannot certify it."
+      ]
+    },
+    {
+      "case": {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/recovery_campaign_20260913/recipes/single_250m.toml",
+        "seed": 73,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      "status": "passed",
+      "warnings": [
+        "Voxel size 0.12 m: passage resolution is measured after sections; configuration alone cannot certify it."
+      ]
+    },
+    {
+      "case": {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/recovery_campaign_20260913/recipes/single_250m.toml",
+        "seed": 101,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      "status": "passed",
+      "warnings": [
+        "Voxel size 0.12 m: passage resolution is measured after sections; configuration alone cannot certify it."
+      ]
+    },
+    {
+      "case": {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/recovery_campaign_20260913/recipes/single_250m.toml",
+        "seed": 4294967295,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      "status": "passed",
+      "warnings": [
+        "Voxel size 0.12 m: passage resolution is measured after sections; configuration alone cannot certify it."
+      ]
+    },
+    {
+      "case": {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/recovery_campaign_20260913/recipes/multi_250m.toml",
+        "seed": 1,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      "status": "passed",
+      "warnings": [
+        "Voxel size 0.12 m: passage resolution is measured after sections; configuration alone cannot certify it."
+      ]
+    },
+    {
+      "case": {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/recovery_campaign_20260913/recipes/multi_250m.toml",
+        "seed": 17,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      "status": "passed",
+      "warnings": [
+        "Voxel size 0.12 m: passage resolution is measured after sections; configuration alone cannot certify it."
+      ]
+    },
+    {
+      "case": {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/recovery_campaign_20260913/recipes/multi_250m.toml",
+        "seed": 73,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      "status": "passed",
+      "warnings": [
+        "Voxel size 0.12 m: passage resolution is measured after sections; configuration alone cannot certify it."
+      ]
+    },
+    {
+      "case": {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/recovery_campaign_20260913/recipes/multi_250m.toml",
+        "seed": 101,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      "status": "passed",
+      "warnings": [
+        "Voxel size 0.12 m: passage resolution is measured after sections; configuration alone cannot certify it."
+      ]
+    },
+    {
+      "case": {
+        "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/outputs/recovery_campaign_20260913/recipes/multi_250m.toml",
+        "seed": 4294967295,
+        "body": null,
+        "scope": "full",
+        "voxel_size": null
+      },
+      "status": "passed",
+      "warnings": [
+        "Voxel size 0.12 m: passage resolution is measured after sections; configuration alone cannot certify it."
+      ]
+    }
+  ],
+  "available_disk_bytes": null,
+  "runtime": {
+    "schema": "plume.runtime.v1",
+    "python": "3.13.5",
+    "implementation": "CPython",
+    "system": "Linux",
+    "machine": "x86_64",
+    "dependencies": {
+      "numpy": "2.5.1",
+      "scipy": "1.18.0",
+      "scikit-image": "0.26.0",
+      "trimesh": "4.12.2",
+      "xatlas": "0.0.11",
+      "pillow": "12.3.0",
+      "rich": "15.0.0",
+      "matplotlib": "3.11.1",
+      "rocky": "0.1.0",
+      "laspy": "2.7.0",
+      "lazrs": "0.8.2",
+      "psutil": "7.2.2"
+    }
+  },
+  "scope": "Configuration and input availability only; no geometry or native engine import checked."
+}

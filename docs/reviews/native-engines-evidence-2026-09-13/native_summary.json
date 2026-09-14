@@ -1,0 +1,142 @@
+{
+  "passed": true,
+  "checks": {
+    "unity": {
+      "native": {
+        "passed": true,
+        "unity": "6000.6.0f1",
+        "api": "Vulkan",
+        "graphics": "NVIDIA GeForce RTX 3070",
+        "failure": "",
+        "triangles": 239274,
+        "vertices": 127358,
+        "passageSamples": 75,
+        "passagePassed": 75,
+        "maximumVertexErrorM": 0.0,
+        "maximumClearanceErrorM": 7.68899917602539e-06,
+        "uvRenderDifference": 0.0,
+        "normalRenderDifference": 0.07389660179615021,
+        "shaderErrors": [],
+        "textures": [
+          {
+            "property": "_ColorMap",
+            "type": "Default",
+            "compression": "Uncompressed",
+            "wrap": "Repeat",
+            "srgb": true,
+            "width": 4096,
+            "height": 4096
+          },
+          {
+            "property": "_NormalMap",
+            "type": "Default",
+            "compression": "Uncompressed",
+            "wrap": "Repeat",
+            "srgb": false,
+            "width": 4096,
+            "height": 4096
+          },
+          {
+            "property": "_RoughnessMap",
+            "type": "Default",
+            "compression": "Uncompressed",
+            "wrap": "Repeat",
+            "srgb": false,
+            "width": 4096,
+            "height": 4096
+          }
+        ]
+      },
+      "images": {
+        "interior_1.png": {
+          "mean": 0.14863185295819717,
+          "standard_deviation": 0.13432315283895038
+        },
+        "interior_2.png": {
+          "mean": 0.27176390803717326,
+          "standard_deviation": 0.2639207641884289
+        }
+      }
+    },
+    "unreal": {
+      "native": {
+        "passed": true,
+        "version": "5.8.2-56702186+++UE5+Release-5.8",
+        "phase": "complete",
+        "imported_assets": [
+          "/Game/PLUME_Run01/Cave/plume_cave/Textures/plume_cave_texture_0.plume_cave_texture_0",
+          "/Game/PLUME_Run01/Cave/plume_cave/Textures/plume_cave_texture_1.plume_cave_texture_1",
+          "/Game/PLUME_Run01/Cave/plume_cave/Textures/plume_cave_texture_2.plume_cave_texture_2",
+          "/Game/PLUME_Run01/Cave/plume_cave/Materials/cave_wall_material.cave_wall_material",
+          "/Game/PLUME_Run01/Cave/plume_cave/StaticMeshes/plume_cave.plume_cave"
+        ],
+        "imported_nanite_enabled": true,
+        "imported_fallback_triangles": 1410,
+        "triangles": 239274,
+        "vertices": 127359,
+        "bounds_min_cm": [
+          -718.9713745117188,
+          13897.2001953125,
+          16760.490234375
+        ],
+        "bounds_max_cm": [
+          842.0969848632812,
+          22470.306640625,
+          17131.556640625
+        ],
+        "maximum_bounds_error_cm": 0.000244140625,
+        "shader_statistics": {
+          "num_vertex_shader_instructions": 188,
+          "num_pixel_shader_instructions": 492,
+          "num_samplers": 6,
+          "num_vertex_texture_samples": 0,
+          "num_pixel_texture_samples": 3
+        },
+        "shader_count": 16,
+        "textures": [
+          {
+            "name": "ColorMap",
+            "width": 4096,
+            "height": 4096,
+            "srgb": true,
+            "compression": "<TextureCompressionSettings.TC_DEFAULT: 0>"
+          },
+          {
+            "name": "NormalMap",
+            "width": 4096,
+            "height": 4096,
+            "srgb": false,
+            "compression": "<TextureCompressionSettings.TC_VECTOR_DISPLACEMENTMAP: 5>"
+          },
+          {
+            "name": "RoughnessMap",
+            "width": 4096,
+            "height": 4096,
+            "srgb": false,
+            "compression": "<TextureCompressionSettings.TC_VECTOR_DISPLACEMENTMAP: 5>"
+          }
+        ],
+        "passage_samples": 75,
+        "passage_passed": 75,
+        "maximum_clearance_error_cm": 0.0009036859592015389,
+        "clearance_failures": [],
+        "normal_render_difference": 0.11027499063861655,
+        "material": "/Game/PLUME_Run01/Material/M_PLUME_Continuous.M_PLUME_Continuous",
+        "mesh": "/Game/PLUME_Run01/Cave/plume_cave/StaticMeshes/plume_cave.plume_cave",
+        "map": "/Game/PLUME_Run01/PLUME_Inspection"
+      },
+      "images": {
+        "interior_1.png": {
+          "mean": 0.3221624455337691,
+          "standard_deviation": 0.30572937277159146
+        },
+        "interior_2.png": {
+          "mean": 0.4663805700231482,
+          "standard_deviation": 0.3466204278385387
+        }
+      }
+    }
+  },
+  "scope": "One accepted 4K rock-free cave; native import/material inspection",
+  "failures": []
+}

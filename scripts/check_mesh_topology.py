@@ -7,12 +7,15 @@ use Python pickle checkpoints received from an untrusted source.
 
 import argparse
 import json
-import pickle
 from pathlib import Path
 
 import numpy as np
 import trimesh
 from scipy.ndimage import binary_fill_holes, label
+
+from plume_advanced.evaluation.artifacts import network_semantic_hash
+from plume_advanced.pipeline import StageCheckpointStore
+from plume_advanced.pipeline.recovery import AcceptedBase
 
 
 def mesh_metrics(mesh):
@@ -36,9 +39,18 @@ def main():
     parser.add_argument("run_directory", type=Path)
     args = parser.parse_args()
     root = args.run_directory
-    with (root / ".plume-checkpoints/final_geometry.pickle").open("rb") as stream:
-        geometry = pickle.load(stream)
+    cache = root / ".plume-checkpoints"
+    metadata = json.loads((cache / "accepted_base.json").read_text())
+    store = StageCheckpointStore(cache, metadata["fingerprint"])
+    accepted = store.load("accepted_base")
+    if not isinstance(accepted, AcceptedBase) or not accepted.report.get("accepted"):
+        raise ValueError("Missing, incompatible or damaged accepted_base checkpoint")
+    geometry = store.load("final_geometry_" + accepted.context_sha256[:16])
+    if geometry is None:
+        raise ValueError("Missing, incompatible or damaged final geometry checkpoint")
     network = json.loads((root / "stage_b_network.json").read_text())
+    if network_semantic_hash(accepted.network) != network["semantic_sha256"]:
+        raise ValueError("Checkpoint network differs from the delivered network")
     grid = geometry.voxel_grid
     if hasattr(grid, "density"):
         plan = np.any(grid.density >= grid.iso_level, axis=2)

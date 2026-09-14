@@ -1,0 +1,13 @@
+{
+  "passed": false,
+  "version": "5.8.2-56702186+++UE5+Release-5.8",
+  "phase": "failed",
+  "imported_assets": [
+    "/Game/PLUME_Run02/Cave/plume_cave/Textures/plume_cave_texture_0.plume_cave_texture_0",
+    "/Game/PLUME_Run02/Cave/plume_cave/Textures/plume_cave_texture_1.plume_cave_texture_1",
+    "/Game/PLUME_Run02/Cave/plume_cave/Textures/plume_cave_texture_2.plume_cave_texture_2",
+    "/Game/PLUME_Run02/Cave/plume_cave/Materials/cave_wall_material.cave_wall_material",
+    "/Game/PLUME_Run02/Cave/plume_cave/StaticMeshes/plume_cave.plume_cave"
+  ],
+  "failure": "Traceback (most recent call last):\n  File \"/home/gabriel/Lab/python/P.L.U.M.E-Advanced/tests/fixtures/unreal/native_check.py\", line 46, in main\n    nanite = subsystem.get_nanite_settings(mesh)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'get_nanite_settings'\n"
+}

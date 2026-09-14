@@ -105,11 +105,7 @@ class GlbAsset:
         return Image.open(BytesIO(bytes(self.binary[start:end]))).copy()
 
     def cave_primitive(self) -> tuple[dict, dict, dict]:
-        node = next(
-            node
-            for node in self.document["nodes"]
-            if node.get("name") == "cave_wall"
-        )
+        node = next(node for node in self.document["nodes"] if node.get("name") == "cave_wall")
         mesh = self.document["meshes"][node["mesh"]]
         return node, mesh, mesh["primitives"][0]
 
@@ -135,10 +131,12 @@ class PortableAssetValidator:
         manifest_path: str | Path | None = None,
         run_manifest_path: str | Path | None = None,
         material_profile: str = "textured",
+        expected_collision: bool | None = None,
     ) -> None:
         if material_profile not in {"textured", "neutral"}:
             raise ValueError("material_profile must be textured or neutral")
         self.material_profile = material_profile
+        self.expected_collision = expected_collision
         self.asset_path = Path(asset_path).expanduser().resolve()
         self.glb = GlbAsset(self.asset_path)
         candidate_manifest = (
@@ -174,6 +172,7 @@ class PortableAssetValidator:
         self,
         *,
         progress: ValidationProgress | None = None,
+        include_run_provenance: bool = True,
     ) -> list[ValidationCheck]:
         checks: list[ValidationCheck] = []
         phase_methods = (
@@ -186,13 +185,15 @@ class PortableAssetValidator:
             self._displacement_checks,
             self._reproducibility_checks,
         )
-        for index, (phase, method) in enumerate(
-            zip(self.PHASES, phase_methods, strict=True),
-            start=1,
-        ):
+        selected = [
+            (phase, method)
+            for phase, method in zip(self.PHASES, phase_methods, strict=True)
+            if include_run_provenance or method != self._reproducibility_checks
+        ]
+        for index, (phase, method) in enumerate(selected, start=1):
             checks.extend(method())
             if progress is not None:
-                progress(index, len(self.PHASES), phase)
+                progress(index, len(selected), phase)
         return checks
 
     @staticmethod
@@ -209,9 +210,7 @@ class PortableAssetValidator:
         external_buffers = [
             buffer["uri"] for buffer in document.get("buffers", ()) if "uri" in buffer
         ]
-        external_images = [
-            image["uri"] for image in document.get("images", ()) if "uri" in image
-        ]
+        external_images = [image["uri"] for image in document.get("images", ()) if "uri" in image]
         return [
             self._check(
                 "container",
@@ -259,11 +258,21 @@ class PortableAssetValidator:
         normal_scale = float(material.get("normalTexture", {}).get("scale", 1.0))
         if self.material_profile == "neutral":
             return [
-                self._check("materials", "Neutral material finite", bool(np.isfinite(
-                    pbr.get("baseColorFactor", [1, 1, 1, 1])).all()), "neutral inspection profile"),
-                self._check("materials", "Embedded images decode", valid_images, ", ".join(decoded)),
-                self._check("materials", "Interior-only cave material", material.get("doubleSided") is False,
-                            f"doubleSided={material.get('doubleSided')}"),
+                self._check(
+                    "materials",
+                    "Neutral material finite",
+                    bool(np.isfinite(pbr.get("baseColorFactor", [1, 1, 1, 1])).all()),
+                    "neutral inspection profile",
+                ),
+                self._check(
+                    "materials", "Embedded images decode", valid_images, ", ".join(decoded)
+                ),
+                self._check(
+                    "materials",
+                    "Interior-only cave material",
+                    material.get("doubleSided") is False,
+                    f"doubleSided={material.get('doubleSided')}",
+                ),
             ]
         return [
             self._check(
@@ -338,9 +347,7 @@ class PortableAssetValidator:
     def _geometry_checks(self) -> list[ValidationCheck]:
         positions, faces, _normals, _tangents, _texcoords = self._geometry_arrays()
         index_valid = bool(
-            faces.size
-            and int(faces.min()) >= 0
-            and int(faces.max()) < len(positions)
+            faces.size and int(faces.min()) >= 0 and int(faces.max()) < len(positions)
         )
         triangles = positions[faces]
         double_areas = np.linalg.norm(
@@ -373,12 +380,18 @@ class PortableAssetValidator:
         nonmanifold_edges = int(np.count_nonzero(edge_counts > 2))
         collision_path = self.asset_path.with_name(f"{self.asset_path.stem}_collision.obj")
         collision_required = (
-            getattr(self, "run_manifest", {}).get("resolved_config", {})
-            .get("export", {}).get("generate_collision", True) is not False
+            getattr(self, "run_manifest", {})
+            .get("resolved_config", {})
+            .get("export", {})
+            .get("generate_collision", True)
+            is not False
         )
+        if getattr(self, "expected_collision", None) is not None:
+            collision_required = bool(self.expected_collision)
         collision_valid = not collision_required
         collision_detail = (
-            f"missing={collision_path}" if collision_required
+            f"missing={collision_path}"
+            if collision_required
             else "disabled in resolved export configuration"
         )
         if collision_path.is_file():
@@ -496,11 +509,9 @@ class PortableAssetValidator:
         ordered_vertices = np.argsort(inverse, kind="stable")
         group_offsets = np.r_[0, np.cumsum(counts)]
         for group_index in np.flatnonzero(counts > 1):
-            group = ordered_vertices[group_offsets[group_index]:group_offsets[group_index + 1]]
+            group = ordered_vertices[group_offsets[group_index] : group_offsets[group_index + 1]]
             uv_delta = texcoords[group] - texcoords[group[0]]
-            group_integer_error = float(
-                np.max(np.abs(uv_delta - np.round(uv_delta)))
-            )
+            group_integer_error = float(np.max(np.abs(uv_delta - np.round(uv_delta))))
             if group_integer_error > 1e-4:
                 chart_seam_groups += 1
                 chart_seam_vertices += len(group)
@@ -515,11 +526,7 @@ class PortableAssetValidator:
                 maximum_tangent_angle,
                 float(np.max(np.degrees(np.arccos(dots)))),
             )
-        uv_scale_m = float(
-            self.manifest.get("cave", {})
-            .get("material", {})
-            .get("uv_scale_m", 8.0)
-        )
+        uv_scale_m = float(self.manifest.get("cave", {}).get("material", {}).get("uv_scale_m", 8.0))
         world_edges = np.stack(
             (
                 positions[faces[:, 1]] - positions[faces[:, 0]],
@@ -541,9 +548,8 @@ class PortableAssetValidator:
             world_edges[valid_metric] @ np.linalg.inv(uv_edges[valid_metric]),
             compute_uv=False,
         )
-        metric_scale = (
-            np.sqrt(singular_values[:, 0] * singular_values[:, 1])
-            / max(uv_scale_m, 1e-9)
+        metric_scale = np.sqrt(singular_values[:, 0] * singular_values[:, 1]) / max(
+            uv_scale_m, 1e-9
         )
         anisotropy = singular_values[:, 0] / np.maximum(
             singular_values[:, 1],
@@ -553,39 +559,14 @@ class PortableAssetValidator:
         roof = vertical_normal < -0.55
         floor = vertical_normal > 0.55
         enough_directional_faces = (
-            int(np.count_nonzero(roof)) >= 100
-            and int(np.count_nonzero(floor)) >= 100
+            int(np.count_nonzero(roof)) >= 100 and int(np.count_nonzero(floor)) >= 100
         )
-        roof_scale = (
-            float(np.median(metric_scale[roof]))
-            if np.any(roof)
-            else 1.0
-        )
-        floor_scale = (
-            float(np.median(metric_scale[floor]))
-            if np.any(floor)
-            else 1.0
-        )
-        median_anisotropy = (
-            float(np.median(anisotropy))
-            if len(anisotropy)
-            else math.inf
-        )
-        anisotropy_p95 = (
-            float(np.quantile(anisotropy, 0.95))
-            if len(anisotropy)
-            else math.inf
-        )
-        anisotropy_p99 = (
-            float(np.quantile(anisotropy, 0.99))
-            if len(anisotropy)
-            else math.inf
-        )
-        severe_anisotropy_fraction = (
-            float(np.mean(anisotropy > 25.0))
-            if len(anisotropy)
-            else 1.0
-        )
+        roof_scale = float(np.median(metric_scale[roof])) if np.any(roof) else 1.0
+        floor_scale = float(np.median(metric_scale[floor])) if np.any(floor) else 1.0
+        median_anisotropy = float(np.median(anisotropy)) if len(anisotropy) else math.inf
+        anisotropy_p95 = float(np.quantile(anisotropy, 0.95)) if len(anisotropy) else math.inf
+        anisotropy_p99 = float(np.quantile(anisotropy, 0.99)) if len(anisotropy) else math.inf
+        severe_anisotropy_fraction = float(np.mean(anisotropy > 25.0)) if len(anisotropy) else 1.0
         checks = [
             self._check(
                 "uv",
@@ -602,10 +583,7 @@ class PortableAssetValidator:
             self._check(
                 "uv",
                 "Bounded UV chart seam overhead",
-                (
-                    len(faces) < 100
-                    or chart_seam_vertices <= int(math.ceil(0.50 * len(positions)))
-                ),
+                (len(faces) < 100 or chart_seam_vertices <= int(math.ceil(0.50 * len(positions)))),
                 (
                     f"groups={chart_seam_groups}, "
                     f"vertices={chart_seam_vertices}/{len(positions)}, "
@@ -689,9 +667,7 @@ class PortableAssetValidator:
         }
         cave_node, _mesh, _primitive = self.glb.cave_primitive()
         structural_expected = set(self.manifest.get("structural_event_ids", ()))
-        structural_actual = set(
-            cave_node.get("extras", {}).get("structural_event_ids", ())
-        )
+        structural_actual = set(cave_node.get("extras", {}).get("structural_event_ids", ()))
         return [
             self._check(
                 "scene",
@@ -733,14 +709,8 @@ class PortableAssetValidator:
         maximum = float(displacement.get("maximum_offset_m", 0.0))
         deviation = float(displacement.get("sample_standard_deviation_m", 0.0))
         material = self.glb.document["materials"][primitive["material"]]
-        minimum_width = float(
-            self.manifest.get("summary", {}).get("minimum_section_width_m", 0.0)
-        )
-        clearance_fraction = (
-            2.0 * scale / minimum_width
-            if baked and minimum_width > 0.0
-            else 0.0
-        )
+        minimum_width = float(self.manifest.get("summary", {}).get("minimum_section_width_m", 0.0))
+        clearance_fraction = 2.0 * scale / minimum_width if baked and minimum_width > 0.0 else 0.0
         return [
             self._check(
                 "displacement",
@@ -751,12 +721,7 @@ class PortableAssetValidator:
             self._check(
                 "displacement",
                 "Displacement bounded in metres",
-                not baked
-                or (
-                    scale > 0.0
-                    and minimum >= -scale - 1e-6
-                    and maximum <= scale + 1e-6
-                ),
+                not baked or (scale > 0.0 and minimum >= -scale - 1e-6 and maximum <= scale + 1e-6),
                 f"range=[{minimum:.6g}, {maximum:.6g}], scale={scale:.6g}",
             ),
             self._check(
@@ -807,8 +772,12 @@ class PortableAssetValidator:
         # Material-only revisions explicitly link the revised bytes to a
         # generated source. A nearby manifest alone cannot attest an asset.
         revision_path = next(
-            (parent / "material_revision.json" for parent in self.asset_path.parents
-             if (parent / "material_revision.json").is_file()), None,
+            (
+                parent / "material_revision.json"
+                for parent in self.asset_path.parents
+                if (parent / "material_revision.json").is_file()
+            ),
+            None,
         )
         if not selected and revision_path is not None:
             try:
@@ -822,7 +791,8 @@ class PortableAssetValidator:
                     and source.is_file()
                     and _sha256(source) == revision["source_sha256"]
                     and any(
-                        (self.run_manifest_path.parent / record["path"]).resolve() == source.resolve()
+                        (self.run_manifest_path.parent / record["path"]).resolve()
+                        == source.resolve()
                         and record["sha256"] == revision["source_sha256"]
                         for record in records
                     )
@@ -831,7 +801,9 @@ class PortableAssetValidator:
                 selected = False
         return [
             self._check(
-                "reproducibility", "Selected asset provenance", selected,
+                "reproducibility",
+                "Selected asset provenance",
+                selected,
                 "Exact generated asset or verified material revision required",
             ),
             self._check(
@@ -888,8 +860,7 @@ def write_validation_reports(
     for check in checks:
         detail = check.detail.replace("|", "\\|")
         lines.append(
-            f"| {check.category} | {check.name} | "
-            f"{'PASS' if check.passed else 'FAIL'} | {detail} |"
+            f"| {check.category} | {check.name} | {'PASS' if check.passed else 'FAIL'} | {detail} |"
         )
     markdown_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return json_path, markdown_path
@@ -960,8 +931,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("asset", type=Path, nargs="?", default=_default_asset())
     parser.add_argument("--manifest", type=Path, default=None)
     parser.add_argument("--run-manifest", type=Path, default=None)
-    parser.add_argument("--material-profile", choices=("textured", "neutral"), default="textured",
-                        help="Require PBR maps, or validate an intentionally neutral inspection asset.")
+    parser.add_argument(
+        "--material-profile",
+        choices=("textured", "neutral"),
+        default="textured",
+        help="Require PBR maps, or validate an intentionally neutral inspection asset.",
+    )
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument(
         "--run-tests",
@@ -974,11 +949,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     console = Console()
-    pytest_exit_code = (
-        _run_pytest_with_progress(console)
-        if args.run_tests
-        else None
-    )
+    pytest_exit_code = _run_pytest_with_progress(console) if args.run_tests else None
     try:
         validator = PortableAssetValidator(
             args.asset,

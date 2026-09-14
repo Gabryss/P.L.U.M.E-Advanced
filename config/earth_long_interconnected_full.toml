@@ -269,6 +269,24 @@ mesh_latitude_segments = 8
 mesh_longitude_segments = 14
 
 [geometry]
+# Required inspection route: upright 0.5 m capsule, plus 2 cm clearance.
+# Optional side passages retain their geological dimensions.
+required_route_height_m = 0.5
+required_route_width_m = 0.5
+route_clearance_margin_m = 0.02
+route_inspection_spacing_m = 0.25
+route_repair_attempts = 2
+route_placement_repair_attempts = 3
+route_placement_max_sweeps = 20000
+# Refinement is explicit because it can multiply grid and mesh memory.
+resolution_refinement_attempts = 0
+resolution_min_voxel_size_m = 0.03
+resolution_convergence_m = 0.03
+resolution_max_allocated_voxels = 160000000
+collision_target_reduction = 0.8
+collision_max_error_m = 0.03
+collision_repair_attempts = 4
+surface_local_repair_attempts = 2
 # Keep the resolved Earth scale explicit: use Stage-C dimensions directly.
 tunnel_radius_scale = 1.0
 voxel_size = 0.20

@@ -1,0 +1,42 @@
+{
+  "scope": "Export-only regression on preserved v1 accepted geometry, not one of the fresh v2 campaign cases.",
+  "source_triangles": 795804,
+  "output_triangles": 477482,
+  "reduction": 0.4000005026363276,
+  "precision": {
+    "method": "local_precision_relaxation",
+    "passed": true,
+    "attempts": [
+      {
+        "fraction": 0.0,
+        "invalid_faces": {
+          "float32_metres": 5,
+          "float32_centimetres": 5
+        }
+      },
+      {
+        "fraction": 0.001,
+        "invalid_faces": {
+          "float32_metres": 0,
+          "float32_centimetres": 0
+        }
+      }
+    ],
+    "relaxation_bound_m": 0.001,
+    "encodings": [
+      "float32_metres",
+      "float32_centimetres"
+    ],
+    "relaxed_vertices": 11,
+    "maximum_vertex_change_m": 0.0001106059133374021
+  },
+  "surface_deviation": {
+    "passed": true,
+    "max_sampled_error_m": 0.0033562834393549706,
+    "checked_points": 1909929
+  },
+  "max_passage_error_m": 0.0015747699799817383,
+  "clearance_passed": true,
+  "obj_sha256": "9c1267143f2130eb007033d4b5b4ffffb6f5f0e3d8e5a9297a79eabf3ecf3bb1",
+  "unittest_fixture_sha256": "a0d9c962f975f6198753fa882335d873dd2147e09540e6ae0f19fa170fc55cdf"
+}

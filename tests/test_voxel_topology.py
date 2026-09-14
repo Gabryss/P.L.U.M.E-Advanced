@@ -51,3 +51,29 @@ def test_invalid_radius_is_rejected(radius):
     grid = VoxelGrid((0, 0, 0), 1, np.ones((3, 3, 3)), 0)
     with pytest.raises(ValueError, match="0 or 1"):
         close_density_fissures(grid, radius)
+
+
+def test_neck_opening_is_bounded_and_does_not_join_or_enlarge_air():
+    from plume_advanced.stages.voxel_topology import open_density_necks
+    original = np.full((49, 49, 49), -4, dtype=np.float32)
+    original[4:22, 5:42, 5:42] = 3
+    original[26:44, 5:42, 5:42] = 3
+    original[21:27, 24:25, 24:25] = 1  # unresolved single-cell shortcut
+    original[10:16, 15:25, :] = -4  # resolved rock island through first gallery
+    dense = VoxelGrid((0, 0, 0), .1, original.copy(), 0)
+    tiles = {k: original[tuple(slice(i*16, i*16+17) for i in k)].copy()
+             for k in np.ndindex(3, 3, 3)}
+    tiled = TiledVoxelGrid(dense.origin, .1, dense.shape, 0, 16, tiles)
+    open_density_necks(dense, 1)
+    open_density_necks(tiled, 1)
+    assert np.all(dense.density <= original)
+    assert ndimage.label(original >= 0)[1] == 1
+    assert ndimage.label(dense.density >= 0)[1] == 2
+    assert np.all(dense.density[10:16, 15:25, :] < 0)
+    assert dense.sample_density((.8, 1., 2.)) > 0
+    for key, tile in tiled.tiles.items():
+        np.testing.assert_array_equal(tile, dense.density[
+            tuple(slice(k*16, k*16+17) for k in key)])
+    once = dense.density.copy()
+    open_density_necks(dense, 1)
+    np.testing.assert_array_equal(once, dense.density)

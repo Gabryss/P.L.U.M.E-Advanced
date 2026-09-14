@@ -1,2 +1,4 @@
 texture/** filter=lfs diff=lfs merge=lfs -text
 outputs/*.glb filter=lfs diff=lfs merge=lfs -text
+# Preserve verbatim test output referenced by the campaign's content hashes.
+docs/reviews/**/native_material_initial.txt -whitespace

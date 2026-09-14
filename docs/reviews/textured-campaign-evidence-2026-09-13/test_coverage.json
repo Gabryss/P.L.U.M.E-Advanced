@@ -1,0 +1,124 @@
+{
+  "kind": "Collected material-specific tests, not a code coverage percentage",
+  "categories": {
+    "tests/test_texture_recovery.py": [
+      "test_good_maps_are_bounded_copies_source_unchanged_and_replay_identical",
+      "test_normal_vectors_repaired_and_convention_is_explicit[opengl]",
+      "test_normal_vectors_repaired_and_convention_is_explicit[directx]",
+      "test_downsampling_normal_vectors_requires_renormalization",
+      "test_irrecoverable_sources_fail_without_inventing_maps[missing]",
+      "test_irrecoverable_sources_fail_without_inventing_maps[corrupt]",
+      "test_irrecoverable_sources_fail_without_inventing_maps[truncated]",
+      "test_irrecoverable_sources_fail_without_inventing_maps[undefined]",
+      "test_irrecoverable_sources_fail_without_inventing_maps[grayscale]",
+      "test_irrecoverable_sources_fail_without_inventing_maps[unsupported]",
+      "test_16bit_dark_roughness_is_not_saturated_or_autocontrasted",
+      "test_disabled_repairs_reject_invalid_normals_but_accept_good_maps",
+      "test_strict_repair_budget[-1]",
+      "test_strict_repair_budget[2]",
+      "test_strict_repair_budget[1.0]",
+      "test_strict_repair_budget[True]",
+      "test_strict_repair_budget[1]",
+      "test_convention_not_guessed",
+      "test_partial_normal_material_is_repaired_without_inventing_other_maps",
+      "test_package_repair_reuses_geometry_and_retains_failed_inspection[missing_map]",
+      "test_package_repair_reuses_geometry_and_retains_failed_inspection[stale_map]",
+      "test_package_repair_reuses_geometry_and_retains_failed_inspection[stale_shader]",
+      "test_package_repair_reuses_geometry_and_retains_failed_inspection[settings]",
+      "test_package_repair_reuses_geometry_and_retains_failed_inspection[misbound]",
+      "test_package_repair_reuses_geometry_and_retains_failed_inspection[wrap]",
+      "test_exhaustion_preserves_existing_export[0]",
+      "test_exhaustion_preserves_existing_export[1]",
+      "test_export_replay_and_portable_obj_paths",
+      "test_programming_error_is_not_retried",
+      "test_shared_event_maps_are_prepared_once",
+      "test_displacement_precision_is_left_to_geometry_acceptance",
+      "test_resource_failure_is_not_a_texture_retry[disk]",
+      "test_resource_failure_is_not_a_texture_retry[memory]",
+      "test_repair_journal_matches_across_directories_even_after_missing_file",
+      "test_failed_texture_diagnosis_does_not_recommend_new_seed",
+      "test_export_cannot_erase_its_source_maps",
+      "test_shader_resources_participate_in_source_fingerprint[unity/material.shader]",
+      "test_shader_resources_participate_in_source_fingerprint[body.hlsl]",
+      "test_shader_resources_participate_in_source_fingerprint[unity/install.cs]",
+      "test_shader_resources_participate_in_source_fingerprint[README.md]"
+    ],
+    "tests/test_uv_repair.py": [
+      "test_collapsed_chart_is_metric_and_preserves_geometry_and_healthy_uvs[False]",
+      "test_collapsed_chart_is_metric_and_preserves_geometry_and_healthy_uvs[True]",
+      "test_float32_rounding_collapse_is_detected_and_repair_is_repeatable",
+      "test_healthy_atlas_is_exact_noop_and_degenerate_space_is_rejected"
+    ],
+    "tests/test_projected_materials.py": [
+      "test_bundle_preserves_glb_and_embedded_images",
+      "test_neutral_bundle_is_skipped",
+      "test_invalid_projection_settings_fail_before_io[0-1]",
+      "test_invalid_projection_settings_fail_before_io[nan-1]",
+      "test_invalid_projection_settings_fail_before_io[inf-1]",
+      "test_invalid_projection_settings_fail_before_io[4--1]",
+      "test_invalid_projection_settings_fail_before_io[4-nan]",
+      "test_invalid_projection_settings_fail_before_io[4-11]",
+      "test_native_projection_frames_and_channels",
+      "test_shared_hlsl_compiles[0]",
+      "test_shared_hlsl_compiles[1]",
+      "test_unity_urp_shader_compiles_against_unity_headers[base-0]",
+      "test_unity_urp_shader_compiles_against_unity_headers[base-1]",
+      "test_unity_urp_shader_compiles_against_unity_headers[base-2]",
+      "test_unity_urp_shader_compiles_against_unity_headers[shadows-0]",
+      "test_unity_urp_shader_compiles_against_unity_headers[shadows-1]",
+      "test_unity_urp_shader_compiles_against_unity_headers[shadows-2]",
+      "test_unity_urp_shader_compiles_against_unity_headers[instanced_fog-0]",
+      "test_unity_urp_shader_compiles_against_unity_headers[instanced_fog-1]",
+      "test_unity_urp_shader_compiles_against_unity_headers[instanced_fog-2]",
+      "test_unity_urp_shader_compiles_against_unity_headers[screen_shadows-0]",
+      "test_unity_urp_shader_compiles_against_unity_headers[screen_shadows-1]",
+      "test_unity_urp_shader_compiles_against_unity_headers[screen_shadows-2]",
+      "test_unity_urp_shader_compiles_against_unity_headers[forward_plus-0]",
+      "test_unity_urp_shader_compiles_against_unity_headers[forward_plus-1]",
+      "test_unity_urp_shader_compiles_against_unity_headers[forward_plus-2]"
+    ],
+    "tests/test_blender_material.py": [
+      "test_native_blender_import_and_render"
+    ],
+    "tests/test_native_engine_runner.py": [
+      "test_blank_native_captures_are_not_accepted[0]",
+      "test_blank_native_captures_are_not_accepted[128]",
+      "test_blank_native_captures_are_not_accepted[255]",
+      "test_both_native_views_are_required",
+      "test_partially_overexposed_capture_is_rejected_despite_high_contrast",
+      "test_native_capture_size_is_checked",
+      "test_editor_failure_preserves_log",
+      "test_stalled_editor_has_bounded_runtime",
+      "test_rejected_generation_cannot_be_used_as_native_evidence",
+      "test_existing_native_project_is_never_overwritten",
+      "test_editor_exit_zero_does_not_override_failed_checks[False]",
+      "test_editor_exit_zero_does_not_override_failed_checks[True]",
+      "test_native_clearance_baseline_is_the_exported_visual_surface"
+    ]
+  },
+  "results": {
+    "full_suite": {
+      "passed": 787,
+      "subtests_passed": 59,
+      "skipped": 20,
+      "deselected": 3,
+      "log": "tests.log"
+    },
+    "optional_blender_projection_and_unity_compiler": {
+      "passed": 16,
+      "log": "material_tests.log"
+    },
+    "optional_blender_import": {
+      "passed": 1,
+      "log": "blender_import_tests.log"
+    },
+    "native_runner_after_clipping_guard": {
+      "passed": 13,
+      "log": "native_runner_tests_v2.log"
+    }
+  },
+  "remaining_unavailable": [
+    "Two shared-HLSL glslang compiler tests",
+    "Optional Manim test module"
+  ]
+}

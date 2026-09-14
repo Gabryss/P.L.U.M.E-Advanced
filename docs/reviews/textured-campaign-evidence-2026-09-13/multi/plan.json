@@ -1,0 +1,65 @@
+{
+  "cases": [
+    {
+      "body": null,
+      "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/multi_250m_4k.toml",
+      "scope": "full",
+      "seed": 1,
+      "voxel_size": null
+    },
+    {
+      "body": null,
+      "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/multi_250m_4k.toml",
+      "scope": "full",
+      "seed": 42,
+      "voxel_size": null
+    },
+    {
+      "body": null,
+      "config": "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/multi_250m_4k.toml",
+      "scope": "full",
+      "seed": 4294967295,
+      "voxel_size": null
+    }
+  ],
+  "inputs": {
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/docs/reviews/textured-campaign-evidence-2026-09-13/multi_250m_4k.toml": "f0a02e14a4f721ff577b6b12781509591d51cc624f89976d673bf6e78659e765",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/pyproject.toml": "6017d8a6a56ed4d924304e3079de8cceefd8c53558d63593ce09fea700b8577e",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/material_assets/README.md": "f38ee8d87337d80cd240103cfd7f87059a62e40515f57560c50604ccaa1df9a0",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/material_assets/apply_blender_material.py": "10139ff37e556dc1b2dce03b0ab3fe49760ab27f98c7cef91e53d04911391803",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/material_assets/blender_materials.py": "7a95dbd8826a4bf8627cd766bf8a6efae282627e55a4e6b6fca3184452958584",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/material_assets/plume_triplanar_body.hlsl": "cb183636ab29454ddd64a3fd63e43055276617ff5d67328693bc5117f937a631",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/material_assets/unity/Editor/PlumeMaterialInstaller.cs": "0af007793f4639033841582c4c4c1639277c82c2785299fd57abdec713c1cba1",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/material_assets/unity/PlumeContinuousRock.shader": "5f802af3e7e59d5644cb5e263bbb4e9b900d1a683e1732b0c06352a86af6fee7",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/material_assets/unity/PlumeTriplanar.hlsl": "72f7a8977529e33b7cb60b3a8e3d2eb71207021a17eebcc3a4b5b0f1c5de254c",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/src/plume_advanced/material_assets/unreal/create_material.py": "4e27fd5fb450d25eb461f04a9f8e669f1ee57ecad91b20c21261cc44e1b193e7",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg": "ad427905d3be95dfeae0d26c33838a110c1e2a15f29d18c111ec3ff6f8d738ea",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr": "11e40bcdc3823f6023a0f4f6a41b429a764514f822c56e2ea5180c0665648642",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/texture/dark_rock_8k/textures/dark_rock_rough_8k.exr": "f9eca3e3ba35746af7d6bb860bae1e0affa417dba5dcb0926da0211a371c2ac5",
+    "/home/gabriel/Lab/python/P.L.U.M.E-Advanced/uv.lock": "7cb196e38d44ee4700bb67588bb34d4517f68aea1bc13ff4119e73662741d370"
+  },
+  "replay": true,
+  "runtime": {
+    "dependencies": {
+      "laspy": "2.7.0",
+      "lazrs": "0.8.2",
+      "matplotlib": "3.11.1",
+      "numpy": "2.5.1",
+      "pillow": "12.3.0",
+      "psutil": "7.2.2",
+      "rich": "15.0.0",
+      "rocky": "0.1.0",
+      "scikit-image": "0.26.0",
+      "scipy": "1.18.0",
+      "trimesh": "4.12.2",
+      "xatlas": "0.0.11"
+    },
+    "implementation": "CPython",
+    "machine": "x86_64",
+    "python": "3.13.5",
+    "schema": "plume.runtime.v1",
+    "system": "Linux"
+  },
+  "schema": "plume.reliability-plan.v1",
+  "source_sha256": "dabac227d7a865fc160ceb5ec39d86ff5df0ff0f50c63a51d6eadad882f984c9"
+}

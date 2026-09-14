@@ -10,6 +10,8 @@ PLUME generates lava-tube networks and their interior geometry for exploration, 
 
 The workflow starts with a possible physical host: terrain, available cover, rock competence, fractures, and emplacement conditions. It grows a formation network, samples cross-sections along that network, constructs a volumetric cave, and exports its surface. The current command line generates the host from a TOML description; the Python API exposes the host-field interface for external integrations. There is no general-purpose measured-DEM import command yet.
 
+Ordinary `plume-generate` runs include evaluation, actual-mesh inspection and bounded repairs. Every completed run includes a quality report and measured-passage figure, even when optional stage figures are disabled. The [self-service guide](docs/self-service.md) explains these built-in checks, resuming a run and optional multi-seed campaigns.
+
 See the [reliability and testing guide](docs/reliability.md) for seed campaigns, detailed progress, native Blender tests, and simulation export budgets.
 
 ### Purpose and scientific contribution
@@ -65,6 +67,7 @@ The authoritative dependency declarations are in [pyproject.toml](pyproject.toml
 | SciPy | 1.12 | Interpolation, spatial queries, filtering, connectivity |
 | scikit-image | 0.23 | Isosurface extraction |
 | Trimesh | 4.4 | Mesh handling and interchange formats |
+| fast-simplification | 0.1.13 (<0.3) | Bounded quadric collision reduction with independent inspection |
 | xatlas | 0.0.11 | UV atlas generation for prepared visual surfaces |
 | Matplotlib | 3.8 | Scientific plots and diagnostics |
 | Pillow | 10.0 | Images and material maps |
@@ -140,6 +143,21 @@ uv run --no-sync plume-generate \
 
 **Portable rock materials:** the full short/long interconnected presets now embed a 4K rock tile with color, normal and roughness maps. See [material setup and existing-run retexturing](docs/materials.md) for configuration, Blender/Unity import settings and the distinction between texture detail and geometry. No-rocks runs can still have textured cave walls.
 
+Textured GLB target packages also include continuous projection materials for Blender, Unity and Unreal. These remove visible UV patch boundaries while reusing the same images. They require the supplied native material setup; the portable GLB retains its standard UV material. See [continuous material setup](docs/materials.md#continuous-materials-for-blender-unity-and-unreal).
+
+Full runs also inspect and repair texture data automatically: usable normal vectors are normalized, map bindings and native material bundles are checked, and a damaged package can be rebuilt once without regenerating geometry. `texture_recovery.json` records the changes. Missing or irrecoverable source images stop acceptance. See the [texture repair contract and controls](docs/materials.md#automatic-texture-inspection-and-repair).
+
+With installed Unity or Unreal editors, use the opt-in [native engine inspection](docs/materials.md#native-engine-inspection) to test a short accepted 4K cave in isolated projects. It checks native imports, materials, passage collisions and rendered controls, preserving logs and failures.
+
+The packaged default, general project scenario and full short/long interconnected
+presets require a **0.5 m high × 0.5 m wide** inspection capsule, plus 0.02 m margin,
+on the dominant route. Other study configurations retain their explicit settings
+or the library's disabled default. Set `required_route_height_m = 0.5` and
+`required_route_width_m = 0.5` under `[geometry]` to enable this requirement in
+another configuration. Bounded path placement can move the body vertically before
+geometry repair; physical host and stability limits remain enforced. See
+[required clearance and repair limits](docs/reliability.md#required-clearance-and-bounded-geometry-repairs).
+
 For an untextured full pipeline, copy a configuration and set the following keys **inside its existing tables**; do not append duplicate TOML tables:
 
 ```toml
@@ -194,7 +212,9 @@ The main command asks before using a nonempty output directory. `--force-overwri
 
 Target adapters convert canonical right-handed, Z-up metre geometry to their required conventions. They do not invoke the target applications. `generate_collision` requests dedicated simplified collision geometry; it is distinct from the prepared visual surface. Verify important imports in the destination application using the [export verification protocol](docs/paper/EXPORT_VERIFICATION_PROTOCOL.md).
 
-The full pipeline also writes `stage_a_host_influence.json`, `stage_b_network_report.json`, `stage_b_network.json`, `stage_c_sections.{npz,json}`, `stage_c_floor_map.{npz,json}`, `stage_d_geometry_report.json`, `stage_e_event_report.json`, `resolved_project_config.json`, and `run_manifest.json`. The manifest records inputs, outputs, provenance, timings, and completion or failure status. PNG diagnostics depend on `run.render_diagnostics`; dense Stage-D raster diagnostics are skipped for sparse tiled volumes.
+The full pipeline also writes `stage_a_host_influence.json`, `stage_b_network_report.json`, `stage_b_network.json`, `stage_c_sections.{npz,json}`, `stage_c_floor_map.{npz,json}`, `stage_d_geometry_report.json`, `stage_e_event_report.json`, `resolved_project_config.json`, and `run_manifest.json`. The manifest records inputs, outputs, provenance, timings, and completion or failure status. Optional stage PNGs depend on `run.render_diagnostics`; dense Stage-D raster diagnostics are skipped for sparse tiled volumes.
+
+Acceptance is part of generation: `section_resolution_report.json` evaluates input sampling; `pipeline_quality_report.json` records mesh and export checks, repairs and warnings; `pipeline_inspection.png` plots measured floor-to-roof distances on the actual mesh. These files do not require an evaluation command or enabled diagnostic rendering. Each export package also contains `pipeline_inspection.json`. Known failures can reduce surface detail, smoothing or displacement, or retain the original collider when simplification is unsafe. If base-surface repair is exhausted, upstream recovery tries localized section/width repairs and then bounded deterministic replacement networks in the same host. `pipeline_recovery.json` preserves the original failure and distinguishes local repair from regeneration; final stage figures and checkpoints follow the accepted realization. Every repair is rechecked and recorded; exhausted repairs stop the run. See [embedded acceptance and its limits](docs/reliability.md#embedded-pipeline-acceptance).
 
 ### Inspect early stages without meshing
 
@@ -430,6 +450,9 @@ for all thresholds, reproduction rules and the inexpensive preview workflow.
 | `[export]` | Destination package and collision output | `target`, `format`, `generate_collision` |
 | `[host_field]` and nested tables | Host domain, terrain variation, routing contributions | `apply_body_scaling`, `grid`, `ranges`, `wave_ranges`, `routing_weights` |
 | `[network]` | Sources, branch opportunities, growth backend | `emplacement_backend`, `network_density`, `lobe_launch_rate`, `loop_probability`, `capture_probability`, `chamber_gain` |
+| `[geometry]` recovery controls | Upstream feedback after failed surface repair | `recovery_local_attempts` (0–2), `recovery_network_attempts` (0–8); both default to 2 |
+| `[geometry]` required route | Continuous upright-body clearance and bounded vertical placement | `required_route_height_m`, `required_route_width_m`, `route_clearance_margin_m`, `route_placement_repair_attempts`, `route_placement_max_sweeps` |
+| `[geometry]` resolution/collider repair | Optional grid convergence and inspected collision reduction | `resolution_refinement_attempts`, `resolution_convergence_m`, `collision_target_reduction`, `collision_max_error_m`, `collision_repair_attempts` |
 | `[network.quality]` | Deterministic morphology acceptance before meshing | `enabled`, `max_attempts`, `repair_passes`, bend, width, repetition, crossing and grade limits |
 | `[network.systems]` | Several arterial systems growing together | `count`, source spacing, routing variation, capture/release distances, minimum passage persistence |
 | `[network.topology]` | General, dominant-gallery or interconnected morphology | `style`, `generation_mode`, width variation; gallery-specific island and dominance rules |
@@ -472,6 +495,12 @@ The current Earth inspection file deliberately favors low passages. It uses `bas
 
 The inspection file's wall/roof/floor/crust relief bounds are **0.55 / 0.65 / 0.22 / 0.10 m**, with a base feature scale of **0.85 m**. These are maximum procedural amplitudes: patch strength, orientation, resolution, and local clearance reduce the realized offsets. They are not measured means. Library defaults for these accretion amplitudes are zero, so other scenarios do not silently inherit the Earth study's relief.
 
+Quality-enabled runs also verify the actual base mesh and sampled route centres.
+If relief creates extra loops, disconnected surfaces or blocked centres, a
+bounded retry reduces its amplitude on the same swept network. The geometry
+report records each attempt and the effective relief scale; unresolved failures
+block export. See [surface acceptance](docs/reliability.md#surface-acceptance-after-network-acceptance).
+
 `wall_roughness_amplitude` is an older density-space roughness control, distinct from metre-based relief. Texture-driven `cave_displacement_scale_m` belongs to export preparation; it is zero in the tube inspection scenario.
 
 ### Resolution and cost
@@ -495,7 +524,7 @@ For body-dependent quality, set `resolution_policy = "body"` and **remove `voxel
 
 These body policies use characteristic **width**, so they may underresolve shallow galleries. The Earth inspection scenario deliberately uses a finer fixed 0.20 m grid. Even that grid does not resolve every crawlway or centimetre-scale feature.
 
-Use `resolution_checks.json` to locate profiles with fewer than eight voxels across their smaller dimension. This is a screening heuristic applied before 3D relief, not a clearance certificate. Local refinement studies can then compare actual mesh cuts. They currently produce standalone bounded patches; they do not automatically refine or stitch replacements into the full mesh.
+Use `resolution_checks.json` to locate profiles with fewer than eight voxels across their smaller dimension. This is a screening heuristic applied before 3D relief, not a clearance certificate. Local refinement studies produce standalone bounded patches; they do not stitch replacements into the full mesh. The optional generation control `resolution_refinement_attempts` instead rebuilds each candidate on one consistently finer grid and requires sampled floor/roof convergence, topology and required-route checks. It defaults to zero and has explicit grid, memory-allocation and attempt limits. See [resolution convergence](docs/reliability.md#optional-resolution-convergence).
 
 `storage_mode` accepts `dense`, `tiled`, or `auto`. Auto switches to sparse overlapping tiles when the dense lattice would exceed `max_dense_voxels` (80 million in the shipped scenarios). Halving voxel size increases a fixed dense volume's cell count by approximately eight; sparse working costs depend on the occupied tiles. `chunk_size` controls meshing partition size, not physical detail. `run.dev_mode` shortens the host and limits growth opportunities without shrinking passages; it does not guarantee a particular total network length.
 
@@ -517,6 +546,10 @@ uv run --no-sync pytest
 ```
 
 Tests cover stages, config validation, network semantics, interpolation, dense/tiled continuity, stability, surface relief, exports, and evaluation helpers. Marked integration or performance cases may take longer; check [pyproject.toml](pyproject.toml) for test settings.
+
+The [13–14 September textured campaign](docs/reviews/textured-campaign-2026-09-13.md) evaluated six short Earth caves with 4K materials, six exact cold replays, and native Unity and Unreal checks on every original. All passed the final audit. The report retains rejected setup trials, repair decisions, interior figures and remaining clearance, resolution and collider limitations, with links to the generated models and editor projects.
+
+The subsequent [14 September clearance and repair campaign](docs/reviews/mobility-repair-campaign-2026-09-14.md) repeated those six designs with a required 0.5 m × 0.5 m inspection body, bounded path/geometry repairs and checked collider simplification. All six originals and cold replays passed, with 340 material views and 2,845 floor/roof probe locations per native engine. Collision triangle counts fell by 40–80%; input-profile resolution warnings and differences in engine lighting remain. The report links the generated assets and records the earlier failures that led to the fixes.
 
 For a **full-pipeline prepared GLB**, use the portable asset validator:
 

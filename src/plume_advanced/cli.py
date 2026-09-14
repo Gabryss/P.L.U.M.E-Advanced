@@ -54,6 +54,11 @@ from plume_advanced.output_guard import (
     require_output_overwrite_confirmation,
 )
 from plume_advanced.pipeline import StageCheckpointStore, pipeline_fingerprint
+from plume_advanced.pipeline.inspection import (
+    complete_inspection,
+    evaluate_sections,
+    record_failure,
+)
 from plume_advanced.run_manifest import write_run_manifest
 from plume_advanced.stages.events import GeologicalEventGenerator
 from plume_advanced.stages.floor_map import FloorMapGenerator, export_floor_atlas
@@ -244,7 +249,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         print(error, file=sys.stderr)
         return 2
 
-    progress = TerminalProgress(trace_path=args.output.with_name("progress.jsonl"))
+    progress = TerminalProgress(total_stages=12, trace_path=args.output.with_name("progress.jsonl"))
     progress.start("Configuration", "loaded TOML and checked output")
     resolved_config_path = write_project_config_manifest(
         project_config,
@@ -274,9 +279,11 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         ),
     )
 
+    accepted_context = ""
+
     def resumable(stage: str, builder):
         artifact, reused = checkpoint_store.load_or_build(
-            stage,
+            stage + accepted_context,
             builder,
             resume=args.resume,
         )
@@ -332,15 +339,58 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     cave_network = resumable(
         "network",
         lambda: CaveNetworkGenerator(project_config.network).generate(
-            host_field, section_config=project_config.section_field,
+            host_field,
+            section_config=project_config.section_field,
             quality_report_path=args.output.with_name("network_quality_report.json"),
             quality_progress=progress.log,
         ),
     )
+    progress.finish(f"screened {len(cave_network.segments)} network segments")
+    stage_timings["network_s"] = time.perf_counter() - stage_started
+
+    checkpoint("section_field")
+    progress.start("Stage C - Section Field", "sampling tunnel profiles")
+    stage_started = time.perf_counter()
+    section_field = resumable(
+        "section_field",
+        lambda: SectionFieldGenerator(project_config.section_field).generate(cave_network),
+    )
+    progress.finish("sampled sections; publication follows mesh acceptance")
+    stage_timings["sections_s"] = time.perf_counter() - stage_started
+
+    def geometry_progress(phase: str, current: int, total: int, message: str) -> None:
+        progress.substep(phase, current, total, message)
+
+    geometry_generator = GeometryGenerator(project_config.geometry)
+    checkpoint("base_geometry")
+    progress.start(
+        "Stage D1 - Base Volume",
+        (
+            f"stamping at {project_config.geometry.voxel_size:.3g} m "
+            f"({project_config.geometry.resolution_quality})"
+        ),
+    )
+    stage_started = time.perf_counter()
+    from plume_advanced.pipeline.recovery import build_accepted_base, write_recovery_report
+
+    recovery_path = args.output.with_name("pipeline_recovery.json")
+    accepted = resumable(
+        "accepted_base",
+        lambda: build_accepted_base(project_config, host_field, cave_network, section_field,
+                                    report_path=recovery_path, progress=geometry_progress),
+    )
+    cave_network, section_field, base_geometry = accepted.network, accepted.sections, accepted.geometry
+    geometry_generator = GeometryGenerator(base_geometry.config)
+    accepted_context = "_" + accepted.context_sha256[:16]
+    completed_outputs.append(write_recovery_report(accepted, recovery_path))
     if project_config.network.quality.enabled:
         from plume_advanced.stages.network_quality import write_quality_report
-        completed_outputs.append(write_quality_report(
-            cave_network.quality_report, args.output.with_name("network_quality_report.json")))
+
+        completed_outputs.append(
+            write_quality_report(
+                cave_network.quality_report, args.output.with_name("network_quality_report.json")
+            )
+        )
     network_summary = cave_network.summary()
     network_report_path = export_network_report(
         cave_network,
@@ -368,11 +418,11 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
             cave_network,
             args.output.with_name("stage_b_emplacement_history.png"),
         )
-        progress.finish(f"wrote {network_output_path.name}")
+        progress.log(f"wrote {network_output_path.name}")
     else:
         network_output_path = None
         emplacement_history_output_path = None
-        progress.finish("diagnostic render disabled")
+        progress.log("network diagnostic render disabled")
     completed_outputs.extend(
         path
         for path in (
@@ -383,20 +433,16 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         )
         if path is not None
     )
-    stage_timings["network_s"] = time.perf_counter() - stage_started
-
-    checkpoint("section_field")
-    progress.start("Stage C - Section Field", "sampling tunnel profiles")
-    stage_started = time.perf_counter()
-    section_field = resumable(
-        "section_field",
-        lambda: SectionFieldGenerator(project_config.section_field).generate(cave_network),
-    )
     section_summary = section_field.summary()
     section_npz_path, section_json_path = export_section_artifact(
         section_field,
         section_output.with_name("stage_c_sections"),
     )
+    resolution_path = args.output.with_name("section_resolution_report.json")
+    resolution_report = evaluate_sections(
+        section_field, base_geometry.voxel_grid.voxel_size, resolution_path
+    )
+    completed_outputs.append(resolution_path)
     progress.update(
         1,
         2,
@@ -408,37 +454,14 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
             section_field,
             section_output,
         )
-        progress.finish(f"wrote {section_output_path.name}")
+        progress.log(f"wrote {section_output_path.name}")
     else:
         section_output_path = None
-        progress.finish("diagnostic render disabled")
+        progress.log("section diagnostic render disabled")
     if section_output_path is not None:
         completed_outputs.append(section_output_path)
     completed_outputs.extend((section_npz_path, section_json_path))
-    stage_timings["sections_s"] = time.perf_counter() - stage_started
-
-    def geometry_progress(phase: str, current: int, total: int, message: str) -> None:
-        progress.substep(phase, current, total, message)
-
-    geometry_generator = GeometryGenerator(project_config.geometry)
-    checkpoint("base_geometry")
-    progress.start(
-        "Stage D1 - Base Volume",
-        (
-            f"stamping at {project_config.geometry.voxel_size:.3g} m "
-            f"({project_config.geometry.resolution_quality})"
-        ),
-    )
-    stage_started = time.perf_counter()
-    base_geometry = resumable(
-        "base_geometry",
-        lambda: geometry_generator.build_base_volume(
-            cave_network,
-            section_field,
-            progress=geometry_progress,
-        ),
-    )
-    progress.finish(f"built {int(base_geometry.summary()['carved_voxel_count'])} cave voxels")
+    progress.finish(f"accepted {int(base_geometry.summary()['carved_voxel_count'])} cave voxels; published matching network and sections")
     stage_timings["base_geometry_s"] = time.perf_counter() - stage_started
 
     floor_map_generator = FloorMapGenerator(project_config.floor_map)
@@ -733,6 +756,26 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         )
         if path is not None
     )
+    checkpoint("pipeline_inspection")
+    progress.start("Pipeline acceptance", "checking inspection evidence and effective repairs")
+    inspection_started = time.perf_counter()
+    # Compatible cached geometry never bypasses export inspection. Source/config
+    # changes during a run cannot turn a mixed-version result into a success.
+    if checkpoint_store.fingerprint != pipeline_fingerprint(
+        project_config,
+        inputs=manifest_inputs,
+        source_root=SOURCE_ROOT,
+    ):
+        raise ValueError("Pipeline inputs or executing code changed during generation")
+    inspection_paths = complete_inspection(
+        cave_geometry, export_result, resolution_report, args.output.parent
+    )
+    manifest_outputs.extend(inspection_paths)
+    completed_outputs.extend(inspection_paths)
+    stage_timings["inspection_s"] = time.perf_counter() - inspection_started
+    progress.finish(f"wrote {inspection_paths[0].name} and {inspection_paths[1].name}")
+    progress.log(f"Pipeline quality report: {inspection_paths[0]}")
+    progress.log(f"Measured passage inspection: {inspection_paths[1]}")
     progress.start("Finalize run", "hashing output files and recording provenance")
     run_manifest_path = write_run_manifest(
         project_config,
@@ -801,6 +844,7 @@ def main(argv: list[str] | None = None) -> int:
                 error=f"{type(error).__name__}: {error}",
                 inputs=_run_inputs(args.config, project_config),
             )
+            record_failure(args.output.parent, error, current_stage)
         except Exception:
             pass
         raise

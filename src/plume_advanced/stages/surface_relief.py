@@ -105,6 +105,8 @@ def apply_surface_relief(
     grid: VoxelGrid | TiledVoxelGrid,
     config: GeometryConfig,
     progress: Callable[[str, int, int, str], None] | None = None,
+    *,
+    local_regions=(),
 ) -> None:
     """Modify density once, using immutable neighbors for seam agreement."""
     maximum = max(config.surface_wall_relief_m, config.surface_roof_relief_m,
@@ -131,7 +133,20 @@ def apply_surface_relief(
         for begin in range(0, len(points), 65536):
             end = begin+65536
             offset[begin:end] = relief_depth(points[begin:end], upward[begin:end], config)
-        peak = ndimage.maximum_filter(density-grid.iso_level, size=2*reach+1, mode="nearest")[core][active]
+        if local_regions:
+            offset *= local_relief_weights(points, local_regions)
+        # A broad 3-D maximum borrowed clearance from neighbouring galleries.
+        # Near a thin breakout beside a taller passage that allowed accretion
+        # to consume the breakout and leave detached air sheets. Propagate
+        # maxima only within the same vertical air run, never through rock or
+        # sideways from another passage. The fixed reach keeps tile parity.
+        void = density >= grid.iso_level
+        local_peak = np.where(void, density-grid.iso_level, 0.)
+        for _ in range(reach):
+            local_peak = np.where(
+                void, ndimage.maximum_filter1d(local_peak, size=3, axis=2, mode="nearest"), 0.,
+            )
+        peak = local_peak[core][active]
         offset = np.minimum(offset, .4*size*np.maximum(peak, 0.))
         result = source.copy()
         result[active] -= (offset/size).astype(result.dtype)
@@ -141,6 +156,7 @@ def apply_surface_relief(
         grid.density[...] = modify(grid.density, np.zeros(3, dtype=int), (slice(None),)*3)
         return
     grid.synchronize_halos()
+
     # Keep the source immutable until every tile has been evaluated.
     result_tiles = {}
     for index, (key, tile) in enumerate(sorted(grid.tiles.items()), 1):
@@ -169,3 +185,15 @@ def apply_surface_relief(
             progress("surface-relief", index, len(grid.tiles), "shaping wall, roof and floor accretion")
     grid.tiles = result_tiles
     grid.synchronize_halos()
+
+
+def local_relief_weights(points, regions):
+    """Continuous world-space attenuation; identical on both sides of tile seams."""
+    weights = np.ones(len(points))
+    for region in regions:
+        lower, upper = np.asarray(region["lower_m"]), np.asarray(region["upper_m"])
+        distance = np.linalg.norm(np.maximum(np.maximum(lower-points, points-upper), 0.), axis=1)
+        t = np.clip(distance/region["blend_m"], 0., 1.)
+        smooth = t*t*t*(t*(t*6.-15.)+10.)
+        weights = np.minimum(weights, region["scale"]+(1-region["scale"])*smooth)
+    return weights

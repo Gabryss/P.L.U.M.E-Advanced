@@ -1,0 +1,168 @@
+{
+  "passed": true,
+  "checks": {
+    "unity": {
+      "native": {
+        "passed": true,
+        "unity": "6000.6.0f1",
+        "api": "Vulkan",
+        "graphics": "NVIDIA GeForce RTX 3070",
+        "failure": "",
+        "triangles": 795184,
+        "vertices": 423848,
+        "passageSamples": 357,
+        "passagePassed": 357,
+        "maximumVertexErrorM": 0.0,
+        "maximumClearanceErrorM": 1.3232231140136719e-05,
+        "uvRenderDifference": 0.0,
+        "normalRenderDifference": 0.04301057383418083,
+        "shaderErrors": [],
+        "textures": [
+          {
+            "property": "_ColorMap",
+            "type": "Default",
+            "compression": "Uncompressed",
+            "wrap": "Repeat",
+            "srgb": true,
+            "width": 4096,
+            "height": 4096
+          },
+          {
+            "property": "_NormalMap",
+            "type": "Default",
+            "compression": "Uncompressed",
+            "wrap": "Repeat",
+            "srgb": false,
+            "width": 4096,
+            "height": 4096
+          },
+          {
+            "property": "_RoughnessMap",
+            "type": "Default",
+            "compression": "Uncompressed",
+            "wrap": "Repeat",
+            "srgb": false,
+            "width": 4096,
+            "height": 4096
+          }
+        ],
+        "viewLightIntensity": [
+          0.75,
+          12.0
+        ],
+        "viewClippedFraction": [
+          1.6276042060781037e-06,
+          0.0022981769870966673
+        ]
+      },
+      "images": {
+        "interior_1.png": {
+          "mean": 0.14704461975762526,
+          "standard_deviation": 0.1343065550449797,
+          "clipped_fraction": 1.6276041666666668e-06
+        },
+        "interior_2.png": {
+          "mean": 0.2299861217490468,
+          "standard_deviation": 0.1915227480383362,
+          "clipped_fraction": 0.0022981770833333335
+        }
+      }
+    },
+    "unreal": {
+      "native": {
+        "passed": true,
+        "version": "5.8.2-56702186+++UE5+Release-5.8",
+        "phase": "complete",
+        "imported_assets": [
+          "/Game/PLUME_Run01/Cave/plume_cave/Textures/plume_cave_texture_0.plume_cave_texture_0",
+          "/Game/PLUME_Run01/Cave/plume_cave/Textures/plume_cave_texture_1.plume_cave_texture_1",
+          "/Game/PLUME_Run01/Cave/plume_cave/Textures/plume_cave_texture_2.plume_cave_texture_2",
+          "/Game/PLUME_Run01/Cave/plume_cave/Materials/cave_wall_material.cave_wall_material",
+          "/Game/PLUME_Run01/Cave/plume_cave/StaticMeshes/plume_cave.plume_cave"
+        ],
+        "imported_nanite_enabled": true,
+        "imported_fallback_triangles": 1568,
+        "triangles": 795184,
+        "vertices": 423850,
+        "bounds_min_cm": [
+          -2284.6884765625,
+          -1227.2486572265625,
+          15618.3544921875
+        ],
+        "bounds_max_cm": [
+          1227.062255859375,
+          24224.888671875,
+          16269.75390625
+        ],
+        "maximum_bounds_error_cm": 0.00030517578125,
+        "shader_statistics": {
+          "num_vertex_shader_instructions": 188,
+          "num_pixel_shader_instructions": 492,
+          "num_samplers": 6,
+          "num_vertex_texture_samples": 0,
+          "num_pixel_texture_samples": 3
+        },
+        "shader_count": 16,
+        "textures": [
+          {
+            "name": "ColorMap",
+            "width": 4096,
+            "height": 4096,
+            "srgb": true,
+            "compression": "<TextureCompressionSettings.TC_DEFAULT: 0>"
+          },
+          {
+            "name": "NormalMap",
+            "width": 4096,
+            "height": 4096,
+            "srgb": false,
+            "compression": "<TextureCompressionSettings.TC_VECTOR_DISPLACEMENTMAP: 5>"
+          },
+          {
+            "name": "RoughnessMap",
+            "width": 4096,
+            "height": 4096,
+            "srgb": false,
+            "compression": "<TextureCompressionSettings.TC_VECTOR_DISPLACEMENTMAP: 5>"
+          }
+        ],
+        "passage_samples": 357,
+        "passage_passed": 357,
+        "maximum_clearance_error_cm": 0.0005236875379068806,
+        "clearance_failures": [],
+        "view_exposure": [
+          {
+            "view": 1,
+            "intensity": 187.5,
+            "clipped_fraction": 0.0002490234375,
+            "attempts": 4
+          },
+          {
+            "view": 2,
+            "intensity": 1500.0,
+            "clipped_fraction": 2.9296875e-05,
+            "attempts": 1
+          }
+        ],
+        "normal_render_difference": 0.043162049802559915,
+        "material": "/Game/PLUME_Run01/Material/M_PLUME_Continuous.M_PLUME_Continuous",
+        "mesh": "/Game/PLUME_Run01/Cave/plume_cave/StaticMeshes/plume_cave.plume_cave",
+        "map": "/Game/PLUME_Run01/PLUME_Inspection"
+      },
+      "images": {
+        "interior_1.png": {
+          "mean": 0.4445844822303922,
+          "standard_deviation": 0.33519260086426245,
+          "clipped_fraction": 0.0002490234375
+        },
+        "interior_2.png": {
+          "mean": 0.46899173006876366,
+          "standard_deviation": 0.3273164306555758,
+          "clipped_fraction": 2.9296875e-05
+        }
+      }
+    }
+  },
+  "scope": "One accepted 4K rock-free cave; native import/material inspection",
+  "failures": []
+}

@@ -608,7 +608,66 @@ def _xatlas_metric_uvs(
         or not np.isfinite(atlas_uvs).all()
     ):
         raise RuntimeError("xatlas returned an invalid cave-wall parameterization")
-    return vertex_mapping, atlas_faces, atlas_uvs
+    return _repair_collapsed_uv_triangles(
+        vertices, vertex_mapping, atlas_faces, atlas_uvs, scale_m=scale_m,
+    )
+
+
+def _repair_collapsed_uv_triangles(
+    vertices: np.ndarray, vertex_mapping: np.ndarray, faces: np.ndarray,
+    texcoords: np.ndarray, *, scale_m: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Give atlas-degenerate triangles isolated metric charts before shading.
+
+    Check the float32 coordinates that the file will actually contain. A tiny
+    but valid spatial triangle can be flattened by atlas packing or float32
+    rounding. Preserve every spatial corner and all healthy charts; only split
+    vertices when the failed triangle shares them with another face.
+    """
+    if not math.isfinite(scale_m) or scale_m <= 0.:
+        raise ValueError("Texture tile size must be finite and positive")
+    bad_batches = []
+    for start in range(0, len(faces), 65536):
+        uv = np.asarray(texcoords[faces[start:start + 65536]], dtype=np.float32).astype(float)
+        a, b = uv[:, 1] - uv[:, 0], uv[:, 2] - uv[:, 0]
+        determinant = a[:, 0]*b[:, 1] - a[:, 1]*b[:, 0]
+        bad_batches.append(start + np.flatnonzero(~np.isfinite(determinant) | (abs(determinant) <= 1e-12)))
+    bad = np.concatenate(bad_batches) if bad_batches else np.empty(0, dtype=int)
+    if not len(bad):
+        return vertex_mapping, faces, texcoords
+    report_progress("UV repair", 0, len(bad), "isolating collapsed atlas triangles")
+    mapping = vertex_mapping.copy()
+    repaired_faces = faces.copy()
+    uvs = np.asarray(texcoords, dtype=np.float64).copy()
+    uses = np.bincount(faces.ravel(), minlength=len(mapping))
+    appended_mapping: list[int] = []
+    appended_uvs: list[np.ndarray] = []
+    for face_index in bad:
+        indices = faces[face_index]
+        triangle = np.asarray(vertices[mapping[indices]], dtype=np.float64)
+        edge_a, edge_b = triangle[1] - triangle[0], triangle[2] - triangle[0]
+        length = float(np.linalg.norm(edge_a))
+        area = float(np.linalg.norm(np.cross(edge_a, edge_b)))
+        if not math.isfinite(area) or length <= 1e-12 or area / scale_m**2 <= 1e-12:
+            raise ValueError("Cannot give a spatially degenerate triangle a metric UV chart")
+        chart = np.array([[0., 0.], [length, 0.],
+                          [float(np.dot(edge_b, edge_a)) / length, area / length]]) / scale_m
+        chart = chart.astype(np.float32).astype(float)
+        if not np.isfinite(chart).all() or abs(np.linalg.det(chart[1:] - chart[0])) <= 1e-12:
+            raise ValueError("Metric UV triangle is unresolved in float32")
+        for corner, index in enumerate(indices):
+            if uses[index] == 1:
+                uvs[index] = chart[corner]
+            else:
+                repaired_faces[face_index, corner] = len(mapping) + len(appended_mapping)
+                appended_mapping.append(int(mapping[index]))
+                appended_uvs.append(chart[corner])
+                uses[index] -= 1
+    if appended_mapping:
+        mapping = np.concatenate((mapping, np.asarray(appended_mapping, dtype=mapping.dtype)))
+        uvs = np.concatenate((uvs, np.asarray(appended_uvs)))
+    report_progress("UV repair", len(bad), len(bad), "metric triangle charts restored")
+    return mapping, repaired_faces, uvs
 
 
 def _scale_atlas_uvs_to_metric(
@@ -1064,10 +1123,10 @@ def _write_geometry_manifest(
             "processing_chunk_count": len(cave_geometry.chunk_meshes),
             "attributes": ["POSITION", "NORMAL", "TANGENT", "TEXCOORD_0"],
             "material": {
-                "diffuse": cave_geometry.config.cave_diffuse_texture,
-                "normal": cave_geometry.config.cave_normal_texture,
-                "roughness": cave_geometry.config.cave_roughness_texture,
-                "displacement": cave_geometry.config.cave_displacement_texture,
+                "diffuse": _relative_path(cave_geometry.config.cave_diffuse_texture, output_path.parent) if cave_geometry.config.cave_diffuse_texture else "",
+                "normal": _relative_path(cave_geometry.config.cave_normal_texture, output_path.parent) if cave_geometry.config.cave_normal_texture else "",
+                "roughness": _relative_path(cave_geometry.config.cave_roughness_texture, output_path.parent) if cave_geometry.config.cave_roughness_texture else "",
+                "displacement": _relative_path(cave_geometry.config.cave_displacement_texture, output_path.parent) if cave_geometry.config.cave_displacement_texture else "",
                 "uv_projection": "xatlas_metric_charts",
                 "uv_scale_m": cave_geometry.config.cave_texture_scale_m,
                 "embedded_texture_max_size": cave_geometry.config.embedded_texture_max_size,
@@ -1111,7 +1170,7 @@ def _write_geometry_manifest(
                 "debris_role": event_mesh.debris_role,
                 "vertex_count": event_mesh.vertex_count,
                 "face_count": event_mesh.face_count,
-                "material_maps": dict(event_mesh.material_maps),
+                "material_maps": {role: _relative_path(path, output_path.parent) for role, path in event_mesh.material_maps},
             }
             for event_mesh in cave_geometry.event_meshes
         ],
@@ -1556,6 +1615,7 @@ def _load_texture_image(
     cache_key = f"{texture_path.resolve()}@{max_size}"
     if cache_key in image_cache:
         return image_cache[cache_key]
+    report_progress("Texture loading", detail=f"decoding {texture_path.name}; limit {max_size} px")
     try:
         from PIL import Image
 
@@ -1570,6 +1630,7 @@ def _load_texture_image(
             Image.Resampling.LANCZOS,
         )
         image_cache[cache_key] = image.copy()
+        report_progress("Texture loading", 1, 1, f"loaded {texture_path.name}: {image.width}x{image.height}")
         return image_cache[cache_key]
     except (OSError, ImportError):
         return None
@@ -1646,6 +1707,7 @@ def _convert_exr_to_image(
         return None
 
     with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
+        report_progress("EXR conversion", detail=f"{texture_path.name}; limit {max_size} px")
         command = [
             "convert",
             str(texture_path),

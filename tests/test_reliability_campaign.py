@@ -72,6 +72,9 @@ def test_real_worker_records_invalid_input(tmp_path):
         ReliabilityCase(str(tmp_path / "missing.toml"), 0), tmp_path / "case", timeout_s=30
     )
     assert result["status"] == "failed" and "FileNotFoundError" in result["reason"]
+    inspection = json.loads((tmp_path / "case/pipeline_quality_report.json").read_text())
+    assert not inspection["passed"]
+    assert inspection["error_type"] == "FileNotFoundError"
 
 
 @pytest.mark.parametrize(

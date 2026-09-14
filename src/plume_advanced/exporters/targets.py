@@ -28,7 +28,19 @@ from plume_advanced.stages.geometry_types import CaveGeometry
 from plume_advanced.world import APPLICATION_EXPORT_FORMATS, ExportConfig
 
 from .atomic import atomic_output_directory
-from .scene import PreparedExportScene, canonical_cave_mesh, prepare_export_scene
+from .inspection import inspect_package
+from .projected_materials import write_projected_material_bundle
+from .scene import PreparedExportScene, prepare_export_scene
+from .texture_recovery import (
+    TextureRecoveryError,
+    inspect_texture_package,
+    new_report,
+    prepare_texture_assets,
+)
+
+
+class ExportBudgetError(ValueError):
+    """An explicit simulation triangle or file-size budget was exceeded."""
 
 
 @dataclass(frozen=True)
@@ -53,41 +65,121 @@ def export_target_asset(
     output = Path(output_root)
     safe_name = _safe_asset_name(asset_name)
     _validate_export_request(export_config)
-    face_count = len(cave_geometry.assembled_faces) + sum(len(mesh.faces) for mesh in cave_geometry.event_meshes)
+    source_maps = [getattr(cave_geometry.config, f"cave_{role}_texture")
+                   for role in ("diffuse", "normal", "roughness", "displacement")]
+    source_maps.extend(path for event in cave_geometry.event_meshes for _, path in event.material_maps)
+    if any(path and Path(path).resolve().is_relative_to(output.resolve()) for path in source_maps):
+        report = new_report()
+        report["failures"] = ["Keep texture source files outside the replaced export directory; publication must not erase its inputs."]
+        raise TextureRecoveryError(report)
+    face_count = len(cave_geometry.assembled_faces) + sum(
+        len(mesh.faces) for mesh in cave_geometry.event_meshes
+    )
     for name in ("max_visual_triangles", "max_asset_bytes"):
         value = getattr(export_config, name)
         if type(value) is not int or value < 0:
             raise ValueError(f"export.{name} must be a nonnegative integer")
     if export_config.max_visual_triangles and face_count > export_config.max_visual_triangles:
-        raise ValueError(f"Export has {face_count:,} visual triangles; budget is {export_config.max_visual_triangles:,}. "
-                         "Use a smaller extent or a coarser, clearance-validated resolution.")
-    scene = prepare_export_scene(cave_geometry, generate_collision=export_config.generate_collision)
-    with atomic_output_directory(output) as staging:
-        report_progress("Write target package", detail=f"{export_config.target}: {face_count:,} visual triangles")
-        staged = _export_target_asset_in_place(
-            scene,
-            export_config,
-            staging,
-            safe_name,
+        raise ExportBudgetError(
+            f"Export has {face_count:,} visual triangles; budget is {export_config.max_visual_triangles:,}. "
+            "Use a smaller extent or a coarser, clearance-validated resolution."
         )
-        sizes = {path.relative_to(staging).as_posix(): path.stat().st_size
-                 for path in staged.files if path.is_file()}
-        oversized = {name: size for name, size in sizes.items()
-                     if export_config.max_asset_bytes and size > export_config.max_asset_bytes}
+    with atomic_output_directory(output) as staging:
+        texture_report = new_report()
+        effective = prepare_texture_assets(cave_geometry, staging, texture_report)
+        scene = prepare_export_scene(effective, generate_collision=export_config.generate_collision)
+        report_progress(
+            "Write target package",
+            detail=f"{export_config.target}: {face_count:,} visual triangles",
+        )
+        for attempt in range(cave_geometry.config.texture_repair_attempts + 1):
+            report_progress("Texture package acceptance", attempt,
+                            cave_geometry.config.texture_repair_attempts + 1,
+                            "initial package" if attempt == 0 else "rebuilding from accepted maps and geometry")
+            staged = _export_target_asset_in_place(scene, export_config, staging, safe_name)
+            # One shared native bundle, with no extra geometry, even for all targets.
+            glb = next((path for path in staged.files if path.suffix == ".glb"), None)
+            material_files: tuple[Path, ...] = ()
+            try:
+                if glb is not None and all((effective.config.cave_diffuse_texture,
+                                           effective.config.cave_normal_texture,
+                                           effective.config.cave_roughness_texture)):
+                    material_files = write_projected_material_bundle(
+                        glb, staging / "continuous_material",
+                        tile_size_m=effective.config.cave_texture_scale_m,
+                        normal_strength=effective.config.cave_normal_scale,
+                    )
+            except ValueError as error:
+                checked = dict(passed=False, failures=[f"Continuous material: {error}"], checked_files=[])
+            else:
+                staged = replace(staged, files=staged.files + material_files)
+                checked = inspect_texture_package(scene, staged.files, staging, texture_report)
+            texture_report["package_attempts"].append(checked)
+            if checked["passed"]:
+                break
+        else:
+            texture_report["failures"] = checked["failures"]
+            raise TextureRecoveryError(texture_report)
+        texture_report["passed"] = True
+        if attempt:
+            texture_report["outcome"] = "repaired"
+        texture_path = staging / "texture_recovery.json"
+        texture_path.write_text(json.dumps(texture_report, indent=2, allow_nan=False) + "\n")
+        texture_files = tuple(staging / a["path"] for a in texture_report["assets"] if "path" in a)
+        staged = replace(staged, files=staged.files + texture_files + (texture_path,))
+        if export_config.target == "all":
+            manifest = json.loads(staged.primary_asset.read_text())
+            manifest["shared_files"] = [path.relative_to(staging).as_posix()
+                                        for path in (*material_files, *texture_files, texture_path)]
+            staged.primary_asset.write_text(json.dumps(manifest, indent=2) + "\n")
+        inspection = dict(scene.inspection)
+        inspection["textures"] = texture_report
+        inspection["serialized"] = inspect_package(scene, staged.files, staging)
+        inspection_path = staging / "pipeline_inspection.json"
+        inspection_path.write_text(json.dumps(inspection, indent=2, allow_nan=False) + "\n")
+        staged = replace(staged, files=staged.files + (inspection_path,))
+        if export_config.target == "all":
+            manifest = json.loads(staged.primary_asset.read_text())
+            manifest.setdefault("shared_files", []).append(inspection_path.name)
+            staged.primary_asset.write_text(json.dumps(manifest, indent=2) + "\n")
+        sizes = {
+            path.relative_to(staging).as_posix(): path.stat().st_size
+            for path in staged.files
+            if path.is_file()
+        }
+        oversized = {
+            name: size
+            for name, size in sizes.items()
+            if export_config.max_asset_bytes and size > export_config.max_asset_bytes
+        }
         if oversized:
-            raise ValueError(f"Export file size budget exceeded ({export_config.max_asset_bytes:,} bytes): {oversized}")
+            raise ExportBudgetError(
+                f"Export file size budget exceeded ({export_config.max_asset_bytes:,} bytes): {oversized}"
+            )
         report_path = staging / "export_size_report.json"
-        report_path.write_text(json.dumps({
-            "schema": "plume.export-size.v1", "visual_triangles": face_count,
-            "visual_vertices_after_uv_seams": len(scene.canonical_visual["positions"]),
-            "cave_vertex_and_index_bytes": sum(scene.canonical_visual[key].nbytes
-                for key in ("positions", "faces", "normals", "tangents", "texcoords")),
-            "collision_triangles": len(scene.collision_faces),
-            "files": sizes, "total_file_bytes": sum(sizes.values()),
-            "limits": {"visual_triangles": export_config.max_visual_triangles,
-                       "asset_bytes": export_config.max_asset_bytes},
-            "scope": "File and mesh buffers; engine runtime memory and texture mipmaps are additional. No automatic geometry decimation.",
-        }, indent=2) + "\n")
+        report_path.write_text(
+            json.dumps(
+                {
+                    "schema": "plume.export-size.v1",
+                    "visual_triangles": face_count,
+                    "visual_vertices_after_uv_seams": len(scene.canonical_visual["positions"]),
+                    "cave_vertex_and_index_bytes": sum(
+                        scene.canonical_visual[key].nbytes
+                        for key in ("positions", "faces", "normals", "tangents", "texcoords")
+                    ),
+                    "collision_triangles": len(scene.collision_faces),
+                    "files": sizes,
+                    "total_file_bytes": sum(sizes.values()),
+                    "limits": {
+                        "visual_triangles": export_config.max_visual_triangles,
+                        "asset_bytes": export_config.max_asset_bytes,
+                    },
+                    "scope": "File and mesh buffers; engine runtime memory and texture mipmaps are additional. No automatic geometry decimation.",
+                },
+                indent=2,
+            )
+            + "\n"
+        )
         staged = replace(staged, files=staged.files + (report_path,))
     return ExportResult(
         target=staged.target,
@@ -230,9 +322,7 @@ def _export_all_targets(
                 "targets": {
                     result.target: {
                         "primary_asset": result.primary_asset.relative_to(output).as_posix(),
-                        "files": [
-                            path.relative_to(output).as_posix() for path in result.files
-                        ],
+                        "files": [path.relative_to(output).as_posix() for path in result.files],
                         "warnings": list(result.warnings),
                     }
                     for result in results
@@ -439,9 +529,7 @@ def _write_blender_validation_report(asset: Path, output_path: Path) -> Path:
         report["error"] = f"{type(error).__name__}: {error}"
     output_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     if not report["valid"]:
-        raise ValueError(
-            f"Generated Blender asset failed validation; see {output_path}"
-        )
+        raise ValueError(f"Generated Blender asset failed validation; see {output_path}")
     return output_path
 
 
@@ -467,11 +555,7 @@ def _export_glb_or_obj(
             output / f"{asset_name}.obj",
             visual_surface=scene.canonical_visual,
         )
-        files = [
-            path
-            for path in (asset, asset.with_suffix(".mtl"))
-            if path.exists()
-        ]
+        files = [path for path in (asset, asset.with_suffix(".mtl")) if path.exists()]
     else:
         raise ValueError(
             f"Target {export_config.target!r} currently supports glb or obj; "
@@ -652,7 +736,7 @@ def _export_gazebo(
                 "<model>",
                 f"  <name>{escape(asset_name)}</name>",
                 "  <version>1.0</version>",
-                "  <sdf version=\"1.12\">model.sdf</sdf>",
+                '  <sdf version="1.12">model.sdf</sdf>',
                 "  <description>Procedural PLUME lava tube</description>",
                 "</model>",
                 "",
@@ -715,12 +799,12 @@ def _export_gazebo(
                 '<?xml version="1.0"?>',
                 '<sdf version="1.12">',
                 f'  <world name="{escape(asset_name)}_world">',
-                '    <include>',
-                f'      <uri>model://{escape(asset_name)}</uri>',
-                '    </include>',
-                '  </world>',
-                '</sdf>',
-                '',
+                "    <include>",
+                f"      <uri>model://{escape(asset_name)}</uri>",
+                "    </include>",
+                "  </world>",
+                "</sdf>",
+                "",
             )
         ),
         encoding="utf-8",
@@ -949,9 +1033,7 @@ def _write_usda(
                     "plume:sourceGenerator": event_mesh.source_generator,
                     "plume:sourceShapeType": event_mesh.source_shape_type,
                     "plume:debrisFamilyId": str(event_mesh.debris_family_id),
-                    "plume:familyAnchorEventId": str(
-                        event_mesh.family_anchor_event_id
-                    ),
+                    "plume:familyAnchorEventId": str(event_mesh.family_anchor_event_id),
                     "plume:debrisRole": event_mesh.debris_role,
                 },
             )
@@ -967,7 +1049,6 @@ def _write_usda(
     lines.extend(("}", ""))
     output.write_text("\n".join(lines), encoding="utf-8")
     return tuple(texture_files.values())
-
 
 
 def _usda_mesh_lines(
@@ -987,6 +1068,10 @@ def _usda_mesh_lines(
     collision_enabled: bool = False,
     custom_strings: dict[str, str] | None = None,
 ) -> list[str]:
+    # Round to the declared point3f precision before decimal formatting. A
+    # float64 value near a float32 midpoint can otherwise round to the other
+    # neighbour after nine-digit formatting (notably QEM collider vertices).
+    vertices = np.asarray(vertices, dtype=np.float32)
     if normals is None:
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
         normal_values = np.asarray(mesh.vertex_normals, dtype=np.float64)
@@ -1043,11 +1128,7 @@ def _usda_mesh_lines(
             )
         )
     if material_path:
-        lines.extend(
-            (
-                f"{indent}    rel material:binding = <{material_path}>",
-            )
-        )
+        lines.extend((f"{indent}    rel material:binding = <{material_path}>",))
     lines.extend(
         (
             f'{indent}    uniform token subdivisionScheme = "none"',
@@ -1185,13 +1266,14 @@ def _usda_cave_material_lines(
 
 
 def _tuple_text(values: Iterable[float]) -> str:
-    return "(" + ", ".join(f"{float(value):.8g}" for value in values) + ")"
+    # USD point3f/normal3f/texCoord2f values need nine significant digits to
+    # round-trip float32, including distant coordinates and very small UVs.
+    return "(" + ", ".join(f"{float(value):.9g}" for value in values) + ")"
 
 
 def _safe_asset_name(value: str) -> str:
     safe = "".join(
-        character if character.isalnum() or character == "_" else "_"
-        for character in value
+        character if character.isalnum() or character == "_" else "_" for character in value
     )
     return safe.strip("_") or "plume_cave"
 
@@ -1202,34 +1284,13 @@ def _write_simplified_collision_obj(
     *,
     prepared_scene: PreparedExportScene | None = None,
 ) -> Path:
-    """Write a deterministic vertex-clustered collision approximation."""
-
+    """Serialize the inspected collider without further processing or fallback."""
     scene = prepared_scene or prepare_export_scene(cave_geometry)
-    clustered = scene.collision_vertices
-    remapped = scene.collision_faces
-    collision = trimesh.Trimesh(
-        vertices=clustered,
-        faces=remapped,
-        process=True,
-    )
-    collision.remove_unreferenced_vertices()
-    if not collision.is_winding_consistent:
-        collision.fix_normals(multibody=True)
-    if (
-        len(collision.faces) == 0
-        or not np.isfinite(collision.vertices).all()
-        or not collision.is_winding_consistent
-    ):
-        vertices, faces = canonical_cave_mesh(cave_geometry)
-        collision = trimesh.Trimesh(
-            vertices=vertices,
-            faces=faces,
-            process=True,
-        )
-        collision.remove_unreferenced_vertices()
-        collision.fix_normals(multibody=True)
-    if len(collision.faces) == 0 or not np.isfinite(collision.vertices).all():
-        raise ValueError("Collision simplification produced invalid geometry")
+    if not len(scene.collision_faces) or not np.isfinite(scene.collision_vertices).all():
+        raise ValueError("Cannot serialize an empty or nonfinite inspected collider")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    collision.export(output_path)
+    with output_path.open("w", encoding="utf-8") as stream:
+        stream.write("# PLUME collision: metres, right-handed, Z up\no cave_collision\n")
+        np.savetxt(stream, scene.collision_vertices, fmt="v %.17g %.17g %.17g")
+        np.savetxt(stream, scene.collision_faces+1, fmt="f %d %d %d")
     return output_path

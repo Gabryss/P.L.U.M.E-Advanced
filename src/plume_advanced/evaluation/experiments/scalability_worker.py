@@ -11,6 +11,7 @@ from pathlib import Path
 from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.experiments.common import config_hash, for_seed
 from plume_advanced.evaluation.local_geometry import section_resolution_report
+from plume_advanced.pipeline.recovery import build_accepted_base
 from plume_advanced.stages.geometry import GeometryGenerator
 from plume_advanced.stages.host_field import HostFieldGenerator
 from plume_advanced.stages.network import CaveNetworkGenerator
@@ -43,8 +44,9 @@ def main(argv: list[str] | None = None) -> int:
     sections = SectionFieldGenerator(project.section_field).generate(network)
     timings["sections_s"] = time.perf_counter() - stage
     stage = time.perf_counter()
-    generator = GeometryGenerator(project.geometry)
-    base = generator.build_base_volume(network, sections)
+    accepted = build_accepted_base(project, host, network, sections)
+    network, sections, base = accepted.network, accepted.sections, accepted.geometry
+    generator = GeometryGenerator(base.config)
     timings["volume_s"] = time.perf_counter() - stage
     stage = time.perf_counter()
     geometry = generator.finalize(base)
@@ -58,13 +60,14 @@ def main(argv: list[str] | None = None) -> int:
         "network": network.summary(),
         "sections": sections.summary(),
         "geometry": geometry.summary(),
+        "recovery": accepted.report,
         "storage_mode_actual": "tiled" if hasattr(geometry.voxel_grid, "tiles") else "dense",
         "bbox_m": geometry.voxel_grid.bounds,
-        "voxel_size_m": project.geometry.voxel_size,
+        "voxel_size_m": base.config.voxel_size,
         "quality": project.run.quality,
         "project_config_sha256": config_hash(project),
-        "timing_scope": "host, network, sections, base density with roof screening, meshing and welding; excludes optional events, appearance, exports and application import",
-        "section_resolution": section_resolution_report(sections, project.geometry.voxel_size),
+        "timing_scope": "host, network, sections, accepted base with bounded recovery/refinement, roof screening, meshing and welding; excludes optional events, appearance, exports and application import",
+        "section_resolution": section_resolution_report(sections, base.config.voxel_size),
     }
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return 0

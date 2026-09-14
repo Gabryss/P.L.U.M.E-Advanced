@@ -8,6 +8,8 @@ remove disconnected mesh components or edit the accepted network.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import numpy as np
 from scipy import ndimage
 
@@ -27,8 +29,29 @@ def close_density_fissures(grid: VoxelGrid | TiledVoxelGrid, radius: int) -> Non
             values, ndimage.grey_closing(values, size=3, mode="constant", cval=grid.iso_level - 8)
         )
 
+    _filter_grid(grid, close)
+
+
+def open_density_necks(grid: VoxelGrid | TiledVoxelGrid, radius: int) -> None:
+    """Remove unresolved air bridges, without enlarging the void.
+
+    Used only as a final bounded surface-acceptance candidate. All sampled
+    centres, manifold connectivity, graph genus and roof stability must pass
+    afterwards; splitting a real route is a rejection, never hidden cleanup.
+    """
+    if type(radius) is not int or radius not in (0, 1):
+        raise ValueError("density opening radius must be 0 or 1")
+    if radius:
+        _filter_grid(grid, lambda values: np.minimum(values, ndimage.grey_opening(
+            values, size=3, mode="constant", cval=grid.iso_level - 8)))
+
+
+def _filter_grid(
+    grid: VoxelGrid | TiledVoxelGrid, operation: Callable[[np.ndarray], np.ndarray],
+) -> None:
+    """Apply a two-sample-support filter with identical dense/tiled interiors."""
     if isinstance(grid, VoxelGrid):
-        grid.density[...] = close(grid.density)
+        grid.density[...] = operation(grid.density)
         return
     grid.synchronize_halos()
     result = {}
@@ -54,6 +77,6 @@ def close_density_fissures(grid: VoxelGrid | TiledVoxelGrid, radius: int) -> Non
                 for a, b in zip(lower - neighbor_start, upper - neighbor_start)
             )
             padded[target] = neighbor[source]
-        result[key] = close(padded)[tuple(slice(halo, halo + n) for n in tile.shape)].copy()
+        result[key] = operation(padded)[tuple(slice(halo, halo + n) for n in tile.shape)].copy()
     grid.tiles = result
     grid.synchronize_halos()

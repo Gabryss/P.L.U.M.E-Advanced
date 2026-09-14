@@ -1,0 +1,248 @@
+[
+  {
+    "category": "container",
+    "detail": "version=2",
+    "name": "GLB version",
+    "passed": true
+  },
+  {
+    "category": "container",
+    "detail": "declared=112942108, actual=112942108",
+    "name": "Declared byte length",
+    "passed": true
+  },
+  {
+    "category": "container",
+    "detail": "external_buffers=[]",
+    "name": "Self-contained buffers",
+    "passed": true
+  },
+  {
+    "category": "container",
+    "detail": "external_images=[]",
+    "name": "Self-contained images",
+    "passed": true
+  },
+  {
+    "category": "materials",
+    "detail": "0:4096x4096:image/png, 1:4096x4096:image/png, 2:4096x4096:image/png",
+    "name": "Embedded images decode",
+    "passed": true
+  },
+  {
+    "category": "materials",
+    "detail": "material=cave_wall_material",
+    "name": "Base-color texture bound",
+    "passed": true
+  },
+  {
+    "category": "materials",
+    "detail": "material=cave_wall_material",
+    "name": "Metallic-roughness texture bound",
+    "passed": true
+  },
+  {
+    "category": "materials",
+    "detail": "normal_scale=1.0",
+    "name": "Normal texture bound",
+    "passed": true
+  },
+  {
+    "category": "materials",
+    "detail": "doubleSided=False",
+    "name": "Interior-only cave material",
+    "passed": true
+  },
+  {
+    "category": "materials",
+    "detail": "extras=['canonical_source_coordinates', 'displacement', 'gltf_coordinates', 'processing_chunk_count', 'source', 'structural_event_ids']",
+    "name": "Cave metadata present",
+    "passed": true
+  },
+  {
+    "category": "geometry",
+    "detail": "boundary_edges=0, nonmanifold_edges=0",
+    "name": "Closed manifold cave wall",
+    "passed": true
+  },
+  {
+    "category": "geometry",
+    "detail": "vertices=699111",
+    "name": "Finite vertex positions",
+    "passed": true
+  },
+  {
+    "category": "geometry",
+    "detail": "faces=1298406",
+    "name": "Triangle indices in bounds",
+    "passed": true
+  },
+  {
+    "category": "geometry",
+    "detail": "minimum_double_area=7.87631e-05",
+    "name": "No degenerate faces",
+    "passed": true
+  },
+  {
+    "category": "geometry",
+    "detail": "winding_consistent=True",
+    "name": "Consistent winding",
+    "passed": true
+  },
+  {
+    "category": "geometry",
+    "detail": "voxel_component_count=1",
+    "name": "Connected traversable voxel volume",
+    "passed": true
+  },
+  {
+    "category": "geometry",
+    "detail": "vertices=649205, faces=1298406, winding_consistent=True, watertight=True",
+    "name": "Conservative collision sidecar",
+    "passed": true
+  },
+  {
+    "category": "normals",
+    "detail": "maximum_error=4.63535e-08",
+    "name": "Unit geometric normals",
+    "passed": true
+  },
+  {
+    "category": "normals",
+    "detail": "maximum_error=4.92507e-08",
+    "name": "Unit tangents",
+    "passed": true
+  },
+  {
+    "category": "normals",
+    "detail": "maximum_dot=7.69602e-08",
+    "name": "Normal-tangent orthogonality",
+    "passed": true
+  },
+  {
+    "category": "normals",
+    "detail": "maximum_error=0",
+    "name": "Tangent handedness",
+    "passed": true
+  },
+  {
+    "category": "uv",
+    "detail": "vertices=699111",
+    "name": "Finite texture coordinates",
+    "passed": true
+  },
+  {
+    "category": "uv",
+    "detail": "maximum_integer_error=0",
+    "name": "Periodic seams use whole-tile offsets",
+    "passed": true
+  },
+  {
+    "category": "uv",
+    "detail": "groups=47905, vertices=97811/699111, fraction=0.139908",
+    "name": "Bounded UV chart seam overhead",
+    "passed": true
+  },
+  {
+    "category": "uv",
+    "detail": "maximum_angle_degrees=0",
+    "name": "Tangent continuity across wraps",
+    "passed": true
+  },
+  {
+    "category": "uv",
+    "detail": "count=0/1298406, fraction=0, maximum_span=0.124712",
+    "name": "Pathological projection fraction",
+    "passed": true
+  },
+  {
+    "category": "uv",
+    "detail": "count=0/1298406, minimum_abs_determinant=9.26548e-07",
+    "name": "No collapsed UV triangles",
+    "passed": true
+  },
+  {
+    "category": "uv",
+    "detail": "roof_scale=1.00415, floor_scale=0.999811, target_scale_m=4",
+    "name": "Metric roof/floor texel density",
+    "passed": true
+  },
+  {
+    "category": "uv",
+    "detail": "median=1.00276, p95=1.02011, p99=1.04996, fraction_above_25=2.31053e-06, valid_faces=1298406/1298406",
+    "name": "Localized UV anisotropy",
+    "passed": true
+  },
+  {
+    "category": "scene",
+    "detail": "actual=0, expected=0",
+    "name": "Complete event-node set",
+    "passed": true
+  },
+  {
+    "category": "scene",
+    "detail": "nodes=2",
+    "name": "Unique scene node names",
+    "passed": true
+  },
+  {
+    "category": "scene",
+    "detail": "actual=[], expected=[]",
+    "name": "Structural events recorded",
+    "passed": true
+  },
+  {
+    "category": "scene",
+    "detail": "meshes=1, editable_objects=1",
+    "name": "One mesh per editable scene object",
+    "passed": true
+  },
+  {
+    "category": "displacement",
+    "detail": "baked=False, expected=False",
+    "name": "Portable displacement contract",
+    "passed": true
+  },
+  {
+    "category": "displacement",
+    "detail": "range=[0, 0], scale=0",
+    "name": "Displacement bounded in metres",
+    "passed": true
+  },
+  {
+    "category": "displacement",
+    "detail": "sample_standard_deviation_m=0",
+    "name": "Displacement is nonconstant",
+    "passed": true
+  },
+  {
+    "category": "displacement",
+    "detail": "height relief is stored in POSITION",
+    "name": "No nonstandard material displacement dependency",
+    "passed": true
+  },
+  {
+    "category": "displacement",
+    "detail": "maximum_diameter_fraction=0, minimum_section_width_m=0",
+    "name": "Passage-clearance displacement budget",
+    "passed": true
+  },
+  {
+    "category": "reproducibility",
+    "detail": "Exact generated asset or verified material revision required",
+    "name": "Selected asset provenance",
+    "passed": true
+  },
+  {
+    "category": "reproducibility",
+    "detail": "status=complete",
+    "name": "Run completed",
+    "passed": true
+  },
+  {
+    "category": "reproducibility",
+    "detail": "verified=36/36",
+    "name": "Generated output hashes",
+    "passed": true
+  }
+]
