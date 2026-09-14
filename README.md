@@ -571,6 +571,13 @@ The [13–14 September textured campaign](docs/reviews/textured-campaign-2026-09
 
 The subsequent [14 September clearance and repair campaign](docs/reviews/mobility-repair-campaign-2026-09-14.md) repeated those six designs with a required 0.5 m × 0.5 m inspection body, bounded path/geometry repairs and checked collider simplification. All six originals and cold replays passed, with 340 material views and 2,845 floor/roof probe locations per native engine. Collision triangle counts fell by 40–80%; input-profile resolution warnings and differences in engine lighting remain. The report links the generated assets and records the earlier failures that led to the fixes.
 
+The [latest cleanup review](docs/reviews/cleanup-2026-09-14.md) records the
+maintained entry points and regression checks. The subsequent
+[remaining-gap assessment](docs/reviews/remaining-gaps-2026-09-14.md) defines
+proposed completion criteria for simulation presets, geometric fidelity,
+native collision, long-cave performance and scientific scope; those proposals
+are not additional completed evaluations.
+
 For a **full-pipeline prepared GLB**, use the portable asset validator:
 
 ```bash
