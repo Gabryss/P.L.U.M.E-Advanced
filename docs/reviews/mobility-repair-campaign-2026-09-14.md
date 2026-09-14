@@ -2,6 +2,10 @@
 
 **Completed:** all six textured originals, all six cold replays and both native engines passed the frozen V3 protocol. Earlier failed revisions remain preserved.
 
+The evaluated source is preserved in commit `c5d8922`. Later cleanup changes
+the source fingerprint; this campaign remains evidence for that snapshot and
+must not be relabelled as a run of newer code.
+
 The requested inspection clearance is 0.5 m high × 0.5 m wide. PLUME represents
 this as an upright capsule with 0.02 m additional margin on the dominant route.
 Optional passages may remain narrower. A geometric body corridor does not

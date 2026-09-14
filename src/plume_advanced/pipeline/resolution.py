@@ -9,9 +9,10 @@ import numpy as np
 from plume_advanced.evaluation.local_geometry import section_resolution_report
 from plume_advanced.progress import report_progress
 from plume_advanced.stages.geometry import GeometryGenerator
-from plume_advanced.stages.mesh_inspection import _vertical_clearances, surface_identity
-from plume_advanced.stages.route_clearance import _polyline
+from plume_advanced.stages.mesh_inspection import surface_identity
+from plume_advanced.stages.route_clearance import resample_route_polyline
 from plume_advanced.stages.surface_topology import SurfaceTopologyError
+from plume_advanced.stages.triangle_queries import vertical_clearances
 
 
 class ResolutionBudgetError(SurfaceTopologyError):
@@ -22,7 +23,7 @@ def compare_mesh_clearance(previous, current, points, tolerance):
     """Compare both floor and roof on identical world-space probe lines."""
     rows = []
     for mesh in (previous, current):
-        rows.append(_vertical_clearances(np.asarray(mesh.assembled_vertices),
+        rows.append(vertical_clearances(np.asarray(mesh.assembled_vertices),
                                         np.asarray(mesh.assembled_faces), np.asarray(points)))
     errors = []
     blocked = []
@@ -58,7 +59,7 @@ def build_with_resolution_checks(network, sections, controls, progress=None):
                    initial_under_resolved=initial["under_resolved_count"],
                    scope="Consistent-grid refinement; floor/roof convergence at identical section probes plus topology and required continuous capsule checks. Not exhaustive surface convergence.")
     points = tuple(p for field in sections.segment_fields
-                   for p in _polyline([(s.x, s.y, s.z) for s in field.samples],
+                   for p in resample_route_polyline([(s.x, s.y, s.z) for s in field.samples],
                                       controls.route_inspection_spacing_m))
     previous = None
     for level in range(controls.resolution_refinement_attempts+1):

@@ -1,0 +1,88 @@
+{
+  "schema": "plume.cleanup-verification.v1",
+  "date": "2026-09-14",
+  "checkpoint": "c5d8922a1a7fcbd6eb005d54e63b1ec1c302621e",
+  "source_sha256": "3710e34b78aec2620eb04d6b63b8617acf3deb66c6acef46aaca24c970327878",
+  "python": "3.13.5",
+  "full_suite": {
+    "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MPLCONFIGDIR=/tmp/plume-cleanup-mpl .venv/bin/pytest -q",
+    "exit_code": 0,
+    "passed": 901,
+    "skipped": 20,
+    "subtests_passed": 59,
+    "seconds": 769.75,
+    "log": "cleanup-tests-2026-09-14.txt",
+    "log_sha256": "5a11777391ba8b9ccf7182f133221fafde3088a74b94c5752e6d0592d9601482"
+  },
+  "focused_suite": {
+    "passed": 135,
+    "seconds": 9.06,
+    "scope": "triangle queries, route clearance/placement, resolution, collision and embedded inspection; overlaps the full suite"
+  },
+  "checks": {
+    "ruff_repository": "passed",
+    "mypy": "passed (110 source files)",
+    "compileall_src_scripts_tests": "passed",
+    "uv_pip_check": "passed (43 installed packages)",
+    "uv_lock_check_offline": "passed",
+    "git_diff_check": "passed"
+  },
+  "helper_preservation": {
+    "checkpoint": "c5d8922",
+    "comparisons": [
+      {
+        "before_path": "src/plume_advanced/stages/mesh_inspection.py",
+        "before_name": "_vertical_clearances",
+        "after_path": "src/plume_advanced/stages/triangle_queries.py",
+        "after_name": "vertical_clearances",
+        "body_unchanged": true,
+        "body_ast_sha256": "1a4961d3de20c9ad678f88aacbbb3566e9e062e57ca35260f5b577ce9acbd06f"
+      },
+      {
+        "before_path": "src/plume_advanced/stages/route_clearance.py",
+        "before_name": "_polyline",
+        "after_path": "src/plume_advanced/stages/route_clearance.py",
+        "after_name": "resample_route_polyline",
+        "body_unchanged": true,
+        "body_ast_sha256": "38fbfbfe59b24c72da8664d82640f349dba3556895305b6a1720caf5c71c2e71"
+      }
+    ]
+  },
+  "private_name_reference_scan": {
+    "definitions": 548,
+    "unreferenced_name_candidates": 0,
+    "scope": "maintained src, scripts and tests; name-based static screening, not complete dynamic reachability"
+  },
+  "distribution": {
+    "wheel": "plume_advanced-0.1.0-py3-none-any.whl",
+    "wheel_bytes": 453260,
+    "wheel_sha256": "13587a42409ec9683608f5bee55ee0896a69b29560d768a8659d58ee360c14f8",
+    "sdist": "plume_advanced-0.1.0.tar.gz",
+    "sdist_bytes": 547446,
+    "sdist_sha256": "2eb2cb2e7c7d7cacb965aaeda0553216bf3621e67887c87add9362182899a59f",
+    "installed_wheel_check": {
+      "passed": true,
+      "origin": "/tmp/plume-cleanup-wheel/plume_advanced/cli.py",
+      "packaged_material_files": [
+        "blender_materials.py",
+        "apply_blender_material.py",
+        "README.md",
+        "plume_triplanar_body.hlsl",
+        "unity/PlumeTriplanar.hlsl",
+        "unity/PlumeContinuousRock.shader",
+        "unity/Editor/PlumeMaterialInstaller.cs",
+        "unreal/create_material.py"
+      ],
+      "wheel_bytes": 453260,
+      "sdist_bytes": 547446
+    }
+  },
+  "full_generation_campaign_rerun": false,
+  "native_engine_rerun": false,
+  "limits": [
+    "The V3 generation/native campaign remains evidence for checkpoint c5d8922.",
+    "The cleanup does not establish fidelity for new bodies, seeds or long networks.",
+    "Optional native/material checks skipped by the general suite were not rerun for this helper-only source refactor.",
+    "Local verification used Python 3.13.5; hosted CI also declares Python 3.12."
+  ]
+}

@@ -37,8 +37,24 @@ jobs:
           enable-cache: true
       - run: sudo apt-get update && sudo apt-get install -y imagemagick
       - run: uv sync --locked --group dev --extra rocks --extra paper
-      - run: uv run --no-sync ruff check src scripts tests
+      - run: uv run --no-sync ruff check .
       - run: uv run --no-sync mypy src/plume_advanced
       - run: uv run --no-sync python -m compileall -q src scripts tests
       - run: uv run --no-sync pytest -q --cov=plume_advanced --cov-report=term-missing --cov-fail-under=70
       - run: uv build
+      - name: Check installed wheel resources
+        run: |
+          uv pip install --python .venv/bin/python --no-deps --reinstall dist/*.whl
+          .venv/bin/python -I - <<'PY'
+          from importlib.resources import files
+          from pathlib import Path
+          from plume_advanced import cli
+          from plume_advanced.exporters.projected_materials import ASSET_FILES
+
+          assert not Path(cli.__file__).resolve().is_relative_to(Path.cwd() / "src")
+          package = files("plume_advanced")
+          config = cli.load_project_config(package.joinpath("default_project.toml"))
+          assert config.geometry.required_route_height_m == 0.5
+          assert config.geometry.required_route_width_m == 0.5
+          assert all(package.joinpath("material_assets", name).read_bytes() for name in ASSET_FILES)
+          PY

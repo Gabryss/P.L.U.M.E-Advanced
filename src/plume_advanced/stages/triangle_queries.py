@@ -10,6 +10,73 @@ import numpy as np
 from scipy.spatial import cKDTree
 from trimesh.triangles import closest_point
 
+from plume_advanced.progress import report_progress
+
+
+def vertical_clearances(vertices: np.ndarray, faces: np.ndarray, points: np.ndarray) -> list[dict]:
+    """Measure the vertical cavity enclosing each point on actual triangles."""
+    if not len(points):
+        return []
+    triangles = vertices[faces]
+    xy = triangles[:, :, :2]
+    centers = xy.mean(axis=1)
+    radius = float(np.linalg.norm(xy - centers[:, None, :], axis=2).max())
+    tree = cKDTree(centers)
+    tolerance = max(float(np.ptp(vertices, axis=0).max()) * 1e-10, 1e-9)
+    rows = []
+    for index, point in enumerate(points):
+        if index % 100 == 0:
+            report_progress(
+                "Mesh passage inspection",
+                index,
+                len(points),
+                "measuring floor/roof intersections on actual triangles",
+            )
+        ids = sorted(tree.query_ball_point(point[:2], radius + tolerance))
+        tri = triangles[ids]
+        # Project barycentric coordinates in XY. Vertical triangles do not cross
+        # a vertical ray; roof/floor triangles supply its actual intersections.
+        a, b, c = tri[:, 0], tri[:, 1], tri[:, 2]
+        v0, v1, v2 = b[:, :2] - a[:, :2], c[:, :2] - a[:, :2], point[:2] - a[:, :2]
+        determinant = v0[:, 0] * v1[:, 1] - v1[:, 0] * v0[:, 1]
+        usable = np.abs(determinant) > 1e-16
+        u = np.divide(
+            v2[:, 0] * v1[:, 1] - v1[:, 0] * v2[:, 1],
+            determinant,
+            out=np.zeros(len(tri)),
+            where=usable,
+        )
+        v = np.divide(
+            v0[:, 0] * v2[:, 1] - v2[:, 0] * v0[:, 1],
+            determinant,
+            out=np.zeros(len(tri)),
+            where=usable,
+        )
+        inside_triangle = usable & (u >= -1e-9) & (v >= -1e-9) & (u + v <= 1 + 1e-9)
+        z = np.sort((a[:, 2] + u * (b[:, 2] - a[:, 2]) + v * (c[:, 2] - a[:, 2]))[inside_triangle])
+        z = z[np.r_[True, np.diff(z) > tolerance]] if len(z) else z
+        lower, upper = z[z < point[2] - tolerance], z[z > point[2] + tolerance]
+        on_surface = bool(np.any(np.abs(z - point[2]) <= tolerance))
+        inside = bool(len(lower) % 2 and len(upper) % 2 and not on_surface)
+        floor = float(point[2] - lower[-1]) if len(lower) else None
+        roof = float(upper[0] - point[2]) if len(upper) else None
+        rows.append(
+            dict(
+                sample_index=index,
+                point_m=point.tolist(),
+                inside=inside,
+                floor_distance_m=floor,
+                roof_distance_m=roof,
+                clearance_m=floor + roof
+                if inside and floor is not None and roof is not None
+                else None,
+            )
+        )
+    report_progress(
+        "Mesh passage inspection", len(points), len(points), "passage samples inspected"
+    )
+    return rows
+
 
 def segment_distances(a, b, c, d):
     """Pairwise distances between segments AB and CD, including zero lengths."""

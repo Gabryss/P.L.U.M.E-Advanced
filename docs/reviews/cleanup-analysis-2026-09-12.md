@@ -112,7 +112,7 @@ Generation still computes graph-geodesic distances, transported frame axes, prof
 
 ### C08 — Inspection utilities have become alternate pipeline implementations
 
-**Evidence:** [generate_tube_only.py](../../scripts/generate_tube_only.py), line 83; [package_inspection_exports.py](../../scripts/package_inspection_exports.py); [texture_inspection.py](../../scripts/texture_inspection.py); [validate_inspection_asset.py](../../scripts/validate_inspection_asset.py), line 29; [render_run_diagnostics.py](../../scripts/render_run_diagnostics.py), lines 38–156.
+**Evidence:** [generate_tube_only.py](../../scripts/generate_tube_only.py), line 83; [package_inspection_exports.py](https://github.com/Gabryss/P.L.U.M.E-Advanced/blob/c5d8922/scripts/package_inspection_exports.py); [texture_inspection.py](../../scripts/texture_inspection.py); [validate_inspection_asset.py](../../scripts/validate_inspection_asset.py), line 29; [render_run_diagnostics.py](../../scripts/render_run_diagnostics.py), lines 38–156.
 
 The tube-only exporter independently smooths geometry, assigns normals, converts axes and serializes a GLB, while the main exporter uses the prepared visual-surface contract. Neutral validation selects private methods because the main validator unconditionally requires texture maps. Packaging and texturing scripts both call private target-descriptor/guide helpers. The saved-run figure script contains sparse-grid and plot corrections that the normal diagnostic path does not share.
 

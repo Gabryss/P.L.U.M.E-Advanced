@@ -90,7 +90,24 @@ Generation runs on the CPU. Memory and export size depend strongly on spatial ex
 
 ## Usage
 
-### Generate a full tube for inspection
+### Generate with automatic inspection and repair
+
+From this checkout, the packaged neutral preset provides a small, rock-free run
+without external texture assets:
+
+```bash
+uv run --no-sync plume-generate \
+  --config src/plume_advanced/default_project.toml \
+  --output outputs/my_checked_cave/stage_b_cave_network.png
+```
+
+This uses the full generation and repair workflow. Read `pipeline_quality_report.json`
+and `pipeline_recovery.json` beside the output; the prepared asset is
+`export_neutral/plume_cave_scene.glb`. For a full textured interconnected cave,
+use `config/earth_short_interconnected_full.toml` with a fresh output directory
+after providing its texture inputs. See [self-service generation and diagnosis](docs/self-service.md).
+
+### Geometry-only research workflow
 
 Start from the dedicated low Earth scenario, which includes the current surface relief and disables optional events and rocks:
 
@@ -103,7 +120,9 @@ uv run --no-sync python scripts/render_tube_views.py outputs/my_earth_tube
 uv run --no-sync python scripts/check_tube_sections.py outputs/my_earth_tube --shallow-count 6
 ```
 
-This generates **the complete network and cave mesh for that run**, not a local patch. It writes:
+This research helper generates the complete network and cave mesh for that run,
+but does not perform the full workflow above. Use it for isolated surface studies.
+It writes:
 
 | File | Contents |
 |---|---|
@@ -296,8 +315,9 @@ Use a new output directory. Full meshing and export can take tens of minutes, an
 the high-resolution short preset can contain millions of triangles. The separate
 mesh check rejects unwanted surface handles and lost rock islands; Stage A–C
 acceptance alone does not guarantee a correct final mesh. See the
-[inspection output guide](outputs/README.md) for packaged Blender scenes, engine
-assets, stage figures and the validation records of delivered runs.
+[self-service guide](docs/self-service.md) for generating and diagnosing a new run.
+The [latest clearance campaign](docs/reviews/mobility-repair-campaign-2026-09-14.md)
+links its inspected assets, engine projects and validation records.
 
 The [full inspection report](docs/interconnected_full_inspection_2026-09-11.md)
 records the two accepted meshes, four rejected intermediate attempts, export and

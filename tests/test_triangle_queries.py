@@ -6,6 +6,7 @@ from plume_advanced.stages.triangle_queries import (
     TriangleIndex,
     segment_distances,
     segment_triangle_distances,
+    vertical_clearances,
 )
 
 
@@ -55,3 +56,27 @@ def test_sphere_sweep_reports_clearance_to_floor():
     mesh = trimesh.creation.box(extents=(10, 2, 2))
     index = TriangleIndex(mesh.vertices, mesh.faces)
     assert index.swept_capsule_distance([-2., 0, 0], [2., 0, 0], 0, 1.1) == pytest.approx(1)
+
+
+def test_vertical_clearance_keeps_stacked_cavities_separate():
+    lower = trimesh.creation.box(extents=(4, 4, 2))
+    upper = trimesh.creation.box(extents=(4, 4, 2))
+    upper.apply_translation([0, 0, 4])
+    mesh = lower + upper
+    points = np.array([[0., 0, .25], [0, 0, 2], [0, 0, 4.5], [0, 0, 1]])
+    vertices, faces = mesh.vertices.copy(), mesh.faces.copy()
+    rows = vertical_clearances(vertices, faces, points)
+    assert [row['inside'] for row in rows] == [True, False, True, False]
+    assert rows[0]['floor_distance_m'] == pytest.approx(1.25)
+    assert rows[0]['roof_distance_m'] == pytest.approx(.75)
+    assert rows[2]['floor_distance_m'] == pytest.approx(1.5)
+    assert rows[2]['roof_distance_m'] == pytest.approx(.5)
+    assert rows[1]['clearance_m'] is None
+    assert rows[3]['clearance_m'] is None
+    np.testing.assert_array_equal(vertices, mesh.vertices)
+    np.testing.assert_array_equal(faces, mesh.faces)
+
+
+def test_vertical_clearance_empty_probe_batch():
+    mesh = trimesh.creation.box()
+    assert vertical_clearances(mesh.vertices, mesh.faces, np.empty((0, 3))) == []

@@ -1,5 +1,9 @@
 # Legacy cleanup and review — 11 September 2026
 
+The latest follow-up is the [14 September cleanup review](reviews/cleanup-2026-09-14.md).
+It removes superseded inspection scripts and consolidates shared triangle queries.
+The dated sections below remain records of their original revisions.
+
 The pre-cleanup version is preserved in commit **`32cbcee`** on
 `origin/lava-emplacement-history`. It was pushed before any implementation was
 removed. This review covers the maintained Python package, repository utilities,

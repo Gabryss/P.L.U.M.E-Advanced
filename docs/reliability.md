@@ -346,21 +346,22 @@ fresh-host campaigns.
 The [ten-case review](reviews/ten-short-generations-2026-09-12.md) records the
 failures found, bounded repairs, delivered assets and verification scope.
 
-For a single trusted local inspection checkpoint, then its complete textured
-asset and native Blender inspection:
+To check one short case using the current full pipeline and a cold replay:
 
 ```bash
-uv run --no-sync python scripts/generate_inspection_case.py single 17 outputs/inspection_single_17
-uv run --no-sync python scripts/complete_inspection_case.py outputs/inspection_single_17
-blender --background --python scripts/create_blender_inspection.py -- outputs/inspection_single_17 --mapping triplanar --survey
+uv run --no-sync plume-check \
+  --configs config/earth_short_single.toml --seeds 17 --scope full \
+  --timeout 3600 --memory-limit-mib 8192 \
+  --output outputs/inspection_single_17
 ```
 
-Use `multi` for the maintained interconnected preset. The default main-route
-target is 250 m and voxel size is 0.10 m; `--length` and `--voxel` record explicit
-study overrides. Both modes disable events and rocks. The completion step
-applies the same maintained 4K material to both source modes, since the
-single-source geometry preset is intentionally neutral. Each case requires a
-new directory. Local intermediate pickles must never come from untrusted sources.
+Use `config/earth_short_interconnected_full.toml` for the interconnected preset.
+The configuration controls route length, resolution, clearance requirements and
+textures; the single-source preset is neutral, while the full interconnected
+preset requires its configured maps. See [the self-service guide](self-service.md)
+for preflight and inspection. The old paired checkpoint/completion scripts were
+retired after the validated snapshot `c5d8922`; they are no longer a generation
+entry point. Historical outputs and their evidence remain unchanged.
 
 The September ten-case inspection uses root seeds 0, 17, 42, 20260912 and
 4294967295 in each mode. Full fresh-process geometry replays are separate from

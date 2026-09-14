@@ -13,10 +13,11 @@ import numpy as np
 from plume_advanced.progress import report_progress
 from plume_advanced.stages.section_field import SectionFieldGenerator
 from plume_advanced.stages.surface_topology import SurfaceTopologyError
-from plume_advanced.stages.triangle_queries import TriangleIndex
+from plume_advanced.stages.triangle_queries import TriangleIndex, vertical_clearances
 
 
-def _polyline(points, spacing, trim_start=0., trim_end=0.):
+def resample_route_polyline(points, spacing, trim_start=0., trim_end=0.):
+    """Sample a route at bounded intervals while preserving its original corners."""
     points = np.asarray(points, float)
     lengths = np.linalg.norm(np.diff(points, axis=0), axis=1)
     arc = np.r_[0., np.cumsum(lengths)]
@@ -50,7 +51,7 @@ def required_paths(network, sections, config):
         # The sealed cap itself cannot contain a finite body. Stop one body
         # width from degree-one ends; keep every junction fully inspected.
         trim = config.required_route_width_m+2*config.route_clearance_margin_m
-        paths.append(_polyline(points, config.route_inspection_spacing_m,
+        paths.append(resample_route_polyline(points, config.route_inspection_spacing_m,
                                trim if degree[segment.start_node_id] == 1 else 0,
                                trim if degree[segment.end_node_id] == 1 else 0))
         ids.append(sid)
@@ -59,7 +60,7 @@ def required_paths(network, sections, config):
     for node, points in sorted(endpoints.items()):
         for end in points[1:]:
             if np.linalg.norm(np.asarray(end)-points[0]) > 1e-8:
-                paths.append(_polyline([points[0], end], config.route_inspection_spacing_m))
+                paths.append(resample_route_polyline([points[0], end], config.route_inspection_spacing_m))
                 ids.append(-node-1)
     if not paths:
         raise SurfaceTopologyError("A clearance requirement needs a nonempty dominant route")
@@ -134,7 +135,6 @@ def fit_required_sections(network, sections, config, host=None, *, extra_margin_
 
 def inspect_capsule_routes(vertices, faces, paths, segment_ids, *, height, width, margin,
                            placement_attempts=3, placement_max_sweeps=20000):
-    from plume_advanced.stages.mesh_inspection import _vertical_clearances
     from plume_advanced.stages.route_placement import repair_vertical_path
 
     report = dict(enabled=True, passed=False, height_m=height, width_m=width, margin_m=margin,
@@ -147,7 +147,7 @@ def inspect_capsule_routes(vertices, faces, paths, segment_ids, *, height, width
     index = TriangleIndex(vertices, faces)
     # Build the projected triangle index once for all paths, including tiny
     # junction connectors; rebuilding it per segment dominates large meshes.
-    all_measurements = _vertical_clearances(np.asarray(vertices), np.asarray(faces),
+    all_measurements = vertical_clearances(np.asarray(vertices), np.asarray(faces),
                                            np.concatenate(paths))
     measurement_offset = 0
     total = sum(len(p)-1 for p in paths)
