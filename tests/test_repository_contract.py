@@ -1,4 +1,4 @@
-"""Keep the single guide, recipe examples and installable resources usable."""
+"""Keep the entry README, linked guides and installable resources usable."""
 
 import hashlib
 import json
@@ -7,38 +7,54 @@ import tomllib
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
+from PIL import Image
+
 from plume_advanced.config import load_project_config
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_readme_local_links_and_sections():
+GUIDES = {"installation", "usage", "configuration", "architecture", "evaluation", "simulators"}
+DOCUMENTS = [ROOT / "README.md", *(ROOT / "docs" / f"{name}.md" for name in sorted(GUIDES))]
+
+
+def markdown_anchors(text):
+    headings = re.findall(r"^#{1,6} (.+)$", text, re.MULTILINE)
+    return {re.sub(r"[^\w -]", "", heading.lower()).replace(" ", "-") for heading in headings}
+
+
+def test_readme_has_one_ordered_quickstart():
     text = (ROOT / "README.md").read_text()
     assert re.findall(r"^## (.+)$", text, re.MULTILINE) == [
-        "Introduction",
-        "Generation examples",
-        "Installation & usage",
-        "Simulators",
-        "Config file",
-        "Architecture",
-        "Limits",
+        "Installation", "Usage", "Simulators", "Documentation", "Limits",
     ]
-    headings = re.findall(r"^#{1,6} (.+)$", text, re.MULTILINE)
-    anchors = {re.sub(r"[^\w -]", "", heading.lower()).replace(" ", "-") for heading in headings}
-    for target in re.findall(r"!?\[[^\]]*\]\(([^)]+)\)", text):
-        url = urlsplit(target)
-        if url.scheme:
-            continue
-        if url.path:
-            assert (ROOT / unquote(url.path)).exists(), target
-        if url.fragment and not url.path:
-            assert url.fragment in anchors, target
+    blocks = re.findall(r"```bash\n(.*?)```", text, re.DOTALL)
+    assert len(blocks) == 2
+    assert "uv sync --locked" in blocks[0] and "plume-generate" not in blocks[0]
+    assert blocks[1].strip() == "uv run plume-generate --output outputs/first_cave/network.png"
+    assert "--no-sync" not in text
 
 
-def test_readme_toml_examples_resolve(tmp_path):
-    blocks = re.findall(r"```toml\n(.*?)```", (ROOT / "README.md").read_text(), re.DOTALL)
-    assert blocks
-    for index, block in enumerate(blocks):
+def test_documentation_local_links_and_anchors():
+    for document in DOCUMENTS:
+        text = document.read_text()
+        for target in re.findall(r"!?\[[^\]]*\]\(([^)]+)\)", text):
+            url = urlsplit(target)
+            if url.scheme:
+                continue
+            linked = (document.parent / unquote(url.path)).resolve() if url.path else document
+            assert linked.exists(), (document, target)
+            assert linked.is_relative_to(ROOT), (document, target)
+            if url.fragment and linked.suffix == ".md":
+                assert url.fragment in markdown_anchors(linked.read_text()), (document, target)
+
+
+def test_documentation_toml_examples_resolve(tmp_path):
+    examples = []
+    for document in DOCUMENTS:
+        examples.extend(re.findall(r"```toml\n(.*?)```", document.read_text(), re.DOTALL))
+    assert examples
+    for index, block in enumerate(examples):
         raw = tomllib.loads(block)
         if not {"recipe_version", "schema_version"} & raw.keys():
             block = 'recipe_version = 1\npreset = "preview"\n' + block
@@ -47,9 +63,15 @@ def test_readme_toml_examples_resolve(tmp_path):
         load_project_config(path)
 
 
-def test_maintained_sources_have_one_markdown_guide():
-    for directory in ("src", "scripts", "config", "tests", "docs"):
+def test_technical_guides_are_centralized_and_linked():
+    for directory in ("src", "scripts", "config", "tests"):
         assert not list((ROOT / directory).rglob("*.md")), directory
+    guides = set((ROOT / "docs").rglob("*.md"))
+    assert guides == set(DOCUMENTS[1:])
+    readme = (ROOT / "README.md").read_text()
+    for guide in guides:
+        assert f"]({guide.relative_to(ROOT).as_posix()}" in readme
+        assert "](../README.md)" in guide.read_text()
 
 
 def test_repository_excludes_retired_evaluation_archives():
@@ -86,7 +108,7 @@ def test_simulator_gallery_is_archived_and_matches_receipts():
     assert {row["application"] for row in gallery["images"]} == {
         "Blender", "Unity", "Unreal Engine", "Gazebo", "Isaac Sim",
     }
-    readme = (ROOT / "README.md").read_text()
+    documentation = "\n".join(document.read_text() for document in DOCUMENTS)
     for row in gallery["images"]:
         for role in ("image", "receipt", "source_receipt", "generation_receipt"):
             if role not in row:
@@ -95,5 +117,23 @@ def test_simulator_gallery_is_archived_and_matches_receipts():
             assert path.is_relative_to(directory.resolve())
             assert path.is_file()
             assert hashlib.sha256(path.read_bytes()).hexdigest() == row[role]["sha256"]
-        assert f']({row["image"]["path"]})' in readme
+        assert Path(row["image"]["path"]).name in documentation
         assert row["captured_on"] and row["application_version"] and row["scope"]
+
+
+def test_simulator_ui_gallery_assets_and_links():
+    directory = ROOT / "docs/simulators/ui"
+    gallery = json.loads((directory / "gallery.json").read_text())
+    assert {row["application"] for row in gallery["images"]} == {
+        "Blender", "Unity", "Unreal Engine", "Gazebo", "Isaac Sim",
+    }
+    guide = (ROOT / "docs/simulators.md").read_text()
+    for row in gallery["images"]:
+        path = (directory / row["image"]).resolve()
+        assert path.is_relative_to(directory)
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == row["sha256"]
+        with Image.open(path) as screenshot:
+            assert list(screenshot.size) == row["dimensions"]
+            screenshot.verify()
+        assert f"](simulators/ui/{row['image']})" in guide
+        assert row["application_version"] and row["captured_on"]

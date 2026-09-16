@@ -1,0 +1,91 @@
+{
+  "schema": "plume.simulator-ui-gallery.v1",
+  "capture_method": "Actual application windows captured with ImageMagick import; no image compositing or pixel editing.",
+  "scope": "Editor visualization of one cave; not a new native-physics or ground-robot qualification campaign.",
+  "generation": {
+    "root_seed": 3,
+    "target_route_length_m": 120,
+    "sources": 1,
+    "rocks": false,
+    "texture_size_px": 4096,
+    "visual_triangles": 157904,
+    "collision_triangles": 31580,
+    "acceptance_profile": "inspection",
+    "source_identity": {
+      "dirty": true,
+      "identity_schema": "plume.executing-package.v1",
+      "revision": "0fe1a9f843ad3c2c099d3adea5eed7eb01ecba4f",
+      "sha256": "bb092acb435a5abb1d3041c28b7c44d3ee73f722b71ae2ca1a89dcfb1a8f8d7a"
+    },
+    "manifest_sha256": "55897fa05a4c367189a65ae5b753c20a88aa6629b8644e8747da2f5834c26988",
+    "primary_glb_sha256": "8a40f2e901d66560cfa5800989b27171d9e028f09e3ea8283f9eddd7111a812f"
+  },
+  "capture_environment": "Linux, NVIDIA RTX 3070. Matching Flatpak NVIDIA 580.173.02 runtime libraries were used per process because the host had a pending kernel/user-library driver mismatch. No system driver changes.",
+  "images": [
+    {
+      "application": "Blender",
+      "application_version": "5.2.0 LTS",
+      "captured_on": "2026-09-16",
+      "image": "blender.png",
+      "sha256": "648fb38f0ed04beca43c9f0a3b5e7a9173be867fa16c8dc74dc35dc4faf624db",
+      "bytes": 1448055,
+      "dimensions": [
+        1600,
+        1000
+      ],
+      "scope": "Cycles rendered viewport, native continuous material, Interior 1 camera, 32 preview samples with denoising."
+    },
+    {
+      "application": "Unity",
+      "application_version": "6000.6.0f1",
+      "captured_on": "2026-09-16",
+      "image": "unity.png",
+      "sha256": "c6124098990f72d9fe0e5db05fcc7186ff26d889d6e77c3ab87bad1547cf6e82",
+      "bytes": 2368370,
+      "dimensions": [
+        2560,
+        1371
+      ],
+      "scope": "OpenGL Game view, URP native material, interior inspection camera and point light."
+    },
+    {
+      "application": "Unreal Engine",
+      "application_version": "5.8.2",
+      "captured_on": "2026-09-16",
+      "image": "unreal.png",
+      "sha256": "a5dcd57d4717a449060903f64f5338deb27f63c0519f9ff1f2a4931caaeb6a43",
+      "bytes": 4697833,
+      "dimensions": [
+        2560,
+        1408
+      ],
+      "scope": "Vulkan editor viewport, native material, movable point light; manual exposure with physical camera exposure disabled."
+    },
+    {
+      "application": "Gazebo",
+      "application_version": "Sim 8.15.0 (Harmonic)",
+      "captured_on": "2026-09-16",
+      "image": "gazebo.png",
+      "sha256": "749dc0342f6dc5c61a5a7d684004eaa2d719b8ffa9d270a5e595877987bfc344",
+      "bytes": 3447097,
+      "dimensions": [
+        2560,
+        1408
+      ],
+      "scope": "Ogre2 world view, portable UV material, inspection camera, point light and contact probe."
+    },
+    {
+      "application": "Isaac Sim",
+      "application_version": "6.1.0-rc.26+main.0.7c206f75.local",
+      "captured_on": "2026-09-16",
+      "image": "isaac.png",
+      "sha256": "924f69ad80d629de507ab575d8c4aa9a49c6bc6de613784a6c8f96091bed7c73",
+      "bytes": 1684186,
+      "dimensions": [
+        2560,
+        1408
+      ],
+      "scope": "RTX Real-Time 2.0 viewport, portable UV material. Original exported USD plus inspection camera, light and probe in the session layer; saved recording graphs were not loaded."
+    }
+  ]
+}
