@@ -431,7 +431,10 @@ class PortableAssetValidator:
             self._check(
                 "geometry",
                 "No degenerate faces",
-                bool(np.all(double_areas > 1e-10)),
+                # These are actual serialized float32 coordinates evaluated
+                # in double precision. A dimensionful area cutoff rejects
+                # small resolved faces; exact zero area remains invalid.
+                bool(np.all(np.isfinite(double_areas) & (double_areas > 0.))),
                 f"minimum_double_area={float(double_areas.min()):.6g}",
             ),
             self._check(
@@ -542,7 +545,9 @@ class PortableAssetValidator:
             axis=2,
         )
         uv_determinants = np.abs(np.linalg.det(uv_edges))
-        valid_metric = uv_determinants > 1e-12
+        # Evaluate actual float32 chart area, not a dimensionful cutoff: a
+        # small, resolved chart may still have a well-scaled metric Jacobian.
+        valid_metric = np.isfinite(uv_determinants) & (uv_determinants > 0.)
         collapsed_uv_count = int(np.count_nonzero(~valid_metric))
         singular_values = np.linalg.svd(
             world_edges[valid_metric] @ np.linalg.inv(uv_edges[valid_metric]),

@@ -112,7 +112,7 @@ class HostFieldTests(unittest.TestCase):
         self.assertTrue(np.array_equal(implicit.growth_cost, explicit.growth_cost))
 
     def test_project_seed_resolves_high_level_host_ranges(self) -> None:
-        config_text = (ROOT / "config" / "project.toml").read_text(encoding="utf-8")
+        config_text = (ROOT / "config" / "research.toml").read_text(encoding="utf-8")
         with tempfile.TemporaryDirectory() as temp_dir:
             config_a_path = Path(temp_dir) / "seed_1.toml"
             config_b_path = Path(temp_dir) / "seed_2.toml"

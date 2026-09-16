@@ -55,7 +55,11 @@ def mesh_tangents(
         d1, d2 = t[:, 1] - t[:, 0], t[:, 2] - t[:, 0]
         determinant = d1[:, 0] * d2[:, 1] - d1[:, 1] * d2[:, 0]
         reciprocal = np.zeros_like(determinant)
-        np.divide(1.0, determinant, out=reciprocal, where=np.abs(determinant) > 1e-12)
+        # Tiny metric charts can have small area without a collapsed mapping.
+        # The derivative ratio cancels the world/UV scale; skipping them would
+        # replace a valid tangent direction with an unrelated fallback axis.
+        np.divide(1.0, determinant, out=reciprocal,
+                  where=np.isfinite(determinant) & (determinant != 0.))
         u = (e1 * d2[:, 1, None] - e2 * d1[:, 1, None]) * reciprocal[:, None]
         v = (e2 * d1[:, 0, None] - e1 * d2[:, 0, None]) * reciprocal[:, None]
         np.add.at(tangent_u, batch.ravel(), np.repeat(u, 3, axis=0))

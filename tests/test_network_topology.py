@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture(scope="module")
 def example():
-    config = load_project_config(ROOT / "config/earth_valentine_topology.toml")
+    config = load_project_config(ROOT / "config/trunk.toml")
     host = HostFieldGenerator(config.host_field).generate()
     network = CaveNetworkGenerator(config.network).generate(
         host, section_config=config.section_field

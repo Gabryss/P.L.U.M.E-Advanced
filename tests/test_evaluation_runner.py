@@ -124,3 +124,19 @@ def test_provenance_tracks_dirty_sources_inputs_and_dependencies(
     assert changed_source["identity_sha256"] != changed_input["identity_sha256"]
     monkeypatch.setattr(provenance, "dependency_versions", lambda: {"numpy": "changed-version"})
     assert changed_input["identity_sha256"] != capture()["identity_sha256"]
+
+
+def test_repaired_bytes_replace_invalidated_completed_receipt(tmp_path):
+    artifact = tmp_path / 'mesh.glb'
+    store = ResultStore(tmp_path, 'smoke', validate_cached=lambda _: artifact.is_file())
+    def generate():
+        artifact.write_bytes(b'restored original bytes')
+        return {'answer': 42}
+    run_case(store, _template(), generate)
+    original = store.case_path(_template().run_id).read_bytes()
+    artifact.unlink()
+    assert run_case(store, _template(), generate) is not None
+    assert artifact.read_bytes() == b'restored original bytes'
+    archives = list((store.case_root / 'attempts').glob('*.json'))
+    assert len(archives) == 1 and archives[0].read_bytes() == original
+    assert run_case(store, _template(), generate) is None

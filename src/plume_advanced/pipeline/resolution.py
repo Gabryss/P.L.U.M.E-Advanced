@@ -27,31 +27,39 @@ def compare_mesh_clearance(previous, current, points, tolerance):
         rows.append(vertical_clearances(np.asarray(mesh.assembled_vertices),
                                         np.asarray(mesh.assembled_faces), np.asarray(points)))
     errors = []
+    worst = None
     blocked = []
     for index, (a, b) in enumerate(zip(*rows, strict=True)):
         if not a["inside"] or not b["inside"]:
             blocked.append(index)
         else:
-            errors.append(max(abs(a[k]-b[k]) for k in ("floor_distance_m", "roof_distance_m")))
+            error = max(abs(a[k]-b[k]) for k in ("floor_distance_m", "roof_distance_m"))
+            if worst is None or error > worst["error_m"]:
+                worst = dict(sample_index=index, point_m=list(map(float, points[index])),
+                             error_m=error, previous=a, current=b)
+            errors.append(error)
     maximum = max(errors, default=0.)
     return dict(passed=bool(errors) and not blocked and maximum <= tolerance,
                 max_floor_roof_change_m=maximum, tolerance_m=tolerance,
                 compared_samples=len(errors), blocked_samples=blocked,
+                worst_sample=worst,
                 topology_equal=(previous.component_count == current.component_count
                                 and previous.expected_surface_genus == current.expected_surface_genus))
 
 
 def build_with_resolution_checks(network, sections, controls, progress=None, *,
-                                 acceptance: AcceptancePolicy = AcceptancePolicy()):
+                                 acceptance: AcceptancePolicy = AcceptancePolicy(),
+                                 surface_diagnostic=None):
     """Preserve network/sections/seed; record every attempted effective grid size.
 
     The eight-sample rule triggers a convergence study. Refinement keeps one
     resolution per candidate (dense or tiled), avoiding mixed-resolution seams.
-    It accepts a finer mesh only after measured floor/roof convergence and the
-    ordinary topology, stability and capsule gates. Resource exhaustion fails.
+    A finer mesh must pass the input screen or measured floor/roof convergence,
+    and the ordinary topology, stability and capsule gates. Exhaustion fails.
     """
     if not controls.resolution_refinement_attempts:
-        return GeometryGenerator(controls, acceptance=acceptance).build_base_volume(network, sections, progress=progress)
+        return GeometryGenerator(controls, acceptance=acceptance,
+                                 surface_diagnostic=surface_diagnostic).build_base_volume(network, sections, progress=progress)
     initial = section_resolution_report(sections, controls.voxel_size)
     journal = dict(schema="plume.resolution-repair.v1", passed=False,
                    requested_voxel_size_m=controls.voxel_size, attempts=[],
@@ -75,16 +83,33 @@ def build_with_resolution_checks(network, sections, controls, progress=None, *,
         record = dict(voxel_size_m=size, accepted=False)
         journal["attempts"].append(record)
         try:
-            current = GeometryGenerator(config, acceptance=acceptance).build_base_volume(network, sections, progress=progress)
+            current = GeometryGenerator(config, acceptance=acceptance,
+                                        surface_diagnostic=surface_diagnostic).build_base_volume(network, sections, progress=progress)
         except ResolutionBudgetError as error:
             record.update(failure=str(error), allocation=error.report)
             journal["failure"] = "Allocated-grid budget exhausted"
             break
+        except SurfaceTopologyError as error:
+            if getattr(error, "report", {}).get("ground_traversal", {}).get("passed") is False:
+                raise
+            # A coarse lattice can create handles or obstruct a passage even
+            # when the continuous profiles are valid. Refine those same inputs
+            # before asking upstream recovery to alter the network. A rejected
+            # mesh is never a convergence reference.
+            record.update(failure=str(error), inspection=error.report)
+            previous = None
+            report_progress("Resolution acceptance", level + 1,
+                            controls.resolution_refinement_attempts + 1,
+                            f"rejected {size:g} m surface; trying the next permitted grid")
+            continue
+        effective_resolution = section_resolution_report(sections, size)
         record.update(triangles=len(current.assembled_faces),
                       surface_sha256=surface_identity(np.asarray(current.assembled_vertices),
                                                      np.asarray(current.assembled_faces)),
-                      under_resolved=section_resolution_report(sections, size)["under_resolved_count"])
-        if not initial["under_resolved_count"]:
+                      under_resolved=effective_resolution["under_resolved_count"],
+                      resolution_section_count=effective_resolution.get("section_count"),
+                      minimum_samples=effective_resolution.get("minimum_samples"))
+        if not record["under_resolved"]:
             record["accepted"] = True
             journal.update(passed=True, outcome="input_sampling_sufficient", effective_voxel_size_m=size)
             return replace(current, resolution_repair=tuple(journal.items()))

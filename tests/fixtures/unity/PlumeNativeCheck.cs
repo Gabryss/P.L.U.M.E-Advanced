@@ -11,9 +11,28 @@ public static class PlumeNativeCheck
 {
     [Serializable] class Sample { public Vector3 point; public float floor, roof; }
     [Serializable] class View { public Vector3 point, look; }
-    [Serializable] class Expected { public int triangles, vertices, collision_triangles; public Sample[] samples, collision_samples; public View[] views; }
+    [Serializable] class Route { public int segment_id; public Vector3[] points; }
+    [Serializable] class Body { public float radius, half_axis, height_m, width_m, margin_m; public int stations, edges; public Route[] paths; }
+    [Serializable] class GroundSupport { public Vector2 offset; public Vector3 weight; }
+    [Serializable] class GroundPose { public Vector3 point, forward, up; public Sample[] probes; }
+    [Serializable] class GroundMotion { public Vector3 start, end, forward, up, half_extents; }
+    [Serializable] class Ground {
+        public bool enabled; public float length_m, width_m, height_m, margin_m, max_slope_deg, max_step_m, support_spacing_m;
+        public Vector3 half_extents; public int stations, sweeps, floor_samples;
+        public GroundPose[] poses; public GroundMotion[] motions; public GroundSupport[] support;
+    }
+    [Serializable] class GroundReport {
+        public bool enabled, passed; public int stations, sweeps, floor_samples, failures;
+        public float length_m, width_m, height_m, margin_m, max_slope_deg, max_step_m, support_spacing_m;
+        public float maximumFloorErrorM, maximumSlopeDeg, maximumStepM;
+        public PhysicsControl[] controls;
+    }
+    [Serializable] class Expected { public int triangles, vertices, collision_triangles; public Sample[] samples, collision_samples; public View[] views; public Body body; public Ground ground; }
     [Serializable] class TextureCheck {
         public string property, type, compression, wrap; public bool srgb; public int width, height;
+    }
+    [Serializable] class PhysicsControl {
+        public string name; public bool expected, observed, passed;
     }
     [Serializable] class NativeReport {
         public bool passed; public string unity, api, graphics, failure;
@@ -23,10 +42,34 @@ public static class PlumeNativeCheck
         public long editorPeakMemoryBytes;
         public float maximumVertexErrorM, maximumClearanceErrorM, uvRenderDifference, normalRenderDifference;
         public string[] shaderErrors; public TextureCheck[] textures;
-        public float[] viewLightIntensity, viewClippedFraction;
+        public float[] viewLightIntensity, viewClippedFraction, viewLuminanceP95;
+        public bool bodyPassed, bodyOverlapControl, bodySweepControl;
+        public int bodyStations, bodyEdges, bodyStationFailures, bodyEdgeFailures;
+        public float bodyHeightM, bodyWidthM, bodyMarginM;
+        public PhysicsControl[] physicsControls;
+        public GroundReport ground;
     }
     static void Require(bool condition, string message) { if (!condition) throw new Exception(message); }
     static string Output(string name) { return Path.Combine(Application.dataPath, "../" + name); }
+
+    public static void EvaluateGroundFixture() {
+        var report=new NativeReport {unity=Application.unityVersion};
+        try {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);
+            AssetDatabase.ImportAsset("Assets/Cave/ground_fixture.glb",ImportAssetOptions.ForceUpdate);
+            var prefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Cave/ground_fixture.glb");
+            Require(prefab != null,"Ground fixture failed import");
+            var room=UnityEngine.Object.Instantiate(prefab);
+            var filter=room.GetComponentInChildren<MeshFilter>();
+            var collider=filter.gameObject.AddComponent<MeshCollider>();
+            collider.sharedMesh=filter.sharedMesh; collider.convex=false; collider.gameObject.layer=8;
+            Physics.queriesHitBackfaces=true; Physics.SyncTransforms();
+            var plan=JsonUtility.FromJson<Ground>(File.ReadAllText(Output("ground_expected.json")));
+            report.ground=CheckGround(plan,collider); report.passed=report.ground.passed;
+        } catch (Exception error) { report.failure=error.ToString(); }
+        File.WriteAllText(Output("ground_result.json"),JsonUtility.ToJson(report,true));
+        EditorApplication.Exit(report.passed ? 0 : 1);
+    }
 
     public static void Evaluate()
     {
@@ -112,6 +155,11 @@ public static class PlumeNativeCheck
             }
             report.collisionQuerySeconds = timer.Elapsed.TotalSeconds;
             Require(report.collisionPassed == report.collisionSamples, "Dedicated collider ray checks failed");
+            CheckBody(expected.body, dedicated, report);
+            report.physicsControls = CheckPhysicsControls(dedicated.bounds.max + Vector3.one*100);
+            Require(report.physicsControls.All(row => row.passed), "Native collision negative controls failed");
+            report.ground = CheckGround(expected.ground, dedicated);
+            Require(!report.ground.enabled || report.ground.passed, "Ground robot import checks failed");
             var material = PlumeMaterialInstaller.CreateFromSettings(Path.Combine(Application.dataPath, "PlumeMaterial/settings.json"));
             foreach (var renderer in cave.GetComponentsInChildren<Renderer>()) renderer.sharedMaterial = material;
             report.textures = new[] { "_ColorMap", "_NormalMap", "_RoughnessMap" }.Select(name => {
@@ -137,6 +185,7 @@ public static class PlumeNativeCheck
             Require(expected.views != null && expected.views.Length >= 2, "Missing branch inspection view plan");
             report.viewLightIntensity = new float[expected.views.Length];
             report.viewClippedFraction = new float[expected.views.Length];
+            report.viewLuminanceP95 = new float[expected.views.Length];
             Color32[] reference = null;
             for (int view=0; view<expected.views.Length; view++) {
                 camera.transform.position = expected.views[view].point;
@@ -151,10 +200,16 @@ public static class PlumeNativeCheck
                     string trial = "exposure_"+(view+1)+"_"+attempt+".png";
                     reference = Render(camera, trial);
                     float clipped = reference.Count(p => p.r>=254 && p.g>=254 && p.b>=254)/(float)reference.Length;
-                    if (clipped <= 0.005f) {
+                    // Meter the bright surfaces too: almost-white pixels can hide
+                    // material detail while staying just below a clipping cutoff.
+                    var luminance = reference.Where((p,i) => i % 32 == 0)
+                        .Select(p => (0.2126f*p.r + 0.7152f*p.g + 0.0722f*p.b)/255f).OrderBy(v => v).ToArray();
+                    float p95 = luminance[(int)(0.95f*(luminance.Length-1))];
+                    if (clipped <= 0.005f && p95 <= 0.7f) {
                         File.Copy(Output(trial), Output("interior_"+(view+1)+".png"), true);
                         report.viewLightIntensity[view] = light.intensity;
                         report.viewClippedFraction[view] = clipped;
+                        report.viewLuminanceP95[view] = p95;
                         exposed = true;
                         break;
                     }
@@ -185,6 +240,180 @@ public static class PlumeNativeCheck
         report.editorPeakMemoryBytes = System.Diagnostics.Process.GetCurrentProcess().PeakWorkingSet64;
         File.WriteAllText(Output("native_result.json"), JsonUtility.ToJson(report,true));
         EditorApplication.Exit(report.passed ? 0 : 1);
+    }
+
+    static bool BodyOverlap(Vector3 centre, Body body) {
+        var offset = Vector3.up * body.half_axis;
+        return body.half_axis == 0
+            ? Physics.CheckSphere(centre, body.radius, 1 << 8, QueryTriggerInteraction.Ignore)
+            : Physics.CheckCapsule(centre-offset, centre+offset, body.radius, 1 << 8, QueryTriggerInteraction.Ignore);
+    }
+
+    static bool BoxOverlap(Vector3 point, Vector3 half, Quaternion rotation) {
+        return Physics.CheckBox(point, half, rotation, 1 << 8, QueryTriggerInteraction.Ignore);
+    }
+    static bool BoxSweep(Vector3 a, Vector3 b, Vector3 half, Quaternion rotation) {
+        var delta = b-a;
+        return delta.sqrMagnitude > 1e-16f && Physics.BoxCast(a, half, delta.normalized,
+            out _, rotation, delta.magnitude, 1 << 8, QueryTriggerInteraction.Ignore);
+    }
+    static GroundReport CheckGround(Ground plan, MeshCollider collider) {
+        var r = new GroundReport { enabled=plan != null && plan.enabled };
+        if (!r.enabled) return r;
+        r.length_m=plan.length_m; r.width_m=plan.width_m; r.height_m=plan.height_m;
+        r.margin_m=plan.margin_m; r.max_slope_deg=plan.max_slope_deg;
+        r.max_step_m=plan.max_step_m; r.support_spacing_m=plan.support_spacing_m;
+        foreach (var pose in plan.poses) {
+            r.stations++;
+            if (BoxOverlap(pose.point, plan.half_extents, Quaternion.LookRotation(pose.forward, pose.up))) r.failures++;
+            var heights = new double[pose.probes.Length];
+            double a=0, b=0, c=0;
+            for (int i=0; i<heights.Length; i++) {
+                var probe=pose.probes[i]; r.floor_samples++;
+                if (!collider.Raycast(new Ray(probe.point, Vector3.down), out var hit, probe.floor+0.1f)) {
+                    r.failures++; continue;
+                }
+                r.maximumFloorErrorM=Mathf.Max(r.maximumFloorErrorM, Mathf.Abs(hit.distance-probe.floor));
+                heights[i]=probe.point.y-hit.distance;
+                var w=plan.support[i].weight;
+                a+=w.x*heights[i]; b+=w.y*heights[i]; c+=w.z*heights[i];
+            }
+            double low=double.PositiveInfinity, high=double.NegativeInfinity;
+            for (int i=0; i<heights.Length; i++) {
+                var xy=plan.support[i].offset;
+                double residual=heights[i]-(a*xy.x+b*xy.y+c);
+                low=Math.Min(low,residual); high=Math.Max(high,residual);
+            }
+            r.maximumSlopeDeg=Mathf.Max(r.maximumSlopeDeg,(float)(Math.Atan(Math.Sqrt(a*a+b*b))*180/Math.PI));
+            r.maximumStepM=Mathf.Max(r.maximumStepM,(float)(high-low));
+        }
+        foreach (var motion in plan.motions) {
+            r.sweeps++;
+            var rotation=Quaternion.LookRotation(motion.forward,motion.up);
+            if (BoxOverlap(motion.start,motion.half_extents,rotation)
+                || BoxOverlap(motion.end,motion.half_extents,rotation)
+                || BoxSweep(motion.start,motion.end,motion.half_extents,rotation)
+                || BoxSweep(motion.end,motion.start,motion.half_extents,rotation)) r.failures++;
+        }
+        r.controls=CheckGroundControls(collider.bounds.max+Vector3.one*110);
+        r.passed=r.failures == 0 && r.stations == plan.stations && r.sweeps == plan.sweeps
+            && r.floor_samples == plan.floor_samples && r.maximumFloorErrorM <= .002f
+            && r.maximumSlopeDeg <= plan.max_slope_deg+1e-5f && r.maximumStepM <= plan.max_step_m+1e-5f
+            && r.controls.All(row=>row.passed);
+        return r;
+    }
+
+    static PhysicsControl[] CheckGroundControls(Vector3 origin) {
+        var rows=new System.Collections.Generic.List<PhysicsControl>();
+        Action<string,bool,bool> record=(name,expected,observed)=>rows.Add(
+            new PhysicsControl {name=name,expected=expected,observed=observed,passed=expected==observed});
+        var obstacle=new GameObject("PLUME temporary ground controls");
+        obstacle.layer=8; obstacle.transform.position=origin;
+        var wall=obstacle.AddComponent<BoxCollider>(); wall.size=new Vector3(.02f,4,4);
+        var half=new Vector3(.27f,.27f,.37f);
+        var rotation=Quaternion.LookRotation(Vector3.right,Vector3.up);
+        GameObject second=null;
+        try {
+            Physics.SyncTransforms();
+            record("box_initial_overlap",true,BoxOverlap(origin,half,rotation));
+            record("box_length_overlap",true,BoxOverlap(origin+Vector3.right*.34f,half,rotation));
+            record("box_rotated_clear",false,BoxOverlap(origin+Vector3.right*.34f,half,Quaternion.identity));
+            record("box_clear_start",false,BoxOverlap(origin+Vector3.right,half,rotation));
+            record("box_thin_wall_forward",true,BoxSweep(origin-Vector3.right,origin+Vector3.right,half,rotation));
+            record("box_thin_wall_reverse",true,BoxSweep(origin+Vector3.right,origin-Vector3.right,half,rotation));
+            record("box_clear_sweep",false,BoxSweep(origin+Vector3.right,origin+Vector3.right*2,half,rotation));
+            wall.size=new Vector3(4,.02f,4); Physics.SyncTransforms();
+            record("floor_present",true,wall.Raycast(new Ray(origin+Vector3.up,Vector3.down),out _,2));
+            record("floor_missing",false,wall.Raycast(new Ray(origin+Vector3.right*5+Vector3.up,Vector3.down),out _,2));
+            foreach (float angle in new[] {15f,25f}) {
+                obstacle.transform.rotation=Quaternion.Euler(0,0,angle); Physics.SyncTransforms();
+                bool hit=wall.Raycast(new Ray(origin+Vector3.up,Vector3.down),out var floor,2);
+                record(angle == 15 ? "slope_below_limit" : "slope_above_limit", angle == 15,
+                    hit && Vector3.Angle(floor.normal,Vector3.up) <= 20);
+            }
+            obstacle.transform.rotation=Quaternion.identity;
+            obstacle.transform.position=origin-Vector3.right*.5f; wall.size=new Vector3(1,.02f,1);
+            second=new GameObject("PLUME temporary step"); second.layer=8;
+            var top=second.AddComponent<BoxCollider>(); top.size=wall.size;
+            foreach (float step in new[] {.06f,.15f}) {
+                second.transform.position=origin+Vector3.right*.5f+Vector3.up*step; Physics.SyncTransforms();
+                bool low=wall.Raycast(new Ray(origin-Vector3.right*.5f+Vector3.up,Vector3.down),out var a,2);
+                bool high=top.Raycast(new Ray(origin+Vector3.right*.5f+Vector3.up,Vector3.down),out var b,2);
+                record(step < .1 ? "step_below_limit" : "step_above_limit",step < .1,
+                    low && high && Mathf.Abs(a.distance-b.distance) <= .1f);
+            }
+        } finally {
+            if (second != null) UnityEngine.Object.DestroyImmediate(second);
+            UnityEngine.Object.DestroyImmediate(obstacle); Physics.SyncTransforms();
+        }
+        return rows.ToArray();
+    }
+    static bool BodySweep(Vector3 a, Vector3 b, Body body) {
+        var delta = b-a;
+        if (delta.sqrMagnitude < 1e-16f) return false;
+        var offset = Vector3.up * body.half_axis;
+        return body.half_axis == 0
+            ? Physics.SphereCast(a, body.radius, delta.normalized, out _, delta.magnitude, 1 << 8, QueryTriggerInteraction.Ignore)
+            : Physics.CapsuleCast(a-offset, a+offset, body.radius, delta.normalized, out _, delta.magnitude, 1 << 8, QueryTriggerInteraction.Ignore);
+    }
+    static void CheckBody(Body body, MeshCollider dedicated, NativeReport report) {
+        Require(body != null && body.paths != null && body.paths.Length > 0, "Missing finite-body routes");
+        dedicated.gameObject.layer = 8;
+        Physics.SyncTransforms();
+        report.bodyHeightM=body.height_m; report.bodyWidthM=body.width_m; report.bodyMarginM=body.margin_m;
+        foreach (var path in body.paths) {
+            foreach (var centre in path.points) {
+                report.bodyStations++;
+                if (BodyOverlap(centre, body)) report.bodyStationFailures++;
+            }
+            for (int i=1; i<path.points.Length; i++) {
+                report.bodyEdges++;
+                // Query both orientations: mesh backface handling differs across native engines.
+                if (BodySweep(path.points[i-1], path.points[i], body)
+                    || BodySweep(path.points[i], path.points[i-1], body)) report.bodyEdgeFailures++;
+            }
+        }
+        var start=body.paths[0].points[0];
+        Require(dedicated.Raycast(new Ray(start, Vector3.down), out var floor, 20), "No floor for body controls");
+        report.bodyOverlapControl=BodyOverlap(floor.point, body);
+        report.bodySweepControl=BodySweep(start, floor.point-Vector3.up*body.radius, body);
+        report.bodyPassed=report.bodyStations == body.stations && report.bodyEdges == body.edges
+            && report.bodyStationFailures == 0 && report.bodyEdgeFailures == 0
+            && report.bodyOverlapControl && report.bodySweepControl;
+        Require(report.bodyPassed, "Imported finite-body overlap/sweep checks or floor obstruction controls failed");
+    }
+
+    static PhysicsControl[] CheckPhysicsControls(Vector3 origin) {
+        // A temporary obstacle away from the cave exercises the same query
+        // methods used above. No control object is retained in the saved scene.
+        var controls = new System.Collections.Generic.List<PhysicsControl>();
+        var obstacle = new GameObject("PLUME temporary collision control");
+        obstacle.layer = 8; obstacle.transform.position = origin;
+        var wall = obstacle.AddComponent<BoxCollider>();
+        wall.size = new Vector3(0.02f, 4, 4);
+        Action<string,bool,bool> record = (name, expected, observed) => controls.Add(
+            new PhysicsControl { name=name, expected=expected, observed=observed, passed=expected==observed });
+        try {
+            Physics.SyncTransforms();
+            foreach (bool tall in new[] {false, true}) {
+                var body = new Body {radius=0.27f, half_axis=tall ? 0.5f : 0};
+                string prefix = tall ? "capsule_" : "sphere_";
+                record(prefix+"initial_overlap", true, BodyOverlap(origin, body));
+                record(prefix+"grazing_overlap", true, BodyOverlap(origin+Vector3.right*0.14f, body));
+                record(prefix+"clear_start", false, BodyOverlap(origin+Vector3.right, body));
+                record(prefix+"thin_wall_forward", true, BodySweep(origin-Vector3.right, origin+Vector3.right, body));
+                record(prefix+"thin_wall_reverse", true, BodySweep(origin+Vector3.right, origin-Vector3.right, body));
+                record(prefix+"clear_sweep", false, BodySweep(origin+Vector3.right, origin+Vector3.right*2, body));
+            }
+            wall.size = new Vector3(4, 0.02f, 4);
+            Physics.SyncTransforms();
+            record("capsule_axis_overlap", true, BodyOverlap(origin+Vector3.up*0.55f,
+                new Body {radius=0.27f, half_axis=0.5f}));
+            record("sphere_axis_clear", false, BodyOverlap(origin+Vector3.up*0.55f,
+                new Body {radius=0.27f, half_axis=0}));
+        }
+        finally { UnityEngine.Object.DestroyImmediate(obstacle); Physics.SyncTransforms(); }
+        return controls.ToArray();
     }
 
     static Color32[] Render(Camera camera, string name)

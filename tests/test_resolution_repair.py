@@ -14,6 +14,7 @@ from plume_advanced.pipeline.resolution import (
 from plume_advanced.stages.geometry import GeometryGenerator
 from plume_advanced.stages.geometry_types import GeometryConfig
 from plume_advanced.stages.section_field import SectionFieldGenerator
+from plume_advanced.stages.surface_topology import SurfaceTopologyError
 
 
 def inputs():
@@ -22,6 +23,17 @@ def inputs():
     config = GeometryConfig(voxel_size=1, resolution_refinement_attempts=2,
                             resolution_min_voxel_size_m=.1)
     return network, sections, config
+
+
+def test_ground_failure_does_not_spend_whole_grid_refinement_budget(monkeypatch):
+    calls = []
+    def reject(self, *args, **kwargs):
+        calls.append(self.config.voxel_size)
+        raise SurfaceTopologyError('ground contract failed', report={'ground_traversal': {'passed': False}})
+    monkeypatch.setattr(GeometryGenerator, 'build_base_volume', reject)
+    with pytest.raises(SurfaceTopologyError, match='ground contract'):
+        build_with_resolution_checks(*inputs())
+    assert calls == [1]
 
 
 def test_clearance_convergence_detects_translation_despite_equal_total_height():
@@ -35,6 +47,9 @@ def test_clearance_convergence_detects_translation_despite_equal_total_height():
 
 def test_refinement_preserves_inputs_and_records_effective_resolution(monkeypatch):
     network, sections, config = inputs()
+    # Keep both tested grids under the input screen to exercise convergence.
+    import plume_advanced.pipeline.resolution as module
+    monkeypatch.setattr(module, "section_resolution_report", lambda *a: {"under_resolved_count": 1})
     mesh = trimesh.creation.box(extents=(300, 100, 300))
     mesh.apply_translation((50, 0, 80))
     calls = []
@@ -55,6 +70,8 @@ def test_refinement_preserves_inputs_and_records_effective_resolution(monkeypatc
 
 def test_unconverged_refinement_exhausts_without_silent_acceptance(monkeypatch):
     network, sections, config = inputs()
+    import plume_advanced.pipeline.resolution as module
+    monkeypatch.setattr(module, "section_resolution_report", lambda *a: {"under_resolved_count": 1})
     def build(self, *args, **kwargs):
         mesh = trimesh.creation.box(extents=(300, 100, 300))
         mesh.apply_translation((50, 0, 80+self.config.voxel_size))
@@ -80,6 +97,47 @@ def test_zero_refinement_budget_does_not_change_requested_grid(monkeypatch):
     mesh = geometry()
     monkeypatch.setattr(GeometryGenerator, "build_base_volume", lambda *a, **k: mesh)
     assert build_with_resolution_checks(network, sections, replace(config, resolution_refinement_attempts=0)) is mesh
+
+
+def test_coarse_topology_failure_refines_same_inputs_without_lowering_relief(monkeypatch):
+    network, sections, config = inputs()
+    config = replace(config, surface_wall_relief_m=.2)
+    calls = []
+    def build(self, n, s, **kwargs):
+        assert n is network and s is sections
+        calls.append(self.config.voxel_size)
+        assert self.config.surface_wall_relief_m == .2
+        if len(calls) == 1:
+            raise SurfaceTopologyError("coarse handle", report={"defect_regions": []})
+        mesh = trimesh.creation.box(extents=(300, 100, 300))
+        mesh.apply_translation((50, 0, 80))
+        return replace(geometry(mesh), config=self.config)
+    monkeypatch.setattr(GeometryGenerator, "build_base_volume", build)
+    result = build_with_resolution_checks(network, sections, config)
+    journal = dict(result.resolution_repair)
+    assert journal["passed"] and calls[0:2] == [1., .5]
+    assert journal["attempts"][0]["failure"] == "coarse handle"
+    assert not journal["attempts"][0]["accepted"]
+
+
+def test_programming_failure_is_not_retried_as_a_resolution_problem(monkeypatch):
+    network, sections, config = inputs()
+    def broken(*args, **kwargs):
+        raise TypeError("bug")
+    monkeypatch.setattr(GeometryGenerator, "build_base_volume", broken)
+    with pytest.raises(TypeError, match="bug"):
+        build_with_resolution_checks(network, sections, config)
+
+
+def test_all_rejected_grids_remain_failed_and_retain_diagnostics(monkeypatch):
+    network, sections, config = inputs()
+    def reject(self, *args, **kwargs):
+        raise SurfaceTopologyError("handle", report={"voxel": self.config.voxel_size})
+    monkeypatch.setattr(GeometryGenerator, "build_base_volume", reject)
+    with pytest.raises(ResolutionBudgetError) as caught:
+        build_with_resolution_checks(network, sections, config)
+    assert [r["inspection"]["voxel"] for r in caught.value.report["attempts"]] == [1, .5, .25]
+    assert not any(r["accepted"] for r in caught.value.report["attempts"])
 
 
 @pytest.mark.parametrize("name", ["route_repair_attempts", "resolution_refinement_attempts",
@@ -114,20 +172,20 @@ def real_short_inputs():
     return network, sections, config
 
 
-def test_real_volume_refines_and_checks_intermediate_route_probes():
+def test_real_volume_refines_until_input_profiles_are_resolved():
     network, sections, config = real_short_inputs()
     result = build_with_resolution_checks(network, sections, config)
     journal = dict(result.resolution_repair)
     assert journal['passed'] and result.config.voxel_size < config.voxel_size
-    comparison = journal['attempts'][-1]['comparison']
-    assert comparison['compared_samples'] > 80
-    assert comparison['max_floor_roof_change_m'] <= .03
+    assert journal['outcome'] == 'input_sampling_sufficient'
+    assert journal['attempts'][-1]['under_resolved'] == 0
     assert dict(result.mesh_inspection)['traversal']['passed']
 
 
 def test_real_unconverged_volume_is_not_published_when_budget_exhausts():
     network, sections, config = real_short_inputs()
-    config = replace(config, resolution_refinement_attempts=1, resolution_convergence_m=1e-12)
+    config = replace(config, voxel_size=.4, resolution_refinement_attempts=1,
+                     resolution_convergence_m=1e-12)
     with pytest.raises(ResolutionBudgetError) as caught:
         build_with_resolution_checks(network, sections, config)
     assert len(caught.value.report['attempts']) == 2

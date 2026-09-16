@@ -1,5 +1,6 @@
 """Recovery orchestration, real diagnostics, failure containment and replay contracts."""
 
+from copy import deepcopy
 from dataclasses import replace
 from types import SimpleNamespace
 
@@ -133,6 +134,21 @@ def test_localizer_distinguishes_sphere_and_detached_shell():
     assert detached and detached[0]["center_m"] == [10, 0, 0]
 
 
+@pytest.mark.parametrize('translation', [0., 1_000_000.])
+def test_detached_fragment_diagnostic_retains_oriented_volume(translation):
+    main = trimesh.creation.box(extents=(10, 10, 10))
+    main.invert()  # cavity boundary points inward
+    small = trimesh.creation.box(extents=(.4, .5, .2))
+    # These signed measurements are diagnostic; host anchoring decides removal.
+    union = main+small
+    union.apply_translation([translation]*3)
+    regions = localize_surface_defects(union.vertices, union.faces, window_m=12)
+    detached = next(r for r in regions if r['kind'] == 'detached_surface')
+    assert detached['signed_volume_m3'] == pytest.approx(.04, abs=1e-8)
+    assert detached['main_signed_volume_m3'] == pytest.approx(-1000.)
+    assert detached['triangles'] == 12
+
+
 def test_handle_crossing_first_partition_is_found_by_overlapping_slabs():
     mesh = trimesh.creation.torus(major_radius=2, minor_radius=0.5)
     mesh.apply_translation([6, 0, 0])
@@ -153,6 +169,75 @@ def test_localization_maps_to_segments_and_keeps_uncertainty_explicit(inputs):
     assert result["regions"][0]["segment_ids"] == [0]
     assert not result["under_resolved_junction_hypotheses"]
     assert locate_affected_sections(network, sections, {}, 0.01)["segment_ids"] == []
+
+
+def test_mesh_invariant_mapping_keeps_spatial_localization(inputs):
+    _, _, network, sections = inputs
+    failure = rejected_surface(sections).report
+    failure['checks'] = dict(finite=True, positive_triangle_area=True,
+                             closed=True, winding_consistent=True)
+    before = deepcopy(failure)
+    assert locate_affected_sections(network, sections, failure, .3)['segment_ids'] == [0]
+    assert failure == before
+
+
+def test_section_diagnostics_localize_without_mesh_regions_or_mutating_evidence(inputs):
+    _, _, network, sections = inputs
+    failure = {'checks': [
+        dict(name='junction_floor_continuity',passed=False,segment_ids=[0,999]),
+        dict(name='section_grade',passed=True,segment_ids=[0]),
+        dict(name='unknown_segment',passed=False,segment_ids=[999]),
+    ]}
+    before = deepcopy(failure)
+    report = locate_affected_sections(network,sections,failure,.01)
+    assert report['segment_ids'] == [0]
+    assert report['reported_failures'] == [dict(name='junction_floor_continuity',segment_ids=[0])]
+    assert report['regions'] == [] and report['under_resolved_junction_hypotheses'] == []
+    assert report == locate_affected_sections(network,sections,failure,.01)
+    assert failure == before
+
+
+def test_enlargement_rejection_identifies_its_section_and_ignores_unknown_ids(inputs):
+    _, _, network, sections = inputs
+    failure = {'route_section_repair': {'rejected_enlargements': [
+        dict(segment_id=0,sample_index=2,reason='Insufficient cover'),
+        dict(segment_id=999,sample_index=3,reason='Unknown segment'),
+    ]}}
+    result = locate_affected_sections(network,sections,failure,.01)
+    assert result['segment_ids'] == [0]
+    assert result['reported_failures'] == [dict(name='route_section_enlargement',segment_ids=[0],
+                                               sample_index=2,reason='Insufficient cover')]
+
+
+def test_spatial_localization_does_not_overwrite_original_region_ids(inputs):
+    _, _, network, sections = inputs
+    failure = rejected_surface(sections).report
+    failure['defect_regions'][0]['segment_ids'] = [-1]
+    before = deepcopy(failure)
+    assert locate_affected_sections(network,sections,failure,.3)['segment_ids'] == [0]
+    assert failure == before
+
+
+def test_reported_junction_failure_reaches_local_repair_before_regeneration(inputs,monkeypatch):
+    import plume_advanced.pipeline.recovery as module
+
+    project,host,network,sections = inputs
+    project.geometry = replace(project.geometry,recovery_network_attempts=0)
+    def assess(candidate,field,profiles):
+        if profiles is sections:
+            return dict(accepted=False,checks=[dict(name='junction_floor_continuity',passed=False,
+                        severity='error',value=.08,limit=.01,segment_ids=[0])])
+        return assess_network(candidate,field,profiles)
+    monkeypatch.setattr(module,'assess_network',assess)
+    monkeypatch.setattr(GeometryGenerator,'build_base_volume',accepted_surface)
+    accepted = build_accepted_base(project,host,network,sections)
+    assert accepted.report['outcome'] == 'locally_repaired'
+    initial,repaired = accepted.report['attempts']
+    assert initial['error_type'] == 'NetworkQualityError'
+    assert repaired['kind'] == 'local_section_resampling' and repaired['status'] == 'accepted'
+    assert repaired['localization']['reported_failures'][0]['segment_ids'] == [0]
+    assert repaired['localization']['regions'] == []
+    assert accepted.network.config.random_seed == network.config.random_seed
 
 
 def test_resampling_preserves_unaffected_fields_and_minimum_envelopes(inputs):
@@ -311,6 +396,44 @@ def test_exhaustion_is_finite_and_retains_diagnostics(inputs, monkeypatch, tmp_p
     assert sorted(p.name for p in tmp_path.iterdir()) == ["report.json"]
 
 
+def test_ground_placement_exhaustion_retains_failure_without_geological_edits(inputs, monkeypatch, tmp_path):
+    calls = []
+    def reject(self, *args, **kwargs):
+        calls.append(True)
+        raise SurfaceTopologyError('ground contract failed', report={'ground_traversal': {'passed': False}})
+    monkeypatch.setattr(GeometryGenerator, 'build_base_volume', reject)
+    with pytest.raises(PipelineRecoveryError) as error:
+        build_accepted_base(*inputs, report_path=tmp_path/'report.json')
+    assert len(calls) == len(error.value.report['attempts']) == 1
+    assert 'ground-route' in error.value.report['stop_reason']
+    assert error.value.report['host_unchanged']
+
+
+def test_measured_seed0_ground_report_rejects_without_localization_crash(inputs, monkeypatch, tmp_path):
+    import json
+    from pathlib import Path
+
+    import plume_advanced.pipeline.recovery as module
+    from plume_advanced.stages.mesh_inspection import MeshInspectionError
+
+    failure = json.loads((Path(__file__).parent / 'fixtures/recovery/ground_failure_seed0.json').read_text())
+    calls = []
+    def reject(*args, **kwargs):
+        calls.append(True)
+        raise MeshInspectionError(failure)
+    def must_not_localize(*args, **kwargs):
+        raise AssertionError('Ground exhaustion must not enter geological localization')
+    monkeypatch.setattr(GeometryGenerator, 'build_base_volume', reject)
+    monkeypatch.setattr(module, 'locate_affected_sections', must_not_localize)
+    with pytest.raises(PipelineRecoveryError) as error:
+        build_accepted_base(*inputs, report_path=tmp_path/'report.json')
+    report = error.value.report
+    assert report['status'] == 'exhausted' and report['host_unchanged']
+    assert len(calls) == len(report['attempts']) == 1
+    assert report['attempts'][0]['inspection'] == failure
+    assert json.loads((tmp_path/'report.json').read_text()) == report
+
+
 @pytest.mark.parametrize(
     "error",
     [
@@ -335,6 +458,26 @@ def test_nonrepairable_errors_escape_without_seed_retries(inputs, monkeypatch, t
 
     report = json.loads((tmp_path / "report.json").read_text())
     assert report["status"] == "interrupted" and not report["accepted"]
+
+
+def test_surface_diagnostics_survive_interruption_before_next_grid(inputs, monkeypatch, tmp_path):
+    import json
+
+    measurement = dict(candidate_index=1, voxel_size_m=.04, accepted=False,
+                       floating_solid_samples_removed=286,
+                       inspection=dict(components=2, expected_genus=2))
+    def interrupted(self, *args, **kwargs):
+        self.surface_diagnostic(measurement)
+        # The measurement must already be on disk before the next expensive step.
+        saved = json.loads((tmp_path/'report.json').read_text())
+        assert saved['attempts'][0]['surface_candidates'] == [measurement]
+        raise KeyboardInterrupt
+    monkeypatch.setattr(GeometryGenerator, 'build_base_volume', interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        build_accepted_base(*inputs, report_path=tmp_path/'report.json')
+    saved = json.loads((tmp_path/'report.json').read_text())
+    assert not saved['accepted']
+    assert saved['attempts'][0]['surface_candidates'] == [measurement]
 
 
 def test_identical_replacement_skips_expensive_geometry(inputs, monkeypatch):

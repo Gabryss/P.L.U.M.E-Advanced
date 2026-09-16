@@ -97,7 +97,7 @@ def test_previously_exhausted_long_multi_seeds_pass_production_screening(seed):
     from plume_advanced.stages.host_field import HostFieldGenerator
 
     config = for_seed(load_project_config(
-        Path(__file__).parents[1] / "config/earth_long_multi.toml"), seed)
+        Path(__file__).parents[1] / "config/gallery-long.toml"), seed)
     host = HostFieldGenerator(config.host_field).generate()
     identity = host_semantic_hash(host)
     network = CaveNetworkGenerator(config.network).generate(host, section_config=config.section_field)

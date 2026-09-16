@@ -60,6 +60,15 @@ def test_export_evaluation_meshes_packages_and_reuses_matching_case(
     assert cli.main(arguments) == 0
     assert case.read_bytes() == original
 
+    # A completed record cannot certify a deleted GLB. A failed regeneration
+    # must replace the success claim while retaining the original attempt.
+    asset.unlink()
+    assert cli.main(arguments) == 1
+    assert not json.loads((output / "summary.json").read_text())["passed"]
+    assert json.loads(case.read_text())["status"] == "failed"
+    archives = list((output / "cases/attempts").glob("*.json"))
+    assert len(archives) == 1 and archives[0].read_bytes() == original
+
 
 def test_failed_export_evaluation_returns_failure_without_success_claims(
     experiment_config: Path, monkeypatch: pytest.MonkeyPatch
@@ -118,3 +127,64 @@ def test_determinism_reports_all_failed_cases_without_indexing_empty_results(
     assert summary["complete_n"] == 0
     assert summary["failed_n"] == 1
     assert summary["checks"] == {}
+
+
+@pytest.mark.parametrize('damage', ['deleted', 'changed', 'extra', 'linked'])
+def test_export_receipt_detects_changes_in_every_packaged_file(tmp_path, damage):
+    package = tmp_path / 'package'
+    package.mkdir()
+    texture = package / 'texture.png'
+    texture.write_bytes(b'original texture')
+    row = dict(target_checks_passed=True,
+               artifact_receipts=export_consistency._package_receipt(package))
+    assert export_consistency._valid_package_receipt(package, row)
+    if damage == 'deleted':
+        texture.unlink()
+    elif damage == 'changed':
+        texture.write_bytes(b'changed texture')
+    elif damage == 'extra':
+        (package / 'extra.txt').write_text('unchecked')
+    else:
+        (package / 'link').symlink_to(texture)
+    assert not export_consistency._valid_package_receipt(package, row)
+
+
+@pytest.mark.parametrize('damage', [None, 'scale', 'translation', 'descriptor', 'malformed', 'collision'])
+def test_target_gate_rejects_invalid_visuals_and_descriptors(tmp_path, damage):
+    import numpy as np
+    mesh = trimesh.creation.box(extents=(2., 4., 6.))
+    canonical = mesh.bounds.copy()
+    asset = tmp_path / 'cave.obj'
+    if damage == 'scale':
+        mesh.apply_scale(100)
+    if damage == 'translation':
+        mesh.apply_translation((10, 0, 0))
+    mesh.export(asset)
+    if damage == 'malformed':
+        asset.write_text('not a mesh')
+    collision = tmp_path / 'cave_collision.obj'
+    collision.write_text('collision fixture')
+    descriptor = tmp_path / 'cave.blender.json'
+    descriptor.write_text(json.dumps(dict(schema='plume.target_export.v1', target='blender')))
+    record = dict(primary_asset=asset.name,
+                  files=[asset.name, collision.name, descriptor.name])
+    if damage == 'descriptor':
+        descriptor.unlink()
+    if damage == 'collision':
+        collision.unlink()
+    check = export_consistency._target_check(tmp_path, 'blender', record, np.asarray(canonical))
+    json.dumps(check, allow_nan=False)
+    assert check['passed'] is (damage is None)
+    if damage == 'scale':
+        assert check['bbox_relative_extent_error'] == pytest.approx(99)
+
+
+def test_glb_bounds_are_converted_back_to_canonical_metres(tmp_path):
+    import numpy as np
+    mesh = trimesh.creation.box(extents=(2., 4., 6.))
+    mesh.apply_translation((10, 20, 30))
+    bounds = mesh.bounds.copy()
+    mesh.apply_transform(np.array([[1,0,0,0], [0,0,1,0], [0,-1,0,0], [0,0,0,1]]))
+    asset = tmp_path / 'cave.glb'
+    mesh.export(asset)
+    assert np.allclose(export_consistency._parse_bounds(asset), bounds)

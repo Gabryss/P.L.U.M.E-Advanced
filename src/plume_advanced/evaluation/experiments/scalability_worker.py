@@ -21,6 +21,7 @@ from plume_advanced.stages.section_field import SectionFieldGenerator
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--project-config", type=Path, required=True)
+    parser.add_argument("--asset-directory", type=Path)
     parser.add_argument("--body", required=True)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--route-length-m", type=float, required=True)
@@ -28,7 +29,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--quality", choices=("preview", "standard", "production"), default=None)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
-    project = load_project_config(args.project_config, world_body=args.body, dev_mode=False)
+    project = load_project_config(args.project_config, world_body=args.body, dev_mode=False,
+                                  asset_directory=args.asset_directory)
     if args.quality is not None and args.quality != project.run.quality:
         raise ValueError("Benchmark quality must match the frozen project's run.quality")
     project = _benchmark_project(project, args.seed, args.route_length_m, args.storage_mode)

@@ -19,7 +19,7 @@ from plume_advanced.stages.network_systems import system_summary
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--config", type=Path, default=Path("config/earth_interacting_systems.toml")
+        "--config", type=Path, default=Path("config/interacting.toml")
     )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--counts", type=int, nargs="+", default=[2, 3, 4])

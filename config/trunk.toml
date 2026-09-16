@@ -1,0 +1,4 @@
+# trunk: shared calibration; override only the settings you need.
+recipe_version = 1
+preset = "trunk"
+procedural_seed = 20260910

@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture(scope="module")
 def example():
-    cfg = load_project_config(ROOT / "config/earth_independent_gallery.toml")
+    cfg = load_project_config(ROOT / "config/gallery.toml")
     host = HostFieldGenerator(cfg.host_field).generate()
     network = CaveNetworkGenerator(cfg.network).generate(host, section_config=cfg.section_field)
     return cfg, host, network, SectionFieldGenerator(cfg.section_field).generate(network)

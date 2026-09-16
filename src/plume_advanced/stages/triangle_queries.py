@@ -17,23 +17,45 @@ def vertical_clearances(vertices: np.ndarray, faces: np.ndarray, points: np.ndar
     """Measure the vertical cavity enclosing each point on actual triangles."""
     if not len(points):
         return []
-    triangles = vertices[faces]
-    xy = triangles[:, :, :2]
-    centers = xy.mean(axis=1)
-    radius = float(np.linalg.norm(xy - centers[:, None, :], axis=2).max())
-    tree = cKDTree(centers)
-    tolerance = max(float(np.ptp(vertices, axis=0).max()) * 1e-10, 1e-9)
+    index = VerticalTriangleIndex(vertices, faces)
     rows = []
-    for index, point in enumerate(points):
-        if index % 100 == 0:
+    for number, point in enumerate(points):
+        if number % 100 == 0:
             report_progress(
                 "Mesh passage inspection",
-                index,
+                number,
                 len(points),
                 "measuring floor/roof intersections on actual triangles",
             )
-        ids = sorted(tree.query_ball_point(point[:2], radius + tolerance))
-        tri = triangles[ids]
+        rows.append(index.measure(point, number))
+    report_progress(
+        "Mesh passage inspection", len(points), len(points), "passage samples inspected"
+    )
+    return rows
+
+
+class VerticalTriangleIndex:
+    """Reusable XY radius buckets for floor support and cavity queries."""
+
+    def __init__(self, vertices, faces, *, triangles=None):
+        self.triangles = np.asarray(vertices, float)[faces] if triangles is None else triangles
+        xy = self.triangles[:, :, :2]
+        centers = xy.mean(axis=1)
+        radii = np.linalg.norm(xy - centers[:, None], axis=2).max(axis=1)
+        bins = np.ceil(np.log2(np.maximum(radii, 1e-6))).astype(int)
+        self.groups = []
+        for key in np.unique(bins):
+            ids = np.flatnonzero(bins == key)
+            self.groups.append((ids, cKDTree(centers[ids]), float(radii[ids].max())))
+        self.tolerance = max(float(np.ptp(vertices, axis=0).max()) * 1e-10, 1e-9)
+
+    def measure(self, point, sample_index=0):
+        point = np.asarray(point, float)
+        tolerance = self.tolerance
+        groups = [ids[tree.query_ball_point(point[:2], radius + tolerance)]
+                  for ids, tree, radius in self.groups]
+        ids = np.sort(np.concatenate(groups)) if groups else np.empty(0, dtype=int)
+        tri = self.triangles[ids]
         # Project barycentric coordinates in XY. Vertical triangles do not cross
         # a vertical ray; roof/floor triangles supply its actual intersections.
         a, b, c = tri[:, 0], tri[:, 1], tri[:, 2]
@@ -60,9 +82,8 @@ def vertical_clearances(vertices: np.ndarray, faces: np.ndarray, points: np.ndar
         inside = bool(len(lower) % 2 and len(upper) % 2 and not on_surface)
         floor = float(point[2] - lower[-1]) if len(lower) else None
         roof = float(upper[0] - point[2]) if len(upper) else None
-        rows.append(
-            dict(
-                sample_index=index,
+        return dict(
+                sample_index=sample_index,
                 point_m=point.tolist(),
                 inside=inside,
                 floor_distance_m=floor,
@@ -70,12 +91,7 @@ def vertical_clearances(vertices: np.ndarray, faces: np.ndarray, points: np.ndar
                 clearance_m=floor + roof
                 if inside and floor is not None and roof is not None
                 else None,
-            )
         )
-    report_progress(
-        "Mesh passage inspection", len(points), len(points), "passage samples inspected"
-    )
-    return rows
 
 
 def segment_distances(a, b, c, d):

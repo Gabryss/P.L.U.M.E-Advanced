@@ -1,0 +1,4 @@
+# short-multi: shared calibration; override only the settings you need.
+recipe_version = 1
+preset = "short-multi"
+procedural_seed = 20260910

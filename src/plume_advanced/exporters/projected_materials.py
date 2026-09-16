@@ -16,7 +16,7 @@ from .atomic import atomic_output_directory
 ASSET_FILES = (
     "blender_materials.py",
     "apply_blender_material.py",
-    "README.md",
+    "SETUP.txt",
     "plume_triplanar_body.hlsl",
     "unity/PlumeTriplanar.hlsl",
     "unity/PlumeContinuousRock.shader",

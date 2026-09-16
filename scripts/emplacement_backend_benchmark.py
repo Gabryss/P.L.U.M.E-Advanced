@@ -221,7 +221,8 @@ def _run_one(
             "metrics": None,
             "backend_provenance": _provenance(backend, flowy_executable),
             "signature": None,
-            "error": {"type": type(exc).__name__, "message": str(exc)},
+            "error": {"type": type(exc).__name__, "message": str(exc),
+                      "inspection": _jsonable(getattr(exc, "report", None))},
         }, None
 
 

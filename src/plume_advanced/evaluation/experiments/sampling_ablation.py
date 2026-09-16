@@ -7,7 +7,6 @@ from dataclasses import replace
 
 import numpy as np
 
-from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.config import EvaluationConfig
 from plume_advanced.evaluation.experiments.common import config_hash, for_seed, generate_network
 from plume_advanced.evaluation.metrics.sections import section_geometric_error
@@ -19,8 +18,8 @@ from plume_advanced.stages.section_field import SectionFieldGenerator
 
 def run_sampling_ablation(config: EvaluationConfig, *, force: bool = False) -> dict:
     section = config.section("sampling_ablation")
-    base = load_project_config(
-        config.project_config, world_body=section.get("body", "earth"), dev_mode=False
+    base = config.load_project(
+        world_body=section.get("body", "earth"), dev_mode=False
     )
     provenance = capture_provenance(
         config.project_config.parent.parent,

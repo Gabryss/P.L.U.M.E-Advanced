@@ -41,7 +41,7 @@ class ProjectConfigurationTests(unittest.TestCase):
                 self.assertEqual(load_project_config(path).schema_version, 4)
 
     def test_project_uses_resolved_earth_profile_and_named_seeds(self) -> None:
-        config = load_project_config(ROOT / "config" / "project.toml")
+        config = load_project_config(ROOT / "config" / "research.toml")
 
         self.assertEqual(config.schema_version, 4)
         self.assertEqual(config.world.body.name, "earth")
@@ -146,7 +146,7 @@ class ProjectConfigurationTests(unittest.TestCase):
     def test_body_profiles_scale_host_extent_route_and_branch_persistence(self) -> None:
         configs = {
             body: load_project_config(
-                ROOT / "config" / "project.toml",
+                ROOT / "config" / "research.toml",
                 world_body=body,
             )
             for body in ("earth", "mars", "moon")
@@ -300,7 +300,7 @@ class ProjectConfigurationTests(unittest.TestCase):
 
     def test_world_body_override_uses_the_selected_bodys_default_material(self) -> None:
         moon = load_project_config(
-            ROOT / "config" / "project.toml",
+            ROOT / "config" / "research.toml",
             world_body="moon",
         )
 

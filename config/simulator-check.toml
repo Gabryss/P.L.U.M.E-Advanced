@@ -1,0 +1,25 @@
+# Small, textured, rock-free fixture for native simulator import checks.
+recipe_version = 1
+preset = "preview"
+procedural_seed = 3
+
+[network]
+target_route_length_m = 120.0
+source_count = 1
+
+[network.topology]
+island_count = [0, 0]
+side_branch_count = [0, 0]
+
+[geometry]
+cave_diffuse_texture = "../texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg"
+cave_normal_texture = "../texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr"
+cave_roughness_texture = "../texture/dark_rock_8k/textures/dark_rock_rough_8k.exr"
+cave_texture_scale_m = 4.0
+embedded_texture_max_size = 1024
+
+[export]
+target = "all"
+
+[run]
+render_diagnostics = false

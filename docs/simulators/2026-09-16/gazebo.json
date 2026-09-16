@@ -1,0 +1,41 @@
+{
+  "images": 25,
+  "contacts": 2264,
+  "cave_contacts": 2264,
+  "pose": [
+    -88.45766555106314,
+    -207.87067447162326,
+    124.24852717730893
+  ],
+  "image_channel_stddev": [
+    22.194620684625576,
+    20.51347713563716,
+    13.809781274075823
+  ],
+  "image_mean": 41.40427951388889,
+  "image_sha256": "bee2993a174ba1e2f114c06c9f48b4a5cd913333991d9b6eb07e78c4724a5364",
+  "probe_near_floor": true,
+  "passed": true,
+  "schema": "plume.gazebo-import-check.v1",
+  "simulator_version": "8.15.0",
+  "model_sdf_sha256": "a56fae05d90bb0b8c199cb1e69a2fb6d14b78c3add80fde19b943dcb96c5fc2f",
+  "textures": [
+    {
+      "role": "albedo_map",
+      "uri": "model://plume_cave_scene/materials/textures/diffuse_ad427905d3be95dfeae0d26c33838a110c1e2a15f29d18c111ec3ff6f8d738ea_data.png",
+      "sha256": "5ebbfa77b063d82af1be10c9a24bf3e0f981baa04f953999e2e251a7466069b0"
+    },
+    {
+      "role": "normal_map",
+      "uri": "model://plume_cave_scene/materials/textures/normal_11e40bcdc3823f6023a0f4f6a41b429a764514f822c56e2ea5180c0665648642_opengl.png",
+      "sha256": "f82b9a36145ad38962598a34fc4f5be678761b1303fd4630e838850c83c0450c"
+    },
+    {
+      "role": "roughness_map",
+      "uri": "model://plume_cave_scene/materials/textures/roughness_f9eca3e3ba35746af7d6bb860bae1e0affa417dba5dcb0926da0211a371c2ac5_data.png",
+      "sha256": "6c9080238c1483506da7bb16ab054c34bbd20b601942d7ccf7ff0c51b7a85701"
+    }
+  ],
+  "elapsed_seconds": 8.31,
+  "scope": "Native textured camera capture and dynamic probe contact; not route or vehicle qualification."
+}

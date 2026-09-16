@@ -12,7 +12,7 @@ import struct
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import NotRequired, TypedDict
+from typing import Callable, NotRequired, TypedDict
 
 import numpy as np
 import trimesh
@@ -164,6 +164,7 @@ def build_cave_visual_surface(
     convert_to_gltf: bool = False,
     displacement_image=None,
     image_cache: dict[str, object] | None = None,
+    geometry_preflight: Callable[[np.ndarray], None] | None = None,
 ) -> CavePrimitivePayload:
     """Finalize smoothing, metric UVs, displacement, normals and tangents.
 
@@ -208,6 +209,7 @@ def build_cave_visual_surface(
         density_grid=cave_geometry.voxel_grid,
         normal_filter_voxels=cave_geometry.config.surface_normal_filter_voxels,
         texture_scale_m=cave_geometry.config.cave_texture_scale_m,
+        geometry_preflight=geometry_preflight,
     )
 
 
@@ -406,6 +408,7 @@ def _add_cave_wall_to_strict_glb(
         convert_to_gltf=True,
         displacement_image=displacement_image,
     )
+    report_progress("GLB mesh buffers", detail=f"packing {len(payload['faces']):,} cave triangles")
     builder.mesh_node(
         name="cave_wall",
         positions=payload["positions"],
@@ -442,6 +445,7 @@ def _cave_primitive_payload(
     density_grid: VoxelGrid | TiledVoxelGrid | None = None,
     normal_filter_voxels: float = 1.2,
     texture_scale_m: float = GLB_CAVE_TEXTURE_SCALE_METERS,
+    geometry_preflight: Callable[[np.ndarray], None] | None = None,
 ) -> CavePrimitivePayload:
     canonical_vertices = np.asarray(vertices, dtype=np.float64)
     face_indices = np.asarray(faces, dtype=np.uint32)
@@ -453,6 +457,10 @@ def _cave_primitive_payload(
         variation_seed=variation_seed,
         roughness_frequency=roughness_frequency,
     )
+    if geometry_preflight is not None:
+        if displacement_image is not None and displacement_scale_m:
+            raise ValueError("Pre-UV geometry inspection requires zero baked displacement")
+        geometry_preflight(canonical_vertices.astype(np.float32).astype(float))
     report_progress("Surface orientation", detail=f"{len(face_indices):,} triangles")
     face_indices = _orient_faces_toward_cave_interior(
         canonical_vertices,
@@ -471,7 +479,6 @@ def _cave_primitive_payload(
     vertex_mapping, atlas_faces, texcoords = _xatlas_metric_uvs(
         canonical_vertices,
         face_indices,
-        canonical_normals,
         scale_m=texture_scale_m,
     )
     report_progress("Displacement", detail="applying metric displacement across chart seams")
@@ -529,7 +536,6 @@ def _cave_primitive_payload(
 def _xatlas_metric_uvs(
     vertices: np.ndarray,
     faces: np.ndarray,
-    normals: np.ndarray,
     *,
     scale_m: float,
     max_faces_per_batch: int = XATLAS_MAX_FACES_PER_BATCH,
@@ -544,13 +550,28 @@ def _xatlas_metric_uvs(
 
     positions = np.ascontiguousarray(vertices, dtype=np.float32)
     triangles = np.ascontiguousarray(faces, dtype=np.uint32)
-    vertex_normals = np.ascontiguousarray(normals, dtype=np.float32)
     if len(positions) == 0 or len(triangles) == 0:
         return (
             np.arange(len(positions), dtype=np.uint32),
             triangles.copy(),
             np.zeros((len(positions), 2), dtype=np.float64),
         )
+
+    # Fine QEM slivers and crust noise fragment charts even when the surface
+    # itself is valid. Parameterize a two-pass Taubin guide, then map its
+    # indices back to the untouched source. This never smooths exported rock.
+    # Metric rescaling and local distortion repair use the original positions.
+    # Coarse primitives already need only a handful of charts. Smoothing them
+    # can rotate/stretch a whole wall's UV footprint; the fragmentation guard
+    # applies to meshes of at least 100 faces, as does serialized seam checking.
+    if len(triangles) >= 100:
+        report_progress("UV guide", detail="two smoothing passes for parameterization only")
+        guide = _taubin_filtered(vertices, triangles, 2)
+    else:
+        guide = np.asarray(vertices, dtype=np.float64)
+    guide_normals = _angle_weighted_vertex_normals(guide, triangles)
+    positions = np.ascontiguousarray(guide, dtype=np.float32)
+    vertex_normals = np.ascontiguousarray(guide_normals, dtype=np.float32)
 
     batch_size = max(1, int(max_faces_per_batch))
     mappings: list[np.ndarray] = []
@@ -608,16 +629,16 @@ def _xatlas_metric_uvs(
         or not np.isfinite(atlas_uvs).all()
     ):
         raise RuntimeError("xatlas returned an invalid cave-wall parameterization")
-    return _repair_collapsed_uv_triangles(
+    return _repair_metric_uv_triangles(
         vertices, vertex_mapping, atlas_faces, atlas_uvs, scale_m=scale_m,
     )
 
 
-def _repair_collapsed_uv_triangles(
+def _repair_metric_uv_triangles(
     vertices: np.ndarray, vertex_mapping: np.ndarray, faces: np.ndarray,
     texcoords: np.ndarray, *, scale_m: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Give atlas-degenerate triangles isolated metric charts before shading.
+    """Give collapsed or severely stretched triangles metric charts before shading.
 
     Check the float32 coordinates that the file will actually contain. A tiny
     but valid spatial triangle can be flattened by atlas packing or float32
@@ -628,14 +649,25 @@ def _repair_collapsed_uv_triangles(
         raise ValueError("Texture tile size must be finite and positive")
     bad_batches = []
     for start in range(0, len(faces), 65536):
-        uv = np.asarray(texcoords[faces[start:start + 65536]], dtype=np.float32).astype(float)
+        batch = faces[start:start + 65536]
+        uv = np.asarray(texcoords[batch], dtype=np.float32).astype(float)
         a, b = uv[:, 1] - uv[:, 0], uv[:, 2] - uv[:, 0]
         determinant = a[:, 0]*b[:, 1] - a[:, 1]*b[:, 0]
-        bad_batches.append(start + np.flatnonzero(~np.isfinite(determinant) | (abs(determinant) <= 1e-12)))
+        bad = ~np.isfinite(determinant) | (abs(determinant) <= 1e-12)
+        valid = ~bad
+        if valid.any():
+            world = np.asarray(vertices)[vertex_mapping[batch[valid]]]
+            world_edges = np.stack((world[:, 1]-world[:, 0], world[:, 2]-world[:, 0]), axis=2)
+            uv_edges = np.stack((a[valid], b[valid]), axis=2)
+            singular = np.linalg.svd(world_edges @ np.linalg.inv(uv_edges), compute_uv=False)
+            ratio = np.divide(singular[:, 0], singular[:, 1],
+                              out=np.full(len(singular), np.inf), where=singular[:, 1] > 0.)
+            bad[np.flatnonzero(valid)] = ~np.isfinite(ratio) | (ratio > 10.)
+        bad_batches.append(start + np.flatnonzero(bad))
     bad = np.concatenate(bad_batches) if bad_batches else np.empty(0, dtype=int)
     if not len(bad):
         return vertex_mapping, faces, texcoords
-    report_progress("UV repair", 0, len(bad), "isolating collapsed atlas triangles")
+    report_progress("UV repair", 0, len(bad), "isolating collapsed or severely stretched atlas triangles")
     mapping = vertex_mapping.copy()
     repaired_faces = faces.copy()
     uvs = np.asarray(texcoords, dtype=np.float64).copy()
@@ -648,12 +680,16 @@ def _repair_collapsed_uv_triangles(
         edge_a, edge_b = triangle[1] - triangle[0], triangle[2] - triangle[0]
         length = float(np.linalg.norm(edge_a))
         area = float(np.linalg.norm(np.cross(edge_a, edge_b)))
-        if not math.isfinite(area) or length <= 1e-12 or area / scale_m**2 <= 1e-12:
+        if not math.isfinite(area) or length <= 0. or area <= 0.:
             raise ValueError("Cannot give a spatially degenerate triangle a metric UV chart")
         chart = np.array([[0., 0.], [length, 0.],
                           [float(np.dot(edge_b, edge_a)) / length, area / length]]) / scale_m
         chart = chart.astype(np.float32).astype(float)
-        if not np.isfinite(chart).all() or abs(np.linalg.det(chart[1:] - chart[0])) <= 1e-12:
+        # A fixed UV-area cutoff depends on tile scale and falsely rejects
+        # tiny valid spatial triangles. Recentered float32 charts must have
+        # strictly positive area; the metric Jacobian is checked on export.
+        determinant = abs(float(np.linalg.det(chart[1:] - chart[0])))
+        if not np.isfinite(chart).all() or not math.isfinite(determinant) or determinant == 0.:
             raise ValueError("Metric UV triangle is unresolved in float32")
         for corner, index in enumerate(indices):
             if uses[index] == 1:
@@ -845,6 +881,16 @@ def _sample_periodic_grayscale(image, texcoords: np.ndarray) -> np.ndarray:
     return top * (1.0 - y_weight) + bottom * y_weight
 
 
+def _taubin_filtered(vertices: np.ndarray, faces: np.ndarray, iterations: int) -> np.ndarray:
+    mesh = trimesh.Trimesh(vertices=np.asarray(vertices, dtype=np.float64).copy(),
+                           faces=np.asarray(faces, dtype=np.int64), process=False)
+    trimesh.smoothing.filter_taubin(mesh, lamb=.50, nu=.53, iterations=iterations)
+    result = np.asarray(mesh.vertices, dtype=np.float64)
+    if result.shape != np.shape(vertices) or not np.isfinite(result).all():
+        raise ValueError("Surface filtering produced invalid vertices")
+    return result
+
+
 def _smooth_visual_surface(
     vertices: np.ndarray,
     faces: np.ndarray,
@@ -859,23 +905,9 @@ def _smooth_visual_surface(
     if iterations <= 0 or len(positions) == 0:
         return positions.copy()
 
-    def filtered(source: np.ndarray, count: int) -> np.ndarray:
-        mesh = trimesh.Trimesh(
-            vertices=source.copy(),
-            faces=np.asarray(faces, dtype=np.int64),
-            process=False,
-        )
-        trimesh.smoothing.filter_taubin(
-            mesh,
-            lamb=0.50,
-            nu=0.53,
-            iterations=int(count),
-        )
-        return np.asarray(mesh.vertices, dtype=np.float64)
-
-    smoothed = filtered(positions, int(iterations))
+    smoothed = _taubin_filtered(positions, faces, int(iterations))
     if iterations > 2:
-        lightly_smoothed = filtered(positions, 2)
+        lightly_smoothed = _taubin_filtered(positions, faces, 2)
         roughness = _surface_roughness_weights(
             positions,
             variation_seed=variation_seed,

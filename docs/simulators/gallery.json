@@ -1,0 +1,162 @@
+{
+  "schema": "plume.simulator-gallery.v1",
+  "images": [
+    {
+      "application": "Blender",
+      "application_version": "4.0.1",
+      "captured_on": "2026-09-16",
+      "scope": "New Cycles render of the 120 m target, seed-3 cave with 1K maps and the native triplanar material. Import, bounds, triangle count and packed maps verified. Interior 1; no physics test.",
+      "image": {
+        "path": "docs/simulators/2026-09-16/blender.png",
+        "sha256": "cac0bc17d5c456852975e8b0e3ca213a32cce383aff12a0add07fed0cd6c8716",
+        "bytes": 1702665
+      },
+      "receipt": {
+        "path": "docs/simulators/2026-09-16/blender.json",
+        "sha256": "538475be9940696b927b3361667ffa8b93accaab36cb76cf44d22f2ba2987728",
+        "bytes": 3909
+      },
+      "image_dimensions": [
+        1400,
+        900
+      ],
+      "pixels_edited": false,
+      "generation_source": {
+        "dirty": true,
+        "identity_schema": "plume.executing-package.v1",
+        "revision": "0fe1a9f843ad3c2c099d3adea5eed7eb01ecba4f",
+        "sha256": "f29983cbeb930b2307e9d670b41e7663ecee79a38447e21d85418b4332cc2f64"
+      },
+      "generation_receipt": {
+        "path": "docs/simulators/2026-09-16/run_manifest.json",
+        "sha256": "ddfc0847b9a1f9592105e9ab4fa01b3511c8a444c984c34810b7e3549dae1169",
+        "bytes": 34089
+      },
+      "source_asset_sha256": "2f63640fb7d1eb8d9e2218942deb301beba10e73fb93317c8baaeebb4459795a",
+      "render_script": {
+        "path": "scripts/create_blender_inspection.py",
+        "sha256": "5c3feb62fb5766a16cdd3e0fa100fdf0e8a9611992bd481ae5a274569d79688c",
+        "bytes": 18777
+      },
+      "archive_origin": "outputs/simulator_check/previews/continuous/interior_1.png"
+    },
+    {
+      "application": "Unity",
+      "application_version": "6000.6.0f1",
+      "captured_on": "2026-09-13",
+      "scope": "Archived native Vulkan render of the earlier 4K inspection cave with continuous projection shader. Not a new run or a current-seed qualification.",
+      "image": {
+        "path": "docs/simulators/2026-09-13/unity.png",
+        "sha256": "54c7c7904e594a4290439b0fb1d2fe0ed721eba35a5ae24ba21924f512ea47ac",
+        "bytes": 1006637
+      },
+      "receipt": {
+        "path": "docs/simulators/2026-09-13/unity.json",
+        "sha256": "f359aaa1aa4d1cc2f2f86b1de36ec9d61a959c43f49b76aa1b18ed344066958c",
+        "bytes": 1181
+      },
+      "image_dimensions": [
+        960,
+        640
+      ],
+      "pixels_edited": false,
+      "source_asset_sha256": "86845760c4f4261c14477e224a1af41d6d4612b6b73c43b56b6af2f62305cd00",
+      "source_receipt": {
+        "path": "docs/simulators/2026-09-13/native_input_receipt.json",
+        "sha256": "d0bdcc1ff1cef7e3c6529f85f6200255ec637a40fae8bea2f70fae7f4d9c4355",
+        "bytes": 754
+      }
+    },
+    {
+      "application": "Unreal Engine",
+      "application_version": "5.8.2-56702186+++UE5+Release-5.8",
+      "captured_on": "2026-09-13",
+      "scope": "Archived native render of the earlier 4K inspection cave with continuous projection material. Original foreground exposure retained; not a new run.",
+      "image": {
+        "path": "docs/simulators/2026-09-13/unreal.png",
+        "sha256": "d280a75a76088f09a5c3e0d659eab458eb942d9fd6942223ee0666cee0f374a3",
+        "bytes": 1173227
+      },
+      "receipt": {
+        "path": "docs/simulators/2026-09-13/unreal.json",
+        "sha256": "404629c01c3da5faf800e2366a113ebd41ead968294cfe40dd20c99c6ea830d5",
+        "bytes": 2093
+      },
+      "image_dimensions": [
+        960,
+        640
+      ],
+      "pixels_edited": false,
+      "source_asset_sha256": "86845760c4f4261c14477e224a1af41d6d4612b6b73c43b56b6af2f62305cd00",
+      "source_receipt": {
+        "path": "docs/simulators/2026-09-13/native_input_receipt.json",
+        "sha256": "d0bdcc1ff1cef7e3c6529f85f6200255ec637a40fae8bea2f70fae7f4d9c4355",
+        "bytes": 754
+      }
+    },
+    {
+      "application": "Gazebo",
+      "application_version": "8.15.0",
+      "captured_on": "2026-09-16",
+      "scope": "Native Ogre2 render of the 120 m target, seed-3 cave with 1K portable UV maps. Dynamic floor-contact probe; not a full route test.",
+      "image": {
+        "path": "docs/simulators/2026-09-16/gazebo.png",
+        "sha256": "bee2993a174ba1e2f114c06c9f48b4a5cd913333991d9b6eb07e78c4724a5364",
+        "bytes": 948731
+      },
+      "receipt": {
+        "path": "docs/simulators/2026-09-16/gazebo.json",
+        "sha256": "c59332079da143a69c8fa0430ed98ea45af015662ae0e2a0bb3baad2c59dcbc8",
+        "bytes": 1549
+      },
+      "image_dimensions": [
+        1280,
+        720
+      ],
+      "pixels_edited": false,
+      "generation_source": {
+        "dirty": true,
+        "identity_schema": "plume.executing-package.v1",
+        "revision": "0fe1a9f843ad3c2c099d3adea5eed7eb01ecba4f",
+        "sha256": "f29983cbeb930b2307e9d670b41e7663ecee79a38447e21d85418b4332cc2f64"
+      },
+      "generation_receipt": {
+        "path": "docs/simulators/2026-09-16/run_manifest.json",
+        "sha256": "ddfc0847b9a1f9592105e9ab4fa01b3511c8a444c984c34810b7e3549dae1169",
+        "bytes": 34089
+      }
+    },
+    {
+      "application": "Isaac Sim",
+      "application_version": "6.1.0-rc.26+main.0.7c206f75.local",
+      "captured_on": "2026-09-16",
+      "scope": "Native RTX render of the 120 m target, seed-3 cave with 1K portable UV maps. Dynamic floor-contact probe; not a full route test.",
+      "image": {
+        "path": "docs/simulators/2026-09-16/isaac.png",
+        "sha256": "8b18dfe7edb1e4220222a677d3b0a3a55d5e6e6600911915a2c9707e3cc3910b",
+        "bytes": 773783
+      },
+      "receipt": {
+        "path": "docs/simulators/2026-09-16/isaac.json",
+        "sha256": "97a546d4bc7039428882243150d4909ab5adec92f62983544fab64ac545aaeb4",
+        "bytes": 1917
+      },
+      "image_dimensions": [
+        1280,
+        720
+      ],
+      "pixels_edited": false,
+      "generation_source": {
+        "dirty": true,
+        "identity_schema": "plume.executing-package.v1",
+        "revision": "0fe1a9f843ad3c2c099d3adea5eed7eb01ecba4f",
+        "sha256": "f29983cbeb930b2307e9d670b41e7663ecee79a38447e21d85418b4332cc2f64"
+      },
+      "generation_receipt": {
+        "path": "docs/simulators/2026-09-16/run_manifest.json",
+        "sha256": "ddfc0847b9a1f9592105e9ab4fa01b3511c8a444c984c34810b7e3549dae1169",
+        "bytes": 34089
+      }
+    }
+  ]
+}

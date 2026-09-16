@@ -9,7 +9,7 @@ from plume_advanced.config import load_project_config, project_config_manifest
 
 @pytest.mark.parametrize("seed", [0, 17, 20260912, 4294967295])
 def test_override_matches_config_edit_including_host_ranges(tmp_path, seed):
-    source = Path("config/earth_short_single.toml")
+    source = Path("config/short-single.toml")
     original = source.read_text()
     # Resolve asset paths before moving the temporary TOML to another directory.
     original = original.replace("../texture/", str(Path("texture").resolve()) + "/")
@@ -27,4 +27,4 @@ def test_override_matches_config_edit_including_host_ranges(tmp_path, seed):
 @pytest.mark.parametrize("seed", [-1, 1.5, True])
 def test_override_rejects_invalid_seed(seed):
     with pytest.raises(ValueError, match="nonnegative integer"):
-        load_project_config("config/earth_short_single.toml", seed_override=seed)
+        load_project_config("config/short-single.toml", seed_override=seed)

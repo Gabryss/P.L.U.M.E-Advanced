@@ -1,0 +1,213 @@
+{
+  "schema": "plume.mesh-inspection.v1",
+  "passed": false,
+  "failures": [
+    "Required ground route 0 fails reference robot limits; Required ground route 1 fails reference robot limits; Required ground route 3 fails reference robot limits; Required ground route 4 fails reference robot limits; Required ground route 6 fails reference robot limits; Required ground route 7 fails reference robot limits; Required ground route 8 fails reference robot limits; Required ground route -3 fails reference robot limits; Required ground route -4 fails reference robot limits; Required ground route -7 fails reference robot limits"
+  ],
+  "checks": {
+    "finite": true,
+    "positive_triangle_area": true,
+    "closed": true,
+    "winding_consistent": true
+  },
+  "topology": {
+    "components": 1,
+    "euler": -2,
+    "genus": 2.0,
+    "expected_genus": 2
+  },
+  "defect_regions": [
+    {
+      "kind": "ground_route",
+      "segment_ids": [
+        0
+      ],
+      "lower_m": [
+        -2.1346104003254642,
+        -220.6179673592276,
+        169.06381287462915
+      ],
+      "upper_m": [
+        -0.5335812757326077,
+        -179.62625999889974,
+        169.98081281091225
+      ]
+    },
+    {
+      "kind": "ground_route",
+      "segment_ids": [
+        1
+      ],
+      "lower_m": [
+        -5.553804592098003,
+        -179.62625999889974,
+        167.79613733649524
+      ],
+      "upper_m": [
+        6.7542836665534605,
+        -133.845670039256,
+        169.68055388427697
+      ]
+    },
+    {
+      "kind": "ground_route",
+      "segment_ids": [
+        3
+      ],
+      "lower_m": [
+        6.7542836665534605,
+        -133.845670039256,
+        167.0357128097325
+      ],
+      "upper_m": [
+        12.83987324597631,
+        -98.88609349722546,
+        168.5578997275679
+      ]
+    },
+    {
+      "kind": "ground_route",
+      "segment_ids": [
+        4
+      ],
+      "lower_m": [
+        7.075964492999471,
+        -98.88609349722546,
+        164.8003516912925
+      ],
+      "upper_m": [
+        14.570851489305493,
+        -62.62779778684349,
+        167.52382875146378
+      ]
+    },
+    {
+      "kind": "ground_route",
+      "segment_ids": [
+        6
+      ],
+      "lower_m": [
+        14.565588212426185,
+        -62.62779778684349,
+        163.8700317264508
+      ],
+      "upper_m": [
+        15.034747198511848,
+        -33.54192373582408,
+        164.84535810948233
+      ]
+    },
+    {
+      "kind": "ground_route",
+      "segment_ids": [
+        7
+      ],
+      "lower_m": [
+        15.034747198511848,
+        -33.54192373582408,
+        162.7299180867886
+      ],
+      "upper_m": [
+        18.18763979000871,
+        4.948100557765944,
+        164.55458175847275
+      ]
+    },
+    {
+      "kind": "ground_route",
+      "segment_ids": [
+        8
+      ],
+      "lower_m": [
+        18.18763979000871,
+        4.948100557765944,
+        162.5753177870893
+      ],
+      "upper_m": [
+        20.23539181674526,
+        26.9421370455929,
+        163.78852422513341
+      ]
+    },
+    {
+      "kind": "ground_route",
+      "segment_ids": [
+        -3
+      ],
+      "lower_m": [
+        6.7542836665534605,
+        -133.845670039256,
+        167.79613733649524
+      ],
+      "upper_m": [
+        6.7542836665534605,
+        -133.845670039256,
+        167.80264563309305
+      ]
+    },
+    {
+      "kind": "ground_route",
+      "segment_ids": [
+        -4
+      ],
+      "lower_m": [
+        12.83987324597631,
+        -98.88609349722546,
+        167.0357128097325
+      ],
+      "upper_m": [
+        12.83987324597631,
+        -98.88609349722546,
+        167.05760852678367
+      ]
+    },
+    {
+      "kind": "ground_route",
+      "segment_ids": [
+        -7
+      ],
+      "lower_m": [
+        18.18763979000871,
+        4.948100557765944,
+        163.51730494024895
+      ],
+      "upper_m": [
+        18.18763979000871,
+        4.948100557765944,
+        163.53293017514378
+      ]
+    }
+  ],
+  "ground_traversal": {
+    "enabled": true,
+    "passed": false,
+    "robot": {
+      "length_m": 0.7,
+      "width_m": 0.5,
+      "height_m": 0.5,
+      "margin_m": 0.02,
+      "max_slope_deg": 20.0,
+      "max_step_m": 0.1,
+      "support_spacing_m": 0.1
+    },
+    "failures": [
+      "Required ground route 0 fails reference robot limits",
+      "Required ground route 1 fails reference robot limits",
+      "Required ground route 3 fails reference robot limits",
+      "Required ground route 4 fails reference robot limits",
+      "Required ground route 6 fails reference robot limits",
+      "Required ground route 7 fails reference robot limits",
+      "Required ground route 8 fails reference robot limits",
+      "Required ground route -3 fails reference robot limits",
+      "Required ground route -4 fails reference robot limits",
+      "Required ground route -7 fails reference robot limits"
+    ],
+    "queries": 143815,
+    "query_budget": 200000
+  },
+  "fixture_provenance": {
+    "source": "a493159a2282866992c5723f01f18667339bcde7eeffbcf1e23c00d3d3f300dd",
+    "case": "single source seed0,250m,4cm,ground required",
+    "omitted": "Large successful capsule samples, per-station poses/floor witnesses and detour records; checks mapping and failure regions retained verbatim"
+  }
+}

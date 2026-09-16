@@ -20,14 +20,15 @@ from typing import Any, Iterable
 import matplotlib.pyplot as plt
 import numpy as np
 
+from plume_advanced.evaluation.config import load_evaluation_config
 from plume_advanced.evaluation.datasets.pdc import load_pdc
 from plume_advanced.evaluation.metrics.morphometry import contour_morphometry
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PDC_ROOT = ROOT / "data/reference/pdc_v2/extracted/Pyroduct Digital Catalog in .txt"
 DEFAULT_VALENTINE = ROOT / "data/reference/valentine/Valentine_TUBE_UTM_10cm.copc.laz"
-DEFAULT_CALIBRATION_SPLIT = ROOT / "paper/splits/pdc_calibration_caves.txt"
-DEFAULT_EVALUATION_SPLIT = ROOT / "paper/splits/pdc_evaluation_caves.txt"
+DEFAULT_CALIBRATION_SPLIT = load_evaluation_config().pdc_partition_path("calibration")
+DEFAULT_EVALUATION_SPLIT = load_evaluation_config().pdc_partition_path("evaluation")
 DEFAULT_OUTPUT = ROOT / "outputs/reference_morphology"
 DESCRIPTORS = ("width_m", "height_m", "aspect_ratio", "area_m2")
 

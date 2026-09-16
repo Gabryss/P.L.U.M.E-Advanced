@@ -1,0 +1,67 @@
+{
+  "provenance": "Unperturbed, metre-float32 accepted agg=4 QEM geometry from seed 0, 4 cm single-source full-size investigation. All triangles with positive spatial area but metric 4 m UV double area at most 1e-12.",
+  "source_cache_sha256": "58fbfce51a249925472944428a4d6d02cccfa89a7036cc67928b7ac380dfd94e",
+  "triangle_count": 2,
+  "double_areas_m2": [
+    1.4551915228366852e-11,
+    3.637978807091713e-12
+  ],
+  "precision": {
+    "method": "local_precision_relaxation",
+    "passed": true,
+    "attempts": [
+      {
+        "fraction": 0.0,
+        "invalid_faces": {
+          "float32_metres": 76,
+          "float32_centimetres": 95
+        }
+      },
+      {
+        "fraction": 0.001,
+        "invalid_faces": {
+          "float32_metres": 1,
+          "float32_centimetres": 1
+        }
+      },
+      {
+        "fraction": 0.01,
+        "invalid_faces": {
+          "float32_metres": 3,
+          "float32_centimetres": 3
+        }
+      },
+      {
+        "fraction": 0.05,
+        "invalid_faces": {
+          "float32_metres": 4,
+          "float32_centimetres": 4
+        }
+      }
+    ],
+    "relaxation_bound_m": 0.001,
+    "encodings": [
+      "float32_metres",
+      "float32_centimetres"
+    ],
+    "face_area_repair": {
+      "method": "signed_face_area_gradient",
+      "moves": [
+        {
+          "vertex": 82005,
+          "face": 120724,
+          "step_fraction": 0.002,
+          "repaired_faces": 1
+        }
+      ],
+      "affected_faces": 1,
+      "remaining_faces": 0,
+      "invalid_faces": {
+        "float32_metres": 0,
+        "float32_centimetres": 0
+      }
+    },
+    "relaxed_vertices": 170,
+    "maximum_vertex_change_m": 6.409967782809514e-05
+  }
+}

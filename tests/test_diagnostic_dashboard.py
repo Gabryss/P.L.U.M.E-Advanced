@@ -172,7 +172,7 @@ def test_uphill_string_provenance_marks_unresolved_backbone() -> None:
 
 
 def test_dashboard_accepts_bounded_seeded_stage_b_c_fixture(tmp_path: Path) -> None:
-    project = load_project_config(Path("config/project.toml"))
+    project = load_project_config(Path("config/research.toml"))
     host_config = replace(
         project.host_field,
         grid=replace(project.host_field.grid, nx=60, ny=48, width=1800.0, height=1400.0),

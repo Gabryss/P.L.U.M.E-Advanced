@@ -1,0 +1,17 @@
+diff --git a/deps/recipes/sdl3/build.py b/deps/recipes/sdl3/build.py
+index a6aaaf79..673d076d 100644
+--- a/deps/recipes/sdl3/build.py
++++ b/deps/recipes/sdl3/build.py
+@@ -93,6 +93,12 @@ def main() -> None:
+                 "-DSDL_X11_SHARED=ON",
+                 "-DSDL_WAYLAND=OFF",
+                 "-DSDL_KMSDRM=OFF",
++                # These optional libraries are not declared in the isolated recipe.
++                # Do not discover host pkg-config files outside the Pixi sysroot.
++                "-DSDL_LIBTHAI=OFF",
++                "-DSDL_FRIBIDI=OFF",
++                "-DSDL_IBUS=OFF",
++                "-DSDL_DBUS=OFF",
+             ]
+         )
+ 

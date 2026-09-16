@@ -1,4 +1,4 @@
-"""Strict loader for the frozen paper experiment declaration."""
+"""Strict loader for scientific experiments and their packaged defaults."""
 
 from __future__ import annotations
 
@@ -8,19 +8,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-KNOWN_TOP_LEVEL = {
-    "schema_version",
-    "general",
-    "datasets",
-    "morphometry",
-    "controllability",
-    "host_ablation",
-    "sampling_ablation",
-    "scalability",
-    "export_consistency",
-    "determinism",
-}
+from plume_advanced.config import ProjectConfig, load_project_config
+from plume_advanced.evaluation.config_schema import validate_evaluation_config
 
+DEFAULT_CONFIG = Path(__file__).with_name("resources") / "experiments.toml"
 
 @dataclass(frozen=True)
 class EvaluationConfig:
@@ -32,6 +23,12 @@ class EvaluationConfig:
     confidence_level: float
     bootstrap_seed: int
     raw: dict[str, Any]
+    asset_directory: Path | None = None
+
+    def load_project(self, **overrides: Any) -> ProjectConfig:
+        return load_project_config(
+            self.project_config, asset_directory=self.asset_directory, **overrides
+        )
 
     def section(self, name: str) -> dict[str, Any]:
         value = self.raw.get(name, {})
@@ -56,6 +53,8 @@ class EvaluationConfig:
             raise ValueError(f"seed file is empty: {path}")
         if len(seeds) != len(set(seeds)):
             raise ValueError(f"seed file contains duplicates: {path}")
+        if any(not 0 <= seed < 2**32 for seed in seeds):
+            raise ValueError(f"seed file requires unsigned 32-bit integers: {path}")
         return tuple(seeds)
 
     def pdc_root(self, override: str | Path | None = None) -> Path:
@@ -89,43 +88,35 @@ class EvaluationConfig:
         return _resolve(self.path.parent, value)
 
 
-def load_evaluation_config(path: str | Path) -> EvaluationConfig:
-    config_path = Path(path).resolve()
+def load_evaluation_config(path: str | Path | None = None) -> EvaluationConfig:
+    """Resolve custom paths beside the TOML; write bundled runs in the working directory."""
+    config_path = Path(DEFAULT_CONFIG if path is None else path).resolve()
     with config_path.open("rb") as source:
         raw = tomllib.load(source)
-    unknown = set(raw) - KNOWN_TOP_LEVEL
-    if unknown:
-        raise ValueError("Unknown evaluation configuration keys: " + ", ".join(sorted(unknown)))
-    schema_version = int(raw.get("schema_version", 0))
-    if schema_version != 1:
-        raise ValueError(f"Unsupported experiment schema_version: {schema_version}")
+    validate_evaluation_config(raw)
+    schema_version = raw["schema_version"]
     general = raw.get("general", {})
-    allowed_general = {
-        "output_root",
-        "project_config",
-        "bootstrap_iterations",
-        "confidence_level",
-        "bootstrap_seed",
-    }
-    unknown_general = set(general) - allowed_general
-    if unknown_general:
-        raise ValueError("Unknown general keys: " + ", ".join(sorted(unknown_general)))
     iterations = int(general.get("bootstrap_iterations", 2000))
     confidence = float(general.get("confidence_level", 0.95))
-    if iterations <= 0 or not 0.0 < confidence < 1.0:
-        raise ValueError("bootstrap_iterations and confidence_level are invalid")
+    bundled = config_path == DEFAULT_CONFIG.resolve()
+    project_path = _resolve(config_path.parent, general.get("project_config", "../config/project.toml"))
     return EvaluationConfig(
         path=config_path,
         schema_version=schema_version,
-        output_root=_resolve(config_path.parent, general.get("output_root", "outputs")),
-        project_config=_resolve(
-            config_path.parent,
-            general.get("project_config", "../config/project.toml"),
+        output_root=_resolve(
+            Path.cwd() if bundled else config_path.parent,
+            general.get("output_root", "outputs"),
         ),
+        project_config=project_path,
         bootstrap_iterations=iterations,
         confidence_level=confidence,
         bootstrap_seed=int(general.get("bootstrap_seed", 20260101)),
         raw=raw,
+        asset_directory=(
+            _resolve(config_path.parent, general["asset_directory"])
+            if "asset_directory" in general else
+            (Path.cwd() / "config").resolve() if bundled else project_path.parent
+        ),
     )
 
 
@@ -134,4 +125,4 @@ def _resolve(parent: Path, value: str | Path) -> Path:
     return (parent / path).resolve() if not path.is_absolute() else path.resolve()
 
 
-__all__ = ["EvaluationConfig", "load_evaluation_config"]
+__all__ = ["DEFAULT_CONFIG", "EvaluationConfig", "load_evaluation_config"]

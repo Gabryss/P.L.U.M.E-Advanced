@@ -75,18 +75,9 @@ class GeometryExportTests(unittest.TestCase):
                     )
                 )
         triangles = np.asarray(faces, dtype=np.uint32)
-        normals = np.column_stack(
-            (
-                vertices[:, 0] / 4.0,
-                np.zeros(len(vertices)),
-                vertices[:, 2] / 4.0,
-            )
-        )
-
         mapping, atlas_faces, texcoords = _xatlas_metric_uvs(
             vertices,
             triangles,
-            normals,
             scale_m=8.0,
             max_faces_per_batch=20,
         )
@@ -152,7 +143,6 @@ class GeometryExportTests(unittest.TestCase):
         mapping, _atlas_faces, texcoords = _xatlas_metric_uvs(
             vertices,
             faces,
-            normals,
             scale_m=1.0,
         )
         image = Image.new("L", (2, 2))

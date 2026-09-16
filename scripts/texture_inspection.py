@@ -8,9 +8,11 @@ import json
 import shutil
 from pathlib import Path
 
+from plume_advanced.asset_paths import find_export_asset
 from plume_advanced.config import load_project_config
 from plume_advanced.exporters.atomic import atomic_output_directory
 from plume_advanced.exporters.materials import apply_cave_material
+from plume_advanced.exporters.projected_materials import write_projected_material_bundle
 from plume_advanced.exporters.targets import (
     ExportResult,
     write_engine_import_guide,
@@ -29,7 +31,10 @@ def main() -> None:
     if output.exists():
         raise FileExistsError(f'Choose a new material revision directory: {output}')
     config = load_project_config(args.config).geometry
-    source = root / 'export_blender/plume_cave_scene.glb'
+    try:
+        source = find_export_asset(root)
+    except FileNotFoundError:
+        source = find_export_asset(root, target='neutral')
     manifest = json.loads(source.with_suffix('.manifest.json').read_text())
     tile_size = manifest['cave']['material']['uv_scale_m']
     with atomic_output_directory(output) as staging:
@@ -55,30 +60,36 @@ def main() -> None:
             write_engine_import_guide(engine, folder, asset, collision_asset=None)
             with asset.open('rb') as file:
                 assert hashlib.file_digest(file, 'sha256').hexdigest() == report['asset_sha256']
+        for engine in ('blender', 'unity', 'ue5'):
+            folder = staging / f'export_{engine}'
+            write_projected_material_bundle(
+                folder / source.name, folder / 'continuous_material',
+                tile_size_m=config.cave_texture_scale_m, normal_strength=config.cave_normal_scale,
+            )
         shutil.copy2(root / 'stage_c_sections.npz', staging / 'stage_c_sections.npz')
         shutil.copy2(args.config, staging / 'material_config.toml')
         report.update(source_run=str(root), generated_networks=0, added_rocks=0,
                       config_source=str(args.config.resolve()),
                       config_sha256=hashlib.sha256(args.config.read_bytes()).hexdigest(),
                       application_assets_byte_identical=True,
-                      native_application_validation='See blender_import_check.json after running Blender.')
+                      native_application_validation='Not performed by this material-only operation.')
         (staging / 'material_revision.json').write_text(json.dumps(report, indent=2) + '\n')
-        (staging / 'README.md').write_text(
-            '# Textured cave inspection\n\n'
+        (staging / 'INSPECTION.txt').write_text(
+            'Textured cave inspection\n\n'
             'Material revision of the existing cave. No network, geometry or rocks were generated.\n\n'
-            '[Blender scene](export_blender/plume_textured_inspection.blend) · '
-            '[Blender GLB](export_blender/plume_cave_scene.glb) · '
-            '[Unity GLB](export_unity/plume_cave_scene.glb) · '
-            '[Unreal GLB](export_ue5/plume_cave_scene.glb)\n\n'
+            'Blender: export_blender/plume_cave_scene.glb\n'
+            'Unity: export_unity/plume_cave_scene.glb\n'
+            'Unreal: export_ue5/plume_cave_scene.glb\n\n'
             'The GLBs are identical and embed three PBR images: sRGB base color, linear OpenGL '
             'normal, and linear metallic/roughness (roughness in green, metallic in blue). '
             'Use a glTF importer in Unity; do not assign the packed roughness map directly '
             'to a Standard/Lit metallic-smoothness slot.\n\n'
             f'Tile scale: {config.cave_texture_scale_m:g} metres. '
             f'Image budget: {config.embedded_texture_max_size} pixels per side.\n\n'
-            '[Material and geometry checks](material_revision.json) · '
-            '[Blender import checks](blender_import_check.json) · '
-            '[Original stage figures](../STAGE_FIGURES.md)\n'
+            'Each export includes continuous_material/SETUP.txt and native blended '
+            'projection shaders to avoid UV chart seams. GLB import uses the portable UV material.\n'
+            'Material and unchanged-geometry checks: material_revision.json\n'
+            'No native-engine qualification or new collision checks were performed.\n'
         )
     print(json.dumps({'output': str(output), **report}, indent=2))
 

@@ -48,6 +48,120 @@ def source_measurements(quality: dict):
     return visual["measurements"]
 
 
+def body_route_plan(quality: dict, *, engine: str) -> dict:
+    """Carry every accepted collider route, including placed heights, into native physics."""
+    traversal = quality["export_inspection"]["collision"]["inspection"].get("traversal", {})
+    if traversal.get("enabled") is not True or traversal.get("passed") is not True:
+        raise ValueError("Native physics requires passing dedicated-collider capsule paths")
+    height, width, margin = (traversal.get(key) for key in ("height_m", "width_m", "margin_m"))
+    if (any(isinstance(v, bool) or not isinstance(v, (int, float)) for v in (height, width, margin))
+            or not np.isfinite([height, width, margin]).all()
+            or not height >= width > 0 or margin < 0):
+        raise ValueError("Invalid native capsule dimensions")
+    if engine == "unity":
+        scale, axes, signs = 1., [0, 2, 1], [-1, 1, -1]
+    elif engine == "unreal":
+        scale, axes, signs = 100., [0, 1, 2], [1, -1, 1]
+    else:
+        raise ValueError("Unknown native engine")
+    paths = []
+    for row in traversal.get("paths", []):
+        points = np.asarray(row.get("center_path_m", []), dtype=float)
+        if (row.get("passed") is not True or points.ndim != 2 or points.shape[1] != 3
+                or len(points) < 2 or not np.isfinite(points).all()):
+            raise ValueError("Invalid or failed native capsule path")
+        converted = points[:, axes] * signs * scale
+        values = ([dict(zip(("x", "y", "z"), p, strict=True)) for p in converted]
+                  if engine == "unity" else converted.tolist())
+        paths.append(dict(segment_id=row["segment_id"], points=values))
+    if not paths:
+        raise ValueError("Native capsule paths are missing")
+    return dict(radius=(width/2+margin)*scale, half_axis=(height-width)/2*scale,
+                height_m=height, width_m=width, margin_m=margin, paths=paths,
+                stations=sum(len(p["points"]) for p in paths),
+                edges=sum(len(p["points"])-1 for p in paths))
+
+
+def ground_route_plan(quality: dict, *, engine: str) -> dict:
+    """Convert the collider's checked poses, floor probes and swept enclosures."""
+    from plume_advanced.stages.ground_routes import GroundRobot
+    ground = quality["export_inspection"]["collision"]["inspection"].get("ground_traversal")
+    required = quality.get("acceptance", {}).get("policy", {}).get("require_ground_routes", False)
+    if ground is None and not required:
+        return dict(enabled=False)
+    if not ground or ground.get("passed") is not True or not ground.get("paths"):
+        raise ValueError("Native ground checks require passing dedicated-collider ground routes")
+    robot = GroundRobot(**ground["robot"])
+    if engine not in ("unity", "unreal"):
+        raise ValueError("Unknown native engine")
+    scale, axes, signs = ((1., [0, 2, 1], [-1, 1, -1]) if engine == "unity"
+                          else (100., [0, 1, 2], [1, -1, 1]))
+    def vector(value, *, direction=False):
+        a = np.asarray(value, float)
+        if a.shape != (3,) or not np.isfinite(a).all():
+            raise ValueError("Nonfinite or malformed ground vector")
+        a = a[axes] * signs * (1 if direction else scale)
+        return dict(zip(("x", "y", "z"), a, strict=True)) if engine == "unity" else a.tolist()
+    def half(value):
+        a = np.asarray(value, float)
+        if a.shape != (3,) or not np.isfinite(a).all() or np.any(a <= 0):
+            raise ValueError("Invalid ground box extents")
+        a = a[[1, 2, 0]] if engine == "unity" else a
+        return dict(zip(("x", "y", "z"), a, strict=True)) if engine == "unity" else (a*scale).tolist()
+    offsets = np.asarray(ground["support_offsets_m"], float)
+    weights = np.asarray(ground["support_fit_weights"], float)
+    if (offsets.ndim != 2 or offsets.shape[1] != 2 or len(offsets) < 9
+            or weights.shape != (3, len(offsets)) or not np.isfinite([*offsets.flat, *weights.flat]).all()
+            or not np.allclose(weights @ np.column_stack([offsets, np.ones(len(offsets))]), np.eye(3), atol=1e-8)):
+        raise ValueError("Invalid ground floor-support fitting plan")
+    support = [dict(offset=dict(zip(("x", "y"), xy, strict=True)),
+                    weight=dict(zip(("x", "y", "z"), w, strict=True)))
+               for xy, w in zip(offsets, weights.T, strict=True)]
+    poses, motions = [], []
+    floor_samples = 0
+    minimum_half = np.array([robot.length_m, robot.width_m, robot.height_m])/2 + robot.margin_m
+    for path in [*ground["paths"], *ground.get("junctions", [])]:
+        if not path.get("passed") or len(path.get("poses", [])) != path.get("samples", -1) or not path.get("sweeps"):
+            raise ValueError("Missing/failed ground path witnesses")
+        for pose in path["poses"]:
+            probes = []
+            if not pose.get("passed") or len(pose["floor_points_m"]) != len(offsets):
+                raise ValueError("Missing ground floor probes")
+            for p in pose["floor_points_m"]:
+                distance = pose["probe_height_m"] - p[2]
+                if not np.isfinite(distance) or distance <= 0:
+                    raise ValueError("Invalid ground floor witness")
+                probes.append(dict(point=vector([p[0], p[1], pose["probe_height_m"]]), floor=distance*scale))
+            poses.append(dict(point=vector(pose["center_m"]), forward=vector(pose["forward"], direction=True),
+                              up=vector(pose["up"], direction=True), probes=probes))
+            floor_samples += len(probes)
+        for motion in path["sweeps"]:
+            if np.any(np.asarray(motion["half_extents_m"]) < minimum_half - 1e-9):
+                raise ValueError("Ground sweep enclosure is smaller than the robot")
+            motions.append(dict(start=vector(motion["start_m"]), end=vector(motion["end_m"]),
+                forward=vector(motion["forward"], direction=True), up=vector(motion["up"], direction=True),
+                half_extents=half(motion["half_extents_m"])))
+    return dict(enabled=True, **ground["robot"], half_extents=half(minimum_half),
+                stations=len(poses), sweeps=len(motions), floor_samples=floor_samples,
+                poses=poses, motions=motions, support=support)
+
+
+def native_export_paths(run: Path) -> tuple[Path, Path, Path]:
+    """Locate the visual, its collider and the root used by serialization receipts."""
+    run = run.resolve()
+    directories = (run / "export", run / "export_blender", run / "export_all/blender")
+    candidates = sorted(path for directory in directories for path in directory.glob("*.glb")
+                        if path.is_file() and not path.stem.endswith("_collision"))
+    if not candidates:
+        raise FileNotFoundError(f"No native inspection GLB found under {run}")
+    if len(candidates) != 1:
+        raise ValueError(f"Ambiguous native inspection exports: {candidates}")
+    source = candidates[0]
+    root = run / "export_all" if source.parent == directories[2] else source.parent
+    collision = source.with_name(f"{source.stem}_collision.obj")
+    return source, collision, root
+
+
 def prepare(run: Path, output: Path, *, unity: bool, unreal: bool, view_spacing_m=30., max_views=256):
     """Reject unsuitable inputs before creating projects or running an editor."""
     run, output = run.resolve(), output.resolve()
@@ -57,7 +171,7 @@ def prepare(run: Path, output: Path, *, unity: bool, unreal: bool, view_spacing_
     quality = json.loads(quality_path.read_text())
     if not quality.get("passed"):
         raise ValueError("The input must have passed pipeline inspection")
-    source = run / "export/plume_cave.glb"
+    source, collision_source, export_root = native_export_paths(run)
     glb = GlbAsset(source)
     node, mesh, primitive = glb.cave_primitive()
     if len(glb.document["meshes"]) != 1 or len(mesh["primitives"]) != 1:
@@ -82,7 +196,7 @@ def prepare(run: Path, output: Path, *, unity: bool, unreal: bool, view_spacing_
     positions = glb.accessor(primitive["attributes"]["POSITION"])
     triangles = len(glb.accessor(primitive["indices"])) // 3
     # Exporters have used both directory names; resolve by the unique settings receipt.
-    candidates = list((run / "export").rglob("settings.json"))
+    candidates = list(export_root.rglob("settings.json"))
     if len(candidates) != 1:
         raise ValueError("Expected one continuous-material settings receipt in the export")
     settings_path = candidates[0]
@@ -93,12 +207,11 @@ def prepare(run: Path, output: Path, *, unity: bool, unreal: bool, view_spacing_
         raise ValueError("Native fixture requires three PBR maps")
     if any(glb.embedded_image(i).size != (4096, 4096) for i in range(3)):
         raise ValueError("This native 4K inspection fixture requires three 4096 x 4096 maps")
-    collision_source = run / "export/plume_cave_collision.obj"
     collision_report = quality["export_inspection"]["collision"]
     if not collision_report.get("enabled") or not collision_report.get("inspection", {}).get("passed"):
         raise ValueError("Native inspection requires a passed dedicated collider")
     receipt = next((r for r in quality["export_inspection"]["serialized"]["files"]
-                    if r["path"] == collision_source.name), None)
+                    if r["path"] == collision_source.relative_to(export_root).as_posix()), None)
     if receipt is None or not receipt["passed"] or receipt["sha256"] != sha256_file(collision_source):
         raise ValueError("Dedicated collider is missing its verified serialization receipt")
     collision = trimesh.load_mesh(collision_source, process=False)
@@ -116,6 +229,9 @@ def prepare(run: Path, output: Path, *, unity: bool, unreal: bool, view_spacing_
     np.testing.assert_array_equal(checked.accessor(primitive_collision["indices"]).reshape(-1, 3),
                                   collision.faces)
     collision_samples = collision_report["inspection"]["measurements"]
+    bodies = {engine: body_route_plan(quality, engine=engine)
+              for engine, enabled in (("unity", unity), ("unreal", unreal)) if enabled}
+    grounds = {engine: ground_route_plan(quality, engine=engine) for engine in bodies}
     write_json(output / "view_plan.json", plan)
     write_projected_material_bundle(
         source,
@@ -137,6 +253,11 @@ def prepare(run: Path, output: Path, *, unity: bool, unreal: bool, view_spacing_
             adapter_source=package_source_hash(),
             samples=len(samples),
             views=plan["view_count"],
+            body_routes={name: dict(stations=value["stations"], edges=value["edges"],
+                                    height_m=value["height_m"], width_m=value["width_m"],
+                                    margin_m=value["margin_m"]) for name, value in bodies.items()},
+            ground_routes={name: {k: v for k, v in value.items()
+                if k not in ("poses", "motions", "support", "half_extents")} for name, value in grounds.items()},
             view_plan_sha256=sha256_file(output / "view_plan.json"),
             **common,
             fixture_sha256={
@@ -159,6 +280,8 @@ def prepare(run: Path, output: Path, *, unity: bool, unreal: bool, view_spacing_
             project / "expected.json",
             dict(
                 **common,
+                body=bodies["unity"],
+                ground=grounds["unity"],
                 views=[dict(point=dict(zip(("x", "y", "z"), (-v["point_m"][0], v["point_m"][2], -v["point_m"][1]), strict=True)),
                             look=dict(zip(("x", "y", "z"), (-v["look_m"][0], v["look_m"][2], -v["look_m"][1]), strict=True))) for v in plan["views"]],
                 collision_samples=[dict(point=dict(zip(("x", "y", "z"),
@@ -215,6 +338,8 @@ def prepare(run: Path, output: Path, *, unity: bool, unreal: bool, view_spacing_
             output / "unreal_expected.json",
             dict(
                 **common,
+                body=bodies["unreal"],
+                ground=grounds["unreal"],
                 bounds_min=ue_positions.min(axis=0).tolist(),
                 bounds_max=ue_positions.max(axis=0).tolist(),
                 views=[dict(point=[v["point_m"][0]*100, -v["point_m"][1]*100, v["point_m"][2]*100],
@@ -278,8 +403,93 @@ def validate_captures(directory: Path):
         clipped = float(np.all(rgb >= 254 / 255, axis=2).mean())
         if clipped > 0.01:
             raise ValueError(f"Overexposed native capture ({clipped:.1%} clipped): {directory / name}")
-        measurements[name] = dict(mean=mean, standard_deviation=deviation, clipped_fraction=clipped)
+        luminance_p95 = float(np.quantile(rgb @ np.array([.2126, .7152, .0722]), .95))
+        if luminance_p95 > .85:
+            raise ValueError(f"Overexposed native capture (bright surfaces hide detail): {directory / name}")
+        measurements[name] = dict(mean=mean, standard_deviation=deviation,
+                                  clipped_fraction=clipped, luminance_p95=luminance_p95)
     return measurements
+
+
+PHYSICS_CONTROLS = {
+    **{f"{shape}_{name}": hit for shape in ("sphere", "capsule")
+       for name, hit in (("initial_overlap", True), ("grazing_overlap", True),
+                         ("clear_start", False), ("thin_wall_forward", True),
+                         ("thin_wall_reverse", True), ("clear_sweep", False))},
+    "capsule_axis_overlap": True, "sphere_axis_clear": False,
+}
+
+GROUND_CONTROLS = dict(box_initial_overlap=True, box_length_overlap=True, box_rotated_clear=False,
+    box_clear_start=False, box_thin_wall_forward=True, box_thin_wall_reverse=True, box_clear_sweep=False,
+    floor_present=True, floor_missing=False, slope_below_limit=True, slope_above_limit=False,
+    step_below_limit=True, step_above_limit=False)
+
+
+def validate_native_ground(native: dict, expected: dict) -> dict:
+    if not expected.get("enabled"):
+        return dict(enabled=False)
+    ground = native.get("ground", {})
+    if ground.get("enabled") is not True or ground.get("passed") is not True or ground.get("failures") != 0:
+        raise ValueError("Missing or failed native ground robot evidence")
+    for key, value in expected.items():
+        if key in ("enabled", "stations", "sweeps", "floor_samples"):
+            if ground.get(key) != value:
+                raise ValueError("Incomplete native ground checks")
+        elif key in ("length_m", "width_m", "height_m", "margin_m", "max_slope_deg", "max_step_m", "support_spacing_m"):
+            number = ground.get(key)
+            if type(number) not in (float, int) or not np.isfinite(number) or abs(number-value) > 1e-6:
+                raise ValueError("Mismatched native ground robot limits")
+    for key, limit in (("maximumFloorErrorM", .002), ("maximumSlopeDeg", expected['max_slope_deg']+1e-5),
+                       ("maximumStepM", expected['max_step_m']+1e-5)):
+        value = ground.get(key)
+        if type(value) not in (int, float) or not np.isfinite(value) or not 0 <= value <= limit:
+            raise ValueError("Native floor support exceeds reference limits")
+    rows = ground.get("controls", [])
+    if (not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows)
+            or len(rows) != len(GROUND_CONTROLS) or {row.get("name") for row in rows} != set(GROUND_CONTROLS)
+            or any(row.get("passed") is not True or row.get("expected") is not GROUND_CONTROLS[row['name']]
+                   or row.get("observed") is not GROUND_CONTROLS[row['name']] for row in rows)):
+        raise ValueError("Missing or failed native ground controls")
+    return dict(passed=True, **expected)
+
+
+def validate_physics_controls(native: dict, engine: str) -> int:
+    rows = native.get("physicsControls" if engine == "unity" else "physics_controls", [])
+    if not isinstance(rows, list) or len(rows) != len(PHYSICS_CONTROLS):
+        raise ValueError("Missing native collision negative controls")
+    seen = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("Malformed native collision negative controls")
+        name = row.get("name")
+        if (name not in PHYSICS_CONTROLS or name in seen
+                or row.get("expected") is not PHYSICS_CONTROLS[name]
+                or row.get("observed") is not PHYSICS_CONTROLS[name]
+                or row.get("passed") is not True):
+            raise ValueError("Failed native collision negative controls")
+        seen.add(name)
+    return len(rows)
+
+
+def validate_native_body(native: dict, expected: dict, engine: str) -> dict:
+    if engine == "unity":
+        body = dict(passed=native.get("bodyPassed"), stations=native.get("bodyStations"),
+                    edges=native.get("bodyEdges"), height_m=native.get("bodyHeightM"),
+                    width_m=native.get("bodyWidthM"), margin_m=native.get("bodyMarginM"),
+                    overlap_control=native.get("bodyOverlapControl"),
+                    sweep_control=native.get("bodySweepControl"))
+    else:
+        body = native.get("body", {})
+    if (body.get("passed") is not True or body.get("overlap_control") is not True
+            or body.get("sweep_control") is not True
+            or any(body.get(key) != expected[key] for key in ("stations", "edges"))
+            or any(not isinstance(body.get(key), (float, int))
+                   or not np.isfinite(body[key])
+                   or abs(body[key]-expected[key]) > 1e-6
+                   for key in ("height_m", "width_m", "margin_m"))):
+        raise ValueError("Missing or mismatched native finite-body evidence")
+    controls = validate_physics_controls(native, engine)
+    return dict(passed=True, physics_controls=controls, **expected)
 
 
 def main():
@@ -304,10 +514,11 @@ def main():
     root = args.output.resolve()
     prepare(args.run, root, unity=bool(args.unity), unreal=bool(args.unreal),
             view_spacing_m=args.view_spacing_m, max_views=args.max_views)
+    receipt = json.loads((root / "native_input_receipt.json").read_text())
     report: dict = dict(
         passed=False,
         checks={},
-        scope="One accepted 4K rock-free cave; native import/material inspection",
+        scope="One accepted 4K rock-free cave; native materials, collider overlaps and bidirectional body sweeps",
     )
     failures = []
     # Engines run sequentially to bound GPU memory; one failure does not hide the other result.
@@ -356,7 +567,11 @@ def main():
             native = json.loads((results / "native_result.json").read_text())
             if not native.get("passed"):
                 raise ValueError(f"Native checks failed: {results / 'native_result.json'}")
-            report["checks"][engine] = dict(native=native, images=validate_captures(results))
+            body_validation = validate_native_body(native, receipt["body_routes"][engine], engine)
+            ground_validation = validate_native_ground(native, receipt.get("ground_routes", {}).get(engine, {}))
+            report["checks"][engine] = dict(native=native, body_validation=body_validation,
+                                            ground_validation=ground_validation,
+                                            images=validate_captures(results))
         except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
             failures.append(f"{engine}: {error}")
             report["checks"][engine] = dict(passed=False, failure=str(error))

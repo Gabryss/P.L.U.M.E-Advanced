@@ -53,6 +53,27 @@ def passage():
     return cave, export
 
 
+@pytest.mark.parametrize('part', ['raw', 'visual', 'collision'])
+def test_ground_contract_propagates_to_actual_export_and_rejects_missing_evidence(passage, tmp_path, part):
+    cave, export = passage
+    export = replace(export, max_asset_bytes=4*1024*1024)
+    cave = replace(cave, config=replace(cave.config, ground_robot_length_m=.7))
+    policy = build_acceptance_policy({'profile': 'inspection', 'require_ground_routes': True})
+    result = export_target_asset(cave, export, tmp_path/'out', acceptance=policy)
+    path = result.primary_asset.parent/'pipeline_inspection.json'
+    report = json.loads(path.read_text())
+    assert report['acceptance']['checks']['ground_routes']['status'] == 'passed'
+    for name in ('raw', 'visual', 'collision'):
+        target = report[name] if name != 'collision' else report[name]['inspection']
+        assert target['ground_traversal']['passed']
+    target = report[part] if part != 'collision' else report[part]['inspection']
+    del target['ground_traversal']
+    path.write_text(json.dumps(report))
+    with pytest.raises(AcceptanceError, match='ground_routes: failed'):
+        complete_inspection(cave, result, {}, tmp_path, acceptance=policy, export_config=export)
+    assert not (tmp_path/'pipeline_quality_report.json').exists()
+
+
 @pytest.mark.parametrize("profile,required", [
     ("research", set()),
     ("inspection", {"clearance", "collision", "export_budgets"}),
@@ -71,6 +92,7 @@ def test_profile_resolves_and_fills_only_absent_controls(profile, required):
         assert export["max_asset_bytes"] == 256 * 1024 * 1024
     if profile == "simulation":
         assert policy.minimum_relief_scale == 1 and geo["resolution_refinement_attempts"] == 2
+        assert export["visual_max_error_m"] == .01
     explicit, _ = apply_acceptance_defaults(policy, {"required_route_height_m": 0}, {})
     assert explicit["required_route_height_m"] == 0
 
@@ -263,7 +285,23 @@ def test_real_refinement_satisfies_simulation_profile_and_completion(tmp_path):
     report = json.loads(quality.read_text())
     assert report["acceptance"]["passed"]
     assert report["acceptance"]["checks"]["resolution"]["status"] == "passed"
-    assert report["resolution_repair"]["outcome"] == "converged"
+    assert report["resolution_repair"]["outcome"] == "input_sampling_sufficient"
+    assert report["resolution_repair"]["attempts"][-1]["under_resolved"] == 0
+
+
+@pytest.mark.parametrize("change", [dict(under_resolved=1), dict(resolution_section_count=2),
+                                  dict(minimum_samples=4), dict(voxel_size_m=.5)])
+def test_refinement_screen_must_match_current_geometry_and_all_profiles(passage, change):
+    from plume_advanced.acceptance import _resolution_check
+    cave, _ = passage
+    row = dict(accepted=True, under_resolved=0, resolution_section_count=1,
+               minimum_samples=8, voxel_size_m=cave.config.voxel_size)
+    journal = dict(passed=True, outcome="input_sampling_sufficient",
+                   effective_voxel_size_m=cave.config.voxel_size, attempts=[row | change])
+    candidate = replace(cave, resolution_repair=tuple(journal.items()))
+    passed, _ = _resolution_check(dict(section_count=1, under_resolved_count=1,
+                                       minimum_samples=8), candidate)
+    assert not passed
 
 
 def test_missing_required_textures_fail_before_export(passage, tmp_path):
@@ -340,8 +378,8 @@ def test_actual_budget_overrun_never_publishes(passage, tmp_path, limit):
 
 def test_native_requirement_fails_preflight_and_cli_without_starting_generation(tmp_path, monkeypatch):
     config = tmp_path / "case.toml"
-    config.write_text(cli.PACKAGED_CONFIG.read_text().replace(
-        'profile = "inspection"', 'profile = "simulation"') + 'require_native = true\n')
+    config.write_text(cli.PACKAGED_CONFIG.read_text()
+                      + '\n[acceptance]\nprofile = "simulation"\nrequire_native = true\n')
     report = preflight([ReliabilityCase(str(config), 42, scope="full")])
     assert not report["passed"]
     assert report["cases"][0]["diagnostic"]["category"] == "acceptance_requirements"
@@ -376,12 +414,49 @@ def test_native_preflight_failure_respects_output_overwrite_refusal(tmp_path, mo
 
 
 def test_packaged_and_comparison_presets_declare_intended_profile():
-    inspection = {"earth_short_single", "earth_short_multi", "earth_long_single",
-                  "earth_long_multi", "earth_short_interconnected_full", "earth_long_interconnected_full"}
+    inspection = {"project", "short-single", "long-single", "short-multi", "long-multi",
+                  "gallery-long", "simulator-check"}
+    simulation = {"simulation-single", "simulation-multi"}
     for path in sorted((Path(__file__).resolve().parents[1] / "config").glob("*.toml")):
         project = load_project_config(path)
-        expected = "inspection" if path.stem in inspection else "research"
+        expected = ("simulation" if path.stem in simulation
+                    else "inspection" if path.stem in inspection else "research")
         assert project.acceptance.profile == expected, path
         validate_acceptance_configuration(project.acceptance, project.geometry, project.export)
     default = load_project_config(cli.PACKAGED_CONFIG)
     assert default.acceptance.profile == "inspection" and default.export.generate_collision
+
+
+@pytest.mark.parametrize('failure', [KeyboardInterrupt, EOFError, OSError])
+def test_cancel_or_prompt_failure_preserves_previous_run(tmp_path, monkeypatch, failure):
+    previous = tmp_path / 'run_manifest.json'
+    previous.write_text('{"status":"complete","current_stage":"finished","outputs":[]}\n')
+    quality = tmp_path / 'pipeline_quality_report.json'
+    quality.write_text('{"passed":true}\n')
+    before = {p.name: p.read_bytes() for p in tmp_path.iterdir()}
+
+    def cancel(*args, **kwargs):
+        raise failure('prompt interrupted')
+
+    monkeypatch.setattr(cli, 'require_output_overwrite_confirmation', cancel)
+    with pytest.raises(failure):
+        cli.main(['--config', str(cli.PACKAGED_CONFIG), '--output', str(tmp_path / 'network.png')])
+    assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == before
+
+
+def test_failure_after_generation_starts_records_only_current_run(tmp_path, monkeypatch):
+    previous = tmp_path / 'run_manifest.json'
+    previous.write_text('{"status":"complete","current_stage":"old-stage","outputs":[]}\n')
+
+    def fail(*args, **kwargs):
+        raise RuntimeError('new generation failed')
+
+    monkeypatch.setattr(cli, 'write_project_config_manifest', fail)
+    with pytest.raises(RuntimeError, match='new generation failed'):
+        cli.main(['--config', str(cli.PACKAGED_CONFIG), '--force-overwrite',
+                  '--output', str(tmp_path / 'network.png')])
+    manifest = json.loads(previous.read_text())
+    assert manifest['status'] == 'failed'
+    assert manifest['failure']['stage'] == 'configuration'
+    assert manifest['outputs'] == []
+    assert (tmp_path / 'pipeline_quality_report.json').is_file()

@@ -60,7 +60,36 @@ def test_progressive_retry_accepts_gentler_reduction(monkeypatch):
     _, report = simplify(mesh)
     assert not report["attempts"][0]["accepted"]
     assert report["attempts"][-1]["accepted"]
-    assert calls[1] == calls[0]/2
+    assert 1-calls[1] == pytest.approx((1-calls[0])*1.5)
+
+
+def test_nonmanifold_qem_candidate_restarts_from_master_with_bounded_settings(monkeypatch):
+    mesh = trimesh.creation.icosphere(subdivisions=3, radius=2.)
+    vertices, faces = mesh.vertices.copy(), mesh.faces.copy()
+    real = collision.fast_simplification.simplify
+    trials = []
+
+    def corrupt_first(source_vertices, source_faces, **kwargs):
+        np.testing.assert_array_equal(source_vertices, vertices)
+        np.testing.assert_array_equal(source_faces, faces)
+        trials.append(kwargs)
+        v, f = real(source_vertices, source_faces, **kwargs)
+        if len(trials) == 1:
+            # A repeated nonzero-area face creates edges with three users.
+            f = np.vstack((f, f[:1]))
+        return v, f
+
+    monkeypatch.setattr(collision.fast_simplification, "simplify", corrupt_first)
+    (result_vertices, result_faces), report = simplify(mesh)
+    assert report["attempts"][0]["inspection"]["checks"]["closed"] is False
+    assert report["attempts"][-1]["accepted"]
+    assert not report["used_raw_fallback"]
+    assert trials[1]["target_reduction"] == pytest.approx(.7)
+    assert trials[1]["agg"] == 4.
+    assert report["attempts"][1]["aggressiveness"] == 4.
+    assert trimesh.Trimesh(result_vertices, result_faces, process=False).is_watertight
+    np.testing.assert_array_equal(mesh.vertices, vertices)
+    np.testing.assert_array_equal(mesh.faces, faces)
 
 
 def test_topology_change_cannot_be_hidden_by_distance_tolerance(monkeypatch):
@@ -113,3 +142,46 @@ def test_raw_fallback_cannot_bypass_unrepresentable_engine_precision():
     with pytest.raises(MeshInspectionError, match='float32 precision repair'):
         collision.simplify_collision(mesh.vertices, mesh.faces,
             GeometryConfig(collision_repair_attempts=0), dict(points=((1e8,1e8,1e8),)))
+
+
+def test_full_cave_qem_slivers_repair_both_engine_encodings_without_changing_faces():
+    from pathlib import Path
+
+    with np.load(Path(__file__).parent / 'fixtures/geometry/qem_float32_seed0.npz') as saved:
+        vertices, faces = saved['vertices'], saved['faces']
+    original_vertices, original_faces = vertices.copy(), faces.copy()
+    result, report = collision.stabilize_collision_precision(vertices, faces, .01)
+    assert report['passed']
+    assert all(sum(row['invalid_faces'].values()) > 0 for row in report['attempts'])
+    assert report['face_area_repair']['remaining_faces'] == 0
+    assert report['face_area_repair']['moves']
+    assert np.linalg.norm(result - vertices, axis=1).max() < .001
+    original = vertices[faces]
+    normals = np.cross(original[:, 1] - original[:, 0], original[:, 2] - original[:, 0])
+    for scale in (1., 100.):
+        triangles = (result * scale).astype(np.float32).astype(float)[faces]
+        rounded = np.cross(triangles[:, 1] - triangles[:, 0], triangles[:, 2] - triangles[:, 0])
+        assert np.all(np.sum(normals * rounded, axis=1) > 0)
+    repeated, repeated_report = collision.stabilize_collision_precision(vertices, faces, .01)
+    np.testing.assert_array_equal(result, repeated)
+    assert report == repeated_report
+    np.testing.assert_array_equal(vertices, original_vertices)
+    np.testing.assert_array_equal(faces, original_faces)
+
+
+def test_face_area_repair_cannot_override_an_unachievable_movement_budget():
+    from pathlib import Path
+
+    from plume_advanced.exporters.precision import repair_face_rounding
+
+    with np.load(Path(__file__).parent / 'fixtures/geometry/qem_float32_seed0.npz') as saved:
+        vertices, faces = saved['vertices'], saved['faces']
+    candidate = vertices.astype(np.float32).astype(float)
+    tri = vertices[faces]
+    normals = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    tri = candidate[faces]
+    bad = np.sum(normals * np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]), axis=1) <= 0
+    result, report = repair_face_rounding(vertices, faces, candidate, normals, bad, 1e-12)
+    assert report['remaining_faces'] > 0
+    assert not report['moves']
+    np.testing.assert_array_equal(result, candidate)

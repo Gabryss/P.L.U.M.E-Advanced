@@ -193,7 +193,7 @@ def collapse_counterfactual():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=ROOT / "config/earth_tube_only.toml")
+    parser.add_argument("--config", type=Path, default=ROOT / "config/body-study.toml")
     parser.add_argument(
         "--output", type=Path, default=ROOT / "outputs/geometry_validation/body_matrix"
     )

@@ -1,0 +1,28 @@
+{
+  "root_seed": 4294967295,
+  "voxel_size_m": 0.04,
+  "source_sha256": "249a6d3f90d596b9667a6acb6ada831189d8546f9286a5d8a8e6abcbf569f4b7",
+  "source_case": "multi4294967295_guide2",
+  "scope": "Measured junction diagnostic; not a complete cave or host stability fixture",
+  "construction": "Same global grid and complete profile chains as production. Apply full relief and one-voxel closing, crop near the residual handle, monotonically saturate density outside [-0.08,0.08]. Identical artificial solid crop caps are applied by the test after filtering.",
+  "density_shape": [
+    52,
+    164,
+    115
+  ],
+  "original_crop_sha256": "c4c21630e4d7f1873fb8aa5f5d18d7666200b0b8b31b867b48fb39cdca10cc80",
+  "fixture_sha256": "2fba398a657ae6886f954eab8191dde3cc412342c3a039d6a0ebaaa0127d2f78",
+  "measurements": {
+    "radius_1": {
+      "components": 2,
+      "genus": 1,
+      "triangles": 93088
+    },
+    "radius_2": {
+      "components": 1,
+      "genus": 0,
+      "triangles": 89864
+    }
+  },
+  "limitation": "Full generation must separately recheck topology, roof constraints and required body routes; this fixture isolates the residual relief neck."
+}

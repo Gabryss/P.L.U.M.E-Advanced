@@ -9,7 +9,7 @@ import os
 import sys
 import tempfile
 import time
-from dataclasses import asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from plume_advanced.acceptance import require_available_acceptance
@@ -40,6 +40,7 @@ os.environ.setdefault("MPLCONFIGDIR", str(MPL_CACHE))
 from plume_advanced.config import (
     ProjectConfig,
     load_project_config,
+    project_config_manifest,
     write_project_config_manifest,
 )
 from plume_advanced.evaluation.artifacts import (
@@ -76,6 +77,11 @@ from plume_advanced.visualization.network import CaveNetworkPlotter
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    inspect = parser.add_mutually_exclusive_group()
+    inspect.add_argument("--show-config", action="store_true",
+                         help="Print resolved configuration as JSON without generating anything.")
+    inspect.add_argument("--list-presets", action="store_true",
+                         help="List the built-in recipe presets without generating anything.")
     parser.add_argument(
         "--config",
         type=Path,
@@ -200,11 +206,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _run_pipeline(argv: list[str] | None = None) -> int:
+@dataclass
+class _RunState:
+    started: bool = False
+    project: ProjectConfig | None = None
+    stage: str = "configuration"
+    outputs: list[Path] = field(default_factory=list)
+
+
+def _run_pipeline(argv: list[str] | None = None, *, state: _RunState) -> int:
     run_started = time.perf_counter()
     stage_timings: dict[str, float] = {}
     args = parse_args(argv)
     project_config = load_project_config(args.config, world_body=args.body)
+    state.project = project_config
     host_output = args.host_output or args.output.with_name("stage_a_host_field.png")
     section_output = args.section_output or args.output.with_name("stage_c_section_field.png")
     geometry_output = args.geometry_output or args.output.with_name("stage_d_geometry.png")
@@ -250,6 +265,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         print(error, file=sys.stderr)
         return 2
 
+    state.started = True
     require_available_acceptance(project_config.acceptance)
     progress = TerminalProgress(total_stages=12, trace_path=args.output.with_name("progress.jsonl"))
     progress.start("Configuration", "loaded TOML and checked output")
@@ -267,6 +283,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
     )
     manifest_inputs = _run_inputs(args.config, project_config)
     completed_outputs: list[Path] = [resolved_config_path]
+    state.outputs = completed_outputs
     checkpoint_root = (
         args.checkpoint_directory
         if args.checkpoint_directory is not None
@@ -294,6 +311,7 @@ def _run_pipeline(argv: list[str] | None = None) -> int:
         return artifact
 
     def checkpoint(stage: str) -> None:
+        state.stage = stage
         report_progress("Run manifest", detail="hashing completed artifacts")
         write_run_manifest(
             project_config,
@@ -819,37 +837,39 @@ def _run_inputs(config_path: Path, project_config: ProjectConfig) -> tuple[Path,
 
 
 def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    if args.list_presets:
+        from plume_advanced.recipes import available_presets
+        print("\n".join(available_presets()))
+        return 0
+    if args.show_config:
+        project = load_project_config(args.config, world_body=args.body)
+        print(json.dumps(project_config_manifest(project), indent=2, sort_keys=True))
+        return 0
     run_started = time.perf_counter()
+    state = _RunState()
     try:
-        return _run_pipeline(argv)
+        return _run_pipeline(argv, state=state)
     except (Exception, KeyboardInterrupt) as error:
         TerminalProgress.close_active()
+        if not state.started or state.project is None:
+            raise
         try:
-            args = parse_args(argv)
-            project_config = load_project_config(args.config, world_body=args.body)
+            project_config = state.project
             manifest_path = args.output.with_name("run_manifest.json")
-            current_stage = "configuration"
-            completed_outputs: list[Path] = []
-            if manifest_path.is_file():
-                previous = json.loads(manifest_path.read_text(encoding="utf-8"))
-                current_stage = str(previous.get("current_stage", current_stage))
-                completed_outputs.extend(
-                    (manifest_path.parent / record["path"]).resolve()
-                    for record in previous.get("outputs", ())
-                )
             write_run_manifest(
                 project_config,
                 manifest_path,
-                outputs=completed_outputs,
+                outputs=state.outputs,
                 elapsed_seconds=time.perf_counter() - run_started,
                 source_root=ROOT,
                 status="failed",
-                current_stage=current_stage,
-                failed_stage=current_stage,
+                current_stage=state.stage,
+                failed_stage=state.stage,
                 error=f"{type(error).__name__}: {error}",
                 inputs=_run_inputs(args.config, project_config),
             )
-            record_failure(args.output.parent, error, current_stage)
+            record_failure(args.output.parent, error, state.stage)
         except Exception:
             pass
         raise

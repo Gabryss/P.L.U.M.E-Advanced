@@ -1,0 +1,4 @@
+# short-single: shared calibration; override only the settings you need.
+recipe_version = 1
+preset = "short-single"
+procedural_seed = 20260911

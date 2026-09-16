@@ -13,6 +13,7 @@ import numpy as np
 import trimesh
 from scipy.ndimage import binary_fill_holes, label
 
+from plume_advanced.asset_paths import find_export_asset
 from plume_advanced.evaluation.artifacts import network_semantic_hash
 from plume_advanced.pipeline import StageCheckpointStore
 from plume_advanced.pipeline.recovery import AcceptedBase
@@ -76,7 +77,7 @@ def main():
         process=False,
     )
     raw_stats = mesh_metrics(raw)
-    asset = next((root / "export_blender").glob("*.glb"))
+    asset = find_export_asset(root)
     scene = trimesh.load(asset, force="scene", process=False)
     exported = next(iter(scene.geometry.values())).copy()
     # Export duplicates positions along normal/texture seams. Reconstruct

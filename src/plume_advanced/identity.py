@@ -53,16 +53,19 @@ def runtime_identity() -> dict:
 
 
 def package_source_hash(package_root: Path | None = None) -> str:
-    """Identify Python and shipped material resources independently of the CWD."""
+    """Identify code, presets, evaluation inputs and material resources independently of the CWD."""
     package = package_root if package_root is not None else Path(__file__).parent
     python_paths = set(package.rglob("*.py"))
     if not python_paths:
         raise ValueError(f"No Python source in package: {package}")
     resources = {
-        path for path in (package / "material_assets").rglob("*")
+        path for directory in (package / "material_assets", package / "evaluation/resources")
+        for path in directory.rglob("*")
         if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc"
     }
-    paths = sorted(python_paths | resources)
+    configuration = {path for path in (package / "default_project.toml", package / "presets.json")
+                     if path.is_file()}
+    paths = sorted(python_paths | resources | configuration)
     digest = hashlib.sha256()
     for path in paths:
         digest.update(path.relative_to(package).as_posix().encode())

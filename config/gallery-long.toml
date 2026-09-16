@@ -1,0 +1,4 @@
+# gallery-long: shared calibration; override only the settings you need.
+recipe_version = 1
+preset = "gallery-long"
+procedural_seed = 20260911

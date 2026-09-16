@@ -1,0 +1,139 @@
+{
+  "schema": "plume.simulator-import-campaign.v1",
+  "date": "2026-09-16",
+  "passed": true,
+  "scope": "One small textured single-source cave; native import, camera render and dynamic floor-contact smoke checks. Not full visual equivalence, sensor or vehicle-route qualification.",
+  "machine": {
+    "os": "Ubuntu 24.04.5 LTS",
+    "gpu": "NVIDIA GeForce RTX 3070",
+    "vram_mb": 8192,
+    "driver": "580.173.02"
+  },
+  "fixture": {
+    "procedural_seed": 3,
+    "route_target_m": 120,
+    "sources": 1,
+    "rocks": false,
+    "texture_size_px": 1024,
+    "visual_triangles": 157904,
+    "collision_triangles": 31580,
+    "generation_elapsed_seconds": 103.3243834390305,
+    "source": {
+      "dirty": true,
+      "identity_schema": "plume.executing-package.v1",
+      "revision": "0fe1a9f843ad3c2c099d3adea5eed7eb01ecba4f",
+      "sha256": "f29983cbeb930b2307e9d670b41e7663ecee79a38447e21d85418b4332cc2f64"
+    },
+    "generation_manifest": "run_manifest.json"
+  },
+  "native_receipts": {
+    "gazebo": "gazebo.json",
+    "isaac_sim": "isaac.json"
+  },
+  "simulators": {
+    "gazebo_sim": "8.15.0",
+    "sdformat": "14.9.0",
+    "isaac_sim": "6.1.0-rc.26+main.0.7c206f75.local",
+    "kit": "110.3"
+  },
+  "isaac_build_repair": {
+    "source_revision": "7c206f75bdadd9e05fc457f19863ca4c3f0cb693",
+    "initial_error": "SDL3 3.4.14: thai/thcell.h not found in the isolated Pixi compiler sysroot; host pkg-config exposed an undeclared optional dependency.",
+    "local_patch": "isaac-sdl.patch",
+    "disabled_optional_sdl_features": [
+      "SDL_LIBTHAI",
+      "SDL_FRIBIDI",
+      "SDL_IBUS",
+      "SDL_DBUS"
+    ],
+    "command": "./build.sh --release --jobs 4",
+    "build_result": "BUILD (RELEASE) SUCCEEDED (Took 757.72 seconds)",
+    "disk_recovery": "User cleared generated outputs; build completed on retry.",
+    "damaged_extension": "omni.usd.schema.physx-110.3.2+110.3.0.lx64.r.cp312.u7f4/pxr/PhysxSchema/_physxSchema.so",
+    "truncated_bytes": 5988352,
+    "elf_required_bytes": 6479280,
+    "extension_repair": "Quarantined only the affected extension and ran ./repo.sh precache_exts -c release to download its replacement.",
+    "native_startup_after_repair": "passed"
+  },
+  "adapter_fixes": [
+    "Gazebo SDF 1.10 compatible with Harmonic; explicit per-object PBR texture bindings.",
+    "Relocated OBJ normal-map references into each portable package.",
+    "Collider OBJ normals supplied for DART/ODE without changing its vertices or faces.",
+    "USD explicit static triangle-mesh collider and repeat texture wrapping."
+  ],
+  "known_limits": [
+    "Portable UV chart seams remain visible; Blender/Unity/Unreal blended shaders are not applied in these simulators.",
+    "One floor contact location and one camera view; no whole-route robot or sensor qualification.",
+    "Isaac Sim version is a source release candidate, not a stable-release compatibility guarantee."
+  ],
+  "check_source_files": [
+    {
+      "path": "config/simulator-check.toml",
+      "bytes": 633,
+      "sha256": "374ec48f23d2ed753705831a56ac2520e7a7ebfc3291c95b662a8b6945ecfb60"
+    },
+    {
+      "path": "scripts/check_gazebo.py",
+      "bytes": 9297,
+      "sha256": "ec1310ab5d528c29909b2c18d90330e688527ac0e0c7f5e15d3d4b52b2d778a7"
+    },
+    {
+      "path": "scripts/check_isaac_sim.py",
+      "bytes": 8905,
+      "sha256": "23f22fc936ed987781599ffe714b261f887e6135dac3319c402d2f1746d92920"
+    },
+    {
+      "path": "src/plume_advanced/exporters/targets.py",
+      "bytes": 53531,
+      "sha256": "3335ffdcfdccb72a39dc5431b0ed86c856ff75b3f3b08fd32c230125ac32bea5"
+    },
+    {
+      "path": "tests/test_simulator_imports.py",
+      "bytes": 4787,
+      "sha256": "864cc08ae9b6f0e913fcb1c085c4badbfe547bb0d4551fba8853b171508fab5a"
+    },
+    {
+      "path": "tests/test_export_targets.py",
+      "bytes": 24681,
+      "sha256": "855f9d63177a17d2566734dd6c46366aeb1746182a661220b122c8d563c98273"
+    },
+    {
+      "path": "docs/simulators/2026-09-16/view.json",
+      "bytes": 225,
+      "sha256": "cbdbb85087672089f2b1f1d2db71172e3625ed9c0bc2504f19fcc7780b306d62"
+    },
+    {
+      "path": "docs/simulators/2026-09-16/isaac-sdl.patch",
+      "bytes": 663,
+      "sha256": "8680db57cd04aabe90d4dd43f197f88f947e928ce7bd7b2f72556f8dd6fbf03d"
+    }
+  ],
+  "regression_checks": [
+    {
+      "tests": [
+        "tests/test_simulator_imports.py",
+        "tests/test_export_targets.py",
+        "tests/test_repository_contract.py"
+      ],
+      "result": "26 passed, 5 subtests passed",
+      "elapsed_seconds": 0.74
+    },
+    {
+      "tests": [
+        "tests/test_export_targets.py",
+        "tests/test_texture_recovery.py",
+        "tests/test_evaluation_export_consistency.py"
+      ],
+      "result": "58 passed, 5 subtests passed"
+    },
+    {
+      "tool": "ruff",
+      "scope": "Changed simulator adapters, native check scripts and regression tests",
+      "result": "All checks passed"
+    },
+    {
+      "tool": "git diff --check",
+      "result": "passed"
+    }
+  ]
+}

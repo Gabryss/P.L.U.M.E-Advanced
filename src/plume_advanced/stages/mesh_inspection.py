@@ -55,6 +55,9 @@ def inspect_surface(
     route_margin_m: float = 0.02,
     route_placement_repair_attempts: int = 3,
     route_placement_max_sweeps: int = 20000,
+    ground_robot=None,
+    ground_repair_attempts: int = 3,
+    ground_max_queries: int = 200000,
 ) -> dict:
     """Raise on failed invariants, retaining measurements for bounded repairs.
 
@@ -155,16 +158,33 @@ def inspect_surface(
         if not route["passed"]:
             report["defect_regions"] = route["defect_regions"]
             fail("; ".join(route["failures"]))
+    if ground_robot is not None:
+        from plume_advanced.stages.ground_routes import inspect_ground_routes
+        ground = inspect_ground_routes(positions, indices, required_paths, route_segment_ids,
+            robot=ground_robot, repair_attempts=ground_repair_attempts, max_queries=ground_max_queries)
+        report["ground_traversal"] = ground
+        if not ground["passed"]:
+            report["defect_regions"] = ground["defect_regions"]
+            fail("; ".join(ground["failures"]))
     report["passed"] = True
     return report
 
 
 def route_inspection_arguments(geometry):
     """One contract shared by base, visual, collision and serialized inspection."""
+    from plume_advanced.stages.ground_routes import GroundRobot
+    cfg = geometry.config
+    ground = (GroundRobot(length_m=cfg.ground_robot_length_m,
+                          width_m=cfg.required_route_width_m, height_m=cfg.required_route_height_m,
+                          margin_m=cfg.route_clearance_margin_m, max_slope_deg=cfg.ground_max_slope_deg,
+                          max_step_m=cfg.ground_max_step_m, support_spacing_m=cfg.ground_support_spacing_m)
+              if cfg.ground_robot_length_m else None)
     return dict(required_paths=geometry.required_route_paths,
                 route_segment_ids=geometry.route_path_segment_ids,
                 route_height_m=geometry.config.required_route_height_m,
                 route_width_m=geometry.config.required_route_width_m,
                 route_margin_m=geometry.config.route_clearance_margin_m,
                 route_placement_repair_attempts=geometry.config.route_placement_repair_attempts,
-                route_placement_max_sweeps=geometry.config.route_placement_max_sweeps)
+                route_placement_max_sweeps=geometry.config.route_placement_max_sweeps,
+                ground_robot=ground, ground_repair_attempts=cfg.ground_repair_attempts,
+                ground_max_queries=cfg.ground_max_queries)

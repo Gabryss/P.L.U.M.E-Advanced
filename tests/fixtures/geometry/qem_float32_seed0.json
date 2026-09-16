@@ -1,0 +1,10 @@
+{
+  "provenance": "Seed 0 full 4 cm Earth single-source simulation recipe. QEM first candidate (agg=5), 7,660,502 to 2,000,000 faces. Connected local stars containing the three residual invalid faces after neighbour relaxation; includes all original faces incident to every initially damaged vertex. Raw QEM coordinates, no synthetic perturbation.",
+  "source_surface_sha256": "cfa888a0253afc48c8e1d69c64c4829370adcc2329c86fffb870bb8dfedd54f1",
+  "source_precision_failures": {
+    "float32_metres": 78,
+    "float32_centimetres": 100
+  },
+  "cutout_vertices": 35,
+  "cutout_faces": 48
+}

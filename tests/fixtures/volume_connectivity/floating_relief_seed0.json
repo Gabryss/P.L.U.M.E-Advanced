@@ -1,0 +1,10 @@
+{
+  "scope": "Small exact cutout of a rejected 4 cm full-relief field; tests host anchoring without retaining the whole cave",
+  "seed": 0,
+  "source_sha256": "e4895d803baaae8ca7da7244e314fbfb5a27fc2bd367c28cb82ee98a88b07c8d",
+  "filtered_cache_sha256": "73a79be8ff380894a23ad2155572dbd92c84666eba4e172f0423492f2135f494",
+  "sha256": "8b4f6f1fd17923ea603a911c016543a7b3067491a8ecb1f18603e39aa8c27b05",
+  "floating_samples": 286,
+  "mesh_enclosed_solid_m3": 0.015550401299935448,
+  "derivation": "Array-aligned cutout with 16 grid samples of context on each side; density and physical coordinates retained unchanged."
+}

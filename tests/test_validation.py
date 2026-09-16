@@ -25,6 +25,25 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+@pytest.mark.parametrize("collapsed", [False, True])
+def test_saved_geometry_distinguishes_measured_small_faces_from_zero_area(
+    tmp_path, monkeypatch, collapsed,
+):
+    with np.load(Path(__file__).parent / "fixtures/geometry/qem_uv_slivers_seed0.npz") as data:
+        positions, faces = data["vertices"].copy(), data["faces"]
+    if collapsed:
+        positions[faces[0, 2]] = positions[faces[0, 1]]
+    scene = trimesh.Scene()
+    scene.add_geometry(trimesh.Trimesh(positions, faces, process=False), geom_name="cave_wall")
+    monkeypatch.setattr(trimesh, "load", lambda *a, **k: scene)
+    validator = object.__new__(PortableAssetValidator)
+    validator.asset_path = tmp_path / "diagnostic.glb"
+    validator.manifest = {}
+    validator._geometry_arrays = lambda: (positions, faces, None, None, None)
+    check = next(c for c in validator._geometry_checks() if c.name == "No degenerate faces")
+    assert check.passed is not collapsed
+
+
 @pytest.mark.parametrize("requested", [False, True, None])
 def test_collision_sidecar_is_optional_only_when_explicitly_disabled(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, requested: bool | None,

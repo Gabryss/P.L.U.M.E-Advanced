@@ -35,7 +35,7 @@ def run_scalability(config: EvaluationConfig, *, force: bool = False) -> dict:
     body = str(section.get("body", "earth"))
     provenance = capture_provenance(
         config.project_config.parent.parent,
-        resolved_config={"experiment": section},
+        resolved_config={"experiment": section, "asset_directory": str(config.asset_directory)},
         inputs=(config.project_config, config.seed_file("scalability")),
     )
     identity = str(provenance["identity_sha256"])
@@ -64,6 +64,8 @@ def run_scalability(config: EvaluationConfig, *, force: bool = False) -> dict:
                             "plume_advanced.evaluation.experiments.scalability_worker",
                             "--project-config",
                             str(config.project_config),
+                            "--asset-directory",
+                            str(config.asset_directory or config.project_config.parent),
                             "--body",
                             body,
                             "--seed",

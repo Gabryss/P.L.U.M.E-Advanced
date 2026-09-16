@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from plume_advanced.config import load_project_config, project_config_manifest
+from plume_advanced.config import project_config_manifest
 from plume_advanced.evaluation.aggregate import aggregate_results
 from plume_advanced.evaluation.config import load_evaluation_config
 from plume_advanced.evaluation.datasets.pdc import audit_pdc
@@ -20,15 +20,14 @@ from plume_advanced.evaluation.experiments.sampling_ablation import run_sampling
 from plume_advanced.evaluation.experiments.scalability import run_scalability
 from plume_advanced.evaluation.latex import generate_latex
 from plume_advanced.evaluation.provenance import capture_provenance
+from plume_advanced.evaluation.reliability_state import project_inputs
 from plume_advanced.evaluation.runner import write_experiment_manifest
-
-ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_CONFIG = ROOT / "paper" / "experiments.toml"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    parser.add_argument("--config", type=Path,
+                        help="Custom experiment TOML; defaults to the bundled experiments.")
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("audit", help="Audit evaluation readiness and resolved defaults.")
     pdc = subparsers.add_parser("pdc-audit", help="Audit a PDC v2.0 TXT tree.")
@@ -131,6 +130,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         raise AssertionError(command)
     print(json.dumps(payload, indent=2, sort_keys=True, default=str))
+    if command == "audit":
+        return 0 if payload["ready"] else 1
     if command in {
         "morphometry", "controllability", "host-ablation", "sampling-ablation",
         "scalability", "export-consistency", "determinism", "all",
@@ -155,25 +156,31 @@ def _experiment_failed(summary: dict[str, Any]) -> bool:
 
 
 def _audit(config) -> dict:
-    project = load_project_config(config.project_config)
+    project = config.load_project()
+    required_inputs = project_inputs(project, config.project_config)
+    missing_inputs = [str(path) for path in required_inputs if not path.is_file()]
     calibration_caves = set(config.pdc_cave_partition("calibration"))
     evaluation_caves = set(config.pdc_cave_partition("evaluation"))
     overlap = calibration_caves & evaluation_caves
     if overlap:
         raise ValueError(f"PDC cave partitions overlap: {sorted(overlap)}")
     provenance = capture_provenance(
-        ROOT,
+        Path(__file__).parent,
         resolved_config=project_config_manifest(project),
         inputs=(
             config.path,
             config.project_config,
             config.pdc_partition_path("calibration"),
             config.pdc_partition_path("evaluation"),
+            *required_inputs,
         ),
     )
     payload = {
         "schema": "plume.evaluation-audit.v1",
-        "ready": True,
+        "ready": not missing_inputs,
+        "missing_inputs": missing_inputs,
+        "asset_directory": str(config.asset_directory),
+        "scope": "Configuration, partitions and input-file availability; no generation or native import.",
         "project_config": str(config.project_config),
         "experiment_config": str(config.path),
         "output_root": str(config.output_root),

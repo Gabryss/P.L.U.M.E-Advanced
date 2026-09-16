@@ -79,7 +79,7 @@ def test_revision_rejects_missing_maps_and_geometry_edits(material_case, tmp_pat
 
 def test_full_inspection_presets_request_portable_materials():
     root = Path(__file__).resolve().parents[1]
-    for name in ('earth_short_interconnected_full', 'earth_long_interconnected_full'):
+    for name in ('short-multi', 'long-multi'):
         config = load_project_config(root / 'config' / f'{name}.toml').geometry
         assert config.embedded_texture_max_size == 4096
         assert config.cave_texture_scale_m == 4.0
@@ -88,6 +88,42 @@ def test_full_inspection_presets_request_portable_materials():
             assert Path(path).parent == root / 'texture/dark_rock_8k/textures'
         assert config.cave_displacement_scale_m == 0
         assert config.cave_displacement_texture == ''
+
+
+@pytest.mark.parametrize('source_folder', ['export_neutral', 'export_blender', 'export_all/blender'])
+def test_material_command_supports_preview_and_bundles_native_shaders(
+    material_case, tmp_path, monkeypatch, source_folder,
+):
+    import json
+    import runpy
+    import sys
+    from types import SimpleNamespace
+
+    source, config = material_case
+    root = tmp_path / 'run'
+    exported = root / source_folder / 'plume_cave_scene.glb'
+    exported.parent.mkdir(parents=True)
+    exported.write_bytes(source.read_bytes())
+    original = exported.read_bytes()
+    exported.with_suffix('.manifest.json').write_text(json.dumps({
+        'cave': {'material': {'uv_scale_m': 8}},
+    }))
+    (root / 'stage_c_sections.npz').write_bytes(b'saved section data, not regenerated')
+    recipe = tmp_path / 'material.toml'
+    recipe.write_text('recipe_version = 1\npreset = "short-multi"\n')
+    output = tmp_path / 'textured'
+    main = runpy.run_path(str(Path(__file__).resolve().parents[1] / 'scripts/texture_inspection.py'))['main']
+    monkeypatch.setitem(main.__globals__, 'load_project_config', lambda _: SimpleNamespace(geometry=config))
+    monkeypatch.setattr(sys, 'argv', ['texture_inspection.py', str(root), '--config', str(recipe),
+                                    '--output', str(output)])
+    main()
+    report = json.loads((output / 'material_revision.json').read_text())
+    assert report['generated_networks'] == report['added_rocks'] == 0
+    assert exported.read_bytes() == original
+    for target in ('blender', 'unity', 'ue5'):
+        folder = output / f'export_{target}'
+        assert len(GlbAsset(folder / 'plume_cave_scene.glb').document['images']) == 3
+        assert (folder / 'continuous_material/SETUP.txt').is_file()
 
 
 def test_material_revision_reuses_uv_storage(material_case, tmp_path):

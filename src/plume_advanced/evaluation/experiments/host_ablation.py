@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.config import EvaluationConfig
 from plume_advanced.evaluation.experiments.common import (
     config_hash,
@@ -42,8 +41,8 @@ def run_host_ablation(config: EvaluationConfig, *, force: bool = False) -> list[
             ["full", "no_slope", "no_cover", "no_fracture", "no_capacity", "no_stability"],
         )
     )
-    base = load_project_config(
-        config.project_config, world_body=section.get("body", "earth"), dev_mode=False
+    base = config.load_project(
+        world_body=section.get("body", "earth"), dev_mode=False
     )
     provenance = capture_provenance(
         config.project_config.parent.parent,

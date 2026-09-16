@@ -1,0 +1,642 @@
+{
+  "scope": "Resolved pre-cleanup configuration hashes; asset paths relative to the recipe directory. Preserves seeded range assignment and body scaling.",
+  "cases": [
+    {
+      "id": "preview-None-None",
+      "preset": "preview",
+      "seed": null,
+      "body": null,
+      "sha256": "a5e1fd10f5976074eda9e3ba568d74c22d9d692d1c557815a6135a0852676bcc"
+    },
+    {
+      "id": "preview-0-earth",
+      "preset": "preview",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "8e31f3f63ede58aaff22620ffe8b2b1d794b0452a09851c3eb169675711f4a4b"
+    },
+    {
+      "id": "preview-0-mars",
+      "preset": "preview",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "cc4bd85224454fb41bd4eb1ff89f75c6cf3a5fdcf0f762105444695efdff426a"
+    },
+    {
+      "id": "preview-0-moon",
+      "preset": "preview",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "4d6616e85499557f768d7f0d25578cd85780c3082751bd5b25256219bec58f75"
+    },
+    {
+      "id": "preview-17-earth",
+      "preset": "preview",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "083cf7343c09010db1dcbd15f98273def454aea934fa5155c1e3cf63b5f9394a"
+    },
+    {
+      "id": "preview-17-mars",
+      "preset": "preview",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "21f304e2729d6e6cde63415ad927621cbc7ef5eaff07d4da626bafdc148b56f7"
+    },
+    {
+      "id": "preview-17-moon",
+      "preset": "preview",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "c6cfa9dbb91d1152c2ea160e66bfd056bf8cb74023b8ad39c291bfb73ce163f5"
+    },
+    {
+      "id": "research-None-None",
+      "preset": "research",
+      "seed": null,
+      "body": null,
+      "sha256": "e34611ef98567f6cfaafb2ba38cd7b67262318a41069e62e2faaf222cd509029"
+    },
+    {
+      "id": "research-0-earth",
+      "preset": "research",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "72a20cad81cd994298f8a3d2379a5d96d15e5bf446b0ba17ef90f4de9c4aa56e"
+    },
+    {
+      "id": "research-0-mars",
+      "preset": "research",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "daaf93b0ad6811dd6020b1c4c36b2f4e5f1d700a48973cd17620d7e2a805e09b"
+    },
+    {
+      "id": "research-0-moon",
+      "preset": "research",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "d6ed0eefc2caaded835635859c6eb36e99737d77b96bb5ba861f6640fb672bcd"
+    },
+    {
+      "id": "research-17-earth",
+      "preset": "research",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "2095349c28bd27d57826ed5679d4ca029c09a53e0b7e4cd83d2de4139597ff0b"
+    },
+    {
+      "id": "research-17-mars",
+      "preset": "research",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "74fe9e31e8e07691bdd9b4d21c5afc217bdba97c47c9be40f629aafa980c01f0"
+    },
+    {
+      "id": "research-17-moon",
+      "preset": "research",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "3349c1a362c2edcaddcf21711e8f1c73da89c4a4b18a020881f690ce8cb4390b"
+    },
+    {
+      "id": "short-single-None-None",
+      "preset": "short-single",
+      "seed": null,
+      "body": null,
+      "sha256": "f8f63c3904f3485e91ef3249ae6c063859d14fb84e2c3429d7d5923669a3ed70"
+    },
+    {
+      "id": "short-single-0-earth",
+      "preset": "short-single",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "a3338d669fd78bd9b9b3ce84d44555b3be62b4f07634d0bf780eb8c3e0139bac"
+    },
+    {
+      "id": "short-single-0-mars",
+      "preset": "short-single",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "0f0884ee5615cbe82b5ae22a6eff21626f99b0d71fc3fa00286f24562499d944"
+    },
+    {
+      "id": "short-single-0-moon",
+      "preset": "short-single",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "627bc625f385ec54f59a09a5a2d17e4e8fda04dd05176c80759dd39912a049aa"
+    },
+    {
+      "id": "short-single-17-earth",
+      "preset": "short-single",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "6d06cbce2a9b8bd3e4e74e4aeb98109c89776d26df4ee33284c20dad0cf270f2"
+    },
+    {
+      "id": "short-single-17-mars",
+      "preset": "short-single",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "02e644471d46b27b62671b0fd4b48d5d339ad89d90853badbbc948a0e7b3ed8a"
+    },
+    {
+      "id": "short-single-17-moon",
+      "preset": "short-single",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "705dd068b69aeef1c9d35d5e8a3f64c864b9fd0ba188d0b76e6bf5b1d13c945d"
+    },
+    {
+      "id": "short-multi-None-None",
+      "preset": "short-multi",
+      "seed": null,
+      "body": null,
+      "sha256": "cb32e50d1883765bfccd418e93a2ab9eb1f7015b4f2a98cbfa3f17cc13a9a019"
+    },
+    {
+      "id": "short-multi-0-earth",
+      "preset": "short-multi",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "242a918fc22244cefb9b66cb28ccb6b98ffc1276513503a864aed6adc16efdcf"
+    },
+    {
+      "id": "short-multi-0-mars",
+      "preset": "short-multi",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "a1f27782bcefd0e0bd887748a5ea2e7f70682602f83a53c37fbbb4828fc92ad6"
+    },
+    {
+      "id": "short-multi-0-moon",
+      "preset": "short-multi",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "1b9fc1eff538b9f7cf25eec2906a2e718b1983f6044bb3c3f977a72cd1115e0d"
+    },
+    {
+      "id": "short-multi-17-earth",
+      "preset": "short-multi",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "e9f63a755ef5ccbda93ed262dc955d493dde0eb814665df5c28563f2a76f12c5"
+    },
+    {
+      "id": "short-multi-17-mars",
+      "preset": "short-multi",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "6754c776aceb136c6d133f0d6dc3b307b2022d6d973a7ed3956cf5093a6bc87a"
+    },
+    {
+      "id": "short-multi-17-moon",
+      "preset": "short-multi",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "a62b8820f316a88c9f240990ca28d33c7c3950a7c77a26cde4686e8116652eff"
+    },
+    {
+      "id": "long-single-None-None",
+      "preset": "long-single",
+      "seed": null,
+      "body": null,
+      "sha256": "36bc48fd05cfd3e251d10be6e2820938484ee241025a9d2306202cea8c07d28b"
+    },
+    {
+      "id": "long-single-0-earth",
+      "preset": "long-single",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "f81126c752082c7ee587d7a130f2916bd4d3931fd9a357db400332a2d164c70f"
+    },
+    {
+      "id": "long-single-0-mars",
+      "preset": "long-single",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "df53a142620e62fc8a39ddaf8b2631bfef80730ff8f99097374df25dcc659364"
+    },
+    {
+      "id": "long-single-0-moon",
+      "preset": "long-single",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "2309ba52878bf3aa24dde39a38bca8321f013439c467f0cc22c48b882e929750"
+    },
+    {
+      "id": "long-single-17-earth",
+      "preset": "long-single",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "711c3d5db53fb377270a5ce48ce7c730bb7bce2935bab77d1112d92eb16f7953"
+    },
+    {
+      "id": "long-single-17-mars",
+      "preset": "long-single",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "092aa607fed9c0ce92975ae53162de973e930ed07f63506f8bb3739c22110794"
+    },
+    {
+      "id": "long-single-17-moon",
+      "preset": "long-single",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "d6ab1a03d1b12b06321cbfc47e64c9d5e1f7635d7d9d2bf1bdf760770827c954"
+    },
+    {
+      "id": "long-multi-None-None",
+      "preset": "long-multi",
+      "seed": null,
+      "body": null,
+      "sha256": "7873f0b04e08407df884b13ed0ba69cff4d3bdc0a14eb6454859ddf1a249b87d"
+    },
+    {
+      "id": "long-multi-0-earth",
+      "preset": "long-multi",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "f23ea7fd4769f46a92bf2af73f6144ce6f47758f785bf84a307b2645f8e6bb87"
+    },
+    {
+      "id": "long-multi-0-mars",
+      "preset": "long-multi",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "cf59b6bf16fe27eb4907eef71dfb1a00852b31d66fe692cb95f7117d8216f69f"
+    },
+    {
+      "id": "long-multi-0-moon",
+      "preset": "long-multi",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "a9b91cf25f1e1042aa8a02d4211bd5ec0a1acd0768878eb877f5916beb2497e4"
+    },
+    {
+      "id": "long-multi-17-earth",
+      "preset": "long-multi",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "bcf8817852fb7a74e3dd29aaf7c342d56b1c89b043a3ace87b87a26a05e56463"
+    },
+    {
+      "id": "long-multi-17-mars",
+      "preset": "long-multi",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "1f20f982d2afb55926c81c1b9241a02e9335aa63aac86ae91e3fa34bc469bb5f"
+    },
+    {
+      "id": "long-multi-17-moon",
+      "preset": "long-multi",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "4d7a0f7ea19876ba2985e057e2f3a884e5a096d92f816c82ad5c4b58b63a0ad7"
+    },
+    {
+      "id": "simulation-single-None-None",
+      "preset": "simulation-single",
+      "seed": null,
+      "body": null,
+      "sha256": "f0e64f8cf1d1ef6893833501cba953eea4bf9201895d83ec5823cf34276a4e77"
+    },
+    {
+      "id": "simulation-single-0-earth",
+      "preset": "simulation-single",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "636c535dcb4fe051a39290a89ced7923ff5ca1ca0e2bd5579608e18155517102"
+    },
+    {
+      "id": "simulation-single-0-mars",
+      "preset": "simulation-single",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "f5b400998e451d0e47878dd229d46f5c00b9656b7693d12b6bee03883f1d8ab2"
+    },
+    {
+      "id": "simulation-single-0-moon",
+      "preset": "simulation-single",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "ccda00fec151ea49898c7ef450e8d38d8fe149866aea2b0f25187d1a2f0ba315"
+    },
+    {
+      "id": "simulation-single-17-earth",
+      "preset": "simulation-single",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "ce30cd37be7f4858654568edd36a43ccbd4c4c9bb65811be30014147840aaad1"
+    },
+    {
+      "id": "simulation-single-17-mars",
+      "preset": "simulation-single",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "20dce5128d03acf31716d2193418c049e13877c0c1f9b6b60cd511a892bf0151"
+    },
+    {
+      "id": "simulation-single-17-moon",
+      "preset": "simulation-single",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "31a45a61ed7121c279c411036c86354a25fa9de6fd042e85dbff42999a6be2f3"
+    },
+    {
+      "id": "simulation-multi-None-None",
+      "preset": "simulation-multi",
+      "seed": null,
+      "body": null,
+      "sha256": "a085b3fb01397525cd93e79db167de584c38358178e0f124f8013ba91cd20add"
+    },
+    {
+      "id": "simulation-multi-0-earth",
+      "preset": "simulation-multi",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "d256da6a57e309552a95d40a7ecf9ef9f63c5ddd744ad6e7d4e96c6b0898db43"
+    },
+    {
+      "id": "simulation-multi-0-mars",
+      "preset": "simulation-multi",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "f9062a020d1643f0c72d1dfc82a99468ab129239f08ea0a9de9c614b8c6b0921"
+    },
+    {
+      "id": "simulation-multi-0-moon",
+      "preset": "simulation-multi",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "0f6e46c6d7ec57cddaeeb084e5052475d42a40fdf10513d3d9bab34b36d9660e"
+    },
+    {
+      "id": "simulation-multi-17-earth",
+      "preset": "simulation-multi",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "311315f7a6979d5f4ea97c1b537e0d85f9119613af98e76cb1e9dda7cede44c8"
+    },
+    {
+      "id": "simulation-multi-17-mars",
+      "preset": "simulation-multi",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "05d2416071af2df67dd71bd96742c22ad3dda48f9e8a039af6ac63983d6f75b6"
+    },
+    {
+      "id": "simulation-multi-17-moon",
+      "preset": "simulation-multi",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "b90dddd14e7b62db012e9e924e602cd246c4bb57af2e2e259f186941864208af"
+    },
+    {
+      "id": "gallery-None-None",
+      "preset": "gallery",
+      "seed": null,
+      "body": null,
+      "sha256": "18eee672d02c7a5c78bfc9934a2da8078ede77cafc10a4e88611ac2e813aee08"
+    },
+    {
+      "id": "gallery-0-earth",
+      "preset": "gallery",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "7bd69980c467360e8cf37190777aed16ff2fca212cf3149547869dd9d2315d1f"
+    },
+    {
+      "id": "gallery-0-mars",
+      "preset": "gallery",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "44e97ede6b32f8256bc8224c7ba3a3746703251f356755572bb0947a22a891cb"
+    },
+    {
+      "id": "gallery-0-moon",
+      "preset": "gallery",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "b5a32b4feabe382ea9ce2a6c2ce580551b6e7861127185055bf62279c385ac78"
+    },
+    {
+      "id": "gallery-17-earth",
+      "preset": "gallery",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "6ea7668f795106bd53affa42d1c5c97a03c0d779868b4a18231614d28e611106"
+    },
+    {
+      "id": "gallery-17-mars",
+      "preset": "gallery",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "19de885ed7a90396653cb38db4b3606e5256c12550ba1cd50f045c360cd5fdf2"
+    },
+    {
+      "id": "gallery-17-moon",
+      "preset": "gallery",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "2a9123e0ad14fa838fc18f15060d741d65a7efbfcab15a70a7f21b0877d9bebf"
+    },
+    {
+      "id": "gallery-long-None-None",
+      "preset": "gallery-long",
+      "seed": null,
+      "body": null,
+      "sha256": "2a6ad11207eca166456c4afdf66c8098fbbe11024b8692afc62efa4f62119804"
+    },
+    {
+      "id": "gallery-long-0-earth",
+      "preset": "gallery-long",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "18ce4f81f515bc16c67ac303a56bfbd0307915ab626b32fd3214b6d896b87b1c"
+    },
+    {
+      "id": "gallery-long-0-mars",
+      "preset": "gallery-long",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "ba46541321333816b9587eedc000c5c294230c0dbe6147083e4004e6b7716eda"
+    },
+    {
+      "id": "gallery-long-0-moon",
+      "preset": "gallery-long",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "95214abbef7d67d718831bd237c74edc06d825edb2316f4e1b57a5d7d6c5b142"
+    },
+    {
+      "id": "gallery-long-17-earth",
+      "preset": "gallery-long",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "c8caa63a427e0b3cdfa4fc8225ab5456a724e7c49f11c3507bb6c515e7b4a302"
+    },
+    {
+      "id": "gallery-long-17-mars",
+      "preset": "gallery-long",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "58e8524a851503b7aa961639424115d86a314d87182fc08273e024b88ee0ec22"
+    },
+    {
+      "id": "gallery-long-17-moon",
+      "preset": "gallery-long",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "c7418c60a8524a23806392de74ecb8fcabeff622a4780b044849b2b714a774c5"
+    },
+    {
+      "id": "trunk-None-None",
+      "preset": "trunk",
+      "seed": null,
+      "body": null,
+      "sha256": "02cc7a2407f3c9efabe9a744f3d11d0b40a1c6845ce5848df91f1fdb7bf60971"
+    },
+    {
+      "id": "trunk-0-earth",
+      "preset": "trunk",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "147fcd29549e8605686342b95b16a04359622dbdfc0d51d144da42da38742275"
+    },
+    {
+      "id": "trunk-0-mars",
+      "preset": "trunk",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "2b228ef5c579a8f40ed5f4aa97cc8632edf5192cb5db8b090afdcc106fbb7d9c"
+    },
+    {
+      "id": "trunk-0-moon",
+      "preset": "trunk",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "9fdc44a6b16d6e56caa8b4b5091faacbb8ac0e5b3e68c5bd05e1b0af73ec13d0"
+    },
+    {
+      "id": "trunk-17-earth",
+      "preset": "trunk",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "c3e2164909ab3cc14f1961a551aa292c5fb9be077645eff265cedd4c34356e5c"
+    },
+    {
+      "id": "trunk-17-mars",
+      "preset": "trunk",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "c4691b9ed7ce8d2ed2eecec6edcd1606711f0cb6b6d7ab458703d39338954f3c"
+    },
+    {
+      "id": "trunk-17-moon",
+      "preset": "trunk",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "c94b50c3a870230344a2751db3b0c19d5a20657695aafeeb33f3922e1e9c25fd"
+    },
+    {
+      "id": "interacting-None-None",
+      "preset": "interacting",
+      "seed": null,
+      "body": null,
+      "sha256": "6b31674f99c11c38df5db117c3bc9a79067b6b5b4fce7ef2dedee48849cd3a3d"
+    },
+    {
+      "id": "interacting-0-earth",
+      "preset": "interacting",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "74909aa176b8159e6b0cb034fcc7d153848b311c0c915ecd3ff2013fa0d8c384"
+    },
+    {
+      "id": "interacting-0-mars",
+      "preset": "interacting",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "1735a88c9e56fe38baf61e8949ba6f66ceb1d73af04ce2386c9d513f3bdf938f"
+    },
+    {
+      "id": "interacting-0-moon",
+      "preset": "interacting",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "1242a6518477d4ed01c686a52ce45abd262478cbc7db4d781c7cfa6c9b2db739"
+    },
+    {
+      "id": "interacting-17-earth",
+      "preset": "interacting",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "7eec8556cebcc8f290845996d80025290e57dbbe065fdb970d593d1e1794be6b"
+    },
+    {
+      "id": "interacting-17-mars",
+      "preset": "interacting",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "ad25390b8733abbcd0e12ea69d9751e36fb1cc457de2833ac27670c2ce566156"
+    },
+    {
+      "id": "interacting-17-moon",
+      "preset": "interacting",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "daaa71e4b6ad8b0fdec32d0d2fc408f06b43a14d4fb06b94985275eac97e0c8d"
+    },
+    {
+      "id": "body-study-None-None",
+      "preset": "body-study",
+      "seed": null,
+      "body": null,
+      "sha256": "06866daf070641c83e462d5a268430554a966a1d5514976dcad0f577d4be5bd5"
+    },
+    {
+      "id": "body-study-0-earth",
+      "preset": "body-study",
+      "seed": 0,
+      "body": "earth",
+      "sha256": "489a64fad2fdc0e667964679bd15aee6abd21b37a55b75e86625adcb532389d5"
+    },
+    {
+      "id": "body-study-0-mars",
+      "preset": "body-study",
+      "seed": 0,
+      "body": "mars",
+      "sha256": "2672cf614293665ef3dbb27baecd128b6454ce3d1a1d1b185a72c99612a47b63"
+    },
+    {
+      "id": "body-study-0-moon",
+      "preset": "body-study",
+      "seed": 0,
+      "body": "moon",
+      "sha256": "ffc1101cb683d2350cd7016572a4da1c0df54bdf75dc8508bf059b000059e6d2"
+    },
+    {
+      "id": "body-study-17-earth",
+      "preset": "body-study",
+      "seed": 17,
+      "body": "earth",
+      "sha256": "a6d95d31a19f0a8910b28017b7ff9d8c9b1b9d941069ce6f6072a9e1b3081aa9"
+    },
+    {
+      "id": "body-study-17-mars",
+      "preset": "body-study",
+      "seed": 17,
+      "body": "mars",
+      "sha256": "0d2b531ae1a8ebd385b5d6987caf7e2e0d1ce6d6b9007dd4c7138b55f0dc09fd"
+    },
+    {
+      "id": "body-study-17-moon",
+      "preset": "body-study",
+      "seed": 17,
+      "body": "moon",
+      "sha256": "57294bf983cf755858d16654b3799c3cd8d14727fec3d908f7c155a1bf8fc42f"
+    }
+  ]
+}

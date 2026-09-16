@@ -11,6 +11,7 @@ import argparse
 import json
 from pathlib import Path
 
+from plume_advanced.asset_paths import find_export_asset
 from plume_advanced.validation import (
     PortableAssetValidator,
     ValidationCheck,
@@ -23,7 +24,7 @@ def main() -> None:
     parser.add_argument("run_directory", type=Path)
     args = parser.parse_args()
     root = args.run_directory.resolve()
-    asset = next((root / "export_blender").glob("*.glb"))
+    asset = find_export_asset(root)
     validator = PortableAssetValidator(asset, run_manifest_path=root / "run_manifest.json", material_profile="neutral")
     checks = validator.validate(progress=lambda step, total, detail: print(detail, flush=True))
     document = validator.glb.document

@@ -63,9 +63,11 @@ class GeometryGenerator:
     """Build cave geometry by stamping a density grid and polygonizing it."""
 
     def __init__(self, config: GeometryConfig | None = None, *,
-                 acceptance: AcceptancePolicy = AcceptancePolicy()) -> None:
+                 acceptance: AcceptancePolicy = AcceptancePolicy(),
+                 surface_diagnostic: Callable[[dict], None] | None = None) -> None:
         self.config = config or GeometryConfig()
         self.acceptance = acceptance
+        self.surface_diagnostic = surface_diagnostic
         roughness_rng = procedural_rng(self.config.random_seed, "wall-roughness")
         self._roughness_phase = tuple(
             float(value) for value in roughness_rng.uniform(0.0, 2.0 * math.pi, size=3)
@@ -224,7 +226,10 @@ class GeometryGenerator:
         Polygonization is reused by finalize when structural events are absent.
         """
         from plume_advanced.stages.surface_topology import SurfaceTopologyError
-        from plume_advanced.stages.void_components import remove_unseeded_voids
+        from plume_advanced.stages.void_components import (
+            remove_floating_solids,
+            remove_unseeded_voids,
+        )
         from plume_advanced.stages.voxel_topology import close_density_fissures, open_density_necks
 
         names = (
@@ -235,22 +240,36 @@ class GeometryGenerator:
         )
         has_relief = any(getattr(self.config, name) > 0 for name in names)
         closing = self.config.density_closing_voxels
-        candidates: list[tuple[float, int, int, tuple[dict[str, Any], ...]]] = [(1.0, closing, 0, ())]
+        candidates: list[tuple[float, int, int, tuple[dict[str, Any], ...], tuple[dict[str, Any], ...]]] = [(1.0, closing, 0, (), ())]
         if stamped.expected_surface_genus is not None:
+            if has_relief and self.acceptance.minimum_relief_scale > 0:
+                # Filter repairs are independent of accretion amplitude. Keep
+                # the requested relief while testing the bounded filter edits;
+                # simulation must not be limited to the zero-relief variants.
+                if closing:
+                    candidates.append((1.0, 0, 0, (), ()))
+                candidates.append((1.0, closing, 1, (), ()))
             if has_relief:
-                candidates += [(scale, closing, 0, ()) for scale in (0.5, 0.25, 0.0)]
+                candidates += [(scale, closing, 0, (), ()) for scale in (0.5, 0.25, 0.0)]
             if closing:
-                candidates.append((0.0 if has_relief else 1.0, 0, 0, ()))
-            candidates.append((0.0 if has_relief else 1.0, closing, 1, ()))
+                candidates.append((0.0 if has_relief else 1.0, 0, 0, (), ()))
+            candidates.append((0.0 if has_relief else 1.0, closing, 1, (), ()))
         records = []
         regions = []
-        for index, (scale, closing_radius, opening_radius, local_regions) in enumerate(candidates, 1):
+
+        def retain_diagnostic(record, index):
+            if self.surface_diagnostic is not None:
+                self.surface_diagnostic(dict(record, candidate_index=index,
+                                             voxel_size_m=self.config.voxel_size))
+
+        for index, (scale, closing_radius, opening_radius, local_regions, opening_regions) in enumerate(candidates, 1):
             if has_relief and scale * min([1., *(r["scale"] for r in local_regions)]) < self.acceptance.minimum_relief_scale:
                 records.append(tuple(dict(
                     accepted=False, relief_scale=scale, local_relief_regions=list(local_regions),
                     reason="Candidate exceeds acceptance.minimum_relief_scale reduction budget",
                     minimum_relief_scale=self.acceptance.minimum_relief_scale,
                 ).items()))
+                retain_diagnostic(dict(records[-1]), index)
                 continue
             self._emit_progress(
                 progress,
@@ -276,7 +295,7 @@ class GeometryGenerator:
                 )
                 removed = remove_unseeded_voids(grid, stamped.route_centers, progress)
             close_density_fissures(grid, closing_radius)
-            open_density_necks(grid, opening_radius)
+            open_density_necks(grid, opening_radius, regions=opening_regions)
             if has_relief and scale > 0:
                 self._remove_small_solid_pockets(
                     grid, include_void=True, protected_points=stamped.route_centers
@@ -290,6 +309,7 @@ class GeometryGenerator:
                 stability_records=stability,
                 effective_surface_relief_scale=scale,
                 effective_local_relief_regions=tuple(tuple(r.items()) for r in local_regions),
+                effective_local_opening_regions=tuple(tuple(r.items()) for r in opening_regions),
                 effective_density_closing_voxels=closing_radius,
                 effective_density_opening_voxels=opening_radius,
             )
@@ -298,7 +318,10 @@ class GeometryGenerator:
                 closing_voxels=closing_radius,
                 opening_voxels=opening_radius,
                 unsupported_air_samples_removed=removed,
+                unsupported_air_samples_removed_after_filters=0,
+                floating_solid_samples_removed=0,
                 local_relief_regions=list(local_regions),
+                local_opening_regions=list(opening_regions),
             )
             try:
                 if stamped.expected_surface_genus is not None:
@@ -313,6 +336,17 @@ class GeometryGenerator:
                             f"first indices: {blocked[:8]}",
                             report={"blocked_points_m": [stamped.route_centers[i] for i in blocked]},
                         )
+                    # Classify remnants only for an accepted network, after the
+                    # route obstruction check. Local collapse studies may have
+                    # no surviving air at all and must retain their collapse.
+                    # Opening/roof clipping can detach air after the first cleanup.
+                    record["unsupported_air_samples_removed_after_filters"] = remove_unseeded_voids(
+                        grid, stamped.route_centers, progress)
+                    # Relief and closing may leave resolved rock fragments
+                    # suspended inside the cavity. Base cave geometry has no
+                    # detached props: retain every host-anchored wall/pillar,
+                    # then recheck topology and all required routes below.
+                    record["floating_solid_samples_removed"] = remove_floating_solids(grid, progress)
                 self._diagnose_surface_failure = index == len(candidates) or (
                     index == 1 and has_relief and self.config.surface_local_repair_attempts > 0)
                 result = (
@@ -322,6 +356,12 @@ class GeometryGenerator:
                 )
             except SurfaceTopologyError as error:
                 record.update(accepted=False, reason=str(error))
+                if getattr(error, "report", {}).get("ground_traversal", {}).get("passed") is False:
+                    record["inspection"] = error.report
+                    retain_diagnostic(record, index)
+                    # Placement already exhausted its own deterministic budget.
+                    # A ground failure is not evidence of a voxel-topology fault.
+                    raise
                 if hasattr(error, "report"):
                     record["inspection"] = error.report
                     regions.extend(error.report.get("defect_regions", []))
@@ -330,14 +370,25 @@ class GeometryGenerator:
                                   for p in error.report.get("blocked_points_m", [])]
                     if index == 1 and has_relief and localized:
                         blend = max(4*self.config.voxel_size, 2*self.config.surface_feature_scale_m)
-                        local_candidates = []
+                        local_candidates: list[tuple[float, int, int, tuple[dict[str, Any], ...], tuple[dict[str, Any], ...]]] = []
                         for retry in range(self.config.surface_local_repair_attempts):
                             local_scale = 0. if retry == self.config.surface_local_repair_attempts-1 else .5**(retry+1)
                             edits = tuple(dict(lower_m=r["lower_m"], upper_m=r["upper_m"],
                                                blend_m=blend, scale=local_scale) for r in localized)
-                            local_candidates.append((1., closing, 0, edits))
+                            local_candidates.append((1., closing, 0, edits, ()))
+                        if self.acceptance.minimum_relief_scale > 0:
+                            patches = tuple(r for r in localized if r.get("kind") == "handle_patch")
+                            if patches:
+                                local_candidates.clear()
+                                # A resolved relief neck can survive radius one.
+                                # Increase only the diagnosed local opening;
+                                # keep fissure closing and the relief amplitude.
+                                for radius in (1, 2):
+                                    if len(local_candidates) < self.config.surface_local_repair_attempts:
+                                        local_candidates.append((1., closing, radius, (), patches))
                         candidates[index:index] = local_candidates
                 records.append(tuple(record.items()))
+                retain_diagnostic(record, index)
                 self._emit_progress(
                     progress,
                     "surface-acceptance",
@@ -350,6 +401,7 @@ class GeometryGenerator:
                 self._diagnose_surface_failure = False
             record.update(accepted=True)
             records.append(tuple(record.items()))
+            retain_diagnostic(record, index)
             self._emit_progress(
                 progress,
                 "surface-acceptance",

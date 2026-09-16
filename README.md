@@ -1,772 +1,821 @@
 # PLUME-Advanced
 
-Procedural lava-tube environments with explicit physical context, inspectable intermediate stages, and portable 3D outputs.
+**Reproducible lava-tube environments, from a physical host field to inspected 3D assets.**
 
-**Version:** 0.1.0 · **Python:** 3.12+ · **Configuration schema:** 4 · **License:** BSD 3-Clause
+[Introduction](#introduction) · [Generation examples](#generation-examples) · [Installation & usage](#installation--usage) · [Simulators](#simulators) · [Config file](#config-file) · [Architecture](#architecture) · [Limits](#limits)
 
 ## Introduction
 
-PLUME generates lava-tube networks and their interior geometry for exploration, robotics simulation, and controlled scientific experiments. Its purpose is to make many reproducible cave environments whose topology, passage shapes, geology, and celestial setting can be varied independently and examined at every stage.
+PLUME-Advanced generates underground passage networks for visual inspection,
+procedural environment studies and robotics simulation preparation. A celestial
+body and a seeded host field determine the setting; networks grow within that
+field, cross-sections define the cavity, and volumetric meshing produces a
+continuous surface. Optional geological events, reusable rock materials and
+application-specific exports complete the environment.
 
-The workflow starts with a possible physical host: terrain, available cover, rock competence, fractures, and emplacement conditions. It grows a formation network, samples cross-sections along that network, constructs a volumetric cave, and exports its surface. The current command line generates the host from a TOML description; the Python API exposes the host-field interface for external integrations. There is no general-purpose measured-DEM import command yet.
+The scientific contribution is the **coupling of host-conditioned topology,
+spatially varying passage shape, gravity-dependent roof screening and auditable
+inspection/repair** in one reproducible pipeline. Named random streams separate
+terrain, network, sections, events and geometry. The intermediate fields and
+measurements remain available for controlled experiments rather than being lost
+inside a final mesh.
 
-Ordinary `plume-generate` runs include evaluation, actual-mesh inspection and bounded repairs. Every completed run includes a quality report and measured-passage figure, even when optional stage figures are disabled. The [self-service guide](docs/self-service.md) explains these built-in checks, resuming a run and optional multi-seed campaigns.
+| Input | Generated representation | Evidence kept with the run |
+|---|---|---|
+| Body, material, eruption controls, seed | Terrain and subsurface suitability fields | Resolved physical parameters and host diagnostics |
+| One or several interacting systems | Directed passage graph, flow history and junctions | Network checks, selected seeds and repair decisions |
+| Local flux, cover and roof constraints | Asymmetric cross-sections, floors and surface relief | Profiles, section resolution and actual-mesh measurements |
+| Appearance and export requirements | Visual surface, static collider and material package | Geometry/material checks, budgets and file receipts |
 
-See the [reliability and testing guide](docs/reliability.md) for seed campaigns, detailed progress, native Blender tests, and simulation export budgets.
+Earth, Mars and Moon profiles are implemented. The model is **process-informed
+procedural generation**, not a thermofluid simulation or a calibrated structural
+solver. Its outputs are candidates for simulation: passing a generation policy
+and qualifying an asset inside a simulator are different steps. See [Limits](#limits).
 
-[Acceptance profiles](docs/acceptance.md) declare which results a full run must
-demonstrate before publication. The packaged default and short/long comparison
-presets require the requested 0.5 m × 0.5 m route clearance, a checked collider
-and finite export limits. Simulation additionally requires resolution evidence
-and a declared limit on procedural relief reduction.
+## Generation examples
 
-### Purpose and scientific contribution
+![Textured interior of a generated lava tube](docs/simulators/2026-09-16/blender.png)
 
-The project's contribution is an integrated, testable generation method:
+*The seed-3 inspection cave rendered in Blender Cycles, using a reusable rock
+tile and the native blended material. See [Simulators](#simulators) for versions,
+import instructions and the render receipt.*
 
-- **Connect physical context to multiple geometric scales.** Body and material parameters influence the host, network, passage profiles, and roof screening rather than simply resizing an exported mesh.
-- **Carry formation information through the pipeline.** Branch identity, emplacement phases, flux, temperature, and lava age remain available when constructing sections and placing geology.
-- **Separate proposed formation from surviving cavity geometry.** Gravity, rock strength, cover, and unsupported span constrain which candidate passages remain open; optional events can further change the resulting cave.
-- **Make synthetic environments measurable and reproducible.** Named random seeds, semantic network artifacts, section arrays, floor atlases, export manifests, and evaluation tools support comparisons and ablation studies.
+![Single and multiple-system section footprints for two seeds](docs/figures/readme/current_topologies.png)
 
-These are implemented capabilities of a research prototype. The formation and stability models are interpretable procedural approximations; PLUME does not solve lava thermofluid dynamics or full rock mechanics. Terrestrial observations guide development, while Mars and Moon presets currently represent controlled extrapolations. A believable render or a watertight mesh does not establish geological accuracy.
+*Current Stage A–C generation: the same two root seeds with the short single-system
+and interconnected presets. Equal metric scales show the difference between local
+island bypasses and several passages growing, merging and splitting. These are
+unions of sampled section envelopes, not final triangle meshes.*
 
-![Three interior views and a chamber exterior rendered from the current Earth seed-4 mesh](docs/figures/readme/inspection_views.png)
+![Geometry inspection views](docs/figures/readme/inspection_views.png)
 
-*Figure 1. A complete Earth network generated with the current tube inspection settings and seed 4. These views render the exported geometry with neutral lighting, without rock props or textures. They show selected locations within one cave, not four separately generated tubes.*
+*Historical Earth seed-4 mesh views without textures or rocks, rendered at 20 cm
+voxel resolution. The outside view shows the cavity boundary; PLUME does not build
+a surrounding solid rock massif.*
 
-[Installation](#installation) · [Usage](#usage) · [Configuration](#configuration) · [Development and evaluation](#development-and-evaluation) · [Scientific model and generation](#scientific-model-and-generation)
-
-## Installation
-
-### Core environment
-
-Install [Git](https://git-scm.com/) and [uv](https://docs.astral.sh/uv/getting-started/installation/), then run:
+The current diagrams can be regenerated without meshing or downloading textures:
 
 ```bash
-git clone https://github.com/Gabryss/P.L.U.M.E-Advanced.git
+uv run --no-sync python scripts/generate_readme_figures.py
+```
+
+[Current figure provenance](docs/figures/readme/current_provenance.json) records
+recipes, seeds, resolved settings, accepted network attempts and content hashes.
+[Historical figure provenance](docs/figures/readme/provenance.json) records the
+older geometry views.
+
+## Installation & usage
+
+### Install
+
+Use **Python 3.12 or newer**. The checked-in `uv.lock` fixes the dependency set
+used by the project; `uv` is the simplest way to reproduce it.
+
+```bash
+GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/Gabryss/P.L.U.M.E-Advanced.git
 cd P.L.U.M.E-Advanced
-uv python install 3.12
 uv sync --locked --no-dev
 ```
 
-This installs the project and its core dependencies into `.venv`, using the versions recorded in `uv.lock`. Blender and a GPU are not required to generate or export a cave. The examples below run from the repository root; `uv run --no-sync` uses the environment already installed, without changing its optional dependencies.
-
-Alternatively, with an existing Python 3.12+ installation:
+The clone command leaves optional LFS texture masters unfetched.
+The default run needs no Blender, engine installation, optional rock provider or
+external texture files. For development and scientific evaluation:
 
 ```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e .
+uv sync --locked --group dev --extra rocks --extra paper
 ```
 
-On Windows, activate the environment with `.venv\Scripts\Activate.ps1` in PowerShell. With an activated environment, replace `uv run --no-sync python` with `python` and `uv run --no-sync plume-generate` with `plume-generate`. The pip route uses the version constraints in `pyproject.toml`; it does not reproduce the uv lockfile exactly.
-
-### Dependencies and optional features
-
-The authoritative dependency declarations are in [pyproject.toml](pyproject.toml).
-
-| Dependency | Minimum version | Role |
-|---|---:|---|
-| NumPy | 1.26 | Arrays, geometry, deterministic sampling |
-| SciPy | 1.12 | Interpolation, spatial queries, filtering, connectivity |
-| scikit-image | 0.23 | Isosurface extraction |
-| Trimesh | 4.4 | Mesh handling and interchange formats |
-| fast-simplification | 0.1.13 (<0.3) | Bounded quadric collision reduction with independent inspection |
-| xatlas | 0.0.11 | UV atlas generation for prepared visual surfaces |
-| Matplotlib | 3.8 | Scientific plots and diagnostics |
-| Pillow | 10.0 | Images and material maps |
-| Rich | 13.7 | Command-line progress and reports |
-
-Install only the additional features you need:
-
-| Feature | Installation | Additional requirements |
+| Component | Dependencies / installation | When needed |
 |---|---|---|
-| Development and tests | `uv sync --locked --group dev` | pytest, pytest-cov, Ruff, mypy |
-| Rocky rock props | `uv sync --locked --extra rocks` | Pinned [Rocky](https://github.com/Gabryss/Rocky) Git dependency; Git/network access during installation |
-| Reference data and paper experiments | `uv sync --locked --extra paper` | laspy/lazrs, psutil; reference data obtained separately |
-| Explanatory animations | `uv sync --locked --extra video` | Manim 0.21.x; system setup in the [video project](paper/media/video/README.md) |
+| Core generation | NumPy, SciPy, scikit-image, trimesh | Host fields, networks and meshes |
+| Asset preparation | fast-simplification, xatlas, Pillow | Mesh reduction, UV charts, portable images |
+| Figures and progress | Matplotlib, Rich | Diagnostics and terminal reporting |
+| Development | `--group dev`: pytest, pytest-cov, Ruff, mypy | Tests, coverage and static checks |
+| Detailed rock props | `--extra rocks`: pinned Rocky source | When `events.use_rocky_meshes` is enabled |
+| Scientific datasets | `--extra paper`: laspy/lazrs, psutil | LiDAR data and resource experiments |
+| Source rock textures | Git LFS; ImageMagick `convert` with EXR support | The supplied textured recipes use JPEG/EXR masters |
+| Native inspection | Blender; Unity URP / Unreal Editor | Application-side imports, materials and qualification |
 
-Combine selections in one command when needed, for example `uv sync --locked --group dev --extra rocks --extra paper`. The equivalent pip extras are `.[rocks]`, `.[paper]`, and `.[video]`; `dev` is a uv dependency group, not a pip extra.
+Dependencies and version constraints live in [pyproject.toml](pyproject.toml).
+If using pip instead, `python -m pip install -e .` installs the core package,
+but does not reproduce the locked environment automatically.
 
-**Textures are separate assets.** The general project configuration references the [Poly Haven Dark Rock material](https://polyhaven.com/a/dark_rock) under `texture/dark_rock_8k/textures/`. Provide the configured files or change the paths. The configured EXR maps require an ImageMagick installation exposing the `convert` executable with EXR support. The tube-only workflow below bypasses material loading and does not need these assets or Rocky.
+### Generate a first cave
 
-Generation runs on the CPU. Memory and export size depend strongly on spatial extent and voxel size. Sparse tiles reduce empty-space storage, but fine full-network meshes still require substantial working memory. Start with development mode and inspect a geometry-only result before enabling large prop populations or every export target.
-
-## Usage
-
-### Generate with automatic inspection and repair
-
-From this checkout, the packaged neutral preset provides a small, rock-free run
-without external texture assets:
-
-```bash
-uv run --no-sync plume-generate \
-  --config src/plume_advanced/default_project.toml \
-  --output outputs/my_checked_cave/stage_b_cave_network.png
-```
-
-This uses the full generation and repair workflow. Read `pipeline_quality_report.json`
-and `pipeline_recovery.json` beside the output; the prepared asset is
-`export_neutral/plume_cave_scene.glb`. For a full textured interconnected cave,
-use `config/earth_short_interconnected_full.toml` with a fresh output directory
-after providing its texture inputs. See [self-service generation and diagnosis](docs/self-service.md).
-
-Inspect the report's `acceptance.checks`: an unchecked requirement is labelled
-`not_requested`, and missing required evidence blocks export. These presets use
-`acceptance.profile = "inspection"`; select `simulation` for the stronger
-numerical requirements described in the [profile guide](docs/acceptance.md).
-
-### Geometry-only research workflow
-
-Start from the dedicated low Earth scenario, which includes the current surface relief and disables optional events and rocks:
-
-```bash
-uv run --no-sync python scripts/generate_tube_only.py \
-  --config config/earth_tube_only.toml \
-  --output-directory outputs/my_earth_tube
-
-uv run --no-sync python scripts/render_tube_views.py outputs/my_earth_tube
-uv run --no-sync python scripts/check_tube_sections.py outputs/my_earth_tube --shallow-count 6
-```
-
-This research helper generates the complete network and cave mesh for that run,
-but does not perform the full workflow above. Use it for isolated surface studies.
-It writes:
-
-| File | Contents |
-|---|---|
-| `lava_tube_geometry.glb` | Single cave-wall mesh object, neutral double-sided material, no rocks or texture maps |
-| `network.json` | Formation graph, centerlines, connectivity, and history metadata |
-| `sections.npz`, `sections.json` | Cross-section arrays, local frames, flow state, and stability metadata |
-| `resolved_config.json` | Effective configuration after seed and body resolution |
-| `geometry_report.json` | Volume, meshing, junction, and stability information |
-| `export_checks.json` | Reloaded GLB integrity checks, counts, and SHA-256 |
-| `resolution_checks.json` | Profiles with too few samples across their smallest dimension |
-| `inspection_views.png`, `inspection_cameras.json` | Views rendered from the GLB and their reproducible cameras |
-| `mesh_section_checks.json` | Transverse spot checks through the exported surface |
-
-The helper requires unrestricted research acceptance and refuses configurations with `events.enabled` or `events.include_rock_props` enabled. Mandatory roof screening still runs. It does not run the main command's checkpoint, floor-atlas, material, or target-package stages. Choose a fresh output directory: this helper does not implement the main command's overwrite confirmation.
-
-For a different realization, copy `config/earth_tube_only.toml` to `config/my_earth_tube.toml`, change the **top-level** `procedural_seed`, and pass that file to `--config`. The README example uses seed 4; the bundled inspection configuration retains seed 2 for comparison. Keep copies inside `config/`, or adjust relative asset paths when moving them elsewhere.
-
-To retain the generated volume for a later local resolution study, add `--checkpoint outputs/my_earth_tube/geometry.pkl`. This optional file can be much larger than the GLB. It is a local Python pickle, not a portable interchange format; load only checkpoints you trust.
-
-### Inspect it in Blender
-
-Import `lava_tube_geometry.glb` through **File → Import → glTF 2.0**. Select `cave_wall` and frame the selection, then use viewport walk/fly navigation or the saved inspection images to examine the interior. The GLB uses metres and glTF's Y-up convention; Blender's importer handles the axis conversion.
-
-The visible exterior is the boundary of the cave void. It is not a freestanding rock tube or the surrounding terrain. The current exporter does not construct a finite-thickness host-rock shell. Closed chain ends are procedural terminations, not automatically generated surface entrances. A single mesh object can also contain disconnected surfaces; consult mesh connectivity and section checks when that distinction matters.
-
-### Run the full environment pipeline
-
-The main command adds floor atlases, configured geological events, surface preparation, application packages, and resumable stage checkpoints:
+**This quickstart generates an untextured cave.** Its GLB contains a plain material
+and no image textures; a grey/brown surface in Blender Material Preview is expected.
+For the rock-textured appearance shown above, use the material step immediately below.
 
 ```bash
 uv run --no-sync plume-generate \
   --config config/project.toml \
-  --output outputs/full_earth/stage_b_cave_network.png
+  --output outputs/first_cave/network.png
 ```
 
-`config/project.toml` is the **general environment scenario**: it enables Rocky props, structural events, texture displacement, diagnostics, and all application exports. Install the rocks extra and provide its textures before running it. Its height distribution and resolution differ from `earth_tube_only.toml`; the general default is not the low Earth inspection scenario.
+Edit **[config/project.toml](config/project.toml)** for everyday use. Its default
+is a small, neutral, rock-free inspection case with a 250 m route target and
+stage figures enabled. The installed package has the same default. A route
+target is neither a guarantee of achieved length nor the sum of every branch.
 
-**Portable rock materials:** the full short/long interconnected presets now embed a 4K rock tile with color, normal and roughness maps. See [material setup and existing-run retexturing](docs/materials.md) for configuration, Blender/Unity import settings and the distinction between texture detail and geometry. No-rocks runs can still have textured cave walls.
+To texture this same cave after generation, fetch the source maps and create a
+separate material revision. This keeps the existing passage geometry and adds
+embedded 4K color, normal and roughness maps:
 
-Textured GLB target packages also include continuous projection materials for Blender, Unity and Unreal. These remove visible UV patch boundaries while reusing the same images. They require the supplied native material setup; the portable GLB retains its standard UV material. See [continuous material setup](docs/materials.md#continuous-materials-for-blender-unity-and-unreal).
+```bash
+git lfs install
+git lfs pull
+uv run --no-sync python scripts/texture_inspection.py outputs/first_cave \
+  --config config/short-multi.toml --output outputs/first_cave_textured
+```
 
-Full runs also inspect and repair texture data automatically: usable normal vectors are normalized, map bindings and native material bundles are checked, and a damaged package can be rebuilt once without regenerating geometry. `texture_recovery.json` records the changes. Missing or irrecoverable source images stop acceptance. See the [texture repair contract and controls](docs/materials.md#automatic-texture-inspection-and-repair).
+Here `short-multi.toml` supplies **only its appearance settings**; it does not
+change the first cave into a multi-system network. Import
+`outputs/first_cave_textured/export_blender/plume_cave_scene.glb` into Blender.
+The GLB embeds its textures. For seamless native projection, follow the adjacent
+`continuous_material/SETUP.txt`. Changing only `export.target` does not enable
+textures: the selected recipe must supply image paths.
 
-With installed Unity or Unreal editors, use the opt-in [native engine inspection](docs/materials.md#native-engine-inspection) to test a short accepted 4K cave in isolated projects. It checks native imports, materials, passage collisions and rendered controls, preserving logs and failures.
+`--output` names the network figure; its **parent directory** receives the run's
+other artifacts. Use a fresh directory for each experiment. The progress display
+reports individual operations, work counts when known, elapsed time and repair
+attempts; `progress.jsonl` keeps the detailed record.
 
-The packaged default, general project scenario and full short/long interconnected
-presets require a **0.5 m high × 0.5 m wide** inspection capsule, plus 0.02 m margin,
-on the dominant route. Other study configurations retain their explicit settings
-or the library's disabled default. Set `required_route_height_m = 0.5` and
-`required_route_width_m = 0.5` under `[geometry]` to enable this requirement in
-another configuration. Bounded path placement can move the body vertically before
-geometry repair; physical host and stability limits remain enforced. See
-[required clearance and repair limits](docs/reliability.md#required-clearance-and-bounded-geometry-repairs).
+```bash
+# Inspect every resolved setting without generating anything.
+uv run --no-sync plume-generate --config config/project.toml --show-config
 
-For an untextured full pipeline, copy a configuration and set the following keys **inside its existing tables**; do not append duplicate TOML tables:
+# See all named presets.
+uv run --no-sync plume-generate --list-presets
+
+# Resume an interrupted run with matching inputs, code and dependencies.
+uv run --no-sync plume-generate \
+  --config config/project.toml --output outputs/first_cave/network.png --resume
+```
+
+Generation already includes evaluation, inspection and bounded repair. A failed
+required check stops publication and retains its diagnosis. Resume verifies
+checkpoint identities and repeats downstream inspections; it cannot turn an old
+report into evidence for changed geometry. Local checkpoints contain trusted
+Python pickle data and are not an interchange format.
+
+### Single, multi-system and textured cases
+
+| Recipe | Route target | Systems / topology | Initial voxel size | Appearance / policy |
+|---|---:|---|---:|---|
+| [project](config/project.toml), preset `preview` | 250 m | One gallery, local bypass | 0.20 m | Neutral; inspection |
+| [short-single](config/short-single.toml) | 400 m | One gallery | 0.20 m | Neutral; inspection |
+| [short-multi](config/short-multi.toml) | 400 m | Three persistent interacting systems | 0.08 m | 4K PBR; inspection |
+| [long-single](config/long-single.toml) | 3 km | One gallery | 0.20 m | Neutral; inspection |
+| [long-multi](config/long-multi.toml) | 3 km | Three persistent interacting systems | 0.20 m | 4K PBR; inspection |
+| [simulation-single](config/simulation-single.toml) / [simulation-multi](config/simulation-multi.toml) | 250 m | One / three systems | 0.04 m, bounded 0.02 m retry | 4K PBR; simulation + reference ground robot |
+
+**Simulation recipes are evaluation inputs, not prequalified environments.**
+Their fine grids can be expensive. The short multi preset is also more detailed
+than the short single preset; match `geometry.voxel_size` explicitly when comparing
+mesh costs between them.
+
+For the supplied textured examples, fetch the LFS master images first:
+
+```bash
+git lfs install
+git lfs pull
+uv run --no-sync plume-check --configs config/short-multi.toml --seeds 17 --scope full --preflight
+uv run --no-sync plume-generate --config config/short-multi.toml --output outputs/multi/network.png
+```
+
+Preflight checks configuration and required inputs; it does not test mesh quality
+or prove that a seed will succeed. Cave textures and loose rock props are
+independent: a rock-free cave can be fully textured.
+
+### Inspect and import
+
+| Artifact in a successful run | Purpose |
+|---|---|
+| `resolved_project_config.json` | Effective physical and procedural settings |
+| Stage A–C data and figures | Host, accepted network, section contours and floor samples |
+| `pipeline_quality_report.json`, `pipeline_recovery.json` | Required checks, repairs and effective settings |
+| `pipeline_inspection.png`, `section_resolution_report.json` | Measured passages and input sampling evidence |
+| `export_TARGET/` | Target visual asset, collider, import instructions and material evidence |
+| `texture_recovery.json` inside the export | Map normalization and package repair journal |
+| `run_manifest.json`, `progress.jsonl` | Completion/failure status, identities, timings and progress |
+
+Exact output names are recorded in the manifest. Stage figures are optional;
+inspection reports are still produced when `run.render_diagnostics = false`.
+
+| Target | Recipe setting | How to inspect |
+|---|---|---|
+| Blender | `export.target = "blender"` | Import the GLB; use Material Preview or Rendered shading |
+| Unity | `export.target = "unity"` | Use a glTF importer and the supplied URP material installer |
+| Unreal | `export.target = "ue5"` | Use Interchange import and the supplied material builder |
+| Gazebo | `export.target = "gazebo"` | Follow the generated model/SDF instructions |
+| Omniverse | `export.target = "omniverse"` | Use the generated USD package |
+| All supported targets | `export.target = "all"` | Creates each target package from the same canonical scene |
+
+Recipes choose a compatible default format when the target is overridden.
+For complete PBR GLBs, `continuous_material/` contains shared maps and **native
+blended projection shaders**. Apply them to avoid directional texture seams at UV
+chart boundaries. Ordinary GLB import uses its portable UV material; custom
+shaders are not transferred automatically.
+
+| Application | Continuous material setup |
+|---|---|
+| Blender | Run the bundle's `apply_blender_material.py` on the cave; images are packed |
+| Unity URP | Copy the bundle under `Assets`; use **Tools → PLUME → Create continuous rock material (URP)** |
+| Unreal | Enable Python Editor Script Plugin; execute the bundle's `unreal/create_material.py`, then assign the material |
+
+Detached export bundles include `SETUP.txt` with application-specific details.
+For an existing run, `scripts/create_blender_inspection.py` can create a lit
+inspection scene; choose `--mapping triplanar` for the continuous material.
+A plain grey render may be the neutral package or Solid shading. Persistent
+sparkles can be sampling noise: inspect the material and lighting, enable
+appropriate Cycles denoising and allow sufficient samples before blaming UVs.
+
+### Evaluate a change
+
+```bash
+# Ten A-C cases, each with a separate cold reproducibility replay.
+uv run --no-sync plume-check \
+  --configs config/short-single.toml config/short-multi.toml \
+  --seeds 0 17 42 20260912 4294967295 --scope sections \
+  --timeout 600 --memory-limit-mib 8192 --output outputs/section_campaign
+
+# Full generation, material and export checks for one textured seed.
+uv run --no-sync plume-check \
+  --configs config/short-multi.toml --seeds 17 --scope full \
+  --timeout 7200 --memory-limit-mib 24576 --output outputs/full_campaign
+```
+
+Open the campaign's offline `report.html`. The JSON summary retains failures,
+resource limits, repair decisions and replay results. Ten requested cases plus
+cold replays means twenty worker runs. `--no-replay` is an explicit exploratory
+tradeoff, recorded in the report. Workers run sequentially; memory and timeout
+limits are not increased by repair.
+
+```bash
+uv run --no-sync plume-check --output outputs/full_campaign --resume --timeout 10800
+uv run --no-sync plume-check --output outputs/full_campaign --resume --report-only
+```
+
+`--report-only` checks saved receipts without generating anything. A resumed
+campaign verifies its original source/runtime/input identity; code or configuration
+changes require a new campaign directory. A stage-only success says nothing about
+meshing, floor contact, materials or native import.
+
+For development:
+
+```bash
+uv run --no-sync ruff check .
+uv run --no-sync mypy src/plume_advanced
+uv run --no-sync pytest -q
+```
+
+Tests include measured failure crops, synthetic geometry controls, deterministic
+replays and policy failures. Optional native application tests require their
+external tools; a skipped test is not evidence of engine compatibility.
+
+### Native engine qualification
+
+```bash
+uv run --no-sync python scripts/qualify_simulation.py \
+  --config config/simulation-single.toml --seed 0 \
+  --output outputs/simulation_trial \
+  --unity /path/to/Unity --unreal /path/to/UnrealEditor
+```
+
+This source-checkout workflow runs numerical generation, a cold replay, native
+material views and collision controls. Every supplied editor is mandatory.
+**Only `ready/` is the promoted delivery**, created after all requested checks
+pass. `qualification.json` explains a rejection; working results remain in
+`generation/` and `native/`.
+
+The maintained native harness targets Unity 6000.6 URP and Unreal 5.8 on Linux,
+with GPU access. Unity's initial project setup also needs package-registry access
+and a valid license. Its current input contract is one rock-free, untransformed
+cave primitive with three 4K maps. The numerical API's `require_native = true`
+remains unavailable; the separate qualifier supplies the native promotion gate.
+
+To check an existing accepted 4K generation, including normal CLI
+`export_blender/` or `export_all/blender/` output, run:
+
+```bash
+uv run --no-sync python scripts/check_native_engines.py outputs/my_cave \
+  --output outputs/my_cave_native \
+  --unity /path/to/Unity --unreal /path/to/UnrealEditor
+```
+
+This imports the existing cave and records material and collision checks. It does
+not perform the qualifier's cold replay or create a `ready/` delivery.
+
+Use the checked native scene and its **separate static collider**. PLUME metadata
+uses right-handed Z-up metres. The supplied glTFast adapter maps points to Unity
+`(-x, z, -y)` metres; the Unreal adapter maps to `(100x, -100y, 100z)` centimetres.
+The raw collider OBJ does not carry glTF conversion. Alternative importers require
+their own axis/bounds check. Configure simulator gravity separately from importing
+geometry. Nanite, collision reduction, texture streaming and compression require
+performance validation in the target simulation.
+
+## Simulators
+
+The images and their receipts are kept under **[`docs/simulators`](docs/simulators)**,
+outside the disposable `outputs/` directory. The
+[gallery index](docs/simulators/gallery.json) records each image's origin, capture
+date and checksum.
+
+The Blender, Gazebo and Isaac checks below use the **120 m route-target, seed-3,
+rock-free cave** with 1K rock maps from the
+[simulator recipe](config/simulator-check.toml). Unity and Unreal images are
+archived native captures of an earlier 4K inspection cave. They illustrate their
+respective materials; different caves, cameras and lighting prevent a direct
+image-to-image comparison. These checks do not certify ground-robot traversability.
+
+| Simulator | Version exercised | Package and check |
+|---|---|---|
+| Blender | **4.0.1**, Cycles validation runtime | GLB import, packed maps, preserved bounds/triangle count and native blended-material render; 16 September 2026 |
+| Unity | **6000.6.0f1**, Vulkan | Archived 4K GLB import and native material/clearance checks; 13 September 2026 |
+| Unreal Engine | **5.8.2-56702186**, Linux | Archived 4K import and native material/clearance checks; 13 September 2026 |
+| Gazebo Harmonic | **Gazebo Sim 8.15.0**, SDFormat 14.9.0 | SDF 1.10 + OBJ; Ogre2 camera capture and DART/ODE box-to-cave contacts passed |
+| NVIDIA Isaac Sim | **6.1.0-rc.26**, source build (`main.0.7c206f75.local`) | USD + UsdPreviewSurface; all three maps resolved, RTX capture and PhysX box-to-cave collision passed |
+
+The test machine runs Ubuntu 24.04 with an RTX 3070 (8 GB) and NVIDIA driver
+580.173.02. Results apply to this fixture and these versions; importing a different
+seed or running a vehicle requires its own checks. The
+[campaign receipt](docs/simulators/2026-09-16/campaign.json) records the tested
+asset hashes, build repair and check versions (16 September 2026).
+
+Generate the shared small fixture once before running the Blender, Gazebo or
+Isaac inspection commands:
+
+```bash
+git lfs pull  # Fetch the optional texture masters once.
+uv run --no-sync plume-generate --config config/simulator-check.toml \
+  --output outputs/simulator_check/network.png
+```
+
+### Blender
+
+![PLUME cave rendered in Blender Cycles using the native blended material](docs/simulators/2026-09-16/blender.png)
+
+*Native Cycles render of the current small cave, using the reusable 1K maps and
+Blender's blended projection material.
+[Import and render receipt](docs/simulators/2026-09-16/blender.json).*
+
+For an ordinary import, choose **File → Import → glTF 2.0** and open
+`export_all/blender/plume_cave_scene.glb`. Its embedded UV textures are visible
+in Material Preview or Rendered shading. To create the illuminated inspection
+scene with the native material and interior views, run from the repository root:
+
+```bash
+/path/to/blender --background --python-exit-code 1 \
+  --python scripts/create_blender_inspection.py -- outputs/simulator_check \
+  --mapping triplanar --quality standard --interior-only
+```
+
+Open `export_all/blender/plume_continuous_inspection.blend` inside that run.
+The script packs the maps into the scene. Use `--mapping uv` to inspect the
+portable GLB material instead. The same script also accepts a Blender-only
+generation with its `export_blender/` directory.
+
+### Unity
+
+![Archived PLUME cave rendered natively in Unity](docs/simulators/2026-09-13/unity.png)
+
+*Actual Unity capture from 13 September 2026, using the native continuous rock
+shader and 4K maps. This is the earlier inspection cave, not a rerun of the current
+small fixture. [Native result](docs/simulators/2026-09-13/unity.json).*
+
+Use the GLB and separate collision mesh from `export_all/unity/`, together with
+the supplied `continuous_material/unity/` installer and shader. Follow the
+exported `README_IMPORT_UNITY.txt` and `continuous_material/SETUP.txt` for the
+render-pipeline setup. The GLB alone carries the portable UV material; it cannot
+install the native shader. The [native qualifier](#native-engine-qualification)
+creates and tests a Unity project for a new simulation delivery.
+
+### Unreal Engine 5
+
+![Archived PLUME cave rendered natively in Unreal Engine 5](docs/simulators/2026-09-13/unreal.png)
+
+*Actual UE 5.8.2 capture from 13 September 2026, using the native continuous rock
+material and 4K maps. The original capture is retained, including its brighter
+foreground exposure. [Native result](docs/simulators/2026-09-13/unreal.json).*
+
+Use `export_all/ue5/` and follow its `README_IMPORT_UE5.txt`; the material builder
+is in `continuous_material/unreal/`. Retain the separate static collision mesh
+and verify the import settings before enabling Nanite or changing mesh reduction.
+Use the [native qualifier](#native-engine-qualification) to validate a new cave
+with the supplied Unreal adapter. The archived image is a visualization example,
+not evidence that an arbitrary new seed is simulation-ready.
+
+### Gazebo Harmonic
+
+![PLUME cave rendered by Gazebo Harmonic with a dropped collision probe](docs/simulators/2026-09-16/gazebo.png)
+
+*Actual Ogre2 camera output. The box is a temporary physics probe, not generated
+geology. [Native result](docs/simulators/2026-09-16/gazebo.json).*
+
+Gazebo receives separate visual and static triangle-collision meshes in metres,
+with Z up. Explicit SDF PBR bindings carry base color, normal and roughness maps.
+Collider normals are exported because Harmonic's DART/ODE mesh path requires
+them. Keep the complete model directory together.
+
+```bash
+# Uses Gazebo's system Python bindings (gz.transport13, gz.msgs10) and Pillow.
+/usr/bin/python3 scripts/check_gazebo.py \
+  outputs/simulator_check/export_all/gazebo/plume_cave_scene \
+  --view docs/simulators/2026-09-16/view.json \
+  --output outputs/simulator_check/gazebo_native
+```
+
+For interactive use, follow `README_RUN_GAZEBO.txt` in the export directory.
+The checker adds an interior camera, point light and contact probe to its own
+`inspection.world.sdf`; it does not modify the exported cave. Its renderer uses
+[Gazebo's headless Ogre2 path](https://gazebosim.org/api/sim/8/headless_rendering.html).
+
+### NVIDIA Isaac Sim
+
+![PLUME cave rendered by Isaac Sim RTX with a dropped collision probe](docs/simulators/2026-09-16/isaac.png)
+
+*Actual RTX camera output from the same cave and camera position. The checker
+adjusts its light exposure to obtain an inspectable image; the captured pixels
+are saved directly. [Native result](docs/simulators/2026-09-16/isaac.json).*
+
+Use `export_all/omniverse/plume_cave_scene.usd` (or `export.target = "omniverse"`)
+and keep its texture directory beside it. The stage declares metres and Z up,
+uses repeated UV textures, and marks the hidden static collider with
+`PhysicsMeshCollisionAPI` and `approximation = "none"`. Convex-hull collision
+would fill the cave interior.
+
+```bash
+ISAAC_SIM_DIR=/path/to/isaacsim/_build/linux-x86_64/release
+"$ISAAC_SIM_DIR/python.sh" --no-ros-env scripts/check_isaac_sim.py \
+  outputs/simulator_check/export_all/omniverse/plume_cave_scene.usd \
+  --view docs/simulators/2026-09-16/view.json \
+  --output outputs/simulator_check/isaac_native
+```
+
+The checker loads the USD in Isaac Sim, checks texture resolution and material
+binding, simulates a small dropped box with PhysX, and saves an RTX camera image.
+It requires a working Isaac runtime and GPU access; ordinary Python tests do not
+launch either simulator.
+
+Open the checker's `isaac_native/inspection.usda` to inspect its camera, light
+and probe interactively. The original exported cave has no inspection lighting.
+The supplied `view.json` belongs to this fixed recipe; select a new interior
+position and floor height when checking a different cave.
+
+For this source checkout, SDL's isolated build accidentally discovered optional
+host text/input libraries. The [local recipe patch](docs/simulators/2026-09-16/isaac-sdl.patch)
+disables those undeclared options. After freeing disk space, the release build
+succeeded. The earlier disk-full interruption had also left a truncated PhysX
+extension, which was quarantined and downloaded again. Keep sufficient free
+space for dependencies, extension unpacking and build artifacts before starting
+a source build.
+
+Both adapters currently use their portable **UV materials**. The blended
+projection shaders supplied for Blender, Unity and Unreal do not automatically
+transfer to Gazebo or Isaac Sim, so UV-chart seams and differences in lighting
+can remain visible. The screenshots show those actual results.
+
+## Config file
+
+### One small recipe, one resolved configuration
+
+The user-facing file is [config/project.toml](config/project.toml). Its core is:
 
 ```toml
-[events]
-enabled = false
-include_rock_props = false
+recipe_version = 1
+preset = "preview"
+procedural_seed = 3
 
-[geometry]
-cave_diffuse_texture = ""
-cave_normal_texture = ""
-cave_roughness_texture = ""
-cave_displacement_texture = ""
-cave_displacement_scale_m = 0.0
+[world]
+body = "earth"
+
+[run]
+render_diagnostics = true
 
 [export]
 target = "neutral"
-format = "glb"
-generate_collision = true
 ```
 
-This is an edit guide, not a replacement for the full scenario file. Other geometry and section controls remain those of the file you copied.
-
-**`--output` is a network-diagnostic PNG path, not a directory or mesh path.** Its parent determines the default location of sibling artifacts even when diagnostic rendering is disabled. The selected scene is written under `export_<target>/` in that directory. For the general all-target configuration, packages live under `outputs/full_earth/export_all/`.
-
-```bash
-# Select another body and its default material.
-uv run --no-sync plume-generate --config config/project.toml \
-  --body mars --output outputs/full_mars/stage_b_cave_network.png
-
-# Resume the same run after an interruption.
-uv run --no-sync plume-generate --config config/project.toml \
-  --output outputs/full_earth/stage_b_cave_network.png --resume
-
-uv run --no-sync plume-generate --help
-```
-
-`--body` accepts `earth`, `mars`, and `moon`. It changes the body and default material; other explicit overrides in the TOML remain in effect. Check the resolved configuration when adapting an Earth scenario to another body.
-
-The main command asks before using a nonempty output directory. `--force-overwrite` or `run.overwrite_outputs = true` authorizes replacement. `--resume` also bypasses that prompt and reuses only matching checkpoints: configuration, inputs, Python version, and production source fingerprint must agree. Checkpoints default to `.plume-checkpoints/` beside the outputs; change this with `--checkpoint-directory`.
-
-### Output packages
-
-| `export.target` | `export.format` | Package |
-|---|---|---|
-| `neutral` | `glb` or `obj` | Portable scene; the neutral GLB package also includes an OBJ fallback |
-| `blender` | `glb` or `obj` | Scene, import helper, and package metadata |
-| `ue5` | `glb` or `obj` | Scene and Unreal import guidance |
-| `unity` | `glb` or `obj` | Scene and Unity import guidance |
-| `gazebo` | `obj` | OBJ/MTL assets and SDF model package |
-| `omniverse` | `usd` | USD scene and material package |
-| `all` | `auto` | All five application packages from one prepared scene |
-
-Target adapters convert canonical right-handed, Z-up metre geometry to their required conventions. They do not invoke the target applications. `generate_collision` requests dedicated simplified collision geometry; it is distinct from the prepared visual surface. Verify important imports in the destination application using the [export verification protocol](docs/paper/EXPORT_VERIFICATION_PROTOCOL.md).
-
-The full pipeline also writes `stage_a_host_influence.json`, `stage_b_network_report.json`, `stage_b_network.json`, `stage_c_sections.{npz,json}`, `stage_c_floor_map.{npz,json}`, `stage_d_geometry_report.json`, `stage_e_event_report.json`, `resolved_project_config.json`, and `run_manifest.json`. The manifest records inputs, outputs, provenance, timings, and completion or failure status. Optional stage PNGs depend on `run.render_diagnostics`; dense Stage-D raster diagnostics are skipped for sparse tiled volumes.
-
-Acceptance is part of generation: `section_resolution_report.json` evaluates input sampling; `pipeline_quality_report.json` records mesh and export checks, repairs and warnings; `pipeline_inspection.png` plots measured floor-to-roof distances on the actual mesh. These files do not require an evaluation command or enabled diagnostic rendering. Each export package also contains `pipeline_inspection.json`. Known failures can reduce surface detail, smoothing or displacement, or retain the original collider when simplification is unsafe. If base-surface repair is exhausted, upstream recovery tries localized section/width repairs and then bounded deterministic replacement networks in the same host. `pipeline_recovery.json` preserves the original failure and distinguishes local repair from regeneration; final stage figures and checkpoints follow the accepted realization. Every repair is rechecked and recorded; exhausted repairs stop the run. See [embedded acceptance and its limits](docs/reliability.md#embedded-pipeline-acceptance).
-
-### Inspect early stages without meshing
-
-```bash
-uv run --no-sync python scripts/render_host_field.py \
-  --config config/earth_tube_only.toml --output outputs/host_review.png
-
-uv run --no-sync python scripts/generate_network_diagnostics.py \
-  --config config/earth_tube_only.toml --output outputs/network_review \
-  --density-sweep ""
-```
-
-The second command generates stages A–C and figures only. An empty density sweep avoids additional network realizations. Its output directory contains no full cave mesh. Use this workflow to tune topology and passage proportions before paying for full-volume generation.
-
-### Several systems growing together
-
-PLUME can grow several independently seeded arterial systems in the same host.
-They merge into a single shared passage and can split downstream into separate
-outlets or rejoin later. Flow is solved over the combined graph, so merging sums
-the incoming discharge and splitting divides the available supply. Source
-identities remain traceable after mixing.
-
-```bash
-uv run --no-sync python scripts/generate_network_diagnostics.py \
-  --config config/earth_interacting_systems.toml \
-  --output outputs/systems_review --density-sweep ""
-```
-
-The example requests three systems, keeps rocks disabled, and checks both the
-network and cross sections. Its network figure marks merges, splits and shared
-passages. Use the same config with `plume-generate` for a full mesh.
-The [interaction model and controls](docs/network_systems.md) explain the distributed
-arterial mode. For a compact gallery with independent sources **and** formation
-history, use the integrated mode below. The general single-system lobe grammar
-remains available with `network.systems.count = 1` (the default).
-
-### Persistent parallel systems
-
-Use [earth_short_interconnected.toml](config/earth_short_interconnected.toml) for a
-400 m downstream reach or [earth_long_interconnected.toml](config/earth_long_interconnected.toml)
-for 3 km. These presets grow three systems through a shared host with several broad
-terrain corridors. Substantial passages can remain separate, merge pairwise, split
-again and join other routes downstream. They retain the common section, stability,
-formation-history and export stages; rocks are disabled.
-
-```bash
-uv run --no-sync python scripts/generate_network_diagnostics.py \
-  --config config/earth_short_interconnected.toml \
-  --output outputs/interconnected_short_preview --density-sweep ""
-
-uv run --no-sync python scripts/validate_interconnected.py \
-  --config config/earth_long_interconnected.toml \
-  --output outputs/interconnected_long_validation
-```
-
-The first command produces Stage A–C figures, including actual passage envelopes
-over the host and a downstream channel-count plot. Long footprints are divided into
-500 m reaches without stretching the lateral axis. The second screens three seeds
-on one fixed host and replays the first in a fresh process with a different Python
-hash seed. Neither command builds a mesh.
-
-For full meshes, use [earth_short_interconnected_full.toml](config/earth_short_interconnected_full.toml)
-or [earth_long_interconnected_full.toml](config/earth_long_interconnected_full.toml).
-The short preset retains the primary preview's host, network and sections at 8 cm
-voxel spacing. The long preset retains its host, uses a 0.9 section width-scale
-median and a 1.2 m minimum section-height control, and revalidates its network before
-meshing at 20 cm. These controls precede terminal taper and surface relief; they do
-not guarantee a minimum clearance everywhere in the final mesh.
-
-```bash
-uv run --no-sync plume-generate \
-  --config config/earth_short_interconnected_full.toml \
-  --output outputs/interconnected_short_full/stage_b_cave_network.png
-uv run --no-sync python scripts/check_mesh_topology.py outputs/interconnected_short_full
-uv run --no-sync python scripts/render_run_diagnostics.py outputs/interconnected_short_full
-```
-
-Use a new output directory. Full meshing and export can take tens of minutes, and
-the high-resolution short preset can contain millions of triangles. The separate
-mesh check rejects unwanted surface handles and lost rock islands; Stage A–C
-acceptance alone does not guarantee a correct final mesh. See the
-[self-service guide](docs/self-service.md) for generating and diagnosing a new run.
-The [latest clearance campaign](docs/reviews/mobility-repair-campaign-2026-09-14.md)
-links its inspected assets, engine projects and validation records.
-
-The [full inspection report](docs/interconnected_full_inspection_2026-09-11.md)
-records the two accepted meshes, four rejected intermediate attempts, export and
-Blender checks, and the source/configuration snapshot saved with the results.
-
-`network.topology.style = "interconnected"` and
-`generation_mode = "independent_growth"` enable this mode. Its acceptance rules
-require physically separated parallel passages through the network, distributed
-interactions and sufficient independent travel by each source. The gallery's
-38 m lateral-span limit does not apply; individual passage and roof limits still do.
-See [the model, controls and validation scope](docs/interconnected_systems.md).
-
-![Generated interconnected passages over one shared host](docs/figures/readme/interconnected_short.png)
-
-*Actual section envelopes for the 400 m preset. Purple passages carry multiple
-routing fronts; circles mark merges and diamonds mark splits. The lower trace
-counts passages separated by the configured minimum rock gap. These are Stage A–C
-results, before surface relief and meshing. The [3 km preview](docs/figures/readme/interconnected_long.png)
-shows the same mode over consecutive 500 m reaches.*
-
-The [six-case validation report](docs/interconnected_validation_2026-09-11.md)
-records accepted/rejected candidates, physical parallel coverage and fresh-process
-reproducibility for the short and long presets.
-
-### Independent systems with gallery validation and history
-
-[config/earth_independent_gallery.toml](config/earth_independent_gallery.toml) is a
-research preset for compact, rock-free gallery studies. Three independently
-seeded systems share a host, merge according to their route preferences, and can split
-and rejoin around local rock islands. Four formation phases add finite-budget blind
-breakouts, inactive intervals, passage reuse and conditional drained pools.
-
-```bash
-uv run --no-sync plume-generate \
-  --config config/earth_independent_gallery.toml \
-  --output outputs/independent_gallery/stage_b_network.png
-```
-
-For a network/section preview, pass the same config to
-`scripts/generate_network_diagnostics.py` with `--density-sweep ""`.
-The preset requests a 380 m route, one or two islands and one or two blind branches.
-This is a compact scenario: the earlier general Earth preset requests a 5,000 m
-route. Completing the full pipeline does not imply the same network extent.
-Basic stage figures are enabled in this preset. To produce the complete gallery,
-including sparse-volume mesh sheets and multiple-system connections, run the
-following after generation. It also restores missing figures for an existing
-completed run without changing its cave, using its trusted local checkpoints:
-
-```bash
-uv run --no-sync python scripts/render_run_diagnostics.py outputs/independent_gallery
-```
-
-The command writes the stage PNGs, `STAGE_FIGURES.md` and a separate figure manifest.
-It checks the saved network and section identity and leaves the exported scenes
-and original generation manifest unchanged. Disabled events are identified in the
-index rather than illustrated as if rocks had been generated.
-
-Its 51 acceptance checks include surviving section-level islands, independent source
-lineage and conserved per-phase discharge. The deterministic search accepts the first
-passing candidate and records the rejected attempts.
-
-![Accepted independent gallery and its sampled passage footprint](docs/figures/readme/independent_gallery.png)
-
-*The three inlets merge at independently determined stations. This accepted seed
-contains one local split-and-rejoin island and two blind breakouts. These are
-network and section envelopes; the full mesh is checked separately.*
-
-![Conserved discharge by passage and formation phase](docs/figures/readme/independent_gallery_history.png)
-
-*Inactive gaps are retained before branch reoccupation. Values are procedural
-source units, not measured lava discharge.*
-
-[Validation results and the separate general-preset test failure](docs/independent_gallery_validation_2026-09-10.md)
-record the scope and remaining limits.
-
-The [generation model and feature matrix](docs/independent_gallery_growth.md) explain
-which controls are active. This combines independent routing with the supported
-formation-history mechanisms. Stacked levels, vertical capture, the legacy cell-based
-lobe grammar and deposition feedback are not executed in this mode. Rocks, events,
-textures and collision generation are disabled in this preset. An explicit one-cell
-density-closing step repairs narrow voxel fissures before roof checks;
-[its limits and final mesh checks](docs/independent_gallery_growth.md#grid-scale-fissure-repair)
-are documented separately.
-
-### A dominant gallery with local rock islands
-
-For the compact topology illustrated by the Valentine Cave reference, use
-[config/earth_valentine_topology.toml](config/earth_valentine_topology.toml):
-
-```bash
-uv run --no-sync python scripts/generate_network_diagnostics.py \
-  --config config/earth_valentine_topology.toml \
-  --output outputs/valentine_review --density-sweep ""
-```
-
-The earlier layout option (`network.topology.style = "trunk_dominated"`,
-`generation_mode = "layout"`) generates one main
-gallery with irregular widening, short split-and-rejoin routes around rock
-islands, and short blind branches. It can also accept several upstream inlets
-that coalesce into the gallery. The general interacting-systems mode above
-remains available for distributed networks.
-
-![Generated gallery centreline and actual section-envelope footprint](docs/figures/readme/trunk_topology.png)
-
-*The upper panel shows connectivity; the lower panel shows the union of sampled
-passage envelopes at equal horizontal and vertical scale. White enclosed regions
-are rock islands. This is a generated network and section preview, not a finished
-mesh or a reconstruction of the survey.*
-
-The preset requests a 300 m route, two islands, two to three blind branches, and
-no rocks. The scale is a scenario choice; the reference screenshot has no scale
-bar. Its acceptance checks require the islands to survive cross-section
-generation and reject excessive parallel passage, lateral spread and disconnected
-footprints. See [gallery generation, controls and validation](docs/trunk_topology.md).
-
-## Configuration
-
-### Files, units, and resolution of values
-
-Use [config/project.toml](config/project.toml) for the general environment and [config/earth_tube_only.toml](config/earth_tube_only.toml) for the current low Earth geometry study. The loader is [config.py](src/plume_advanced/config.py); body/material defaults are in [world.py](src/plume_advanced/world.py).
-
-Without `--config`, the main command first looks for `config/project.toml` in the working directory, then in the source checkout, then uses the packaged default. Always pass a configuration explicitly for a reproducible experiment.
-
-- `schema_version = 4` is required. Retired schemas and unknown keys are rejected; use a maintained preset. See the [cleanup and migration guide](docs/legacy-cleanup.md) for removed controls and historical reproduction.
-- Distances use metres unless stated otherwise; gravity uses m/s², density kg/m³, temperatures K, and ages s. Some controls and recorded flow quantities are procedural scales rather than calibrated physical measurements.
-- The root `procedural_seed` derives separate named seeds for host, network, sections, events, and geometry. Explicit stage `random_seed` values override the derived values. Keeping the configuration, code, dependencies, and inputs fixed is necessary for reproducibility.
-- Omitted values come from dataclass and body defaults. Some supplied distances are also scaled by the body or flow regime. Development mode then crops generation extent. The resolved JSON, rather than the handwritten TOML alone, describes the actual run.
-- Texture and Rocky paths resolve relative to the TOML file's directory. They are not resolved relative to the shell's working directory.
-
-### Network acceptance before meshing
-
-The generator now evaluates and repairs candidate networks, with a deterministic
-sequence of alternative seeds when a candidate remains invalid. It checks bends,
-crossings, width saturation, branch endings, repeated motifs and final 3D section
-geometry as well as topology and flow. The first passing candidate proceeds;
-exhausting the attempt limit stops generation before meshing.
-
-`network_quality_report.json` records every verdict, repair and seed. The defaults
-allow eight candidates and three repairs each. These are explicit morphology
-heuristics, not geological certification. See [network acceptance](docs/network_acceptance.md)
-for all thresholds, reproduction rules and the inexpensive preview workflow.
-
-### Main tables
-
-| Table | What it controls | Useful settings |
-|---|---|---|
-| `[world]` | Body, material, gravity, formation limits, strength | `body`, `material`, `gravity_m_s2`, `maximum_passage_width_m`, `maximum_room_width_m`, `roof_safety_factor` |
-| `[flow_regime]` | Dimensionless eruption scenario | `supply_rate_scale`, `duration_scale`, `inflation`, `distributary_tendency`, `cooling_rate_scale` |
-| `[run]` | Extent, quality, plots, overwrite behavior | `dev_mode`, `dev_max_route_length_m`, `dev_max_lobe_paths`, `quality`, `render_diagnostics` |
-| `[acceptance]` | Required evidence before publication, independent of `run.quality` | `profile`, `require_textures`, `require_native`, `minimum_relief_scale`; see [all controls and limits](docs/acceptance.md) |
-| `[export]` | Destination package, collision output and finite size limits | `target`, `format`, `generate_collision`, `max_visual_triangles`, `max_asset_bytes` |
-| `[host_field]` and nested tables | Host domain, terrain variation, routing contributions | `apply_body_scaling`, `grid`, `ranges`, `wave_ranges`, `routing_weights` |
-| `[network]` | Sources, branch opportunities, growth backend | `emplacement_backend`, `network_density`, `lobe_launch_rate`, `loop_probability`, `capture_probability`, `chamber_gain` |
-| `[geometry]` recovery controls | Upstream feedback after failed surface repair | `recovery_local_attempts` (0–2), `recovery_network_attempts` (0–8); both default to 2 |
-| `[geometry]` required route | Continuous upright-body clearance and bounded vertical placement | `required_route_height_m`, `required_route_width_m`, `route_clearance_margin_m`, `route_placement_repair_attempts`, `route_placement_max_sweeps` |
-| `[geometry]` resolution/collider repair | Optional grid convergence and inspected collision reduction | `resolution_refinement_attempts`, `resolution_convergence_m`, `collision_target_reduction`, `collision_max_error_m`, `collision_repair_attempts` |
-| `[network.quality]` | Deterministic morphology acceptance before meshing | `enabled`, `max_attempts`, `repair_passes`, bend, width, repetition, crossing and grade limits |
-| `[network.systems]` | Several arterial systems growing together | `count`, source spacing, routing variation, capture/release distances, minimum passage persistence |
-| `[network.topology]` | General, dominant-gallery or interconnected morphology | `style`, `generation_mode`, width variation; gallery-specific island and dominance rules |
-| `[network.interconnection]` | Sustained parallel routes and distributed connections | Parallel fraction and persistence, per-window coverage, maximum single-channel run, source independence, junction angles and event spacing over distance |
-| `[network.lobe_growth]` | Breakout paths, competition, cooling, coalescence | `path_count`, growth weights, flux budgets, thermal thresholds |
-| `[network.emplacement_history]` | Successive phases, reoccupation, stacking, pools | Phase count, stacked-level fraction, retirement, `drained_pool_*` |
-| `[section_field]` | Sample spacing, profile shapes, vertical placement | `sampling_policy`, height ratios, width variation, floor/roof shape, junction transitions |
-| `[floor_map]` | Intrinsic floor sampling and clearance filtering | `lateral_spacing_m`, `plan_resolution_m`, `minimum_clearance_m` |
-| `[events]` | Optional structural modifiers and loose debris | `enabled`, `include_rock_props`, `enabled_kinds`, density, sizes, `use_rocky_meshes` |
-| `[geometry]` | Volume resolution, sweeps, relief, meshing, visual finish | `resolution_policy`, `voxel_size`, `storage_mode`, `surface_*`, `cave_*` |
-
-The general single-system generator uses flux-driven lobe growth with `emplacement_backend = "internal"`. `downflow_reference` is a lightweight perturbed-terrain comparator. `flowy` requires a compatible external executable configured with `flowy_executable`; it is not installed by the core environment. In the general single-system grammar, `network_density` ranges from 0 to 3: zero disables lobe branches, while source/backbone geometry can remain. Branch-opportunity controls alter stochastic tendencies, not guaranteed branch counts. The `trunk_dominated` style requires internal emplacement. Its default `generation_mode = "layout"` uses prescribed topology construction; `generation_mode = "independent_growth"` uses independent routes plus the supported history controls listed in [the integrated-mode guide](docs/independent_gallery_growth.md). General-mode lobe controls that are not listed there do not affect independent gallery growth.
-
-### Body defaults versus physical limits
-
-| Preset | Gravity (m/s²) | Material | Ordinary passage width setting (m) | Room width setting (m) |
-|---|---:|---|---:|---:|
-| `earth` | 9.80665 | `terrestrial_basalt` | 10 | 28 |
-| `mars` | 3.71 | `martian_basalt` | 50 | 100 |
-| `moon` | 1.62 | `mare_basalt` | 100 | 200 |
-
-These are configurable **formation controls**, not observed universal maxima or promises about the final span at a merged junction. Roof screening is a separate constraint involving cover, strength, density, gravity, and geometry. There is no single maximum height for each planet.
-
-`[world]` also accepts overrides such as `bulk_density_kg_m3`, `intact_tensile_strength_mpa`, `rock_mass_quality`, and `weathering`. Keep these physically consistent with the chosen material. Other Jovian/Saturnian moons and cryovolcanic materials have no dedicated validated presets; substituting a gravity value alone does not establish a realistic formation model.
-
-### Passage shape and surface detail
-
-The current Earth inspection file deliberately favors low passages. It uses `base_height_ratio = 0.30`, height-ratio bounds `0.12–0.36`, and `profile_resolution = 40`. These controls act alongside width variability, morphology families, flow history, and chamber rules. A 1–3 m passage range is a scenario objective, not a hard guarantee at every station or an Earth-wide law.
-
-| Desired change | Controls to inspect | Consequence |
-|---|---|---|
-| Taller or flatter passages | `base_height_ratio`, height-ratio bounds/variation | Changes profile proportions; taller roofs consume cover at a fixed floor depth |
-| More width diversity | `width_scale_median`, `width_scale_log_sigma`, `width_longitudinal_variation` | Changes section scale within formation constraints |
-| Broad changes along a tube | `morphology_correlation_length`, `morphology_regime_strength`, `morphology_family_spread` | Changes longitudinal coherence and profile families |
-| Flatter floors, benches, channels | `floor_flatness_base`, `floor_relief_base`, `bench_strength`, `floor_incision_ratio` | Changes the cross-section envelope |
-| Asymmetric roofs/walls | `roof_arch_base`, `profile_shape_variation`, `lateral_skew_amplitude`, `wall_roughness_base` | Changes contour shape before meshing |
-| More actual surface relief | `surface_wall_relief_m`, `surface_roof_relief_m`, `surface_floor_relief_m`, `surface_crust_relief_m` | Adds inward geometric accretion in metres |
-| Larger/smaller relief features | `surface_feature_scale_m` | Changes spatial scale; small features require fine voxels |
-| A softer visual finish | `cave_smoothing_iterations`, `surface_normal_filter_voxels` | Smooths vertices or shading normals; does not replace resolved geometry |
-
-The inspection file's wall/roof/floor/crust relief bounds are **0.55 / 0.65 / 0.22 / 0.10 m**, with a base feature scale of **0.85 m**. These are maximum procedural amplitudes: patch strength, orientation, resolution, and local clearance reduce the realized offsets. They are not measured means. Library defaults for these accretion amplitudes are zero, so other scenarios do not silently inherit the Earth study's relief.
-
-Quality-enabled runs also verify the actual base mesh and sampled route centres.
-If relief creates extra loops, disconnected surfaces or blocked centres, a
-bounded retry reduces its amplitude on the same swept network. The geometry
-report records each attempt and the effective relief scale; unresolved failures
-block export. See [surface acceptance](docs/reliability.md#surface-acceptance-after-network-acceptance).
-
-`wall_roughness_amplitude` is an older density-space roughness control, distinct from metre-based relief. Texture-driven `cave_displacement_scale_m` belongs to export preparation; it is zero in the tube inspection scenario.
-
-### Resolution and cost
-
-For an explicit voxel size:
+A recipe expands **in memory**: shared calibration → named preset → your TOML
+overrides → explicit CLI/evaluation overrides → body/stage defaults and validation.
+It never rewrites another config file. The internal calibration is stored once
+in [presets.json](src/plume_advanced/presets.json); users do not need to edit it.
+The same loader serves generation, evaluation and qualification.
+
+| Everyday control | Meaning |
+|---|---|
+| `recipe_version = 1` | Compact recipe format; do not combine with `schema_version` |
+| `preset` | Selects a coherent host domain, topology, resolution and acceptance policy |
+| `procedural_seed` | Nonnegative integer; controls all named stage streams and sampled ranges |
+| `world.body` | `earth`, `mars` or `moon`; an edit selects that body's default rock material unless explicitly overridden |
+| `run.render_diagnostics` | Produces stage figures in addition to mandatory inspection evidence |
+| `export.target` | Target package; changing it selects the corresponding format unless one is supplied |
+| `acceptance.profile` | `research`, `inspection` or `simulation`; requirements are explained below |
+
+Relative asset paths are resolved against **the recipe's directory**. Paths in
+the bundled textured examples assume `config/` beside `texture/`. If you move a
+recipe, update its paths or use absolute paths. Unknown keys, invalid versions,
+non-finite numbers and contradictory acceptance controls fail explicitly.
+Tables merge recursively; arrays such as `[min, max]` replace the entire array.
+`--show-config` displays the resulting values before any allocation or generation.
+
+### Focused overrides
+
+Add only the tables you need. For example, change the mesh resolution and
+triangle budget while retaining the calibrated network:
 
 ```toml
 [geometry]
 resolution_policy = "fixed"
-voxel_size = 0.20
-storage_mode = "auto"
+voxel_size = 0.10
+
+[export]
+target = "unity"
+max_visual_triangles = 2000000
+max_asset_bytes = 268435456
 ```
 
-For body-dependent quality, set `resolution_policy = "body"` and **remove `voxel_size`**. The loader rejects supplying both. The current resolved voxel sizes are:
+Edit an existing table rather than declaring it twice in TOML. `run.quality`
+selects resolution only with `geometry.resolution_policy = "body"`; it does not
+supersede a fixed voxel size. `run.dev_mode` crops a body-scaled domain rather than
+shrinking passage dimensions. Use `short-*` / `long-*` for the supplied Earth
+extents. Changing only `network.target_route_length_m` does not resize the host:
+longer or wider systems also need sufficient grid extent and source placement.
 
-| `run.quality` | Earth | Mars | Moon |
-|---|---:|---:|---:|
-| `preview` | 1.0 m | 2.0 m | 4.0 m |
-| `standard` | 0.6 m | 1.2 m | 2.4 m |
-| `production` | 0.5 m | 1.0 m | 2.0 m |
+The specialised `trunk`, `gallery`, `gallery-long` and `interacting` recipes expose
+distinct active network models. `body-study` uses body-scaled host conditions;
+`research` retains the general scientific scenario and optional events used by
+`src/plume_advanced/evaluation/resources/experiments.toml`. Short/long inspection domains are explicitly metric:
+a `world.body` edit changes physics and passage defaults but does not automatically
+widen those fixed host grids. Inspect the resolved domain for large Moon/Mars tubes.
 
-These body policies use characteristic **width**, so they may underresolve shallow galleries. The Earth inspection scenario deliberately uses a finer fixed 0.20 m grid. Even that grid does not resolve every crawlway or centimetre-scale feature.
+### Appearance, rocks and route requirements
 
-Use `resolution_checks.json` to locate profiles with fewer than eight voxels across their smaller dimension. This is a screening heuristic applied before 3D relief, not a clearance certificate. Local refinement studies produce standalone bounded patches; they do not stitch replacements into the full mesh. The optional generation control `resolution_refinement_attempts` instead rebuilds each candidate on one consistently finer grid and requires sampled floor/roof convergence, topology and required-route checks. It defaults to zero and has explicit grid, memory-allocation and attempt limits. See [resolution convergence](docs/reliability.md#optional-resolution-convergence).
+| Settings | Effect / units |
+|---|---|
+| `events.enabled`, `events.include_rock_props` | Geological modifications and separate loose-rock props; both off in inspection examples |
+| `events.use_rocky_meshes` | Requests the optional Rocky provider; otherwise built-in prop meshes are used |
+| `geometry.cave_diffuse_texture`, `cave_normal_texture`, `cave_roughness_texture` | PBR source paths; empty paths select a neutral material |
+| `geometry.embedded_texture_max_size` | Maximum image edge in pixels; 4K has one quarter the pixels of 8K |
+| `geometry.cave_texture_scale_m` | Metres per repeated tile, independent of cave length |
+| `geometry.cave_normal_scale` | Fine shading strength; does not change collision or passage clearance |
+| `geometry.cave_normal_convention` | `opengl` or explicitly declared `directx`; no guess from filenames |
+| `geometry.texture_repair_attempts` | `0` inspects only; `1` permits bounded map repair and one package rebuild |
+| `acceptance.route_height_m`, `route_width_m`, `route_margin_m` | Required inspection envelope, metres; defaults 0.5 × 0.5 with 0.02 margin |
+| `acceptance.require_ground_routes` | Adds floor support, slope, step and finite chassis checks |
+| `acceptance.robot_length_m`, `robot_max_slope_deg`, `robot_max_step_m` | Reference chassis limits: 0.7 m, 20°, 0.10 m |
 
-`storage_mode` accepts `dense`, `tiled`, or `auto`. Auto switches to sparse overlapping tiles when the dense lattice would exceed `max_dense_voxels` (80 million in the shipped scenarios). Halving voxel size increases a fixed dense volume's cell count by approximately eight; sparse working costs depend on the occupied tiles. `chunk_size` controls meshing partition size, not physical detail. `run.dev_mode` shortens the host and limits growth opportunities without shrinking passages; it does not guarantee a particular total network length.
+The supplied 4K recipes reuse [Poly Haven Dark Rock](https://polyhaven.com/a/dark_rock)
+from the repository's LFS master textures. This is an appearance asset, not a
+measured or body-specific lava-tube calibration. Color is sRGB; normal and
+roughness maps are linear data. In portable GLB, roughness is packed into green
+and metallic into blue. Native continuous shaders decode raw normal RGB themselves;
+use the installers' import settings rather than automatic normal-map swizzling.
 
-### Events and rocks
+<details>
+<summary><strong>Advanced configuration map</strong> — open for scientific controls and repair budgets</summary>
 
-`events.enabled = false` disables the optional event stage. `include_rock_props = false` suppresses loose rocks while allowing configured structural events when the stage is enabled. `enabled_kinds` can include `rock`, `boulder`, `collapse`, `choke`, and `infill`.
+A standalone advanced file starts with `schema_version = 4` instead of a recipe.
+This remains the active experiment interface, not a historical schema adapter.
+No old-schema migration or unknown-key fallback is provided.
 
-`use_rocky_meshes = true` selects the optional Rocky provider. With `strict_optional_provider = true`, a missing requested provider is an error. Set `use_rocky_meshes = false` to select the built-in simpler prop geometry explicitly. None of these switches disable mandatory gravity-based roof screening.
+| Table / controls | Role | Implementation reference |
+|---|---|---|
+| `world.gravity_m_s2`, `bulk_density_kg_m3`, strength/quality fields | Explicit physical scenario parameters | [world.py](src/plume_advanced/world.py) |
+| `flow_regime` | Supply, duration, inflation, distributary tendency and cooling; dimensionless | [world.py](src/plume_advanced/world.py) |
+| `host_field.grid`, `ranges`, `wave_ranges` | Domain size/resolution and seeded terrain/geology variation | [host_field.py](src/plume_advanced/stages/host_field.py) |
+| `host_field.routing_weights` | Relative influence of slope, cover, fracture, capacity and stability | [host_field.py](src/plume_advanced/stages/host_field.py) |
+| `network.topology`, `systems`, `interconnection` | Network style, independently growing systems, parallel persistence and interactions | [network_topology.py](src/plume_advanced/stages/network_topology.py), [network_interconnected.py](src/plume_advanced/stages/network_interconnected.py) |
+| `network.emplacement_history`, `lobe_growth` | Formation phases, reuse, retirement, breakout and pool controls | [network.py](src/plume_advanced/stages/network.py) |
+| `network.quality.max_attempts`, `repair_passes` | Finite pre-mesh morphology search; repeatable candidate streams | [network_quality.py](src/plume_advanced/stages/network_quality.py) |
+| `section_field` | Sampling spacing, asymmetry, floor/roof shape, longitudinal variation and cover limits | [section_field.py](src/plume_advanced/stages/section_field.py) |
+| `floor_map`, `events` | Floor sampling, structural events and debris placement | [floor_map.py](src/plume_advanced/stages/floor_map.py), [events.py](src/plume_advanced/stages/events.py) |
+| `geometry.storage_mode`, `chunk_size`, `max_dense_voxels` | Dense versus tiled volume storage and allocation controls | [geometry_types.py](src/plume_advanced/stages/geometry_types.py) |
+| `geometry.recovery_local_attempts`, `recovery_network_attempts` | Upstream local adjustments and replacement networks in the same host | [recovery.py](src/plume_advanced/pipeline/recovery.py) |
+| `geometry.resolution_refinement_attempts`, `resolution_max_allocated_voxels` | Explicit bounded grid refinement; never an unlimited memory retry | [resolution.py](src/plume_advanced/pipeline/resolution.py) |
+| `geometry.surface_*`, `cave_smoothing_iterations`, `cave_displacement_scale_m` | Geometric relief, smoothing and image displacement; reinspection required | [geometry.py](src/plume_advanced/stages/geometry.py) |
+| `geometry.collision_target_reduction`, `collision_max_error_m` | Collider reduction target and measured error budget | [collision.py](src/plume_advanced/exporters/collision.py) |
+| `export.max_visual_triangles`, `max_asset_bytes`, `visual_max_error_m` | Published asset cost and reduction error limits | [scene.py](src/plume_advanced/exporters/scene.py) |
 
-## Development and evaluation
+Defaults, types and units are documented next to the consuming dataclasses.
+Some are derived from the body or acceptance policy, so a dataclass default alone
+is not the effective run setting. Always inspect the resolved configuration.
+`network.source_count` places inlet samples; `network.systems.count` is the number
+of independently interacting systems. They are not interchangeable.
 
-### Check a change
+</details>
+
+## Architecture
+
+### Execution and data flow
+
+![Generation, inspection and bounded repair workflow](docs/figures/readme/workflow.png)
+
+*The accepted network, sections and base mesh travel together. A replacement
+network causes downstream data to be rebuilt; old figures are not attached to a
+new mesh. Export failures likewise cannot overwrite a previously accepted package.*
+
+| Phase | Representation and operation | Main checks / outputs |
+|---|---|---|
+| Resolve | Recipe, body, material, stage seeds and acceptance policy | Strict configuration; input and runtime identities |
+| A · Host | 2D fields for elevation, slope, volcanic-layer cover, competence, fractures and growth cost | Grid extent, viable source region; host influence report |
+| B · Network | Directed graph with passage polylines, systems and formation metadata | Connectivity, crossings, turn/grade/width limits and topology-specific morphology |
+| C · Sections | Local frames and asymmetric contours along each passage | Roof/host constraints; adaptive sample spacing and section footprint |
+| D · Base geometry | Swept implicit cavity field; tiled or dense sampling; isosurface extraction | Closed/oriented mesh, intended components/handles, passage and resolution checks |
+| Floor / E · Events | Ray-sampled base floor; supported debris and structural modifications | Local support, spacing, required-route protections |
+| D · Final geometry | Event-aware surface and final floor revalidation | Repeat geometry/clearance checks after changes |
+| Export | Visual preparation, material/UV work, collider reduction and serialization | Actual prepared/serialized surfaces, textures, budgets and atomic publication |
+| Native qualification | Cold replay plus imported-engine material/collision controls | Separate `ready/` receipt only after all requested gates pass |
+
+[`cli.py`](src/plume_advanced/cli.py) coordinates stages;
+[`pipeline/`](src/plume_advanced/pipeline/) owns checkpoints, inspection and
+recovery. Numerical representations live in [`stages/`](src/plume_advanced/stages/),
+asset preparation in [`exporters/`](src/plume_advanced/exporters/), and campaigns
+and scientific measurements in [`evaluation/`](src/plume_advanced/evaluation/).
+[`scripts/`](scripts/) contains optional inspection, figure and native-editor tools.
+
+### Host-conditioned growth and topology
+
+![Current host fields with accepted passage routes](docs/figures/readme/current_host.png)
+
+*Elevation, available cover and routing cost from the short multi-system case,
+seed 0. White polylines show the accepted routes in world coordinates. A shared
+physical host influences all systems; multi-system generation does not simply
+duplicate and offset a finished tube.*
+
+The host combines a regional downhill trend, seeded terrain waves, corridors,
+volcanic-layer thickness, fracture preferences and competence variation. Weighted
+suitability terms guide path growth. A seed affects both the host and the network;
+controlled experiments can hold one stream fixed while varying the other.
+
+| Active topology | Construction | Intended use |
+|---|---|---|
+| General emplacement | Main routing with lobe growth and optional stacked history | Eruption-control and body-scale studies |
+| Trunk-dominated layout | Dominant gallery, local split/rejoin islands and short side passages | A compact Valentine-inspired topology |
+| Independent gallery growth | Several source systems with conserved per-phase discharge and shared passages | Interacting systems with a dominant-gallery criterion |
+| Interconnected growth | Independent systems following multiple host corridors with persistent parallel reaches | Repeated merge/split behaviour along a broad network |
+
+A merge becomes a **shared graph passage**, not two coincident tunnels. Split
+confirmation and minimum shared/independent lengths prevent rapid switching.
+Interconnected checks also measure parallel occupancy over downstream windows;
+adding multiple sources that immediately collapse into one route does not satisfy
+that model's intended behaviour.
+
+Formation metadata tracks phase activity, discharge, cooling/age proxies,
+reoccupation and optional drained pools. Pools are selected from local conditions
+and become elongated widenings; junctions do not receive arbitrary spherical rooms.
+These are procedural formation rules, not a simulation of molten lava transport.
+
+### Sections, gravity and roof screening
+
+![Three current generated cross-sections](docs/figures/readme/current_sections.png)
+
+*Low-junction samples near the 10th, 50th and 90th height percentiles of the current
+short multi case, seed 0. These input contours precede volumetric relief, smoothing
+and event modifications. They are not measured final clearances.*
+
+Local passage width and height vary with host conditions, flux/history metadata,
+correlated morphology and seeded asymmetry. Separate floor, roof and wall controls
+avoid a constant elliptical extrusion. Adaptive sampling becomes denser near
+curvature, width changes and junctions. Junction envelopes and frames must agree
+before the surface is built.
+
+Roof thickness couples width and height. At a fixed floor depth `d`, a cavity of
+height `h` leaves a roof `t = d − h`. The current conservative, simply supported
+beam surrogate requires:
+
+$$t \ge \frac{3 S \rho g w^2}{4\sigma_{\mathrm{eff}}}$$
+
+Here `w` is unsupported span, `S` the safety factor, `ρ` rock density, `g` gravity
+and `σ_eff` effective fractured-rock tensile strength. Widening increases demand
+quadratically; increasing height reduces the available roof thickness. Body width
+caps are additional procedural constraints, not universal maximum cave sizes.
+
+![Gravity-dependent roof thickness screening curves](docs/figures/readme/gravity_screen.png)
+
+*Only gravity varies: density 2,900 kg/m³, effective strength 3 MPa, safety factor
+1.5. These conditional model curves are not observed tube dimensions. Arching,
+layering and stress confinement require a more complete structural model.*
+
+### Surface construction and simulation cost
+
+Geometry sweeps section envelopes into an implicit field, combines junctions and
+structural features, and extracts triangles with marching cubes. Sparse tiles
+limit empty-space allocation; shared boundaries and welding must preserve a
+continuous surface. Coherent wall/roof/floor relief supplies larger physical
+variation. Normal maps supply fine shading detail without adding collision faces.
+
+| Control | Quality effect | Cost / caveat |
+|---|---|---|
+| Smaller voxels | Resolves narrower passages and smaller relief | Halving spacing can approach 8× dense sample memory |
+| More section samples | Better local interpolation near sharp changes | More profile and field-evaluation work |
+| Tiled storage | Avoids allocating a full empty bounding box | Tile halos and extraction still consume memory |
+| Visual reduction | Smaller render mesh | Must preserve topology, routes and sampled surface-error bounds |
+| Dedicated collider | Fewer collision triangles where acceptable | Checked independently; may retain the master if reduction fails |
+| One repeated PBR tile | Texture allocation independent of cave length | Geometry/draw costs still grow; image file size is not GPU memory |
+| Continuous projection | Removes UV chart boundaries from material sampling | Nine texture samples instead of three; no added polygons |
+
+Serialized float32 coordinates are checked, including metre/centimetre
+representations, because a mesh valid in float64 can degenerate on import.
+Export limits constrain the delivered asset; they are not a frame-rate guarantee.
+
+### Embedded inspection and repair
+
+| Layer | Inspection | Permitted response |
+|---|---|---|
+| Network / sections | Shape, connectivity, overlaps, host/stability limits, intended topology | Deterministic local repairs and a bounded candidate search |
+| Base surface | Components, orientation, handles, protected routes and thin features | Bounded local field repair, policy-permitted relief adjustment, upstream recovery |
+| Resolution | Input samples across passages; declared refinement/convergence probes | Finer consistent grids only within explicit allocation/attempt limits |
+| Mobility | Continuous capsule clearance; optional chassis/floor/slope/step checks | Bounded route placement/detours and constrained local geometry repair |
+| Visual / collider | Prepared surface, float precision, reduction deviation and route preservation | Safer reduction/precision candidates; reject when checks still fail |
+| Textures / package | Decoding, normal vectors, color/data bindings, exact embedded maps and adapter files | Normalize usable vectors; declared DirectX conversion; one package rebuild |
+| Publication | All required policy checks and integrity receipts | Atomic replacement only after acceptance |
+
+Missing input images, corrupt data, unsupported capabilities, programming errors
+and resource exhaustion are not fixed by trying random seeds. Repairs retain their
+original failure, attempted actions, effective settings and final result. Acceptance
+is never automatically weakened to make a seed pass.
+
+| Policy | Required beyond ordinary pipeline checks |
+|---|---|
+| `research` | Exploratory numerical outputs; clearance/export budgets are not implied |
+| `inspection` | Required capsule route, dedicated checked collision and finite export budgets |
+| `simulation` | Inspection requirements plus resolution evidence and positive retained-relief policy |
+| `require_ground_routes = true` | Additional finite chassis, floor support, slope, step and junction-turn checks |
+| `require_textures = true` | Complete accepted PBR maps and package evidence |
+
+The reference ground contract is 0.7 m long × 0.5 m wide × 0.5 m high, a 0.02 m
+margin, 20° maximum slope and 0.10 m maximum step. Required paths and junction
+connectors are checked on raw, visual and collision surfaces. Optional side
+passages may remain narrower. These checks do not simulate wheel or track dynamics.
+
+### Scientific evaluation and reproducibility
+
+The bundled [experiment declaration](src/plume_advanced/evaluation/resources/experiments.toml) separates morphometry,
+controllability, host/sampling ablations, scalability, export consistency and
+reproducibility. Data analysis uses generated graph/profile measurements, not
+screenshots as quantitative evidence.
+
+| Reference | What it informs | What it cannot establish |
+|---|---|---|
+| [Pyroduct Digital Catalog v2](https://doi.org/10.5281/zenodo.17750755) | Terrestrial cross-section shape and size distributions | Full network topology or extraterrestrial calibration |
+| [USGS/NASA TubeX Valentine Cave](https://doi.org/10.5066/P14AC3J5) | One cave's planform, local widening and surface comparisons | A universal morphology target; plan envelopes are not single-passage sections |
+
+The [bundled PDC cave partitions](src/plume_advanced/evaluation/resources/splits/) contain 76
+calibration caves and 19 confirmatory caves. The split ranked SHA-256 of
+`pdc-v2.0:20260831:<cave-id>` and reserved the first 19. Do not tune on the
+confirmatory set. An exploratory whole-catalog summary predates the split, so it
+is not claimed to have been historically unseen.
 
 ```bash
-uv sync --locked --group dev
-uv run --no-sync ruff check .
-uv run --no-sync mypy src/plume_advanced
-uv run --no-sync pytest
-```
-
-Tests cover stages, config validation, network semantics, interpolation, dense/tiled continuity, stability, surface relief, exports, and evaluation helpers. Marked integration or performance cases may take longer; check [pyproject.toml](pyproject.toml) for test settings.
-
-The [13–14 September textured campaign](docs/reviews/textured-campaign-2026-09-13.md) evaluated six short Earth caves with 4K materials, six exact cold replays, and native Unity and Unreal checks on every original. All passed the final audit. The report retains rejected setup trials, repair decisions, interior figures and remaining clearance, resolution and collider limitations, with links to the generated models and editor projects.
-
-The subsequent [14 September clearance and repair campaign](docs/reviews/mobility-repair-campaign-2026-09-14.md) repeated those six designs with a required 0.5 m × 0.5 m inspection body, bounded path/geometry repairs and checked collider simplification. All six originals and cold replays passed, with 340 material views and 2,845 floor/roof probe locations per native engine. Collision triangle counts fell by 40–80%; input-profile resolution warnings and differences in engine lighting remain. The report links the generated assets and records the earlier failures that led to the fixes.
-
-The [latest cleanup review](docs/reviews/cleanup-2026-09-14.md) records the
-maintained entry points and regression checks. The subsequent
-[remaining-gap assessment](docs/reviews/remaining-gaps-2026-09-14.md) defines
-proposed completion criteria for simulation presets, geometric fidelity,
-native collision, long-cave performance and scientific scope; those proposals
-are not additional completed evaluations.
-
-For a **full-pipeline prepared GLB**, use the portable asset validator:
-
-```bash
-uv run --no-sync plume-validate \
-  outputs/full_earth/export_all/blender/plume_cave_scene.glb \
-  --run-manifest outputs/full_earth/run_manifest.json \
-  --output-dir outputs/full_earth/validation
-```
-
-Its checks include prepared-scene attributes and packaging expectations. For the intentionally bare tube-only GLB, use its `export_checks.json`, inspection renders, and `check_tube_sections.py` instead of treating missing PBR preparation as a geometry failure.
-
-### Scientific experiments
-
-The [evaluation workflow](paper/README.md) and [experiment declarations](paper/experiments.toml) cover morphometry, controllability, host and sampling ablations, scalability, determinism, and export consistency.
-
-```bash
-uv sync --locked --group dev --extra paper
-uv run --no-sync plume-evaluate --config paper/experiments.toml audit
-
-# Point to your separately downloaded PDC v2 TXT tree.
-export PLUME_PDC_ROOT=/absolute/path/to/PDC-v2
-uv run --no-sync plume-evaluate --config paper/experiments.toml pdc-audit
-
-# Bounded development comparison; use calibration caves for tuning.
-uv run --no-sync plume-evaluate --config paper/experiments.toml morphometry \
+export PLUME_PDC_ROOT=/absolute/path/to/extracted/PDC-v2
+uv run --no-sync plume-evaluate audit
+uv run --no-sync plume-evaluate pdc-audit
+uv run --no-sync plume-evaluate morphometry \
   --reference-partition calibration --max-seeds 3
 ```
 
-The frozen split reserves **76 caves for calibration and 19 for confirmation**. The declared morphometry default uses the evaluation partition; select `calibration` explicitly during development. `plume-evaluate all` runs a substantial campaign, including full geometry and scalability experiments. It is not a quick test or a statement that the campaign has already passed.
+External reference archives remain outside Git. The maintained loader retains
+source identities and rejection reasons. Bundled experiments write results under
+`outputs/evaluation/` in the working directory. Their research recipe resolves
+relative assets as the public `config/research.toml` does: from `config/` in that
+working directory, with rock maps under `texture/`. External textures are not
+included in the Python wheel. The audit returns a failure and lists missing input
+files when they are unavailable.
 
-Completed cases are reused only when their recorded source, configuration, dependencies, data, and input fingerprints match. Failed cases remain visible. The [claim/evidence matrix](docs/paper/CLAIM_EVIDENCE_MATRIX.md) distinguishes implementation checks from scientific validation.
+Pass `--config path/to/experiments.toml` before the subcommand to use a custom
+declaration. Its paths resolve beside that file; the selected project recipe's
+assets resolve beside the recipe. Optional `general.asset_directory` overrides
+the base for relative texture and Rocky scratch paths without moving the recipe.
+Experiment tables reject unknown keys, invalid types, unsupported choices and
+nonfinite or out-of-range values before starting work.
 
-The [dated evaluation campaign](paper/campaigns/2026-09-07/README.md) preserves the source, protocol, execution record and reporting workflow for the current paper. Its standard mesh benchmarks include reconstruction through the final mesh at 0.6 m resolution, with explicit time and memory limits. These measurements are separate from the higher-resolution inspection illustrations and from application import tests.
+Export evaluation checks every target's descriptor and visual bounds in metres.
+Completed exports are reused only while the complete package still matches its
+file hashes. Missing, modified or extra files trigger regeneration; the previous
+attempt is retained, and a failed regeneration replaces its success claim.
+`plume-evaluate --help` lists the full
+experiment suite; the complete campaign is much more expensive than a smoke test.
 
-The campaign has now attempted all **2,076 cases**: 2,071 completed and five dense
-5 km benchmarks reached the memory limit. See the [results report](paper/campaigns/2026-09-07/REPORT.md)
-for the measured effects and limits. The findings include remaining size mismatch,
-no median cycle-rank response to distributary tendency, and larger adaptive-sampling
-point discrepancies; completed cases do not imply that every hypothesis was supported.
+A repeatable run requires the **seed, resolved configuration, source/material
+resources, external inputs and dependency runtime**. The source identity includes
+the shared preset catalog and shipped material adapters. Cold replays use a
+separate process and a different Python hash seed. No finite test campaign proves
+that every possible seed succeeds.
 
+## Limits
 
-### Source map and documentation
-
-| Location | Role |
+| Area | Current limit |
 |---|---|
-| `src/plume_advanced/stages/` | Host, network, sections, volume, relief, events, floor atlas |
-| `src/plume_advanced/stability.py` | Coupled roof-span screening |
-| `src/plume_advanced/exporters/` | Shared prepared scene and target adapters |
-| `src/plume_advanced/pipeline/` | Validated stage checkpoints |
-| `src/plume_advanced/evaluation/` | Artifacts, datasets, metrics, local studies, experiment runner |
-| `scripts/` | Inspection, comparison, diagnostic and media entry points |
-| `config/` | Editable generation scenarios |
-| `tests/` | Regression and integration checks |
-| `paper/` | Experiment declarations, fixed splits, paper/media assets |
-| `docs/` | Focused design, validation, and scientific notes |
+| Geological fidelity | Procedural rules and conservative surrogates; no CFD, cooling PDE or full rock-mechanics solution |
+| Celestial coverage | Earth/Mars/Moon scenarios only; Jupiter/Saturn moons and cryovolcanic materials are not implemented |
+| Seed reliability | Some seeds exhaust repair or resource budgets. A clean rejection is expected behaviour, not a valid environment |
+| Ground mobility | Clearance/support/slope/step screening is implemented; traction, suspension, steering, wheel/track dynamics and sensors remain simulator responsibilities |
+| Numerical coverage | Sampled checks do not prove the absence of every self-intersection or geometric defect |
+| Appearance | One reusable rock tile is not measured basalt calibration; valid maps do not guarantee natural appearance in every view |
+| Geometry extent | Cavity boundary with closed numerical ends; no surrounding massif, automatic entrances or complete terrain shell |
+| Runtime performance | File/triangle budgets and checked reduction are implemented; streaming, LOD policy, frame time and engine memory need target-hardware profiling |
+| Native scope | Unity/Unreal have route qualification checks; Gazebo/Isaac have separate import smoke checks described in [Simulators](#simulators). Other versions and robot behavior require separate verification |
 
-The [geometry corrections](docs/geometry_artifact_fixes.md), [surface relief notes](docs/surface_relief.md), and [7 September 2026 validation report](docs/geometry_validation_2026-09-07.md) explain the recent geometry work. Dated reports preserve their own configurations and results; they are not promises about every new seed. The [pipeline animation](docs/media/FullPipeline.mp4) is a historical explanatory visualization built from frozen artifacts, not a current-mesh benchmark or physical flow simulation.
-
-README figures are saved under [docs/figures/readme](docs/figures/readme/README.md), with input hashes and reproduction instructions. Code is distributed under the [BSD 3-Clause license](LICENSE); third-party textures, reference data, and optional providers retain their own licenses.
-
-## Scientific model and generation
-
-### The actual execution order
-
-The stage letters describe responsibilities. The full command interleaves geometry and floor-map work because geological events need the base floor, and the final atlas must reflect structural changes.
-
-![Execution order from host generation through final mesh and target export](docs/figures/readme/pipeline.png)
-
-*Figure 2. The full pipeline first builds a cave volume, samples an event-placement floor atlas, then applies optional geology before producing the final mesh and relifting the atlas. Surface preparation follows the final geometry. Mandatory roof screening belongs to base-volume construction and runs even when optional events are disabled.*
-
-### A. Host conditions
-
-[HostFieldGenerator](src/plume_advanced/stages/host_field.py) constructs a regular terrain grid and correlated scalar fields. These include elevation, slope, cover, roof competence, fracture intensity, flow capacity, cooling, and emplacement/deposit proxies. Routing combines weighted slope, cover, fracture, capacity, and stability penalties.
-
-A generated field is a hypothesized substrate, not a measured geological reconstruction. The stored influence report exposes each routing term's variation and contribution, making it possible to test whether a term affects generation. Body scaling and eruption controls alter this substrate before network growth.
-
-![Current Earth seed-4 elevation, cover, roof competence and routing cost](docs/figures/readme/host_fields.png)
-
-*Figure 3. Four fields from the new Earth seed-4 host. Each panel shows the full host domain, with Y displayed horizontally. Competence and cost are procedural indices, not material strength measurements.*
-
-### B. Formation network and history
-
-The default `general` topology uses the formation grammar described below.
-The optional [dominant-gallery grammar](docs/trunk_topology.md) instead places
-local island bypasses and blind branches along a smooth host-biased route.
-It adds an explicit floor-plan target and checks the resulting section envelopes;
-it does not infer that target from the host alone.
-
-[CaveNetworkGenerator](src/plume_advanced/stages/network.py) combines a downhill backbone with finite-flux lobe breakouts. Candidate paths respond to perturbed terrain, momentum, host suitability, existing channels, and an evolving emplacement surface. Lobes may diverge, cool, retire, or coalesce downstream. Successive phases can reuse or abandon routes and assign relative vertical levels.
-
-The graph records sources, segment roles, split/rejoin relationships, phase history, flux, temperature, and age. Conservation and ordering checks test the internal consistency of those quantities. Their presence does not make this a conservation-law thermofluid solver. Source supply and cooling controls remain simplified, and a formation graph's connectivity is distinct from final accessibility after collapse or infill.
-
-![Current Earth seed-4 formation network and longitudinal section elevations](docs/figures/readme/network.png)
-
-*Figure 4. The formation network colored by birth phase, followed by the sampled floor and roof of its longest segment. The lower panel exaggerates vertical differences. The upper graph does not itself show whether the final void is passable.*
-
-### C. Cross-sections and vertical placement
-
-[SectionFieldGenerator](src/plume_advanced/stages/section_field.py) samples each route with `adaptive`, `uniform`, or denser `reference` spacing policies. Adaptive sampling responds to curvature, width changes, and junction proximity. Local frames turn each 2D contour into a 3D passage profile.
-
-Widths, height ratios, roof arches, floor flatness, skew, benches, floor channels, and roughness vary through correlated morphology fields and inherited flow state. Drained-pool metadata creates selected broad, low regions with graded transitions. Floor placement is handled separately from roof height so a floor drop does not automatically produce the same displacement in the ceiling. Stacked-level offsets are constrained by cover and grade; a requested graph level is not proof of an independently separated physical layer.
-
-![Six real cross-section envelopes sampled from the current Earth seed-4 network](docs/figures/readme/sections.png)
-
-*Figure 5. Actual Stage-C contours before 3D accretion, smoothing, or export displacement. Profile dimensions must be distinguished from final mesh clearances; panel limits vary, but each panel preserves equal horizontal and vertical scale.*
-
-### Gravity, roof thickness, and collapse
-
-[RoofStabilityModel](src/plume_advanced/stability.py) screens a simply supported, unit-width roof beam under self-weight. Let:
-
-| Symbol | Meaning | Unit |
-|---|---|---|
-| `w`, `h` | Unsupported width and cavity height | m |
-| `d`, `t = d − h` | Floor depth below local ground and roof thickness | m |
-| `ρ`, `g` | Rock density and gravity | kg/m³, m/s² |
-| `σ_eff`, `F` | Effective tensile strength and safety factor | Pa, dimensionless |
-
-The implemented relations are:
-
-```text
-required roof thickness = 3 F ρ g w² / (4 σ_eff)
-demand ratio            = required roof thickness / t
-maximum width           = sqrt(4 σ_eff t / (3 F ρ g))
-maximum height          = max(d − required roof thickness, 0)
-```
-
-A candidate passes if it has positive roof thickness and demand no greater than one. At a **fixed floor depth**, increasing height consumes cover. Width and height limits are therefore coupled. At fixed material and cover, allowable width scales as `1 / sqrt(g)`; formation controls still determine what sizes the generator proposes.
-
-Effective strength is derived from intact tensile strength, rock-mass quality, and a weathering reduction. The current default safety factor is 1.5. This roof screen does not solve arching, regional stresses, stratification, fracture propagation, sidewall failure, or pillar load sharing. More complete structural research, such as [Blair et al. (2017)](https://www.sciencedirect.com/science/article/pii/S0019103516303566), treats a richer problem.
-
-![Coupled height-cover schematic and required roof thickness versus span for three gravities](docs/figures/readme/roof_stability.png)
-
-*Figure 6. A controlled comparison holding density, effective strength, and safety factor fixed. The curves show required roof rock, not predicted Earth/Mars/Moon passage heights. The built-in material presets differ and are deliberately not used in this gravity-only comparison.*
-
-Section metadata records conditional limits and collapse flags. Geometry construction reassesses profile and junction envelopes; failed regions receive solid breakdown plugs. This represents a blocked end state, not dynamically falling rubble or an automatically opened skylight. Screening remains local to the sampled envelopes, not a pointwise structural certification of the final smoothed/displaced mesh.
-
-### D. Continuous volume, relief, and meshing
-
-[GeometryGenerator](src/plume_advanced/stages/geometry.py) refines the sampled centerlines and profiles, sweeps the contours into a shared scalar volume, and joins overlapping passages. Generation uses section profiles: chambers are built from widened section sweeps. It does not add a second cylindrical room on top of an already widened profile.
-
-Continuous interpolation across shared section planes and shape-preserving centerline refinement limit the stepped joins and repeated ribs that arise from independent coarse stamps. The implementation preserves the floor separately during refinement. Dense and overlapping tiled grids share the same density-query convention and reconcile boundary samples before polygonization.
-
-The [surface relief pass](src/plume_advanced/stages/surface_relief.py) adds spatially varying inward wall accretion, roof projections, floor lobes, and crust. It uses seeded world-space fields, so features do not restart at section or chunk boundaries. Relief is limited near shallow passages and attenuated when requested features are unresolved. Tiny isolated numerical pockets are repaired before mandatory roof screening.
-
-![Matched before and after views of geometric relief on one isolated test passage](docs/figures/readme/surface_relief.png)
-
-*Figure 7. Controlled geometry comparison on a separate 64 m Earth test reach at 0.10 m voxels. Camera, material, smoothing, and normal settings are held fixed. This is a bounded reach with artificial closed ends, not the new seed-4 full tube. The change is in geometry, not a texture overlay.*
-
-Marching cubes extracts the isosurface in chunks, and shared boundaries are welded into the cave surface. Structural events modify the density before final meshing. The geometry-only exporter then applies modest smoothing and density-derived normals; the full export path additionally prepares UVs, tangents, optional displacement and PBR maps. Surface relief, normal shading, and texture displacement are separate operations with different effects on actual clearance.
-
-### Floor atlas, optional geology, and export
-
-The [floor atlas](src/plume_advanced/stages/floor_map.py) addresses cells by `(segment_id, distance_along_m, lateral_offset_m)` and stores their world position, surface normal, clearance, and graph level. This preserves distinct stacked passages at the same plan coordinate. The atlas is sampled against the base density, then relifted after structural events; blocked cells are invalidated instead of projected through rock.
-
-[Geological events](src/plume_advanced/stages/events.py) place optional rock/boulder props against the floor and represent collapse, choke, and infill as structural volume modifiers. Flow state, host information, and local clearance influence their placement. Loose debris remains separate geometry, while structural modifiers alter the cave topology. A simplified collision mesh and the finished visual mesh are exported from the common prepared scene.
-
-### What has been checked, and what remains uncertain
-
-The [dated validation report](docs/geometry_validation_2026-09-07.md) records a bounded development study:
-
-- Nine complete **network and section** cases—three seeds each for Earth, Mars, and Moon—passed graph/profile checks. Each case also had **one local junction mesh** checked. This was not nine full-network meshes.
-- Six shallow locations in the earlier Earth seed-2 full mesh were studied at progressively finer local resolutions. Heights stabilized; five met all final criteria, while one retained approximately 6 cm of contour/width variation. These local patches were not stitched into the full model.
-- Comparison with 1,286 accepted sections from 76 PDC calibration caves showed remaining differences: the chosen low Earth scenario is flatter, and its input roof shapes are more symmetric than the calibration population. No held-out evaluation cave coordinates were used in that pass.
-- A separate Valentine surface comparison found improved sub-metre geometric relief, with sampling and surface-coverage limitations.
-
-![Measured surface residuals for the Valentine scan and generated surfaces before and after relief](docs/figures/readme/reference_comparison.png)
-
-*Figure 8. Median local plane-fit residuals at 0.4 m and 0.8 m neighborhood radii, using saved comparison results. The generated after-relief case moves toward the reference at these scales. Plane residuals also include curvature and edges; the 1.6 m results are omitted here because neighborhoods can span opposing floor and roof surfaces. These bars are not a geological validation score.*
-
-For a new run, inspect three separate things: semantic network consistency, the final mesh and its clearances, and correspondence to surveyed morphology. A closed surface alone proves neither access nor realistic geology. Remaining work includes broader terrestrial shape calibration, route-wide resolution assessment, more complete material/formation models for other bodies, and quantitative validation of fine roof/floor features. Automatic adaptive patch stitching, finite host-rock shells, and visual LOD generation are not implemented.
-
-### Scientific references and figure provenance
-
-- **Terrestrial cave morphology:** Waters, Donnelly-Nolan and Rogers, [*Selected caves and lava-tube systems in and near Lava Beds National Monument*, USGS Bulletin 1673](https://pubs.usgs.gov/publication/b1673). Field descriptions motivate benches, floor changes, compound chambers, and contrasting wall/roof/floor forms; PLUME approximates these features procedurally.
-- **Cross-section reference:** Romio et al., [*Pyroduct Digital Catalog*, version 2](https://zenodo.org/records/17750755). Use the frozen cave-level partitions for comparison. Station order is available, but it generally does not establish physical spacing in metres, so it cannot directly calibrate a longitudinal correlation length.
-- **Valentine 3D measurements:** Whelley et al., [*NASA TubeX Valentine Cave: 2018 Valentine LiDAR*](https://www.usgs.gov/data/nasa-tubex-valentine-cave-2018-valentine-lidar), released in 2026, DOI 10.5066/P14AC3J5. The local comparison used the explicitly downsampled 10 cm cloud.
-- **Interactive reference supplied during development:** Whelley's [*Valentine Cave Lava Tube 5cm*](https://sketchfab.com/3d-models/valentine-cave-lava-tube-5cm-8e8cd77139b54f3d8912c00881af7214). This is a point cloud with intensity colors, not a triangle mesh; its 5 cm sampling should not be confused with the 10 cm USGS comparison product or PLUME's voxel size.
-- **Structural context:** Blair et al., [*The structural stability of lunar lava tubes*](https://www.sciencedirect.com/science/article/pii/S0019103516303566), Icarus 282 (2017), 47–55. This motivates treating stability as dependent on roof/material assumptions; PLUME does not reproduce that study's structural solver.
-
-All README result images come from saved PLUME artifacts or measured comparison tables. The pipeline diagram and roof schematic are explanatory illustrations. Input hashes and exact figure sources are recorded in [figure provenance](docs/figures/readme/provenance.json).
+Code is distributed under the [BSD 3-Clause license](LICENSE). External datasets and
+texture assets retain their own licenses and attribution requirements.

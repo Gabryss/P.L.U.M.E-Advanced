@@ -32,12 +32,24 @@ class AcceptancePolicy:
     require_resolution: bool = False
     require_textures: bool = False
     require_native: bool = False
+    require_ground_routes: bool = False
     route_height_m: float = 0.5
     route_width_m: float = 0.5
     route_margin_m: float = 0.02
     minimum_relief_scale: float = 0.0
+    robot_length_m: float = 0.7
+    robot_max_slope_deg: float = 20.0
+    robot_max_step_m: float = 0.10
+    robot_support_spacing_m: float = 0.10
 
     def __post_init__(self) -> None:
+        from plume_advanced.stages.ground_routes import GroundRobot
+        GroundRobot(length_m=self.robot_length_m,
+                    width_m=self.route_width_m if self.require_ground_routes else .5,
+                    height_m=self.route_height_m if self.require_ground_routes else .5,
+                    margin_m=self.route_margin_m,
+                    max_slope_deg=self.robot_max_slope_deg, max_step_m=self.robot_max_step_m,
+                    support_spacing_m=self.robot_support_spacing_m)
         if not isinstance(self.profile, str) or self.profile not in _PROFILE_REQUIREMENTS:
             raise ValueError("acceptance.profile must be research, inspection or simulation")
         for field in fields(self):
@@ -52,6 +64,8 @@ class AcceptancePolicy:
             raise ValueError("acceptance requires 0 < route_width_m <= route_height_m")
         if self.minimum_relief_scale > 1:
             raise ValueError("acceptance.minimum_relief_scale must be in [0, 1]")
+        if self.require_ground_routes and not self.require_clearance:
+            raise ValueError("Ground-route acceptance requires clearance inspection")
         for name in _PROFILE_REQUIREMENTS[self.profile]:
             if not getattr(self, name):
                 raise ValueError(f"acceptance.{name} cannot be disabled for {self.profile}")
@@ -73,6 +87,8 @@ def build_acceptance_policy(raw: dict | None = None) -> AcceptancePolicy:
     defaults: dict[str, Any] = dict(_PROFILE_REQUIREMENTS[profile])
     if profile == "simulation":
         defaults["minimum_relief_scale"] = 1.0
+    if data.get("require_ground_routes") is True:
+        defaults["require_clearance"] = True
     return AcceptancePolicy(**(defaults | data))
 
 
@@ -86,11 +102,18 @@ def apply_acceptance_defaults(policy: AcceptancePolicy, geometry: dict, export: 
             geometry.setdefault(key, value)
     if policy.require_collision:
         export.setdefault("generate_collision", True)
+    if policy.require_ground_routes:
+        for key, value in (("ground_robot_length_m", policy.robot_length_m),
+                           ("ground_max_slope_deg", policy.robot_max_slope_deg),
+                           ("ground_max_step_m", policy.robot_max_step_m),
+                           ("ground_support_spacing_m", policy.robot_support_spacing_m)):
+            geometry.setdefault(key, value)
     if policy.require_export_budgets:
         export.setdefault("max_visual_triangles", 2_000_000)
         export.setdefault("max_asset_bytes", 256 * 1024 * 1024)
     if policy.require_resolution:
         geometry.setdefault("resolution_refinement_attempts", 2)
+        export.setdefault("visual_max_error_m", 0.01)
     return geometry, export
 
 
@@ -106,6 +129,14 @@ def validate_acceptance_configuration(
                 raise ValueError(f"geometry.{key} must be at least {minimum:g} for the acceptance policy")
     if policy.require_collision and not export.generate_collision:
         raise ValueError("acceptance.require_collision needs export.generate_collision = true")
+    if policy.require_ground_routes:
+        if geometry.ground_robot_length_m < policy.robot_length_m:
+            raise ValueError("geometry.ground_robot_length_m is smaller than the required robot")
+        for key, limit in (("ground_max_slope_deg", policy.robot_max_slope_deg),
+                           ("ground_max_step_m", policy.robot_max_step_m),
+                           ("ground_support_spacing_m", policy.robot_support_spacing_m)):
+            if getattr(geometry, key) > limit:
+                raise ValueError(f"geometry.{key} exceeds the acceptance limit")
     if policy.require_export_budgets:
         for key in ("max_visual_triangles", "max_asset_bytes"):
             if type(getattr(export, key)) is not int or getattr(export, key) <= 0:
@@ -158,6 +189,14 @@ def _resolution_check(resolution: dict | None, geometry: CaveGeometry) -> tuple[
     repair: dict[str, Any] = dict(geometry.resolution_repair)
     attempts = repair.get("attempts", [])
     last = attempts[-1] if attempts else {}
+    if repair.get("outcome") == "input_sampling_sufficient":
+        passed = (repair.get("passed") is True and last.get("accepted") is True
+                  and last.get("under_resolved") == 0
+                  and last.get("resolution_section_count") == count
+                  and type(last.get("minimum_samples")) is int and last["minimum_samples"] >= 8
+                  and last.get("voxel_size_m") == geometry.config.voxel_size
+                  and repair.get("effective_voxel_size_m") == geometry.config.voxel_size)
+        return passed, "Effective refined grid must pass the eight-sample screen on every input profile"
     comparison = last.get("comparison", {})
     passed = (repair.get("passed") is True and repair.get("outcome") == "converged"
               and last.get("accepted") is True and comparison.get("passed") is True
@@ -191,6 +230,27 @@ def evaluate_acceptance(
     checks["clearance"] = _check(policy.require_clearance, bool(route_passed),
         "Continuous upright-body checks on raw/visual geometry and the required collider",
         height_m=policy.route_height_m, width_m=policy.route_width_m, margin_m=policy.route_margin_m)
+    ground_reports = [package.get(key, {}).get("ground_traversal", {}) for key in ("raw", "visual")]
+    if policy.require_collision:
+        ground_reports.append(package.get("collision", {}).get("inspection", {}).get("ground_traversal", {}))
+    def ground_passes(r):
+        robot = r.get("robot", {})
+        return (r.get("enabled") is True and r.get("passed") is True and bool(r.get("paths"))
+                and "junctions" in r and all(j.get("passed") is True for j in r["junctions"])
+                and len(r["paths"]) == len(geometry.required_route_paths)
+                and [p.get("segment_id") for p in r["paths"]] == expected_ids
+                and all(p.get("passed") is True and len(p.get("poses", [])) == p.get("samples")
+                        and p.get("samples", 0) >= 2 and p.get("sweeps") for p in r["paths"])
+                and all(robot.get(key, 0) >= value for key, value in (
+                    ("length_m", policy.robot_length_m), ("width_m", policy.route_width_m),
+                    ("height_m", policy.route_height_m), ("margin_m", policy.route_margin_m)))
+                and all(0 <= robot.get(key, float("inf")) <= value for key, value in (
+                    ("max_slope_deg", policy.robot_max_slope_deg), ("max_step_m", policy.robot_max_step_m),
+                    ("support_spacing_m", policy.robot_support_spacing_m))))
+    checks["ground_routes"] = _check(policy.require_ground_routes, all(map(ground_passes, ground_reports)),
+        "Sampled floor support, slope/step limits and conservative continuous full-body motion on raw, visual and required collision meshes",
+        length_m=policy.robot_length_m, max_slope_deg=policy.robot_max_slope_deg,
+        max_step_m=policy.robot_max_step_m, support_spacing_m=policy.robot_support_spacing_m)
     collision = package.get("collision", {})
     checks["collision"] = _check(policy.require_collision,
         collision.get("enabled") is True and collision.get("inspection", {}).get("passed") is True,

@@ -449,7 +449,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         )
 
     def test_regression_seeds_produce_connected_positive_flow_graphs(self) -> None:
-        project_config = load_project_config(ROOT / "config" / "project.toml")
+        project_config = load_project_config(ROOT / "config" / "research.toml")
         host_field = HostFieldGenerator(project_config.host_field).generate()
 
         for seed in (3, 5, 7, 9):
@@ -481,7 +481,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertEqual(generic_metrics["zero_flux_segment_count"], 0)
 
     def test_network_density_controls_lobes_anastomoses_and_loops(self) -> None:
-        project_config = load_project_config(ROOT / "config" / "project.toml")
+        project_config = load_project_config(ROOT / "config" / "research.toml")
         host_field = HostFieldGenerator(project_config.host_field).generate()
         sparse = CaveNetworkGenerator(
             replace(project_config.network, network_density=0.5)
@@ -503,7 +503,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertLess(sparse_summary["loop_count"], dense_summary["loop_count"])
 
     def test_density_zero_is_single_backbone_endmember(self) -> None:
-        project_config = load_project_config(ROOT / "config" / "project.toml")
+        project_config = load_project_config(ROOT / "config" / "research.toml")
         host_field = HostFieldGenerator(project_config.host_field).generate()
         network = CaveNetworkGenerator(
             replace(project_config.network, network_density=0.0, random_seed=17)
@@ -515,7 +515,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertLess(network.max_flow_conservation_error(), 1e-8)
 
     def test_backbone_curvature_controls_are_seeded(self) -> None:
-        project_config = load_project_config(ROOT / "config" / "project.toml")
+        project_config = load_project_config(ROOT / "config" / "research.toml")
         host_field = HostFieldGenerator(project_config.host_field).generate()
         config = replace(
             project_config.network,
@@ -539,7 +539,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         )
 
     def test_capture_probability_blocks_cross_level_merges(self) -> None:
-        project_config = load_project_config(ROOT / "config" / "project.toml")
+        project_config = load_project_config(ROOT / "config" / "research.toml")
         host_field = HostFieldGenerator(project_config.host_field).generate()
         network = CaveNetworkGenerator(
             replace(project_config.network, network_density=3.0, capture_probability=0.0)
@@ -556,7 +556,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         )
 
     def test_sustained_uphill_labels_are_process_scoped(self) -> None:
-        project_config = load_project_config(ROOT / "config" / "project.toml")
+        project_config = load_project_config(ROOT / "config" / "research.toml")
         host_field = HostFieldGenerator(project_config.host_field).generate()
         network = CaveNetworkGenerator(project_config.network).generate(host_field)
         recognized = {"anastomosis", "underpass", "chamber_braid", "ladder"}
@@ -571,7 +571,7 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
                 self.assertFalse(label.startswith("process_uphill_"))
 
     def test_default_config_generates_host_driven_lobe_network(self) -> None:
-        project_config = load_project_config(ROOT / "config" / "project.toml")
+        project_config = load_project_config(ROOT / "config" / "research.toml")
         self.assertIsInstance(project_config.procedural_seed, int)
         self.assertIsInstance(project_config.host_field.seed_point, tuple)
         self.assertEqual(

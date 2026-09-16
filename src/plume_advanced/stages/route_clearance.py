@@ -50,7 +50,7 @@ def required_paths(network, sections, config):
         points = [(s.x, s.y, s.z) for s in field.samples]
         # The sealed cap itself cannot contain a finite body. Stop one body
         # width from degree-one ends; keep every junction fully inspected.
-        trim = config.required_route_width_m+2*config.route_clearance_margin_m
+        trim = max(config.required_route_width_m, config.ground_robot_length_m)+2*config.route_clearance_margin_m
         paths.append(resample_route_polyline(points, config.route_inspection_spacing_m,
                                trim if degree[segment.start_node_id] == 1 else 0,
                                trim if degree[segment.end_node_id] == 1 else 0))
@@ -67,13 +67,18 @@ def required_paths(network, sections, config):
     return tuple(paths), tuple(ids)
 
 
-def fit_required_sections(network, sections, config, host=None, *, extra_margin_m=0., affected=None):
+def fit_required_sections(network, sections, config, host=None, *, extra_margin_m=0., affected=None,
+                          minimum_relief_scale=0.):
     """Enlarge only deficient route envelopes, respecting frame and roof limits.
 
-    Centers, graph and random state stay unchanged. The original shape scales
-    continuously about its center; final cavity and capsule gates remain mandatory.
+    Centers, frames, graph and random state stay unchanged. The contour expands
+    with its world-space floor fixed; final cavity and capsule gates remain mandatory.
     A buffer reserves space for discretization/accretion, not extra robot size.
     """
+    if (isinstance(minimum_relief_scale, bool) or not isinstance(minimum_relief_scale, (int, float))
+            or not np.isfinite(minimum_relief_scale)
+            or not 0 <= minimum_relief_scale <= 1):
+        raise ValueError("minimum_relief_scale must be finite and in [0, 1]")
     if not config.required_route_height_m:
         return sections, dict(enabled=False, changed_samples=0)
     generator = SectionFieldGenerator(sections.config)
@@ -81,6 +86,10 @@ def fit_required_sections(network, sections, config, host=None, *, extra_margin_
     fields = []
     changes = []
     failed = []
+    relief_h = minimum_relief_scale * (config.surface_roof_relief_m
+        + config.surface_floor_relief_m + 2*config.surface_crust_relief_m)
+    relief_w = minimum_relief_scale * 2*(config.surface_wall_relief_m
+                                        + config.surface_crust_relief_m)
     for field in sections.segment_fields:
         samples = []
         for sample in field.samples:
@@ -90,8 +99,10 @@ def fit_required_sections(network, sections, config, host=None, *, extra_margin_
             padding = 2*config.voxel_size+2*config.route_clearance_margin_m
             if affected is None or field.segment_id in affected:
                 padding += extra_margin_m
-            target_h = config.required_route_height_m+padding
-            target_w = config.required_route_width_m+padding
+            # Required body dimensions are free air after accretion. Reserve
+            # room for retained detail before fitting the physical envelope.
+            target_h = config.required_route_height_m+padding+relief_h
+            target_w = config.required_route_width_m+padding+relief_w
             profile = np.asarray(sample.profile_points, float)
             width, height = np.ptp(profile, axis=0)
             # Vertical clearance is measured in world Z, not a tilted profile axis.
@@ -108,6 +119,18 @@ def fit_required_sections(network, sections, config, host=None, *, extra_margin_
                 samples.append(sample)
                 continue
             scaled = profile*np.array([new_w/width, new_h/height])
+            # Expanding about the centre lowers the floor and creates a step
+            # against incident optional branches. Translate the contour within
+            # its plane along projected world-up, including tilted/rolled frames.
+            up = np.array([sample.normal[2], sample.binormal[2]])
+            up_squared = float(up @ up)
+            if up_squared < 1e-12:
+                failed.append(dict(segment_id=field.segment_id, sample_index=sample.index,
+                                   reason="Section plane cannot support vertical clearance"))
+                samples.append(sample)
+                continue
+            floor_offset = float(np.min(profile @ up))
+            scaled += (floor_offset-float(np.min(scaled @ up)))*up/up_squared
             changed = generator._assess_roof(replace(
                 sample, profile_points=tuple(map(tuple, scaled)),
                 tube_width=sample.tube_width*new_w/width, tube_height=sample.tube_height*new_h/height))
@@ -123,10 +146,13 @@ def fit_required_sections(network, sections, config, host=None, *, extra_margin_
             samples.append(changed)
             changes.append(dict(segment_id=field.segment_id, sample_index=sample.index,
                                 before_width_m=float(width), before_height_m=float(height),
-                                after_width_m=float(new_w), after_height_m=float(new_h)))
+                                after_width_m=float(new_w), after_height_m=float(new_h),
+                                before_floor_world_z=sample.z+floor_offset,
+                                after_floor_world_z=changed.floor_world_z))
         fields.append(replace(field, samples=tuple(samples)))
     report = dict(enabled=True, changed_samples=len(changes), changes=changes,
-                  extra_margin_m=extra_margin_m, rejected_enlargements=failed)
+                  extra_margin_m=extra_margin_m, rejected_enlargements=failed,
+                  relief_reserve_height_m=relief_h, relief_reserve_width_m=relief_w)
     if failed:
         raise SurfaceTopologyError("Required route cannot be enlarged within physical constraints",
                                    report=dict(route_section_repair=report))

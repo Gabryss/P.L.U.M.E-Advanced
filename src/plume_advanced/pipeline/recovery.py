@@ -67,12 +67,12 @@ def _identity(network, sections):
 
 
 def locate_affected_sections(network, sections, failure: dict, voxel_size: float) -> dict:
-    """Associate measured regions/blocked points with section envelopes.
+    """Associate reported segment failures and measured regions with sections.
 
     When patch localization is inconclusive, flag under-resolved junction
     profiles as hypotheses. These do not claim to locate an unwanted handle.
     """
-    regions = list(failure.get("defect_regions", []))
+    regions = [dict(region) for region in failure.get("defect_regions", [])]
     for attempt in failure.get("attempts", []):
         inspection = attempt.get("inspection", {})
         for point in inspection.get("blocked_points_m", []):
@@ -94,7 +94,26 @@ def locate_affected_sections(network, sections, failure: dict, voxel_size: float
                         center_m=row["point_m"],
                     )
                 )
+    valid_ids = {field.segment_id for field in sections.segment_fields}.intersection(
+        segment.segment_id for segment in network.segments)
     affected = set()
+    reported = []
+    # Network checks carry segment records; mesh invariants are a name->bool
+    # mapping. Only the former can identify a section. Mesh regions below still
+    # contribute their measured location.
+    checks = failure.get("checks", [])
+    for check in checks if isinstance(checks, list) else []:
+        if check.get("passed") is not False:
+            continue
+        ids = sorted(valid_ids.intersection(check.get("segment_ids", [])))
+        if ids:
+            reported.append(dict(name=check["name"], segment_ids=ids))
+            affected.update(ids)
+    for row in failure.get("route_section_repair", {}).get("rejected_enlargements", []):
+        if row["segment_id"] in valid_ids:
+            reported.append(dict(name="route_section_enlargement", segment_ids=[row["segment_id"]],
+                                 sample_index=row["sample_index"], reason=row["reason"]))
+            affected.add(row["segment_id"])
     for region in regions:
         lower, upper = np.asarray(region["lower_m"]), np.asarray(region["upper_m"])
         hits = []
@@ -123,6 +142,7 @@ def locate_affected_sections(network, sections, failure: dict, voxel_size: float
         regions=regions,
         segment_ids=sorted(affected),
         junction_ids=junction_ids,
+        reported_failures=reported,
         under_resolved_junction_hypotheses=hypothesis,
         limitation="Patch localization is partial; a handle in a cyclic graph may be intentional. Full acceptance gates decide repairs.",
     )
@@ -281,6 +301,7 @@ def build_accepted_base(
                     network, sections, controls, host,
                     extra_margin_m=index*controls.voxel_size if kind == "route_clearance_repair" else 0.,
                     affected=localization["segment_ids"] if kind == "route_clearance_repair" and localization is not None else None,
+                    minimum_relief_scale=project.acceptance.minimum_relief_scale,
                 )
                 record["route_section_repair"] = route_repair
                 identity = _identity(network, sections)
@@ -297,8 +318,17 @@ def build_accepted_base(
                     record["assessment"] = assessment
                     if not assessment["accepted"]:
                         raise NetworkQualityError(assessment)
+                def surface_diagnostic(measurement):
+                    # Persist each bounded surface trial immediately. A worker
+                    # timing out during a later grid must not lose the earlier
+                    # component locations and repair measurements.
+                    record.setdefault("surface_candidates", []).append(measurement)
+                    if report_path is not None:
+                        _write(report_path, journal)
+
                 geometry = build_with_resolution_checks(network, sections, controls, progress=progress,
-                                                        acceptance=project.acceptance)
+                                                        acceptance=project.acceptance,
+                                                        surface_diagnostic=surface_diagnostic)
                 record["resolution_repair"] = dict(geometry.resolution_repair)
                 if kind.startswith("local_") or kind == "route_clearance_repair":
                     # In addition to all new centres, protect the original local
@@ -368,13 +398,17 @@ def build_accepted_base(
                     reason=str(error),
                     inspection=getattr(error, "report", {}),
                 )
-                if kind == "original" and isinstance(error, SurfaceTopologyError):
+                ground_failed = record["inspection"].get("ground_traversal", {}).get("passed") is False
+                if kind == "original" and not ground_failed:
                     localization = locate_affected_sections(
                         network, sections, record["inspection"], controls.voxel_size
                     )
                 if host_semantic_hash(host) != before:
                     raise AssertionError("Recovery mutated its input host field") from error
                 publish(f"Rejected {kind}: {error}")
+                if ground_failed:
+                    journal["stop_reason"] = "Reference ground-route placement exhausted; no geological edits justified by this failure"
+                    break
         journal.update(status="exhausted", host_unchanged=True)
         publish("Recovery budget exhausted; downstream generation and export are blocked")
     except Exception as error:

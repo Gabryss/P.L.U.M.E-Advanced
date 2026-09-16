@@ -1,0 +1,4 @@
+# gallery: shared calibration; override only the settings you need.
+recipe_version = 1
+preset = "gallery"
+procedural_seed = 20260910

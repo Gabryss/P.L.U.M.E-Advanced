@@ -7,7 +7,6 @@ import math
 
 import numpy as np
 
-from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.config import EvaluationConfig
 from plume_advanced.evaluation.experiments.common import (
     config_hash,
@@ -35,8 +34,8 @@ def run_controllability(config: EvaluationConfig, *, force: bool = False) -> dic
         "inflation": "inflation", "supply": "supply_rate_scale",
     }
     resolved_controls = {
-        (control, float(value)): load_project_config(
-            config.project_config, world_body=section.get("body", "earth"), dev_mode=False,
+        (control, float(value)): config.load_project(
+            world_body=section.get("body", "earth"), dev_mode=False,
             flow_regime_overrides={control_keys[control]: float(value)},
         )
         for control, values in sweeps.items() for value in values

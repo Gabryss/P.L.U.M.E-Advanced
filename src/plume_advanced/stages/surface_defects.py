@@ -27,6 +27,17 @@ def _region(vertices, ids, kind, **measurements):
     )
 
 
+def _signed_volume(vertices, faces):
+    """Bound temporary arrays and avoid cancellation for translated scenes."""
+    origin = vertices[faces[0, 0]]
+    volume = 0.
+    for begin in range(0, len(faces), 65536):
+        points = vertices[faces[begin:begin+65536]]-origin
+        volume += float(np.einsum('ij,ij->i', points[:, 0],
+                        np.cross(points[:, 1], points[:, 2])).sum()/6.)
+    return volume
+
+
 def localize_surface_defects(
     vertices, faces, *, window_m: float, max_regions: int = 24
 ) -> list[dict]:
@@ -51,10 +62,16 @@ def localize_surface_defects(
     if count > 1:
         sizes = np.bincount(labels)
         main = int(np.argmax(sizes))
+        face_labels = labels[indexed[:, 0]]
+        main_volume = _signed_volume(positions, triangles[face_labels == main])
         for label in sorted((i for i in range(count) if i != main), key=lambda i: (-sizes[i], i))[
             :max_regions
         ]:
-            regions.append(_region(positions, used[labels == label], "detached_surface"))
+            component_faces = triangles[face_labels == label]
+            regions.append(_region(positions, used[labels == label], "detached_surface",
+                triangles=len(component_faces), signed_volume_m3=_signed_volume(positions, component_faces),
+                main_signed_volume_m3=main_volume))
+        del face_labels
     axis = int(np.argmax(np.ptp(positions, axis=0)))
     lower, upper = positions[:, axis].min(), positions[:, axis].max()
     width = max(float(window_m), float(upper - lower) / 64, 1e-6)

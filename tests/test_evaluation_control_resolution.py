@@ -14,7 +14,7 @@ from plume_advanced.config import load_project_config
   + [("inflation", value) for value in (.2, .5, .8)]
   + [("supply_rate_scale", value) for value in (.7, 1., 1.3)])
 def test_control_override_matches_project_file_edit(tmp_path, key, value):
-    source = Path(__file__).resolve().parents[1] / "config/project.toml"
+    source = Path(__file__).resolve().parents[1] / "config/research.toml"
     original = source.read_text()
     edited, count = re.subn(rf"^{key}\s*=\s*[^\n]+", f"{key} = {value}",
                              original, count=1, flags=re.MULTILINE)
@@ -33,7 +33,7 @@ def test_control_override_matches_project_file_edit(tmp_path, key, value):
 
 
 def test_distributary_intervention_reaches_current_lobe_generator():
-    source = Path(__file__).resolve().parents[1] / "config/project.toml"
+    source = Path(__file__).resolve().parents[1] / "config/research.toml"
     low = load_project_config(source, dev_mode=False,
                               flow_regime_overrides={"distributary_tendency": .2})
     high = load_project_config(source, dev_mode=False,
@@ -43,6 +43,6 @@ def test_distributary_intervention_reaches_current_lobe_generator():
 
 
 def test_unknown_flow_control_is_rejected():
-    source = Path(__file__).resolve().parents[1] / "config/project.toml"
+    source = Path(__file__).resolve().parents[1] / "config/research.toml"
     with pytest.raises(ValueError, match="Unknown"):
         load_project_config(source, flow_regime_overrides={"made_up_control": 1.})

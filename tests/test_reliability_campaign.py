@@ -148,7 +148,7 @@ def test_section_evaluation_uses_production_acceptance():
     from plume_advanced.evaluation.experiments.common import generate_sections
     from plume_advanced.stages.network import CaveNetworkGenerator
 
-    project = load_project_config(Path(__file__).parents[1] / "config/earth_short_single.toml")
+    project = load_project_config(Path(__file__).parents[1] / "config/short-single.toml")
     with patch.object(
         CaveNetworkGenerator, "generate", side_effect=RuntimeError("boundary")
     ) as generate:

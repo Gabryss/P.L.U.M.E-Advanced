@@ -2,7 +2,7 @@
   "body": "earth",
   "seed": 4,
   "voxel_size_m": 0.2,
-  "scope": "Current saved A-C artifacts and exported inspection images; historical controlled reach explicitly labeled.",
+  "scope": "Historical seed-4 geometry inspection views retained in the README. Other figures from this build have been retired.",
   "inputs": [
     {
       "path": "outputs/earth_inspection_seed4/generation_config.toml",
@@ -29,31 +29,13 @@
       "sha256": "4077f27d376f0b833dc96b9acd86fdd88bcef59653e928bbdc756627662bd05c"
     },
     {
-      "path": "outputs/geometry_validation/surface_scales/summary.json",
-      "sha256": "9d4721c5f4c767552f646d5124f0c4c3eb9bb2a6fbb80e58c523772097b5bcce"
-    },
-    {
       "path": "outputs/earth_inspection_seed4/inspection_views.png",
       "sha256": "57f9e797a87815eb8fb1c1929d3dd90f930dbabb02cc9399dc725d369b03cbdc"
-    },
-    {
-      "path": "outputs/surface_relief_study/comparison.png",
-      "sha256": "acdf2f987764de4e692cc37629cac1a22fa1d5c08aaa52ebd0e0cc8e1014d931"
     }
   ],
   "figures": [
-    "pipeline.png",
-    "host_fields.png",
-    "network.png",
-    "sections.png",
-    "roof_stability.png",
-    "reference_comparison.png",
-    "inspection_views.png",
-    "surface_relief.png"
+    "inspection_views.png"
   ],
-  "illustrations": [
-    "pipeline.png",
-    "roof_stability.png"
-  ],
+  "illustrations": [],
   "figure_builder_sha256": "44ae7853ad0760fd41c01d0be195c66e9638e6af1286fe89cce938212cfef2a6"
 }

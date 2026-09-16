@@ -26,9 +26,11 @@ class ResultStore:
         experiment_name: str,
         *,
         provenance_sha256: str | None = None,
+        validate_cached: Callable[[dict[str, Any]], bool] | None = None,
     ) -> None:
         self.root = Path(root) / experiment_name
         self.provenance_sha256 = provenance_sha256
+        self.validate_cached = validate_cached
         self.case_root = self.root / "cases"
         self.case_root.mkdir(parents=True, exist_ok=True)
 
@@ -47,6 +49,7 @@ class ResultStore:
             and previous.get("status") == "complete"
             and self._same_identity(previous, expected)
             and not force
+            and (self.validate_cached is None or self.validate_cached(previous))
         )
 
     @staticmethod
@@ -125,7 +128,9 @@ def run_case(
     if store.should_skip(template, force=force):
         return None
     result = _evaluate_case(template, operation)
-    store.write(result, force=force)
+    # The reuse decision was made before execution. A repair may restore the
+    # old artifact bytes, so rechecking the old result now would refuse its replacement.
+    store.write(result, force=True)
     print(f"{template.experiment_name}: {template.run_id} {result.status} ({result.elapsed_s:.2f} s)", flush=True)
     return result
 
@@ -186,7 +191,7 @@ def run_cases(store, tasks, *, force=False, chunksize=1):
     try:
         with ProcessPoolExecutor(max_workers=workers, mp_context=multiprocessing.get_context("fork")) as pool:
             for result in pool.map(_fork_evaluate, range(len(pending)), chunksize=chunksize):
-                store.write(result, force=force)
+                store.write(result, force=True)
                 print(f"{result.experiment_name}: {result.run_id} {result.status} ({result.elapsed_s:.2f} s)", flush=True)
     finally:
         _FORK_TASKS = ()

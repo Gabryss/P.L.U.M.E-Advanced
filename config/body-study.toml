@@ -1,0 +1,4 @@
+# body-study: shared calibration; override only the settings you need.
+recipe_version = 1
+preset = "body-study"
+procedural_seed = 2

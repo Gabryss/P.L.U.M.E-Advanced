@@ -402,7 +402,7 @@ def test_export_cannot_erase_its_source_maps(cave, tmp_path):
 
 
 @pytest.mark.parametrize(
-    "name", ["unity/material.shader", "body.hlsl", "unity/install.cs", "README.md"]
+    "name", ["unity/material.shader", "body.hlsl", "unity/install.cs", "SETUP.txt"]
 )
 def test_shader_resources_participate_in_source_fingerprint(tmp_path, name):
     from plume_advanced.identity import package_source_hash

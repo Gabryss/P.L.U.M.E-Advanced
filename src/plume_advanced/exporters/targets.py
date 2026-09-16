@@ -90,7 +90,10 @@ def export_target_asset(
         value = getattr(export_config, name)
         if type(value) is not int or value < 0:
             raise ValueError(f"export.{name} must be a nonnegative integer")
-    if export_config.max_visual_triangles and face_count > export_config.max_visual_triangles:
+    event_triangles = sum(len(mesh.faces) for mesh in cave_geometry.event_meshes)
+    if (export_config.max_visual_triangles and face_count > export_config.max_visual_triangles
+            and (not export_config.visual_max_error_m
+                 or export_config.max_visual_triangles - event_triangles < 4)):
         raise ExportBudgetError(
             f"Export has {face_count:,} visual triangles; budget is {export_config.max_visual_triangles:,}. "
             "Use a smaller extent or a coarser, clearance-validated resolution."
@@ -98,7 +101,13 @@ def export_target_asset(
     with atomic_output_directory(output) as staging:
         texture_report = new_report()
         effective = prepare_texture_assets(cave_geometry, staging, texture_report)
-        scene = prepare_export_scene(effective, generate_collision=export_config.generate_collision)
+        scene = prepare_export_scene(effective, generate_collision=export_config.generate_collision,
+            max_visual_triangles=(export_config.max_visual_triangles - event_triangles
+                                  if export_config.max_visual_triangles else 0),
+            visual_max_error_m=export_config.visual_max_error_m)
+        face_count = len(scene.canonical_visual["faces"]) + event_triangles
+        if export_config.max_visual_triangles and face_count > export_config.max_visual_triangles:
+            raise ExportBudgetError("Prepared visual triangles exceed the export budget")
         report_progress(
             "Write target package",
             detail=f"{export_config.target}: {face_count:,} visual triangles",
@@ -190,7 +199,8 @@ def export_target_asset(
                         "visual_triangles": export_config.max_visual_triangles,
                         "asset_bytes": export_config.max_asset_bytes,
                     },
-                    "scope": "File and mesh buffers; engine runtime memory and texture mipmaps are additional. No automatic geometry decimation.",
+                    "visual_reduction": scene.inspection["visual_reduction"],
+                    "scope": "File and mesh buffers; engine runtime memory and texture mipmaps are additional. Optional reduction is checked against raw geometry before publication.",
                 },
                 indent=2,
             )
@@ -335,6 +345,10 @@ def _export_all_targets(
             {
                 "schema": "plume.all_exports.v1",
                 "source_coordinates": "right-handed Z-up metres",
+                "canonical_visual_bbox_m": np.stack((
+                    np.min(scene.canonical_visual["positions"], axis=0),
+                    np.max(scene.canonical_visual["positions"], axis=0),
+                )).tolist(),
                 "targets": {
                     result.target: {
                         "primary_asset": result.primary_asset.relative_to(output).as_posix(),
@@ -752,7 +766,7 @@ def _export_gazebo(
                 "<model>",
                 f"  <name>{escape(asset_name)}</name>",
                 "  <version>1.0</version>",
-                '  <sdf version="1.12">model.sdf</sdf>',
+                '  <sdf version="1.10">model.sdf</sdf>',
                 "  <description>Procedural PLUME lava tube</description>",
                 "</model>",
                 "",
@@ -767,15 +781,11 @@ def _export_gazebo(
         "\n".join(
             (
                 '<?xml version="1.0"?>',
-                '<sdf version="1.12">',
+                '<sdf version="1.10">',
                 f'  <model name="{escape(asset_name)}">',
                 "    <static>true</static>",
                 '    <link name="cave">',
-                '      <visual name="visual">',
-                "        <geometry><mesh>",
-                f"          <uri>{escape(uri)}</uri>",
-                "        </mesh></geometry>",
-                "      </visual>",
+                *_gazebo_visuals(visual_mesh, material, uri, asset_name),
                 '      <collision name="collision">',
                 "        <geometry><mesh>",
                 f"          <uri>{escape(collision_uri)}</uri>",
@@ -796,10 +806,10 @@ def _export_gazebo(
             {
                 "schema": "plume.target_export.v1",
                 "target": "gazebo",
-                "gazebo_release": "Jetty",
-                "gazebo_sim_major": 10,
-                "sdformat_major": 16,
-                "sdf_specification": "1.12",
+                "gazebo_release": "Harmonic",
+                "gazebo_sim_major": 8,
+                "sdformat_major": 14,
+                "sdf_specification": "1.10",
                 "coordinates": "right-handed Z-up metres",
                 "requirements": asdict(export_config),
                 "warnings": list(warnings),
@@ -813,7 +823,7 @@ def _export_gazebo(
         "\n".join(
             (
                 '<?xml version="1.0"?>',
-                '<sdf version="1.12">',
+                '<sdf version="1.10">',
                 f'  <world name="{escape(asset_name)}_world">',
                 "    <include>",
                 f"      <uri>model://{escape(asset_name)}</uri>",
@@ -829,10 +839,10 @@ def _export_gazebo(
     guide.write_text(
         "\n".join(
             (
-                "PLUME-Advanced Gazebo Jetty package",
+                "PLUME-Advanced Gazebo Harmonic package",
                 "====================================",
                 "",
-                "This package targets Gazebo Jetty (gz-sim 10, sdformat 16, SDF 1.12).",
+                "This package targets Gazebo Harmonic (gz-sim 8, sdformat 14, SDF 1.10).",
                 "From this directory run:",
                 '  GZ_SIM_RESOURCE_PATH="$PWD${GZ_SIM_RESOURCE_PATH:+:'
                 '$GZ_SIM_RESOURCE_PATH}" gz sim '
@@ -874,7 +884,7 @@ def _relocate_obj_material_textures(
         return ()
     rewritten: list[str] = []
     copied: dict[Path, Path] = {}
-    map_directives = {"map_Kd", "map_Pr", "map_Pm", "map_Bump", "bump"}
+    map_directives = {"map_Kd", "map_Pr", "map_Pm", "map_Bump", "bump", "norm"}
     for line in material_path.read_text(encoding="utf-8").splitlines():
         try:
             tokens = shlex.split(line, comments=False, posix=True)
@@ -898,6 +908,54 @@ def _relocate_obj_material_textures(
         rewritten.append(line)
     material_path.write_text("\n".join((*rewritten, "")), encoding="utf-8")
     return tuple(copied.values())
+
+
+def _gazebo_visuals(mesh: Path, material: Path, uri: str, asset_name: str) -> list[str]:
+    """Give each OBJ object its own SDF PBR material, including event props.
+
+    Ogre2's OBJ loader does not import the extended MTL normal/roughness maps.
+    Explicit SDF materials preserve those maps without painting rocks with the
+    cave's material. Submesh coordinates must not be recentered.
+    """
+    materials: dict[str, dict[str, list[str]]] = {}
+    current: dict[str, list[str]] = {}
+    for line in material.read_text(encoding="utf-8").splitlines():
+        tokens = shlex.split(line, comments=True)
+        if not tokens:
+            continue
+        if tokens[0] == "newmtl":
+            current = materials.setdefault(tokens[1], {})
+        else:
+            current[tokens[0]] = tokens[1:]
+    objects: list[tuple[str, str]] = []
+    name = ""
+    with mesh.open(encoding="utf-8") as source:
+        for line in source:
+            if line.startswith("o "):
+                name = line[2:].strip()
+            elif line.startswith("usemtl "):
+                objects.append((name, line[7:].strip()))
+    lines: list[str] = []
+    for name, material_name in objects:
+        values = materials[material_name]
+        diffuse = " ".join(values.get("Kd", ["0.36", "0.35", "0.31"]))
+        roughness = values.get("Pr", ["0.92"])[0]
+        metalness = values.get("Pm", ["0"])[0]
+        lines.extend((
+            f'      <visual name="{escape(name)}">',
+            f"        <geometry><mesh><uri>{escape(uri)}</uri>",
+            f"          <submesh><name>{escape(name)}</name><center>false</center></submesh>",
+            "        </mesh></geometry>",
+            f"        <material><diffuse>{diffuse} 1</diffuse><ambient>{diffuse} 1</ambient>",
+            f"          <pbr><metal><roughness>{roughness}</roughness><metalness>{metalness}</metalness>",
+        ))
+        for directive, element in (("map_Kd", "albedo_map"), ("norm", "normal_map"), ("map_Pr", "roughness_map")):
+            if directive in values:
+                texture = (material.parent / values[directive][-1]).resolve()
+                relative = texture.relative_to(mesh.parent.parent.resolve()).as_posix()
+                lines.append(f"            <{element}>model://{escape(asset_name)}/{escape(relative)}</{element}>")
+        lines.extend(("          </metal></pbr>", "        </material>", "      </visual>"))
+    return lines
 
 
 def _export_omniverse(
@@ -945,7 +1003,7 @@ def _export_omniverse(
                 f"Open or drag {asset.name} into USD Composer's Content Browser.",
                 f"Keep the adjacent {asset_name}_textures directory with the USD file.",
                 "The stage declares Z-up and metersPerUnit=1 and uses UsdPreviewSurface.",
-                "CaveCollision has PhysicsCollisionAPI and is hidden with guide purpose.",
+                "CaveCollision is a static triangle collider (approximation=none), hidden with guide purpose.",
                 "Run usdchecker on the USD when an OpenUSD toolchain is installed.",
                 "",
             )
@@ -1018,7 +1076,7 @@ def _write_usda(
                 collision_vertices,
                 collision_faces,
                 indent="    ",
-                api_schemas=("PhysicsCollisionAPI",),
+                api_schemas=("PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"),
                 purpose="guide",
                 visibility="invisible",
                 collision_enabled=True,
@@ -1131,6 +1189,8 @@ def _usda_mesh_lines(
         lines.append(f'{indent}    token visibility = "{visibility}"')
     if collision_enabled:
         lines.append(f"{indent}    bool physics:collisionEnabled = true")
+        # A convex hull would fill the navigable cave interior.
+        lines.append(f'{indent}    uniform token physics:approximation = "none"')
     for key, value in sorted((custom_strings or {}).items()):
         escaped_value = value.replace("\\", "\\\\").replace('"', '\\"')
         lines.append(f'{indent}    custom string {key} = "{escaped_value}"')
@@ -1251,6 +1311,8 @@ def _usda_cave_material_lines(
                 f'{indent}        def Shader "{shader_name}"',
                 f"{indent}        {{",
                 f'{indent}            uniform token info:id = "UsdUVTexture"',
+                f'{indent}            token inputs:wrapS = "repeat"',
+                f'{indent}            token inputs:wrapT = "repeat"',
                 f"{indent}            asset inputs:file = @{relative_path}@",
                 f'{indent}            token inputs:sourceColorSpace = "{color_space}"',
                 f"{indent}            float2 inputs:st.connect = <{reader_path}.outputs:result>",
@@ -1308,5 +1370,15 @@ def _write_simplified_collision_obj(
     with output_path.open("w", encoding="utf-8") as stream:
         stream.write("# PLUME collision: metres, right-handed, Z up\no cave_collision\n")
         np.savetxt(stream, scene.collision_vertices, fmt="v %.17g %.17g %.17g")
-        np.savetxt(stream, scene.collision_faces+1, fmt="f %d %d %d")
+        # Gazebo Harmonic's DART/ODE bridge dereferences mesh normals when
+        # constructing triangle colliders. Keep positions and topology intact.
+        mesh = trimesh.Trimesh(
+            vertices=scene.collision_vertices, faces=scene.collision_faces, process=False,
+        )
+        np.savetxt(stream, mesh.vertex_normals, fmt="vn %.17g %.17g %.17g")
+        indices = scene.collision_faces + 1
+        np.savetxt(
+            stream, np.repeat(indices, 2, axis=1),
+            fmt="f %d//%d %d//%d %d//%d",
+        )
     return output_path

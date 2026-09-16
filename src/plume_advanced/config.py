@@ -18,6 +18,7 @@ from plume_advanced.acceptance import (
     validate_acceptance_configuration,
 )
 from plume_advanced.procedural import procedural_rng
+from plume_advanced.recipes import expand_recipe
 from plume_advanced.stages.events import GeologicalEventConfig
 from plume_advanced.stages.floor_map import FloorMapConfig
 from plume_advanced.stages.geometry import GeometryConfig
@@ -79,7 +80,8 @@ def _reject_unknown_keys(
     extras: frozenset[str] = frozenset(),
 ) -> None:
     """Reject misspelled nested settings with their complete TOML path."""
-
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must be a TOML table")
     supported = {field.name for field in fields(config_type)} | extras
     unknown = set(data) - supported
     if unknown:
@@ -126,6 +128,7 @@ def load_project_config(
     dev_mode: bool | None = None,
     flow_regime_overrides: dict[str, float] | None = None,
     seed_override: int | None = None,
+    asset_directory: str | Path | None = None,
 ) -> ProjectConfig:
     """Load the project TOML configuration file.
 
@@ -133,11 +136,14 @@ def load_project_config(
     default material replaces any material selected for the original body.
     ``flow_regime_overrides`` applies experimental controls before resolving
     any stage, with the same validation and consumers as edited TOML values.
+    ``asset_directory`` supplies the base for relative asset and scratch paths
+    when a bundled recipe is used outside its original configuration directory.
     """
 
     config_path = Path(path)
+    asset_base = Path(asset_directory) if asset_directory is not None else config_path.parent
     with config_path.open("rb") as config_file:
-        raw_config = tomllib.load(config_file)
+        raw_config = expand_recipe(tomllib.load(config_file))
     if seed_override is not None:
         if type(seed_override) is not int or seed_override < 0:
             raise ValueError("seed_override must be a nonnegative integer")
@@ -149,13 +155,16 @@ def load_project_config(
         raise ValueError(
             f"Unsupported schema_version {source_schema_version}; "
             f"expected {CURRENT_SCHEMA_VERSION}. Start from a current config preset; "
-            "see docs/legacy-cleanup.md for removed settings and historical reproduction."
+            "see README.md#config-file for recipes and advanced settings."
         )
     unknown_top_level = set(raw_config) - SUPPORTED_TOP_LEVEL_KEYS
     if unknown_top_level:
         raise ValueError(
             "Unknown top-level configuration keys: " + ", ".join(sorted(unknown_top_level))
         )
+    for name in SUPPORTED_TOP_LEVEL_KEYS - {"schema_version", "procedural_seed"}:
+        if name in raw_config and not isinstance(raw_config[name], dict):
+            raise ValueError(f"{name} must be a TOML table")
     if world_body is not None:
         world_data = dict(raw_config.get("world", {}))
         world_data["body"] = world_body
@@ -173,8 +182,8 @@ def load_project_config(
 
     schema_version = CURRENT_SCHEMA_VERSION
     procedural_seed = raw_config.get("procedural_seed")
-    if procedural_seed is not None:
-        procedural_seed = int(procedural_seed)
+    if procedural_seed is not None and (type(procedural_seed) is not int or procedural_seed < 0):
+        raise ValueError("procedural_seed must be a nonnegative integer")
     stage_seeds = derive_stage_seeds(procedural_seed)
     world = resolve_world_config(raw_config.get("world"))
     flow_regime = build_flow_regime_config(raw_config.get("flow_regime"))
@@ -213,14 +222,14 @@ def load_project_config(
         procedural_seed=stage_seeds.events,
         world=world,
     )
-    events = _resolve_event_asset_paths(events, config_path.parent)
+    events = _resolve_event_asset_paths(events, asset_base)
     geometry = _build_geometry_config(
         geometry_data,
         procedural_seed=stage_seeds.geometry,
         world=world,
         run=run,
     )
-    geometry = _resolve_geometry_asset_paths(geometry, config_path.parent)
+    geometry = _resolve_geometry_asset_paths(geometry, asset_base)
     if run.dev_mode:
         host_field, network = _apply_dev_mode(host_field, network, run)
     _validate_pipeline_configs(

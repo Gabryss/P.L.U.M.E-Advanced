@@ -1,0 +1,171 @@
+{
+  "blender_version": "4.0.1",
+  "source_asset": "export_all/blender/plume_cave_scene.glb",
+  "native_scene": "export_all/blender/plume_continuous_inspection.blend",
+  "material_mapping": "triplanar",
+  "material_matches_portable_glb": false,
+  "mesh_objects": [
+    "cave_wall"
+  ],
+  "vertices": 83933,
+  "triangles": 157904,
+  "triangle_count_preserved": true,
+  "embedded_images_expected": 3,
+  "material_inputs_linked": {
+    "Base Color": true,
+    "Roughness": true,
+    "Normal": true
+  },
+  "material_images": [
+    {
+      "name": "Image_0",
+      "size": [
+        1024,
+        1024
+      ],
+      "color_space": "sRGB",
+      "packed": true
+    },
+    {
+      "name": "Image_1",
+      "size": [
+        1024,
+        1024
+      ],
+      "color_space": "Non-Color",
+      "packed": true
+    },
+    {
+      "name": "Image_2",
+      "size": [
+        1024,
+        1024
+      ],
+      "color_space": "Non-Color",
+      "packed": true
+    }
+  ],
+  "bounds_preserved_within_2_mm": true,
+  "bounds_blender_z_up_m": [
+    [
+      -138.8067169189453,
+      -211.27467346191406,
+      119.89999389648438
+    ],
+    [
+      -13.227747917175293,
+      -196.98495483398438,
+      131.13995361328125
+    ]
+  ],
+  "scale": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "inspection_torch_power_w": 100.0,
+  "render_quality": "standard",
+  "interior_exposure_ev": 6.225035667419434,
+  "render_samples": 256,
+  "render_noise_threshold": 0.02,
+  "cameras": [
+    {
+      "name": "Overview",
+      "eye_blender_m": [
+        -47.1340695476532,
+        -226.73402856826783,
+        251.09894275665283
+      ],
+      "target_blender_m": [
+        -76.0172324180603,
+        -204.12981414794922,
+        125.51997375488281
+      ]
+    },
+    {
+      "name": "Top down",
+      "eye_blender_m": [
+        -76.0172324180603,
+        -204.12981414794922,
+        251.09894275665283
+      ],
+      "target_blender_m": [
+        -76.0172324180603,
+        -204.12981414794922,
+        125.51997375488281
+      ]
+    },
+    {
+      "name": "Interior 1",
+      "eye_blender_m": [
+        -101.79874037617985,
+        -205.77785173666723,
+        126.3178579711914
+      ],
+      "target_blender_m": [
+        -109.73379653264284,
+        -204.55372421502256,
+        126.7230474034105
+      ],
+      "section_index": 3,
+      "segment_id": 0,
+      "measured_vertical_clearance_m": 1.9028549194335938,
+      "view_selection": {
+        "target_m": [
+          -109.73379653264284,
+          -204.55372421502256,
+          126.7230474034105
+        ],
+        "score": 11.490106554036691,
+        "sight_distances_m": [
+          12.0,
+          11.553972103471096,
+          11.218256126626565,
+          8.490106554036691,
+          4.648719080242366
+        ],
+        "target_sample_index": 2
+      },
+      "exposure_ev": 5.218298435211182,
+      "metered_p95_linear": 0.004835130091804073
+    },
+    {
+      "name": "Interior 2",
+      "eye_blender_m": [
+        -38.240728105854465,
+        -202.65283745986025,
+        122.37322998046875
+      ],
+      "target_blender_m": [
+        -46.28851508849173,
+        -202.10817586437724,
+        122.47840280264576
+      ],
+      "section_index": 9,
+      "segment_id": 0,
+      "measured_vertical_clearance_m": 2.7723312377929688,
+      "view_selection": {
+        "target_m": [
+          -46.28851508849173,
+          -202.10817586437724,
+          122.47840280264576
+        ],
+        "score": 15.0,
+        "sight_distances_m": [
+          12.0,
+          12.0,
+          12.0,
+          12.0,
+          7.532475130462359
+        ],
+        "target_sample_index": 8
+      },
+      "exposure_ev": 6.225035667419434,
+      "metered_p95_linear": 0.0024063013650869065
+    }
+  ],
+  "initial_camera": "Interior 2",
+  "startup_shading": "MATERIAL",
+  "scope": "Actual Blender import and two interior roof/floor ray checks; no Unity or UE import test.",
+  "view_transform": "Standard"
+}

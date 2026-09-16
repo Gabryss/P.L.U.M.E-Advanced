@@ -92,8 +92,8 @@ def pdc_comparable_section_summary(
 ) -> dict[str, Any]:
     """Return deterministic Q1/median/Q3/IQR summaries for section records.
 
-    Records can come from generated sections or the PDC loader. Features are
-    read by canonical name first, then by the legacy metric key.
+    Records can come from generated sections or the PDC loader. Features use
+    PDC names or the unit-qualified names returned by contour_morphometry.
     """
 
     aliases = {
@@ -180,19 +180,11 @@ def section_field_diagnostics(section_field: SectionField) -> dict[str, Any]:
     }
 
 
-section_morphometry_summary = pdc_comparable_section_summary
-section_feature_summary = pdc_comparable_section_summary
-section_diagnostics = pdc_comparable_section_summary
-
-
 __all__ = [
     "generated_section_records",
     "section_geometric_error",
     "section_surface_points",
     "pdc_comparable_section_summary",
     "section_longitudinal_continuity",
-    "section_morphometry_summary",
-    "section_feature_summary",
-    "section_diagnostics",
     "section_field_diagnostics",
 ]

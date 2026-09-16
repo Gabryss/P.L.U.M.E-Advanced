@@ -9,7 +9,6 @@ from typing import Any
 
 import numpy as np
 
-from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.config import EvaluationConfig
 from plume_advanced.evaluation.datasets.pdc import load_pdc
 from plume_advanced.evaluation.experiments.common import config_hash, for_seed, generate_sections
@@ -79,8 +78,8 @@ def run_morphometry(
         }
         for item in selected_sections
     ]
-    base = load_project_config(
-        config.project_config, world_body=section.get("body", "earth"), dev_mode=False
+    base = config.load_project(
+        world_body=section.get("body", "earth"), dev_mode=False
     )
     dataset = directory_identity(data_root)
     provenance = capture_provenance(

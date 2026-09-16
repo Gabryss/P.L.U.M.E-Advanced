@@ -16,6 +16,8 @@ from pathlib import Path
 
 import matplotlib
 
+from plume_advanced.evaluation.config import load_evaluation_config
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -84,8 +86,8 @@ def main():
     args = parser.parse_args()
     out = args.output
     out.mkdir(parents=True, exist_ok=True)
-    split = ROOT / "paper/splits/pdc_calibration_caves.txt"
-    evaluation = ROOT / "paper/splits/pdc_evaluation_caves.txt"
+    split = load_evaluation_config().pdc_partition_path("calibration")
+    evaluation = load_evaluation_config().pdc_partition_path("evaluation")
 
     def read_ids(path):
         return {

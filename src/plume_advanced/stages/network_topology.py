@@ -548,9 +548,9 @@ def section_footprint(network, sections):
     axis = np.array([last.x, last.y]) - origin
     axis /= max(np.linalg.norm(axis), 1e-9)
     cross = np.array([-axis[1], axis[0]])
-    polygons = []
+    polygons: list[np.ndarray] = []
     for field in sections.segment_fields:
-        left, right = [], []
+        rings = []
         for sample in field.samples:
             profile = np.array(sample.profile_points)
             xy = (
@@ -560,10 +560,21 @@ def section_footprint(network, sections):
                 + profile[:, 1:2] * np.array(sample.binormal[:2])
             )
             points = np.column_stack((xy @ axis, xy @ cross))
-            left.append(points[int(np.argmin(points[:, 1]))])
-            right.append(points[int(np.argmax(points[:, 1]))])
-        if len(left) > 1:
-            polygons.append(np.array(left + right[::-1]))
+            rings.append(points)
+        if len(rings) > 1:
+            # Global left/right extrema can switch between profile vertices
+            # at bends and enlarged joins, forming a self-crossing outline
+            # with false disconnected pixels. Project each loft face instead.
+            # Triangles cover the actual local sweep without filling islands
+            # or assuming a convex envelope across an entire curved branch.
+            polygons.extend((rings[0], rings[-1]))
+            for a, b in zip(rings, rings[1:]):
+                if len(a) != len(b):
+                    raise ValueError("Section footprint requires matching profile vertex counts")
+                for j in range(len(a)):
+                    k = (j+1) % len(a)
+                    polygons.extend((np.array([a[j], b[j], b[k]]),
+                                     np.array([a[j], b[k], a[k]])))
     if not polygons:
         return np.zeros((3, 3), bool), np.arange(3), np.arange(3), 1.0
     vertices = np.concatenate(polygons)

@@ -1,0 +1,12 @@
+# research: shared calibration; override only the settings you need.
+recipe_version = 1
+preset = "research"
+procedural_seed = 1
+
+# Dimensionless experimental interventions.
+[flow_regime]
+supply_rate_scale = 1.0
+duration_scale = 1.0
+inflation = 0.5
+distributary_tendency = 0.65
+cooling_rate_scale = 1.0

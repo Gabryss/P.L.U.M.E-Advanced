@@ -18,6 +18,17 @@ import bpy
 import numpy as np
 from mathutils import Matrix, Vector
 
+# Blender has its own Python runtime; load this standard-library-only helper directly.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src/plume_advanced"))
+from asset_paths import find_export_asset
+
+_view_spec = importlib.util.spec_from_file_location("plume_view_selection",
+    Path(__file__).resolve().parents[1] / "src/plume_advanced/evaluation/view_selection.py")
+assert _view_spec is not None and _view_spec.loader is not None
+_view_module = importlib.util.module_from_spec(_view_spec)
+_view_spec.loader.exec_module(_view_module)
+select_passage_target = _view_module.select_passage_target
+
 
 def configure_inspection_view(*, textured: bool, preview_samples: int = 64) -> str:
     """Make the saved startup view show the material and distinguish neutral files."""
@@ -38,24 +49,16 @@ def configure_inspection_view(*, textured: bool, preview_samples: int = 64) -> s
 
 
 def choose_inspection_target(cave, sections, index, eye):
-    """Aim along sampled passage geometry and verify the sight line stays in air."""
+    """Rank passage views by a cone of sight lines on the imported mesh."""
     ids = np.flatnonzero(sections["segment_id"] == sections["segment_id"][index])
     arc = sections["arc_length_m"]
     inverse = cave.matrix_world.inverted()
-    for sign in (1., -1.):
-        for reach in (6., 4., 2.):
-            candidate = int(ids[np.argmin(abs(arc[ids] - (arc[index] + sign * reach)))])
-            target = sections["center_xyz_m"][candidate].copy()
-            direction = Vector(target) - Vector(eye)
-            distance = direction.length
-            if candidate == index or distance < 1.:
-                continue
-            hit, location, _, _ = cave.ray_cast(
-                inverse @ Vector(eye),
-                (inverse.to_3x3() @ direction).normalized(), distance=distance)
-            if not hit or (cave.matrix_world @ location - Vector(eye)).length >= .98 * distance:
-                return target
-    return None
+    def ray_distance(direction, reach):
+        hit, location, _, _ = cave.ray_cast(inverse @ Vector(eye),
+            (inverse.to_3x3() @ Vector(direction)).normalized(), distance=reach)
+        return (cave.matrix_world @ location - Vector(eye)).length if hit else reach
+    return select_passage_target(sections["center_xyz_m"][ids], arc[ids],
+                                 int(np.flatnonzero(ids == index)[0]), eye, ray_distance)
 
 
 def main() -> None:
@@ -71,8 +74,8 @@ def main() -> None:
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
     root = args.run_directory.resolve()
     samples, threshold = {"preview": (32, 0.1), "standard": (256, 0.02), "high": (1024, 0.005)}[args.quality]
-    output = root / "export_blender"
-    source = next(output.glob("*.glb"))
+    source = find_export_asset(root)
+    output = source.parent
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=str(source))
     meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
@@ -134,7 +137,8 @@ def main() -> None:
     scene.cycles.samples = samples
     scene.cycles.adaptive_threshold = threshold
     scene.cycles.use_denoising = True
-    scene.view_settings.exposure = 3.0
+    scene.view_settings.exposure = 0.0
+    scene.view_settings.view_transform = "Standard"
     scene.render.resolution_x = 1400
     scene.render.resolution_y = 900
     scene.render.resolution_percentage = 100
@@ -159,8 +163,8 @@ def main() -> None:
                                     * max(scene.render.resolution_x / scene.render.resolution_y, 1.0))
         else:
             light_data = bpy.data.lights.new(name + " torch", "POINT")
-            light_data.energy = 600.0
-            light_data.shadow_soft_size = 0.06
+            light_data.energy = 100.0
+            light_data.shadow_soft_size = 0.10
             light = bpy.data.objects.new(name + " torch", light_data)
             scene.collection.objects.link(light)
             light.parent = obj
@@ -238,17 +242,21 @@ def main() -> None:
             target = choose_inspection_target(cave, sections, index, eye)
             if target is None:
                 continue
-            cam = add_camera(f"Interior {len(interiors) + 1}", eye, target)
+            cam = add_camera(f"Interior {len(interiors) + 1}", eye, target["target_m"])
             interiors.append(cam)
             accepted_indices.append(index)
             cameras[-1].update(section_index=index, segment_id=int(sections["segment_id"][index]),
-                               measured_vertical_clearance_m=float(roof.z - floor.z))
+                               measured_vertical_clearance_m=float(roof.z - floor.z),
+                               view_selection=target)
             break
     assert len(interiors) == 2, "Could not locate two verified interior viewpoints"
     interior_records = [record for record in cameras if "measured_vertical_clearance_m" in record]
     scene.camera = interiors[max(range(len(interiors)),
                                  key=lambda i: interior_records[i]["measured_vertical_clearance_m"])]
     sun.hide_render = True
+    for obj in scene.objects:
+        if obj.type == "LIGHT" and obj.parent:
+            obj.hide_render = obj.parent != scene.camera
     for obj in scene.objects:
         obj.select_set(False)
     cave.select_set(True)
@@ -261,7 +269,7 @@ def main() -> None:
         previews = previews / "continuous"
     previews.mkdir(parents=True, exist_ok=True)
     scene.render.filepath = str(previews / "inspection_render.png")
-    bpy.ops.wm.save_as_mainfile(filepath=str(native))
+    initial_camera = scene.camera
     report = {
         "blender_version": bpy.app.version_string,
         "source_asset": str(source.relative_to(root)),
@@ -282,9 +290,9 @@ def main() -> None:
         "bounds_preserved_within_2_mm": True,
         "bounds_blender_z_up_m": [minimum.tolist(), maximum.tolist()],
         "scale": list(cave.scale),
-        "inspection_torch_power_w": 600.0,
+        "inspection_torch_power_w": 100.0,
         "render_quality": args.quality,
-        "interior_exposure_ev": 3.0,
+        "interior_exposure_ev": 0.0,
         "render_samples": samples,
         "render_noise_threshold": threshold,
         "cameras": cameras,
@@ -297,11 +305,47 @@ def main() -> None:
     print(json.dumps(report), flush=True)
     # UV previews reproduce the GLB; native projected previews have their own path.
     for camera in (interiors if args.interior_only else (overview, plan, *interiors)):
-        scene.view_settings.exposure = 0.0 if camera in (overview, plan) else 3.0
+        scene.view_settings.exposure = 0.0
         scene.camera = camera
         sun.hide_render = camera not in (overview, plan)
+        for obj in scene.objects:
+            if obj.type == "LIGHT" and obj.parent:
+                obj.hide_render = obj.parent != camera
         scene.render.filepath = str(previews / (camera.name.lower().replace(" ", "_") + ".png"))
+        if camera in interiors:
+            # Meter a cheap preview of this actual view, with only its torch
+            # enabled. Standard's linear exposure permits a predictable gain.
+            final_path = scene.render.filepath
+            scene.render.filepath = str(previews / (camera.name.replace(" ", "_")+"_meter.png"))
+            scene.render.resolution_percentage = 25
+            scene.cycles.samples = min(16, samples)
+            bpy.ops.render.render(write_still=True)
+            meter = bpy.data.images.load(scene.render.filepath, check_existing=False)
+            meter.colorspace_settings.name = "Non-Color"
+            rgb = np.array(meter.pixels[:]).reshape(-1, 4)[:, :3]
+            linear = np.where(rgb <= .04045, rgb/12.92, ((rgb+.055)/1.055)**2.4)
+            percentile = float(np.percentile(linear @ [.2126, .7152, .0722], 95))
+            bpy.data.images.remove(meter)
+            if not np.isfinite(percentile) or percentile <= 0:
+                raise RuntimeError(f"No measurable illumination in {camera.name}")
+            scene.view_settings.exposure = float(np.clip(np.log2(.18/percentile), -6, 8))
+            next(row for row in cameras if row["name"] == camera.name).update(
+                exposure_ev=scene.view_settings.exposure, metered_p95_linear=percentile)
+            scene.render.resolution_percentage = 100
+            scene.cycles.samples = samples
+            scene.render.filepath = final_path
         bpy.ops.render.render(write_still=True)
+    scene.camera = initial_camera
+    scene.view_settings.exposure = next(row["exposure_ev"] for row in cameras
+                                        if row["name"] == initial_camera.name)
+    sun.hide_render = True
+    for obj in scene.objects:
+        if obj.type == "LIGHT" and obj.parent:
+            obj.hide_render = obj.parent != initial_camera
+    report["interior_exposure_ev"] = scene.view_settings.exposure
+    report["view_transform"] = "Standard"
+    (root / report_name).write_text(json.dumps(report, indent=2) + "\n")
+    bpy.ops.wm.save_as_mainfile(filepath=str(native))
 
 
 if __name__ == "__main__":

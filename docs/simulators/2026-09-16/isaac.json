@@ -1,0 +1,76 @@
+{
+  "schema": "plume.isaac-import-check.v1",
+  "passed": true,
+  "asset_sha256": "615d84990df90055eabae77c33481ccfab78ab97fd2190a0178c5a56573aa549",
+  "scope": "USD import, RTX texture capture and one dynamic collision probe; not robot qualification.",
+  "simulator_version": "6.1.0-rc.26+main.0.7c206f75.local",
+  "meters_per_unit": 1.0,
+  "up_axis": "Z",
+  "visual_triangles": 157904,
+  "collision_triangles": 31580,
+  "collision_enabled": true,
+  "collision_approximation": "none",
+  "static_collider": true,
+  "bound_material": "/PLUME_Cave/Looks/CaveMaterial",
+  "textures": [
+    {
+      "path": "plume_cave_scene_textures/cave_base_color.png",
+      "resolved": true,
+      "wrap_s": "repeat",
+      "wrap_t": "repeat",
+      "image_size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "path": "plume_cave_scene_textures/cave_metallic_roughness.png",
+      "resolved": true,
+      "wrap_s": "repeat",
+      "wrap_t": "repeat",
+      "image_size": [
+        1024,
+        1024
+      ]
+    },
+    {
+      "path": "plume_cave_scene_textures/cave_normal.png",
+      "resolved": true,
+      "wrap_s": "repeat",
+      "wrap_t": "repeat",
+      "image_size": [
+        1024,
+        1024
+      ]
+    }
+  ],
+  "probe_position": [
+    -88.38041687011719,
+    -207.76345825195312,
+    124.21903991699219
+  ],
+  "probe_fell": true,
+  "probe_near_floor": true,
+  "physics_engine": "physx",
+  "lighting_trials": [
+    {
+      "light_exposure_stops": 0,
+      "image_mean": 0.19739149305555556
+    },
+    {
+      "light_exposure_stops": 2,
+      "image_mean": 1.429189453125
+    },
+    {
+      "light_exposure_stops": 4,
+      "image_mean": 10.606332826967593
+    },
+    {
+      "light_exposure_stops": 6,
+      "image_mean": 40.36883572048611
+    }
+  ],
+  "image_mean": 40.36883572048611,
+  "image_stddev": 45.18921980661306,
+  "image_sha256": "8b18dfe7edb1e4220222a677d3b0a3a55d5e6e6600911915a2c9707e3cc3910b"
+}

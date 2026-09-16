@@ -1,0 +1,4 @@
+# simulation-multi: shared calibration; override only the settings you need.
+recipe_version = 1
+preset = "simulation-multi"
+procedural_seed = 1

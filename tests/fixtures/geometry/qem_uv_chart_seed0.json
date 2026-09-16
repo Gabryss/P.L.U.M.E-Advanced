@@ -1,0 +1,46 @@
+{
+  "provenance": "First 2500 unmodified faces from accepted seed-0 full-size QEM mesh, compacted to referenced vertices only.",
+  "source_sha256": "fb3492eb5d60a9e6785a1da41c09d553eae4d9c50d2e1f13e548393ee017d3cd",
+  "checks": [
+    {
+      "name": "Finite texture coordinates",
+      "passed": true,
+      "detail": "vertices=1518"
+    },
+    {
+      "name": "Periodic seams use whole-tile offsets",
+      "passed": true,
+      "detail": "maximum_integer_error=0"
+    },
+    {
+      "name": "Bounded UV chart seam overhead",
+      "passed": true,
+      "detail": "groups=105, vertices=248/1518, fraction=0.163373"
+    },
+    {
+      "name": "Tangent continuity across wraps",
+      "passed": true,
+      "detail": "maximum_angle_degrees=0"
+    },
+    {
+      "name": "Pathological projection fraction",
+      "passed": true,
+      "detail": "count=0/2500, fraction=0, maximum_span=0.0672585"
+    },
+    {
+      "name": "No collapsed UV triangles",
+      "passed": true,
+      "detail": "count=0/2500, minimum_abs_determinant=4.33457e-08"
+    },
+    {
+      "name": "Metric roof/floor texel density",
+      "passed": true,
+      "detail": "roof_scale=1, floor_scale=1.06985, target_scale_m=4"
+    },
+    {
+      "name": "Localized UV anisotropy",
+      "passed": true,
+      "detail": "median=1.24703, p95=1.91083, p99=3.16436, fraction_above_25=0, valid_faces=2500/2500"
+    }
+  ]
+}

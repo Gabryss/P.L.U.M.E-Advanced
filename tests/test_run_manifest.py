@@ -13,7 +13,7 @@ from plume_advanced.run_manifest import write_run_manifest
 
 class RunManifestTests(unittest.TestCase):
     def test_manifest_records_source_dependencies_and_output_hashes(self) -> None:
-        config = load_project_config(ROOT / "config" / "project.toml")
+        config = load_project_config(ROOT / "config" / "research.toml")
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             artifact = directory / "artifact.bin"
@@ -38,7 +38,7 @@ class RunManifestTests(unittest.TestCase):
             self.assertEqual(len(payload["outputs"][0]["sha256"]), 64)
 
     def test_manifest_can_record_a_failed_stage(self) -> None:
-        config = load_project_config(ROOT / "config" / "project.toml")
+        config = load_project_config(ROOT / "config" / "research.toml")
         with tempfile.TemporaryDirectory() as temporary:
             manifest = write_run_manifest(
                 config,
@@ -57,7 +57,7 @@ class RunManifestTests(unittest.TestCase):
             self.assertIn("synthetic failure", payload["failure"]["error"])
 
     def test_running_manifest_records_stage_and_deduplicates_existing_files(self) -> None:
-        config = load_project_config(ROOT / "config" / "project.toml")
+        config = load_project_config(ROOT / "config" / "research.toml")
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             existing = directory / "input.dat"
@@ -82,7 +82,7 @@ class RunManifestTests(unittest.TestCase):
             self.assertEqual(payload["inputs"][0]["sha256"], payload["outputs"][0]["sha256"])
 
     def test_manifest_rejects_unknown_status_without_creating_output(self) -> None:
-        config = load_project_config(ROOT / "config" / "project.toml")
+        config = load_project_config(ROOT / "config" / "research.toml")
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "run_manifest.json"
             with self.assertRaisesRegex(ValueError, "running, complete, or failed"):

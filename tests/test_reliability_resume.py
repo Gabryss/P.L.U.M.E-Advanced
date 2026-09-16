@@ -239,6 +239,62 @@ def test_known_quality_and_budget_diagnostics():
         assert diagnose(error, "geometry")["category"] == category
 
 
+@pytest.mark.parametrize("kind", ["surface", "mesh", "recovery"])
+def test_measured_ground_rejection_has_route_specific_advice(kind):
+    from plume_advanced.pipeline.recovery import PipelineRecoveryError
+    from plume_advanced.stages.mesh_inspection import MeshInspectionError
+    from plume_advanced.stages.surface_topology import SurfaceTopologyError
+
+    measured = json.loads(
+        (Path(__file__).parent / "fixtures/recovery/ground_failure_seed0.json").read_text()
+    )
+    if kind == "mesh":
+        error = MeshInspectionError(measured)
+    elif kind == "recovery":
+        error = PipelineRecoveryError(
+            "Required route rejected",
+            report={"attempts": [{"status": "rejected", "inspection": measured}]},
+        )
+    else:
+        error = SurfaceTopologyError("Required route rejected", report=measured)
+    report = diagnose(error, "base_geometry")
+    assert report["category"] == "ground_routes_rejected"
+    assert "ground_traversal" in report["action"]
+    assert "query budget" in report["action"]
+    assert "finer" not in report["action"]
+    assert "complete recovery budget is exhausted" not in report["action"]
+
+
+@pytest.mark.parametrize("kind", [AttributeError, TypeError, RuntimeError])
+def test_ground_evidence_does_not_hide_an_unexpected_exception(kind):
+    error = kind("Unexpected recovery bug")
+    error.report = json.loads(
+        (Path(__file__).parent / "fixtures/recovery/ground_failure_seed0.json").read_text()
+    )
+    report = diagnose(error, "base_geometry")
+    assert report["category"] == "unexpected_error"
+    assert report["error_type"] == kind.__name__
+
+
+@pytest.mark.parametrize("evidence", [
+    {},
+    {"ground_traversal": {"passed": True}},
+    {"ground_traversal": {"passed": 0}},
+    {"ground_traversal": []},
+    {"attempts": []},
+    {"attempts": ["malformed"]},
+    {"attempts": [{"inspection": None}]},
+    {"attempts": [
+        {"inspection": {"ground_traversal": {"passed": False}}},
+        {"inspection": {"genus": 2, "expected_genus": 0}},
+    ]},
+])
+def test_ground_diagnosis_requires_explicit_current_failure(evidence):
+    from plume_advanced.pipeline.recovery import PipelineRecoveryError
+
+    error = PipelineRecoveryError("Surface rejection", report=evidence)
+    assert diagnose(error, "base_geometry")["category"] == "surface_rejected"
+
 @pytest.mark.parametrize("payload", ["garbage", "[]", '{"status":"unknown"}'])
 def test_invalid_worker_result_is_retained_as_failure(tmp_path, monkeypatch, payload):
     def run(command, **kwargs):
@@ -276,9 +332,7 @@ def test_configured_texture_content_is_part_of_resume_identity(tmp_path):
 
     config = tmp_path / "case.toml"
     config.write_text(
-        PACKAGED_CONFIG.read_text().replace(
-            'cave_diffuse_texture = ""', 'cave_diffuse_texture = "tile.png"'
-        )
+        PACKAGED_CONFIG.read_text() + '\n[geometry]\ncave_diffuse_texture = "tile.png"\n'
     )
     tile = tmp_path / "tile.png"
     tile.write_bytes(b"first")

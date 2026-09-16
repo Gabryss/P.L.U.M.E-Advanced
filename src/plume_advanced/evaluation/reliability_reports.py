@@ -24,6 +24,23 @@ def write_json(path: Path, payload: object) -> None:
     temporary.replace(path)
 
 
+def _ground_routes_failed(report: object) -> bool:
+    """Read an explicit failure from a surface report or final recovery attempt."""
+    if not isinstance(report, dict):
+        return False
+    ground = report.get("ground_traversal")
+    if isinstance(ground, dict) and ground.get("passed") is False:
+        return True
+    attempts = report.get("attempts")
+    if not isinstance(attempts, list) or not attempts or not isinstance(attempts[-1], dict):
+        return False
+    inspection = attempts[-1].get("inspection")
+    if not isinstance(inspection, dict):
+        return False
+    ground = inspection.get("ground_traversal")
+    return isinstance(ground, dict) and ground.get("passed") is False
+
+
 def diagnose(error: BaseException, stage: str) -> dict[str, str]:
     """Classify known conditions; unknown exceptions never become seed retries."""
     from plume_advanced.acceptance import AcceptanceError
@@ -60,6 +77,17 @@ def diagnose(error: BaseException, stage: str) -> dict[str, str]:
             "Read network_quality.json for the failed constraints. The bounded network "
             "candidate sequence is exhausted. Correct host/route constraints in a new "
             "campaign; retain this seed as a regression case."
+        )
+    elif isinstance(error, SurfaceTopologyError) and _ground_routes_failed(
+        getattr(error, "report", None)
+    ):
+        category = "ground_routes_rejected"
+        action = (
+            "Read ground_traversal in pipeline_recovery.json or pipeline_quality_report.json. "
+            "Inspect failed stations, motion intervals, floor slope/step measurements, attempted "
+            "detours and the query budget. Required ground-route placement did not pass; a finite "
+            "search failure does not establish that no route exists. Retain this case and its "
+            "robot limits. Investigate the route plan or terrain inputs before a new campaign."
         )
     elif isinstance(error, PipelineRecoveryError):
         category = "surface_rejected"
@@ -217,7 +245,7 @@ def write_report(output: Path, summary: dict) -> None:
                 "surface_quality.json",
                 "asset_checks.json",
                 "export/plume_cave.glb",
-                "export/continuous_material/README.md",
+                "export/continuous_material/SETUP.txt",
             ):
                 if (output / directory / name).is_file():
                     links.append(

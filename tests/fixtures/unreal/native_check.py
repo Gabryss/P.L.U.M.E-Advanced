@@ -1,6 +1,7 @@
 """Run in an isolated UE editor project with rendering enabled, never a user scene."""
 
 import json
+import math
 import resource
 import runpy
 import time
@@ -8,6 +9,151 @@ import traceback
 from pathlib import Path
 
 import unreal as ue
+
+
+def body_hits(world, a, b, radius, half_axis):
+    """Multi traces include stationary initial overlaps as well as sweeps."""
+    return bool(ue.SystemLibrary.capsule_trace_multi(
+        world, ue.Vector(*a), ue.Vector(*b), radius, radius+half_axis,
+        ue.TraceTypeQuery.TRACE_TYPE_QUERY1, True, [], ue.DrawDebugTrace.NONE))
+
+
+def box_hits(world, a, b, half, forward, up):
+    rotation = ue.MathLibrary.make_rot_from_xz(ue.Vector(*forward), ue.Vector(*up))
+    return bool(ue.SystemLibrary.box_trace_multi(world, ue.Vector(*a), ue.Vector(*b),
+        ue.Vector(*half), rotation, ue.TraceTypeQuery.TRACE_TYPE_QUERY1, True, [], ue.DrawDebugTrace.NONE))
+
+
+def floor_hit(world, point, distance):
+    return ue.SystemLibrary.line_trace_single(world, ue.Vector(*point),
+        ue.Vector(point[0], point[1], point[2]-distance), ue.TraceTypeQuery.TRACE_TYPE_QUERY1,
+        True, [], ue.DrawDebugTrace.NONE)
+
+
+def ground_controls(world, actors, origin):
+    cube = ue.load_asset('/Engine/BasicShapes/Cube.Cube')
+    obstacle = actors.spawn_actor_from_object(cube, origin)
+    obstacle.get_component_by_class(ue.StaticMeshComponent).set_collision_profile_name('BlockAll')
+    obstacle.set_actor_scale3d(ue.Vector(.02, 4, 4))
+    rows, second = [], None
+    def point(x=0, y=0, z=0):
+        return [origin.x+x, origin.y+y, origin.z+z]
+    def record(name, expected, observed):
+        rows.append(dict(name=name, expected=expected, observed=observed, passed=expected == observed))
+    def hits(a, b, forward=(1, 0, 0)):
+        return box_hits(world, a, b, [37, 27, 27], forward, [0, 0, 1])
+    try:
+        record('box_initial_overlap', True, hits(point(), point()))
+        record('box_length_overlap', True, hits(point(34), point(34)))
+        record('box_rotated_clear', False, hits(point(34), point(34), (0, 1, 0)))
+        record('box_clear_start', False, hits(point(100), point(100)))
+        record('box_thin_wall_forward', True, hits(point(-100), point(100)))
+        record('box_thin_wall_reverse', True, hits(point(100), point(-100)))
+        record('box_clear_sweep', False, hits(point(100), point(200)))
+        obstacle.set_actor_scale3d(ue.Vector(4, 4, .02))
+        record('floor_present', True, floor_hit(world, point(z=100), 200) is not None)
+        record('floor_missing', False, floor_hit(world, point(x=500, z=100), 200) is not None)
+        for angle in (15, 25):
+            obstacle.set_actor_rotation(ue.Rotator(pitch=angle, yaw=0, roll=0), False)
+            a, b = (floor_hit(world, point(x=x, z=100), 200) for x in (-50, 50))
+            allowed = (a is not None and b is not None
+                       and math.degrees(math.atan(abs(a.to_tuple()[3]-b.to_tuple()[3])/100)) <= 20)
+            record('slope_below_limit' if angle == 15 else 'slope_above_limit', angle == 15, allowed)
+        obstacle.set_actor_rotation(ue.Rotator(), False)
+        obstacle.set_actor_location(ue.Vector(*point(-50)), False, False)
+        obstacle.set_actor_scale3d(ue.Vector(1, 1, .02))
+        second = actors.spawn_actor_from_object(cube, ue.Vector(*point(50)))
+        second.get_component_by_class(ue.StaticMeshComponent).set_collision_profile_name('BlockAll')
+        second.set_actor_scale3d(ue.Vector(1, 1, .02))
+        for step in (6, 15):
+            second.set_actor_location(ue.Vector(*point(50, z=step)), False, False)
+            a, b = (floor_hit(world, point(x=x, z=100), 200) for x in (-50, 50))
+            allowed = a is not None and b is not None and abs(a.to_tuple()[3]-b.to_tuple()[3]) <= 10
+            record('step_below_limit' if step == 6 else 'step_above_limit', step == 6, allowed)
+    finally:
+        if second is not None:
+            actors.destroy_actor(second)
+        actors.destroy_actor(obstacle)
+    return rows
+
+
+def check_ground(world, actors, plan, origin):
+    if not plan or not plan['enabled']:
+        return dict(enabled=False)
+    report = dict(enabled=True, passed=False, stations=0, sweeps=0, floor_samples=0, failures=0,
+                  maximumFloorErrorM=0., maximumSlopeDeg=0., maximumStepM=0.,
+                  **{key: plan[key] for key in ('length_m', 'width_m', 'height_m', 'margin_m',
+                      'max_slope_deg', 'max_step_m', 'support_spacing_m')})
+    for pose in plan['poses']:
+        report['stations'] += 1
+        report['failures'] += int(box_hits(world, pose['point'], pose['point'], plan['half_extents'],
+                                          pose['forward'], pose['up']))
+        heights, coefficients = [], [0., 0., 0.]
+        for probe, support in zip(pose['probes'], plan['support']):
+            report['floor_samples'] += 1
+            hit = floor_hit(world, probe['point'], probe['floor']+10)
+            if hit is None:
+                report['failures'] += 1
+                height = 0.
+            else:
+                distance = hit.to_tuple()[3]
+                report['maximumFloorErrorM'] = max(report['maximumFloorErrorM'], abs(distance-probe['floor'])/100)
+                height = (probe['point'][2]-distance)/100
+            heights.append(height)
+            for i, key in enumerate(('x', 'y', 'z')):
+                coefficients[i] += support['weight'][key]*height
+        a, b, c = coefficients
+        residual = [height-(a*s['offset']['x']+b*s['offset']['y']+c)
+                    for height, s in zip(heights, plan['support'])]
+        report['maximumSlopeDeg'] = max(report['maximumSlopeDeg'], math.degrees(math.atan(math.hypot(a, b))))
+        report['maximumStepM'] = max(report['maximumStepM'], max(residual)-min(residual))
+    for motion in plan['motions']:
+        report['sweeps'] += 1
+        a, b = motion['start'], motion['end']
+        if any(box_hits(world, p, q, motion['half_extents'], motion['forward'], motion['up'])
+               for p, q in ((a, a), (b, b), (a, b), (b, a))):
+            report['failures'] += 1
+    report['controls'] = ground_controls(world, actors, origin)
+    report['passed'] = (report['failures'] == 0
+        and all(report[key] == plan[key] for key in ('stations', 'sweeps', 'floor_samples'))
+        and report['maximumFloorErrorM'] <= .002 and report['maximumSlopeDeg'] <= plan['max_slope_deg']+1e-5
+        and report['maximumStepM'] <= plan['max_step_m']+1e-5 and all(r['passed'] for r in report['controls']))
+    return report
+
+
+def physics_controls(world, actors, origin):
+    """Exercise the same query on a temporary 2 cm wall outside cave bounds."""
+    cube = ue.load_asset('/Engine/BasicShapes/Cube.Cube')
+    if cube is None:
+        raise RuntimeError('Missing native cube for collision controls')
+    obstacle = actors.spawn_actor_from_object(cube, origin)
+    component = obstacle.get_component_by_class(ue.StaticMeshComponent)
+    component.set_collision_profile_name('BlockAll')
+    obstacle.set_actor_scale3d(ue.Vector(.02, 4, 4))  # The engine cube is 100 cm.
+    rows = []
+
+    def point(x=0., z=0.):
+        return [origin.x+x, origin.y, origin.z+z]
+
+    def record(name, expected, observed):
+        rows.append(dict(name=name, expected=expected, observed=observed, passed=expected == observed))
+
+    try:
+        for tall in (False, True):
+            half_axis = 50. if tall else 0.
+            prefix = 'capsule_' if tall else 'sphere_'
+            record(prefix+'initial_overlap', True, body_hits(world, point(), point(), 27., half_axis))
+            record(prefix+'grazing_overlap', True, body_hits(world, point(14), point(14), 27., half_axis))
+            record(prefix+'clear_start', False, body_hits(world, point(100), point(100), 27., half_axis))
+            record(prefix+'thin_wall_forward', True, body_hits(world, point(-100), point(100), 27., half_axis))
+            record(prefix+'thin_wall_reverse', True, body_hits(world, point(100), point(-100), 27., half_axis))
+            record(prefix+'clear_sweep', False, body_hits(world, point(100), point(200), 27., half_axis))
+        obstacle.set_actor_scale3d(ue.Vector(4, 4, .02))
+        record('capsule_axis_overlap', True, body_hits(world, point(z=55), point(z=55), 27., 50.))
+        record('sphere_axis_clear', False, body_hits(world, point(z=55), point(z=55), 27., 0.))
+    finally:
+        actors.destroy_actor(obstacle)
+    return rows
 
 
 def main(directory, attempt="01"):
@@ -194,6 +340,46 @@ def main(directory, attempt="01"):
             report["collision_passed"] += int(error < 1.)
         report["collision_query_seconds"] = time.perf_counter()-query_start
         require(report["collision_passed"] == report["collision_samples"], "Dedicated collider ray checks failed")
+        progress("dedicated collider finite-body overlaps and sweeps")
+        body = expected["body"]
+        native_body = dict(passed=False, stations=0, edges=0, station_failures=[], edge_failures=[],
+                           height_m=body["height_m"], width_m=body["width_m"], margin_m=body["margin_m"])
+        report["body"] = native_body
+
+        def hits(a, b):
+            return body_hits(world, a, b, body["radius"], body["half_axis"])
+
+        for path in body["paths"]:
+            points = path["points"]
+            for i, centre in enumerate(points):
+                native_body["stations"] += 1
+                # Multi traces explicitly include initial overlaps, including zero-length casts.
+                if hits(centre, centre):
+                    native_body["station_failures"].append([path["segment_id"], i])
+            for i, (a, b) in enumerate(zip(points, points[1:])):
+                native_body["edges"] += 1
+                if hits(a, b) or hits(b, a):
+                    native_body["edge_failures"].append([path["segment_id"], i])
+        start = body["paths"][0]["points"][0]
+        floor_hit = ue.SystemLibrary.line_trace_single(
+            world, ue.Vector(*start), ue.Vector(start[0], start[1], start[2]-2000),
+            ue.TraceTypeQuery.TRACE_TYPE_QUERY1, True, [], ue.DrawDebugTrace.NONE)
+        require(floor_hit is not None, "No floor for body obstruction controls")
+        floor = [start[0], start[1], start[2]-floor_hit.to_tuple()[3]]
+        native_body["overlap_control"] = hits(floor, floor)
+        native_body["sweep_control"] = hits(start, [floor[0], floor[1], floor[2]-body["radius"]])
+        native_body["passed"] = (native_body["stations"] == body["stations"]
+            and native_body["edges"] == body["edges"] and not native_body["station_failures"]
+            and not native_body["edge_failures"] and native_body["overlap_control"]
+            and native_body["sweep_control"])
+        require(native_body["passed"], "Imported finite-body checks or floor obstruction controls failed")
+        report['physics_controls'] = physics_controls(
+            world, actors, collision_mesh.get_bounding_box().max + ue.Vector(10000, 10000, 10000))
+        require(all(row['passed'] for row in report['physics_controls']), 'Native collision negative controls failed')
+        progress('dedicated collider ground-robot poses, floor support and sweeps')
+        report['ground'] = check_ground(world, actors, expected.get('ground'),
+            collision_mesh.get_bounding_box().max + ue.Vector(11000, 11000, 11000))
+        require(not report['ground']['enabled'] or report['ground']['passed'], 'Native ground robot checks failed')
         ue.EditorAssetLibrary.save_loaded_asset(collision_mesh)
         progress("dedicated collision passed; capturing materials")
         capture = actors.spawn_actor_from_class(ue.SceneCapture2D, ue.Vector(0, 0, 0))
@@ -242,10 +428,14 @@ def main(directory, attempt="01"):
                 trial = f"exposure_{view}_{attempt}.png"
                 reference = render(trial)
                 clipped = sum(all(c >= 254 for c in pixel) for pixel in reference) / len(reference)
-                if clipped <= 0.005:
+                luminance = sorted((.2126*r+.7152*g+.0722*b)/255
+                                   for r, g, b in reference[::32])
+                p95 = luminance[int(.95*(len(luminance)-1))]
+                if clipped <= 0.005 and p95 <= .7:
                     (output / f"interior_{view}.png").write_bytes((output / trial).read_bytes())
                     report["view_exposure"].append(dict(
-                        view=view, intensity=intensity, clipped_fraction=clipped, attempts=attempt+1))
+                        view=view, intensity=intensity, clipped_fraction=clipped,
+                        luminance_p95=p95, attempts=attempt+1))
                     break
                 intensity *= 0.5
             else:

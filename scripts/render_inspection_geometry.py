@@ -12,6 +12,10 @@ import json
 import sys
 from pathlib import Path
 
+# Keep the helper usable in Blender's independent Python runtime.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src/plume_advanced"))
+from asset_paths import find_export_asset
+
 
 def main():
     import bpy
@@ -21,7 +25,7 @@ def main():
     parser.add_argument('--exterior-only', action='store_true')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     root = args.directory.resolve()
-    source = root / 'export_blender/plume_continuous_inspection.blend'
+    source = find_export_asset(root, filename='plume_continuous_inspection.blend')
     bpy.ops.wm.open_mainfile(filepath=str(source))
     scene = bpy.context.scene
     scene.cycles.samples = 48

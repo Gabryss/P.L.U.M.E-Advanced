@@ -3,6 +3,7 @@
 import json
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
@@ -313,20 +314,36 @@ class TargetExporterTests(unittest.TestCase):
             self.assertTrue((package / "model.config").is_file())
             self.assertTrue((package / "meshes" / "tube_collision.obj").is_file())
             sdf = (package / "model.sdf").read_text(encoding="utf-8")
-            self.assertIn('<sdf version="1.12">', sdf)
+            self.assertIn('<sdf version="1.10">', sdf)
             self.assertIn("model://tube/meshes/tube.obj", sdf)
             self.assertIn("model://tube/meshes/tube_collision.obj", sdf)
             self.assertIn("<static>true</static>", sdf)
             self.assertTrue((Path(temp_dir) / "tube.world.sdf").is_file())
             descriptor = json.loads((package / "plume_export.json").read_text(encoding="utf-8"))
-            self.assertEqual(descriptor["gazebo_release"], "Jetty")
-            self.assertEqual(descriptor["sdformat_major"], 16)
+            self.assertEqual(descriptor["gazebo_release"], "Harmonic")
+            self.assertEqual(descriptor["sdformat_major"], 14)
             copied_textures = list((package / "materials" / "textures").glob("diffuse_*.png"))
             self.assertEqual(len(copied_textures), 1)
             with Image.open(copied_textures[0]) as copied:
                 self.assertEqual(copied.getpixel((0, 0)), (90, 82, 72))
             material = (package / "meshes" / "tube.mtl").read_text(encoding="utf-8")
             self.assertIn("../materials/textures/" + copied_textures[0].name, material)
+            tree = ET.fromstring(sdf)
+            self.assertEqual(tree.findtext(".//visual/geometry/mesh/submesh/name"), "cave_wall")
+            self.assertEqual(tree.findtext(".//submesh/center"), "false")
+            self.assertEqual(
+                tree.findtext(".//pbr/metal/albedo_map"),
+                "model://tube/materials/textures/" + copied_textures[0].name,
+            )
+            # DART/ODE dereferences normals even on a collision-only mesh.
+            collider = package / "meshes" / "tube_collision.obj"
+            text = collider.read_text()
+            vertices = [line for line in text.splitlines() if line.startswith("v ")]
+            normals = [line for line in text.splitlines() if line.startswith("vn ")]
+            self.assertEqual(len(vertices), len(normals))
+            self.assertTrue(all("//" in line for line in text.splitlines() if line.startswith("f ")))
+            loaded = trimesh.load(collider, force="mesh", process=False)
+            self.assertTrue(np.isfinite(loaded.vertex_normals).all())
 
     def test_omniverse_package_declares_usd_units_and_axis(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir, tempfile.TemporaryDirectory() as source_dir:
@@ -390,15 +407,19 @@ class TargetExporterTests(unittest.TestCase):
             self.assertIn("uniform bool doubleSided = false", usda)
             self.assertIn(
                 'def Mesh "CaveCollision" (\n'
-                '        prepend apiSchemas = ["PhysicsCollisionAPI"]\n'
+                '        prepend apiSchemas = ["PhysicsCollisionAPI", "PhysicsMeshCollisionAPI"]\n'
                 "    )",
                 usda,
             )
             self.assertIn('uniform token purpose = "guide"', usda)
             self.assertIn('token visibility = "invisible"', usda)
             self.assertIn("bool physics:collisionEnabled = true", usda)
+            self.assertIn("PhysicsMeshCollisionAPI", usda)
+            self.assertIn('physics:approximation = "none"', usda)
             self.assertIn("texCoord2f[] primvars:st", usda)
             self.assertIn('info:id = "UsdPreviewSurface"', usda)
+            self.assertEqual(usda.count('inputs:wrapS = "repeat"'), 3)
+            self.assertEqual(usda.count('inputs:wrapT = "repeat"'), 3)
             self.assertIn("rel material:binding", usda)
             self.assertIn("inputs:normal.connect", usda)
             self.assertIn("float4 inputs:scale = (4, 4, 2, 1)", usda)

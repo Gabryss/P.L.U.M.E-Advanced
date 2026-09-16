@@ -691,8 +691,8 @@ class GeologicalEventTests(unittest.TestCase):
     def test_event_stage_places_seeded_mesh_events(self) -> None:
         # A resolved short gallery isolates placement; the general coarse
         # preview legitimately fails the new graph/surface topology gate.
-        project_config = load_project_config(ROOT / "config" / "earth_short_single.toml")
-        events = load_project_config(ROOT / "config" / "project.toml").events
+        project_config = load_project_config(ROOT / "config" / "short-single.toml")
+        events = load_project_config(ROOT / "config" / "research.toml").events
         project_config = replace(project_config,
             geometry=replace(project_config.geometry, density_margin=4.0),
             events=replace(events, geological_event_density_per_100m=0.8))
@@ -820,8 +820,8 @@ class GeologicalEventTests(unittest.TestCase):
             self.assertGreater(max(signed_contact_distances), 0.0)
 
     def test_geometry_consumes_event_field(self) -> None:
-        project_config = load_project_config(ROOT / "config" / "earth_short_single.toml")
-        event_config = load_project_config(ROOT / "config" / "project.toml").events
+        project_config = load_project_config(ROOT / "config" / "short-single.toml")
+        event_config = load_project_config(ROOT / "config" / "research.toml").events
         # Exercise collapse, choke and infill on the shorter inspection route.
         event_config = replace(event_config, geological_event_density_per_100m=0.8)
         project_config = replace(project_config, geometry=replace(project_config.geometry, density_margin=4.0))

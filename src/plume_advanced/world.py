@@ -146,6 +146,13 @@ class ExportConfig:
     generate_collision: bool = True
     max_visual_triangles: int = 0
     max_asset_bytes: int = 0
+    visual_max_error_m: float = 0.0
+
+    def __post_init__(self) -> None:
+        if (isinstance(self.visual_max_error_m, bool)
+                or not isinstance(self.visual_max_error_m, (int, float))
+                or not np.isfinite(self.visual_max_error_m) or self.visual_max_error_m < 0):
+            raise ValueError("export.visual_max_error_m must be finite and nonnegative")
 
 
 @dataclass(frozen=True)

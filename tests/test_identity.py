@@ -37,6 +37,21 @@ def test_package_identity_tracks_file_names_and_content(tmp_path):
     assert len({first, second, identity.package_source_hash(tmp_path)}) == 3
 
 
+@pytest.mark.parametrize("resource", [
+    "evaluation/resources/experiments.toml", "evaluation/resources/research.toml",
+    "evaluation/resources/seeds/network_seeds.txt",
+    "evaluation/resources/splits/pdc_calibration_caves.txt",
+])
+def test_changed_evaluation_defaults_invalidate_source_identity(tmp_path, resource):
+    (tmp_path / "__init__.py").touch()
+    path = tmp_path / resource
+    path.parent.mkdir(parents=True)
+    path.write_text("original")
+    before = identity.package_source_hash(tmp_path)
+    path.write_text("changed")
+    assert identity.package_source_hash(tmp_path) != before
+
+
 def test_git_failure_is_unknown_not_clean(tmp_path, monkeypatch):
     def unavailable(*args, **kwargs):
         raise OSError("git unavailable")
@@ -52,7 +67,7 @@ def test_runtime_versions_include_geometry_and_optional_dependencies():
 
 
 def test_dependency_change_invalidates_checkpoint_and_fingerprint(tmp_path, monkeypatch):
-    project = load_project_config(Path(__file__).parents[1] / "config/earth_short_single.toml")
+    project = load_project_config(Path(__file__).parents[1] / "config/short-single.toml")
     store = StageCheckpointStore(tmp_path / "cache", "same")
     store.save("host", [42])
     before = pipeline_fingerprint(project, inputs=(), source_root=tmp_path)
@@ -64,7 +79,7 @@ def test_dependency_change_invalidates_checkpoint_and_fingerprint(tmp_path, monk
 
 
 def test_lock_change_invalidates_fingerprint(tmp_path):
-    project = load_project_config(Path(__file__).parents[1] / "config/earth_short_single.toml")
+    project = load_project_config(Path(__file__).parents[1] / "config/short-single.toml")
     lock = tmp_path / "uv.lock"
     lock.write_text("first")
     before = pipeline_fingerprint(project, inputs=(), source_root=tmp_path)

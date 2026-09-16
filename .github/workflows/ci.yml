@@ -23,6 +23,11 @@ jobs:
           assert all(str(d.metadata['Name']).lower() != 'rocky' for d in distributions())"
 
   test:
+    env:
+      PYTHONHASHSEED: "37"
+      OPENBLAS_NUM_THREADS: "2"
+      OMP_NUM_THREADS: "2"
+      PLUME_TEST_EVIDENCE: test-results/failures
     strategy:
       matrix:
         python-version: ["3.12", "3.13"]
@@ -40,7 +45,18 @@ jobs:
       - run: uv run --no-sync ruff check .
       - run: uv run --no-sync mypy src/plume_advanced
       - run: uv run --no-sync python -m compileall -q src scripts tests
-      - run: uv run --no-sync pytest -q --cov=plume_advanced --cov-report=term-missing --cov-fail-under=70
+      - name: Record numerical runtime
+        run: |
+          mkdir -p test-results
+          uv pip freeze > test-results/packages.txt
+          uv run --no-sync python -c "import platform, numpy, scipy; print(platform.platform()); print(platform.python_version()); numpy.show_runtime(); scipy.show_config()" > test-results/runtime.txt
+      - run: uv run --no-sync pytest -q --basetemp=test-results/tmp --junitxml=test-results/tests.xml --cov=plume_advanced --cov-report=term-missing --cov-report=json:test-results/coverage.json --cov-fail-under=70
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-evidence-python-${{ matrix.python-version }}
+          path: test-results/
+          retention-days: 14
       - run: uv build
       - name: Check installed wheel resources
         run: |
@@ -48,7 +64,11 @@ jobs:
           .venv/bin/python -I - <<'PY'
           from importlib.resources import files
           from pathlib import Path
+          import os
+          import tempfile
           from plume_advanced import cli
+          from plume_advanced.evaluation.cli import main as evaluate
+          from plume_advanced.evaluation.config import load_evaluation_config
           from plume_advanced.exporters.projected_materials import ASSET_FILES
 
           assert not Path(cli.__file__).resolve().is_relative_to(Path.cwd() / "src")
@@ -60,4 +80,14 @@ jobs:
           assert config.export.generate_collision
           assert config.export.max_visual_triangles > 0 and config.export.max_asset_bytes > 0
           assert all(package.joinpath("material_assets", name).read_bytes() for name in ASSET_FILES)
+          with tempfile.TemporaryDirectory() as directory:
+              os.chdir(directory)
+              evaluation = load_evaluation_config()
+              for experiment in ("morphometry", "controllability", "host_ablation",
+                                 "sampling_ablation", "scalability", "export_consistency", "determinism"):
+                  assert evaluation.seeds(experiment)
+              # External rock maps are deliberately not bundled in the wheel.
+              # An empty working directory must report them missing, not ready.
+              assert evaluate(["audit"]) == 1
+              assert Path("outputs/evaluation/evaluation_audit.json").is_file()
           PY

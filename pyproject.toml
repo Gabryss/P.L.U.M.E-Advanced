@@ -5,7 +5,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "PLUME-Advanced"
 version = "0.1.0"
-description = "Stage-oriented procedural lava tube prototype"
+description = "Reproducible lava-tube environments with host-conditioned growth, inspection and bounded repair"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "fast-simplification>=0.1.13,<0.3",
@@ -19,6 +20,10 @@ dependencies = [
   "xatlas>=0.0.11",
 ]
 
+[project.urls]
+Repository = "https://github.com/Gabryss/P.L.U.M.E-Advanced"
+Issues = "https://github.com/Gabryss/P.L.U.M.E-Advanced/issues"
+
 [project.optional-dependencies]
 rocks = [
   "rocky @ git+https://github.com/Gabryss/Rocky.git@03c1db59ba45c9da74ab0859ebb547e81e552529",
@@ -26,9 +31,6 @@ rocks = [
 paper = [
   "laspy[lazrs]>=2.6",
   "psutil>=6.0",
-]
-video = [
-  "manim>=0.21,<0.22",
 ]
 
 [project.scripts]
@@ -50,11 +52,14 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["plume_advanced*"]
 
 [tool.setuptools.package-data]
-plume_advanced = ["default_project.toml", "material_assets/*.py", "material_assets/*.hlsl",
-    "material_assets/*.md", "material_assets/unity/*.hlsl", "material_assets/unity/*.shader",
-    "material_assets/unity/Editor/*.cs", "material_assets/unreal/*.py"]
+plume_advanced = ["default_project.toml", "presets.json", "material_assets/*.py", "material_assets/*.hlsl",
+    "material_assets/*.txt", "material_assets/unity/*.hlsl", "material_assets/unity/*.shader",
+    "material_assets/unity/Editor/*.cs", "material_assets/unreal/*.py",
+    "evaluation/resources/*.toml", "evaluation/resources/seeds/*.txt",
+    "evaluation/resources/splits/*.txt"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

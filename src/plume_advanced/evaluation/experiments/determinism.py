@@ -7,7 +7,6 @@ import tempfile
 from dataclasses import replace
 from pathlib import Path
 
-from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.artifacts import (
     host_semantic_hash,
     network_semantic_hash,
@@ -23,8 +22,8 @@ from plume_advanced.pipeline import StageCheckpointStore
 
 def run_determinism(config: EvaluationConfig, *, force: bool = False) -> dict:
     section = config.section("determinism")
-    base = load_project_config(
-        config.project_config, world_body=section.get("body", "earth"), dev_mode=True
+    base = config.load_project(
+        world_body=section.get("body", "earth"), dev_mode=True
     )
     provenance = capture_provenance(
         config.project_config.parent.parent,

@@ -129,7 +129,7 @@ def test_geometry_scale_cannot_bypass_roof_stability() -> None:
 
 
 def test_body_maximum_no_longer_sets_a_minimum_passage_size() -> None:
-    configs = [load_project_config(ROOT / 'config/project.toml', world_body=b) for b in ('earth', 'mars', 'moon')]
+    configs = [load_project_config(ROOT / 'config/research.toml', world_body=b) for b in ('earth', 'mars', 'moon')]
     assert [c.section_field.minimum_tube_width for c in configs] == [.5, .5, .5]
     assert [c.section_field.minimum_tube_height for c in configs] == [.35, .35, .35]
     assert configs[-1].section_field.roof_stability_model.gravity_m_s2 == 1.62

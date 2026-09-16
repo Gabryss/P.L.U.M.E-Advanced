@@ -18,7 +18,7 @@ from plume_advanced.stages.network_topology import topology_metrics
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=Path("config/earth_valentine_topology.toml"))
+    parser.add_argument("--config", type=Path, default=Path("config/trunk.toml"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--counts", type=int, nargs="+", default=[1, 2, 3])
     parser.add_argument("--seeds", type=int, nargs="+", default=[20260910, 20260911, 20260912])

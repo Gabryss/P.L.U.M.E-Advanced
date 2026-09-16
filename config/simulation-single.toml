@@ -1,0 +1,4 @@
+# simulation-single: shared calibration; override only the settings you need.
+recipe_version = 1
+preset = "simulation-single"
+procedural_seed = 1

@@ -23,7 +23,7 @@ def test_emplacement_backend_benchmark_smoke(tmp_path) -> None:
 
     assert report["recommendation"]["selected_default"] == "internal"
     assert len(report["cases"]) == 2
-    assert all(case["success"] and case["valid"] for case in report["cases"])
+    assert all(case["success"] and case["valid"] for case in report["cases"]), report["cases"]
     assert all(case["deterministic"] for case in report["cases"])
     assert (tmp_path / "benchmark.json").exists()
     assert (tmp_path / "network_diagrams.png").exists()

@@ -182,13 +182,10 @@ def network_metrics(
         # Descriptive per-kind distributions make sinuosity failures visible
         # without conflating a long backbone with short side passages.
         "sinuosity_by_kind": sinuosity_by_kind,
-        "sinuosity_statistics": sinuosity_by_kind,
         "sustained_uphill_by_kind": uphill_by_kind,
-        "uphill_diagnostics": uphill_by_kind,
         "uphill_provenance_by_kind": uphill_provenance,
-        # Staged-emplacement history is optional on legacy CaveNetwork
-        # objects.  The evaluator returns availability flags instead of
-        # inferring process outcomes when metadata is absent.
+        # History is optional on synthetic controls and single-phase networks.
+        # Report availability instead of inventing missing process outcomes.
         "emplacement_diagnostics": emplacement_metrics(network),
         "normalized_topology": _normalized_topology(network, degrees, components),
         "branch_persistence_length_median_m": float(
@@ -549,23 +546,9 @@ def _sample_centerlines(network: CaveNetwork, spacing_m: float) -> np.ndarray:
     return np.asarray(sampled, dtype=float)
 
 
-def network_sinuosity_statistics(network: CaveNetwork) -> dict[str, dict[str, float | int | None]]:
-    """Public per-kind sinuosity distribution helper."""
-
-    return _sinuosity_by_kind(network)
-
-
-def sustained_uphill_diagnostics(network: CaveNetwork) -> dict[str, Any]:
-    """Public per-kind sustained-uphill helper used by report writers."""
-
-    return _uphill_by_kind(network)
-
-
 __all__ = [
     "host_exposure",
     "network_metrics",
     "emplacement_metrics",
-    "network_sinuosity_statistics",
-    "sustained_uphill_diagnostics",
     "symmetric_centerline_distance",
 ]
