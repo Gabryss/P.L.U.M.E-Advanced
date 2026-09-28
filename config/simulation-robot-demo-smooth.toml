@@ -1,0 +1,45 @@
+# Follow-up to simulation-robot-demo.toml after its 0.177 m measured floor step
+# exceeded the declared 0.10 m Husky screen. The rough failed run is preserved.
+# Wall/roof relief, resolution, route limits and robot dimensions are unchanged.
+recipe_version = 1
+preset = "simulation-single"
+procedural_seed = 3
+
+[run]
+render_diagnostics = false
+max_seed_attempts = 8
+max_attempt_seconds = 0
+
+[network]
+target_route_length_m = 120.0
+source_count = 1
+
+[network.topology]
+island_count = [0, 0]
+side_branch_count = [0, 0]
+
+[events]
+enabled = false
+
+[geometry]
+floor_roughness_scale = 0.05
+surface_floor_relief_m = 0.04
+cave_diffuse_texture = "../texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg"
+cave_normal_texture = "../texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr"
+cave_roughness_texture = "../texture/dark_rock_8k/textures/dark_rock_rough_8k.exr"
+cave_texture_scale_m = 4.0
+embedded_texture_max_size = 4096
+
+[acceptance]
+profile = "simulation"
+require_ground_routes = true
+repair_ground_routes = true
+robot_length_m = 0.99
+route_width_m = 0.67
+route_height_m = 0.67
+route_margin_m = 0.03
+
+[export]
+target = "all"
+max_visual_triangles = 10000000
+max_asset_bytes = 1073741824

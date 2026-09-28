@@ -38,6 +38,21 @@ def test_presets_preserve_pre_cleanup_resolved_configuration(case, tmp_path):
         for key in keys:
             if manifest[table][key]:
                 manifest[table][key] = os.path.relpath(manifest[table][key], recipe.parent)
+    # Intentional contract changes: searches are now configurable and robot
+    # checks require an explicit opt-in. Retain the frozen physics baseline.
+    manifest["run"].pop("max_seed_attempts")
+    manifest["run"].pop("max_attempt_seconds")
+    manifest["acceptance"].pop("repair_ground_routes")
+    manifest["geometry"].pop("ground_ramp_max_change_m")
+    # Body-height and underbody-clearance overrides were added after this
+    # snapshot. Check their neutral defaults before comparing the frozen fields.
+    assert manifest["acceptance"].pop("robot_height_m") is None
+    assert manifest["acceptance"].pop("robot_ground_clearance_m") == 0.0
+    assert manifest["geometry"].pop("ground_robot_height_m") == 0.0
+    assert manifest["geometry"].pop("ground_robot_clearance_m") == 0.0
+    if case["preset"] in {"simulation-single", "simulation-multi"}:
+        manifest["acceptance"]["require_ground_routes"] = True
+        manifest["geometry"]["ground_robot_length_m"] = .7
     text = json.dumps(manifest, sort_keys=True)
     assert hashlib.sha256(text.encode()).hexdigest() == case["sha256"]
 

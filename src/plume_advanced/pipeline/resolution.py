@@ -12,7 +12,7 @@ from plume_advanced.progress import report_progress
 from plume_advanced.stages.geometry import GeometryGenerator
 from plume_advanced.stages.mesh_inspection import surface_identity
 from plume_advanced.stages.route_clearance import resample_route_polyline
-from plume_advanced.stages.surface_topology import SurfaceTopologyError
+from plume_advanced.stages.surface_topology import PassageObstructionError, SurfaceTopologyError
 from plume_advanced.stages.triangle_queries import vertical_clearances
 
 
@@ -90,6 +90,9 @@ def build_with_resolution_checks(network, sections, controls, progress=None, *,
             journal["failure"] = "Allocated-grid budget exhausted"
             break
         except SurfaceTopologyError as error:
+            if isinstance(error, PassageObstructionError):
+                report_progress("Resolution acceptance", detail="passage obstruction: return to local profile repair; no finer grid")
+                raise
             if getattr(error, "report", {}).get("ground_traversal", {}).get("passed") is False:
                 raise
             # A coarse lattice can create handles or obstruct a passage even

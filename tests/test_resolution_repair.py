@@ -36,6 +36,18 @@ def test_ground_failure_does_not_spend_whole_grid_refinement_budget(monkeypatch)
     assert calls == [1]
 
 
+def test_blocked_passage_returns_to_profile_repair_without_refining(monkeypatch):
+    from plume_advanced.stages.surface_topology import PassageObstructionError
+    calls = []
+    def reject(self, *args, **kwargs):
+        calls.append(self.config.voxel_size)
+        raise PassageObstructionError('blocked', report={'blocked_points_m': [(0., 0., 0.)]})
+    monkeypatch.setattr(GeometryGenerator, 'build_base_volume', reject)
+    with pytest.raises(PassageObstructionError):
+        build_with_resolution_checks(*inputs())
+    assert calls == [1]
+
+
 def test_clearance_convergence_detects_translation_despite_equal_total_height():
     first = geometry(trimesh.creation.box(extents=(4, 4, 2)))
     mesh = trimesh.creation.box(extents=(4, 4, 2))

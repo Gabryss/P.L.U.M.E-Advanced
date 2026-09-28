@@ -192,6 +192,7 @@ def test_surface_acceptance_reclassifies_remnants_after_roof_clipping(monkeypatc
 
 
 def test_complete_required_route_collapse_has_a_structured_rejection(monkeypatch):
+    from plume_advanced.stages.surface_topology import PassageObstructionError
     base = fixture()
     original = base.voxel_grid.density.copy()
     generator = GeometryGenerator(base.config)
@@ -199,8 +200,9 @@ def test_complete_required_route_collapse_has_a_structured_rejection(monkeypatch
         grid.density.fill(-8.)
         return ()
     monkeypatch.setattr(generator, '_enforce_roof_stability', collapse)
-    with pytest.raises(SurfaceTopologyError, match='No surface candidate') as caught:
+    with pytest.raises(PassageObstructionError, match='Passage probes remain obstructed') as caught:
         generator._accept_base_surface(base, None, [], None)
     assert caught.value.report['attempts']
     assert all(row['inspection']['blocked_points_m'] for row in caught.value.report['attempts'])
+    assert caught.value.report['refinement_skipped']
     np.testing.assert_array_equal(base.voxel_grid.density, original)

@@ -86,3 +86,10 @@ def test_resource_guard_records_timeout(tmp_path: Path):
     with pytest.raises(TimeoutError) as error:
         monitor_worker([sys.executable,'-c','import time; time.sleep(5)'],tmp_path,.1,1.,psutil)
     assert error.value.metrics['failure_kind'] == 'timeout'
+
+
+def test_zero_memory_limit_disables_software_cutoff(tmp_path: Path):
+    command = [sys.executable, '-c', 'a=bytearray(30*1024**2); print(len(a))']
+    metrics = monitor_worker(command, tmp_path, 3., 0., psutil)
+    assert metrics['worker_returncode'] == 0
+    assert metrics['memory_limit_gib'] == 0.

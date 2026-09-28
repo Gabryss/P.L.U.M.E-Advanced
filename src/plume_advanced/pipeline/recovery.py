@@ -22,9 +22,9 @@ from plume_advanced.evaluation.artifacts import (
     section_semantic_hash,
 )
 from plume_advanced.pipeline.inspection import _write
-from plume_advanced.pipeline.resolution import build_with_resolution_checks
+from plume_advanced.pipeline.resolution import ResolutionBudgetError, build_with_resolution_checks
 from plume_advanced.procedural import canonical_seed, derive_subseed
-from plume_advanced.progress import report_progress
+from plume_advanced.progress import report_progress, work_budget
 from plume_advanced.stages.geometry_types import CaveGeometry
 from plume_advanced.stages.mesh_inspection import inspect_surface, route_inspection_arguments
 from plume_advanced.stages.network import CaveNetwork, CaveNetworkGenerator
@@ -32,14 +32,50 @@ from plume_advanced.stages.network_acceptance import repair_network
 from plume_advanced.stages.network_quality import NetworkQualityError, assess_network
 from plume_advanced.stages.route_clearance import fit_required_sections
 from plume_advanced.stages.section_field import SectionField, SectionFieldGenerator
-from plume_advanced.stages.surface_topology import SurfaceTopologyError
+from plume_advanced.stages.section_repairs import repair_ground_sections, repair_obstructed_sections
+from plume_advanced.stages.surface_topology import PassageObstructionError, SurfaceTopologyError
 
 RECOVERY_VERSION = "plume.pipeline-recovery.v1"
 SEED_DOMAIN = "pipeline-mesh-recovery-v1"
 
 
 class PipelineRecoveryError(SurfaceTopologyError):
-    """All explicitly budgeted local repairs and regenerations were rejected."""
+    """Recovery exhausted a budget or stopped on an unrepaired ground route."""
+
+
+def recovery_failure_summary(report: dict) -> list[str]:
+    """Describe a rejected realization without dumping its mesh measurements."""
+    attempts = report.get("attempts", [])
+    lines = [f"Root seed: {report.get('root_seed', 'unknown')}; geometry candidates considered: {len(attempts)}."]
+    if report.get("stop_reason"):
+        lines.append(report["stop_reason"])
+    last: dict = next((row for row in reversed(attempts) if row.get("status") == "rejected"), {})
+    ground = last.get("inspection", {}).get("ground_traversal", {})
+    if ground.get("passed") is not False:
+        if last.get("reason"):
+            lines.append(last["reason"])
+        return lines
+    paths = ground.get("paths", [])
+    failed = sum(row.get("passed") is False for row in paths)
+    lines.append(f"Ground-robot validation: {failed}/{len(paths)} inspected routes rejected.")
+    robot = ground.get("robot", {})
+    poses = [pose for row in [*paths, *ground.get("junctions", [])] for pose in row.get("poses", [])]
+    for key, limit, label, unit in (
+        ("slope_deg", "max_slope_deg", "Measured floor slope", "deg"),
+        ("step_m", "max_step_m", "Measured step/support variation", "m"),
+    ):
+        values = [pose[key] for pose in poses if key in pose]
+        if values and limit in robot:
+            lines.append(f"{label}: up to {max(values):.3g} {unit}; limit {robot[limit]:g} {unit}.")
+    if ground.get("failures"):
+        # Budget exhaustion and malformed/missing routes are distinct from
+        # measured robot-limit failures and must not be hidden by a 0/0 count.
+        lines.extend(failure for failure in ground["failures"] if not failure.startswith("Required ground route "))
+    if any(r.get("kind") == "ground_ramp_repair" for r in attempts):
+        lines.append("Route placement and bounded floor grading did not satisfy the unchanged reference robot limits.")
+    else:
+        lines.append("Route placement could not satisfy the reference robot; increasing topology-repair attempts does not repair the floor.")
+    return lines
 
 
 @dataclass(frozen=True)
@@ -73,6 +109,8 @@ def locate_affected_sections(network, sections, failure: dict, voxel_size: float
     profiles as hypotheses. These do not claim to locate an unwanted handle.
     """
     regions = [dict(region) for region in failure.get("defect_regions", [])]
+    regions.extend(dict(kind="blocked_route_center", lower_m=p, upper_m=p, center_m=p)
+                   for p in failure.get("blocked_points_m", []))
     for attempt in failure.get("attempts", []):
         inspection = attempt.get("inspection", {})
         for point in inspection.get("blocked_points_m", []):
@@ -205,6 +243,7 @@ def build_accepted_base(
             network_attempts=controls.recovery_network_attempts,
             route_attempts=controls.route_repair_attempts if controls.required_route_height_m else 0,
             resolution_refinements=controls.resolution_refinement_attempts,
+            ground_ramp_attempts=2 if project.acceptance.repair_ground_routes else 0,
         ),
         seed_policy=f"derive_subseed(original network stage seed, {SEED_DOMAIN!r}, retry starting at 1)",
         attempts=[],
@@ -215,13 +254,8 @@ def build_accepted_base(
         if report_path is not None:
             _write(report_path, journal)
         if progress is not None:
-            total = (1 + controls.recovery_local_attempts + controls.recovery_network_attempts
-                     + (controls.route_repair_attempts if controls.required_route_height_m else 0))
-            completed = (
-                total
-                if journal["status"] in {"accepted", "exhausted"}
-                else len(journal["attempts"])
-            )
+            total = len(candidates)
+            completed = sum(row["status"] != "running" for row in journal["attempts"])
             progress("pipeline-recovery", completed, total, detail)
         else:
             report_progress("Pipeline recovery", detail=detail)
@@ -242,6 +276,11 @@ def build_accepted_base(
             ("network_regeneration", i) for i in range(1, controls.recovery_network_attempts + 1)
         ]
     localization = None
+    measured_source = None
+    repair_failure = {}
+    ground_scheduled = False
+    obstruction_scheduled = False
+    measured_history = []
     seen = set()
     try:
         for kind, index in candidates:
@@ -249,7 +288,24 @@ def build_accepted_base(
             journal["attempts"].append(record)
             publish(f"{kind}: preparing candidate {len(journal['attempts'])}/{len(candidates)}")
             try:
-                if kind == "route_clearance_repair":
+                profile_repair = kind in {"ground_ramp_repair", "local_obstruction_repair"}
+                if profile_repair:
+                    assert measured_source is not None
+                    network, source_sections = measured_source
+                    if kind == "ground_ramp_repair":
+                        sections, design = repair_ground_sections(source_sections, controls, host,
+                            repair_failure["ground_traversal"], attempt=index, network=network)
+                    else:
+                        sections, design = repair_obstructed_sections(source_sections, controls, host,
+                            repair_failure["blocked_points_m"], attempt=index)
+                    record["profile_repair"] = design
+                    if measured_history:
+                        design["prior_repairs"] = measured_history
+                    if not design["changed_samples"]:
+                        record.update(status="skipped", reason="No admissible profile change for the measured failure")
+                        publish(record["reason"])
+                        continue
+                elif kind == "route_clearance_repair":
                     if localization is None or not localization["segment_ids"]:
                         record.update(status="skipped", reason="No measured route-clearance repair target")
                         publish(record["reason"])
@@ -297,12 +353,14 @@ def build_accepted_base(
                         quality_progress=lambda detail: publish(detail),
                     )
                     sections = SectionFieldGenerator(project.section_field).generate(network)
-                sections, route_repair = fit_required_sections(
-                    network, sections, controls, host,
-                    extra_margin_m=index*controls.voxel_size if kind == "route_clearance_repair" else 0.,
-                    affected=localization["segment_ids"] if kind == "route_clearance_repair" and localization is not None else None,
-                    minimum_relief_scale=project.acceptance.minimum_relief_scale,
-                )
+                route_repair = dict(enabled=False, changed_samples=0)
+                if not profile_repair:
+                    sections, route_repair = fit_required_sections(
+                        network, sections, controls, host,
+                        extra_margin_m=index*controls.voxel_size if kind == "route_clearance_repair" else 0.,
+                        affected=localization["segment_ids"] if kind == "route_clearance_repair" and localization is not None else None,
+                        minimum_relief_scale=project.acceptance.minimum_relief_scale,
+                    )
                 record["route_section_repair"] = route_repair
                 identity = _identity(network, sections)
                 record["identity"] = identity
@@ -330,7 +388,7 @@ def build_accepted_base(
                                                         acceptance=project.acceptance,
                                                         surface_diagnostic=surface_diagnostic)
                 record["resolution_repair"] = dict(geometry.resolution_repair)
-                if kind.startswith("local_") or kind == "route_clearance_repair":
+                if kind.startswith("local_") or kind in {"route_clearance_repair", "ground_ramp_repair"}:
                     # In addition to all new centres, protect the original local
                     # realization's routes. A repair cannot hide a lost passage
                     # by shifting the samples inspected by the next stage.
@@ -370,6 +428,8 @@ def build_accepted_base(
                     )
                 if host_semantic_hash(host) != before:
                     raise AssertionError("Recovery mutated its input host field")
+                if profile_repair:
+                    geometry = replace(geometry, section_repair=tuple(record["profile_repair"].items()))
                 record.update(
                     status="accepted",
                     surface_attempts=[dict(r) for r in geometry.surface_quality_records],
@@ -406,15 +466,64 @@ def build_accepted_base(
                 if host_semantic_hash(host) != before:
                     raise AssertionError("Recovery mutated its input host field") from error
                 publish(f"Rejected {kind}: {error}")
+                if isinstance(error, ResolutionBudgetError):
+                    journal["stop_reason"] = "Resolution budget exhausted; no further whole-volume recovery or seed retry"
+                    break
+                if (ground_failed and project.acceptance.repair_ground_routes and not ground_scheduled):
+                    ground_scheduled = True
+                    measured_source = network, sections
+                    repair_failure = record["inspection"]
+                    measured_history = [record["profile_repair"]] if profile_repair else []
+                    candidates[len(journal["attempts"]):] = [("ground_ramp_repair", i) for i in (1, 2)]
+                    publish("Ground placement exhausted; designing at most two local floor ramps with unchanged robot limits")
+                    continue
+                if isinstance(error, PassageObstructionError) and not obstruction_scheduled:
+                    obstruction_scheduled = True
+                    measured_source = network, sections
+                    repair_failure = record["inspection"]
+                    measured_history = [record["profile_repair"]] if profile_repair else []
+                    candidates[len(journal["attempts"]):] = [
+                        ("local_obstruction_repair", i) for i in range(1, controls.recovery_local_attempts+1)]
+                    publish("Passage obstruction: local profile edits replace resampling and whole-grid refinement")
+                    continue
+                if kind == "local_obstruction_repair" and isinstance(error, PassageObstructionError):
+                    old_points = {tuple(p) for p in repair_failure.get("blocked_points_m", [])}
+                    new_points = {tuple(p) for p in error.report.get("blocked_points_m", [])}
+                    improved_density = (error.report.get("blocked_density_deficit", float("inf"))
+                                        < repair_failure.get("blocked_density_deficit", float("inf"))-1e-6)
+                    if new_points >= old_points and not improved_density:
+                        journal["stop_reason"] = "Local expansion did not reduce the blocked probes; stop this repair strategy"
+                        break
                 if ground_failed:
-                    journal["stop_reason"] = "Reference ground-route placement exhausted; no geological edits justified by this failure"
+                    if kind == "ground_ramp_repair":
+                        continue
+                    journal["stop_reason"] = (
+                        "Reference ground-route and floor-repair budgets exhausted; mesh still fails robot limits"
+                        if project.acceptance.repair_ground_routes else
+                        "Reference ground-route placement exhausted; floor grading was not enabled")
+                    journal["unattempted_candidates"] = [
+                        dict(kind=next_kind, index=next_index)
+                        for next_kind, next_index in candidates[len(journal["attempts"]):]
+                    ]
                     break
         journal.update(status="exhausted", host_unchanged=True)
-        publish("Recovery budget exhausted; downstream generation and export are blocked")
+        if journal.get("stop_reason"):
+            publish(f"Recovery stopped after {len(journal['attempts'])}/{len(candidates)} candidates: {journal['stop_reason']}")
+        else:
+            publish("Recovery budget exhausted; downstream generation and export are blocked")
     except Exception as error:
         journal.update(status="interrupted", error_type=type(error).__name__, error=str(error))
-        publish("Recovery stopped on an error that is not safe to treat as a seed failure")
+        for row in journal["attempts"]:
+            if row["status"] == "running":
+                row.update(status="interrupted", error_type=type(error).__name__, error=str(error))
+        # Reporting an expired deadline must not hit that same deadline again
+        # or replace the original exception with a failing progress/file sink.
+        try:
+            with work_budget(0):
+                publish("Recovery stopped on an error that is not safe to treat as a seed failure")
+        except Exception:
+            pass
         raise
     raise PipelineRecoveryError(
-        "Pipeline recovery exhausted; no candidate passed all checks", report=journal
+        journal.get("stop_reason", "Pipeline recovery exhausted; no candidate passed all checks"), report=journal
     )

@@ -63,6 +63,49 @@ def test_inconsistent_tile_halos_still_produce_a_closed_surface() -> None:
     assert faces and generator._mesh_is_closed_manifold(faces)
 
 
+@pytest.mark.parametrize('singleton', [False, True])
+def test_local_tile_sweeps_match_whole_chains_without_artificial_caps(monkeypatch, singleton):
+    from dataclasses import replace
+
+    from test_mesh_continuity import sample
+
+    from plume_advanced.stages.section_field import SectionJunctionInfluence
+
+    config = GeometryConfig(voxel_size=.4, chunk_size=8, wall_roughness_amplitude=.3)
+    influence = SectionJunctionInfluence(0, 'split', 1., 'gradual', 'gradual', 1.)
+    chain = tuple(replace(sample(x), junction_influences=(influence,) if i == 8 else ())
+                  for i, x in enumerate(np.linspace(0., 12., 17)))
+    chains = {0: chain[:1] if singleton else chain,
+              1: (replace(sample(6., .5), junction_influences=(influence,)), sample(10., 2.))}
+    generator = GeometryGenerator(config)
+    arguments = dict(lower=np.array([-4., -4., -4.]), shape=(53, 29, 23),
+                     samples_by_segment=chains, progress=None)
+    calls = []
+    stamp = generator._stamp_profile_segment
+
+    def counted(**kwargs):
+        calls.append(1)
+        return stamp(**kwargs)
+
+    monkeypatch.setattr(generator, '_stamp_profile_segment', counted)
+    optimized = generator._build_tiled_voxel_grid(**arguments)
+    optimized_count = len(calls)
+    calls.clear()
+    stamp_chain = generator._stamp_network_chain
+
+    def full_chain(**kwargs):
+        kwargs.pop('pair_indices')
+        return stamp_chain(**kwargs)
+
+    monkeypatch.setattr(generator, '_stamp_network_chain', full_chain)
+    reference = generator._build_tiled_voxel_grid(**arguments)
+    assert optimized.tiles.keys() == reference.tiles.keys()
+    for key, tile in optimized.tiles.items():
+        np.testing.assert_array_equal(tile, reference.tiles[key])
+    if not singleton:
+        assert optimized_count < .7 * len(calls)
+
+
 def test_forced_tiled_geometry_builds_connected_watertight_mesh() -> None:
     points = tuple(
         CavePoint(

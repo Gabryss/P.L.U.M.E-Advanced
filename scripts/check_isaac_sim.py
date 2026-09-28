@@ -20,13 +20,21 @@ def main() -> None:
     parser.add_argument("asset", type=Path)
     parser.add_argument("--view", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--skip-inspection-export", action="store_true",
+                        help="Avoid flattening a large inspection stage after checks")
+    parser.add_argument("--allow-neutral", action="store_true",
+                        help="Accept an explicitly neutral adapter with no PBR texture maps")
     args, _ = parser.parse_known_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
+    with args.asset.open("rb") as source:
+        asset_sha256 = hashlib.file_digest(source, "sha256").hexdigest()
     report = {
         "schema": "plume.isaac-import-check.v1", "passed": False,
-        "asset_sha256": hashlib.sha256(args.asset.read_bytes()).hexdigest(),
-        "scope": "USD import, RTX texture capture and one dynamic collision probe; not robot qualification.",
+        "asset_sha256": asset_sha256,
+        "scope": ("USD import, RTX neutral-material capture" if args.allow_neutral
+                  else "USD import, RTX texture capture")
+                 + " and one dynamic collision probe; not robot qualification.",
     }
     app = None
     (output / "result.json").write_text(json.dumps(report, indent=2)+"\n")
@@ -71,10 +79,37 @@ def main() -> None:
         wall = stage.GetPrimAtPath("/PLUME_Cave/CaveWall")
         collider = stage.GetPrimAtPath("/PLUME_Cave/CaveCollision")
         report["visual_triangles"] = len(UsdGeom.Mesh(wall).GetFaceVertexCountsAttr().Get())
-        report["collision_triangles"] = len(UsdGeom.Mesh(collider).GetFaceVertexCountsAttr().Get())
-        report["collision_enabled"] = UsdPhysics.CollisionAPI(collider).GetCollisionEnabledAttr().Get()
-        report["collision_approximation"] = str(UsdPhysics.MeshCollisionAPI(collider).GetApproximationAttr().Get())
-        report["static_collider"] = not collider.HasAPI(UsdPhysics.RigidBodyAPI)
+        chunks = [prim for prim in stage.Traverse()
+                  if str(prim.GetPath()).startswith("/PLUME_Cave/CaveCollisionChunk")
+                  and prim.IsA(UsdGeom.Mesh)]
+        if chunks:
+            report["collider_mode"] = "partitioned"
+            report["collision_chunk_count"] = len(chunks)
+            report["source_collision_disabled"] = (
+                not collider.IsActive() or
+                UsdPhysics.CollisionAPI(collider).GetCollisionEnabledAttr().Get() is False
+            )
+            report["collision_triangles"] = sum(
+                len(UsdGeom.Mesh(prim).GetFaceVertexCountsAttr().Get()) for prim in chunks
+            )
+            report["collision_enabled"] = bool(
+                report["source_collision_disabled"] and all(
+                    UsdPhysics.CollisionAPI(prim).GetCollisionEnabledAttr().Get() for prim in chunks
+                )
+            )
+            report["collision_approximation"] = "none" if all(
+                str(UsdPhysics.MeshCollisionAPI(prim).GetApproximationAttr().Get()) == "none"
+                for prim in chunks
+            ) else "mixed"
+            report["static_collider"] = all(
+                not prim.HasAPI(UsdPhysics.RigidBodyAPI) for prim in chunks
+            )
+        else:
+            report["collider_mode"] = "single"
+            report["collision_triangles"] = len(UsdGeom.Mesh(collider).GetFaceVertexCountsAttr().Get())
+            report["collision_enabled"] = UsdPhysics.CollisionAPI(collider).GetCollisionEnabledAttr().Get()
+            report["collision_approximation"] = str(UsdPhysics.MeshCollisionAPI(collider).GetApproximationAttr().Get())
+            report["static_collider"] = not collider.HasAPI(UsdPhysics.RigidBodyAPI)
         material, _ = UsdShade.MaterialBindingAPI(wall).ComputeBoundMaterial()
         report["bound_material"] = str(material.GetPath()) if material else None
         textures = []
@@ -155,11 +190,18 @@ def main() -> None:
                 break
         Image.fromarray(pixels).save(output / "interior.png")
         report["image_sha256"] = hashlib.sha256((output / "interior.png").read_bytes()).hexdigest()
-        stage.Flatten().Export(str(output / "inspection.usda"))
+        if args.skip_inspection_export:
+            report["inspection_stage_exported"] = False
+        else:
+            stage.Flatten().Export(str(output / "inspection.usda"))
+            report["inspection_stage_exported"] = True
         report["passed"] = bool(
             report["meters_per_unit"] == 1 and report["up_axis"] == "Z"
-            and report["bound_material"] and len(textures) == 3
-            and all(t["resolved"] and t["wrap_s"] == t["wrap_t"] == "repeat" for t in textures)
+            and report["bound_material"]
+            and ((args.allow_neutral and not textures)
+                 or (len(textures) == 3 and all(
+                     t["resolved"] and t["wrap_s"] == t["wrap_t"] == "repeat"
+                     for t in textures)))
             and report["collision_enabled"] and report["static_collider"]
             and report["collision_approximation"] == "none"
             and report["probe_fell"] and report["probe_near_floor"]

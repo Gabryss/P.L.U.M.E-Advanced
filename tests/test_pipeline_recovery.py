@@ -398,15 +398,114 @@ def test_exhaustion_is_finite_and_retains_diagnostics(inputs, monkeypatch, tmp_p
 
 def test_ground_placement_exhaustion_retains_failure_without_geological_edits(inputs, monkeypatch, tmp_path):
     calls = []
+    progress = []
     def reject(self, *args, **kwargs):
         calls.append(True)
         raise SurfaceTopologyError('ground contract failed', report={'ground_traversal': {'passed': False}})
     monkeypatch.setattr(GeometryGenerator, 'build_base_volume', reject)
     with pytest.raises(PipelineRecoveryError) as error:
-        build_accepted_base(*inputs, report_path=tmp_path/'report.json')
+        build_accepted_base(*inputs, report_path=tmp_path/'report.json', progress=lambda *row: progress.append(row))
     assert len(calls) == len(error.value.report['attempts']) == 1
     assert 'ground-route' in error.value.report['stop_reason']
     assert error.value.report['host_unchanged']
+    assert len(error.value.report['unattempted_candidates']) == 4
+    assert progress[0][1:3] == (0, 5)
+    assert progress[-1][1:3] == (1, 5)
+    assert 'stopped after 1/5' in progress[-1][3]
+
+
+def test_resolution_resource_failure_stops_upstream_rebuilding(inputs, monkeypatch):
+    import plume_advanced.pipeline.recovery as module
+    from plume_advanced.pipeline.resolution import ResolutionBudgetError
+    calls = []
+    def reject(*args, **kwargs):
+        calls.append(True)
+        raise ResolutionBudgetError('allocation limit', report={})
+    monkeypatch.setattr(module, 'build_with_resolution_checks', reject)
+    with pytest.raises(PipelineRecoveryError) as error:
+        build_accepted_base(*inputs)
+    assert len(calls) == 1
+    assert 'Resolution budget' in error.value.report['stop_reason']
+
+
+def test_obstruction_repair_stops_when_measured_probes_do_not_improve(inputs, monkeypatch):
+    import plume_advanced.pipeline.recovery as module
+    from plume_advanced.stages.surface_topology import PassageObstructionError
+    project, host, network, sections = inputs
+    sample = sections.segment_fields[0].samples[len(sections.segment_fields[0].samples)//2]
+    points = [(sample.x, sample.y, sample.z)]
+    calls = []
+    def reject(*args, **kwargs):
+        calls.append(True)
+        raise PassageObstructionError('blocked', report={'blocked_points_m': points})
+    monkeypatch.setattr(module, 'build_with_resolution_checks', reject)
+    with pytest.raises(PipelineRecoveryError) as error:
+        build_accepted_base(*inputs)
+    assert len(calls) == 2
+    assert [r['kind'] for r in error.value.report['attempts']] == ['original', 'local_obstruction_repair']
+    assert 'did not reduce' in error.value.report['stop_reason']
+
+
+def test_opt_in_ground_repair_is_measured_and_reinspected(inputs):
+    from test_section_repairs import ramp_sections
+    project, host, _, _ = inputs
+    network, sections, controls = ramp_sections()
+    network = replace(network, config=replace(network.config, quality=replace(network.config.quality, enabled=False)))
+    controls = replace(controls, wall_roughness_amplitude=0, density_margin=1,
+                       cave_smoothing_iterations=0, cave_displacement_scale_m=0,
+                       storage_mode='dense', ground_repair_attempts=0)
+    project.network, project.section_field, project.geometry = network.config, sections.config, controls
+    project.acceptance = build_acceptance_policy(dict(require_ground_routes=True, repair_ground_routes=True))
+    result = build_accepted_base(project, host, network, sections)
+    assert result.report['attempts'][0]['inspection']['ground_traversal']['passed'] is False
+    assert dict(result.geometry.mesh_inspection)['ground_traversal']['passed']
+    assert result.report['attempts'][-1]['kind'] == 'ground_ramp_repair'
+    assert dict(result.geometry.section_repair)['method'] == 'bounded_floor_grading'
+
+
+def test_floor_and_obstruction_repairs_cannot_ping_pong_forever(inputs, monkeypatch):
+    from test_section_repairs import ground, ramp_sections
+
+    import plume_advanced.pipeline.recovery as module
+    from plume_advanced.stages.surface_topology import PassageObstructionError
+
+    project, host, _, _ = inputs
+    network, sections, controls = ramp_sections()
+    network = replace(network, config=replace(network.config, quality=replace(network.config.quality, enabled=False)))
+    project.network, project.section_field, project.geometry = network.config, sections.config, controls
+    project.acceptance = build_acceptance_policy(dict(require_ground_routes=True, repair_ground_routes=True))
+    failure = ground(sections)
+    calls = []
+    def alternate(*args, **kwargs):
+        calls.append(True)
+        assert len(calls) <= 5, 'Repair strategies must share a finite budget'
+        if len(calls) % 2:
+            raise SurfaceTopologyError('floor', report={'ground_traversal': failure})
+        raise PassageObstructionError('blocked', report={'blocked_points_m': [(0., 0., 1.5)]})
+    monkeypatch.setattr(module, 'build_with_resolution_checks', alternate)
+    with pytest.raises(PipelineRecoveryError) as error:
+        build_accepted_base(project, host, network, sections)
+    assert len(calls) <= 5 and not error.value.report['accepted']
+
+
+def test_ground_failure_summary_reports_measurements_and_budget_distinctly():
+    from plume_advanced.pipeline.recovery import recovery_failure_summary
+
+    report = dict(root_seed=1, stop_reason='Ground-route placement exhausted', attempts=[
+        dict(status='rejected', inspection={'ground_traversal': {
+            'passed': False,
+            'robot': {'max_slope_deg': 20., 'max_step_m': .1},
+            'paths': [{'passed': False, 'poses': [{'slope_deg': 40.569, 'step_m': .254598}]}],
+            'failures': ['Ground inspection/repair query budget exhausted'],
+        }}),
+    ])
+    summary = '\n'.join(recovery_failure_summary(report))
+    assert '1/1 inspected routes rejected' in summary
+    assert '40.6 deg; limit 20 deg' in summary
+    assert '0.255 m; limit 0.1 m' in summary
+    assert 'query budget exhausted' in summary
+    report['attempts'][0]['inspection']['ground_traversal']['paths'] = []
+    assert 'query budget exhausted' in '\n'.join(recovery_failure_summary(report))
 
 
 def test_measured_seed0_ground_report_rejects_without_localization_crash(inputs, monkeypatch, tmp_path):
@@ -478,6 +577,42 @@ def test_surface_diagnostics_survive_interruption_before_next_grid(inputs, monke
     saved = json.loads((tmp_path/'report.json').read_text())
     assert not saved['accepted']
     assert saved['attempts'][0]['surface_candidates'] == [measurement]
+
+
+@pytest.mark.parametrize("broken_sink", [False, True])
+def test_expired_deadline_preserves_original_error_and_records_interruption(inputs, monkeypatch, tmp_path, broken_sink):
+    import json
+
+    import plume_advanced.progress as progress_module
+
+    now = [0.]
+    failure = progress_module.GenerationTimeBudgetError('original timeout')
+    monkeypatch.setattr(progress_module.time, 'perf_counter', lambda: now[0])
+    messages = []
+
+    def fail(*args, **kwargs):
+        now[0] = 2.
+        raise failure
+
+    def sink(step, completed, total, detail):
+        progress_module.check_work_budget()
+        messages.append(detail)
+        if broken_sink and detail.startswith('Recovery stopped'):
+            raise RuntimeError('broken terminal')
+
+    monkeypatch.setattr(GeometryGenerator, 'build_base_volume', fail)
+    with progress_module.work_budget(1):
+        with pytest.raises(progress_module.GenerationTimeBudgetError) as caught:
+            build_accepted_base(*inputs, progress=sink, report_path=tmp_path/'report.json')
+        assert caught.value is failure
+        # Diagnostic reporting must restore the original expired deadline.
+        with pytest.raises(progress_module.GenerationTimeBudgetError):
+            progress_module.check_work_budget()
+    saved = json.loads((tmp_path/'report.json').read_text())
+    assert saved['status'] == saved['attempts'][-1]['status'] == 'interrupted'
+    assert len(saved['attempts']) == 1
+    assert saved['error'] == 'original timeout'
+    assert messages[-1].startswith('Recovery stopped')
 
 
 def test_identical_replacement_skips_expensive_geometry(inputs, monkeypatch):

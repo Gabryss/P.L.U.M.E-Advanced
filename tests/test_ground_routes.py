@@ -48,7 +48,7 @@ def test_flat_floor_checks_full_length_and_stores_continuous_native_witnesses():
     mesh = corridor()
     report = inspect(mesh)
     assert report['passed'] and report['robot'] == {
-        'length_m': .7, 'width_m': .5, 'height_m': .5, 'margin_m': .02,
+        'length_m': .7, 'width_m': .5, 'height_m': .5, 'clearance_m': 0., 'margin_m': .02,
         'max_slope_deg': 20., 'max_step_m': .1, 'support_spacing_m': .1}
     route = report['paths'][0]
     assert route['samples'] == 61 and len(route['poses']) == 61
@@ -86,6 +86,15 @@ def test_step_limit_is_necessary_not_a_guarantee_of_chassis_clearance():
     # A box cannot climb this abrupt edge along the proposed poses. Retaining
     # the collision rejection is required even though its height is below 10 cm.
     assert not result['passed'] and route['failed_edges']
+
+
+def test_declared_underbody_clearance_keeps_body_above_small_step():
+    mesh = corridor(lambda x, y: .06 if x > 0 else 0., xs=[-5, 0, .001, 5])
+    robot = GroundRobot(clearance_m=.13)
+    result = inspect(mesh, robot=robot, repair_attempts=0)
+    assert result['passed']
+    assert result['robot']['clearance_m'] == .13
+    assert all(p['step_m'] < robot.max_step_m for p in result['paths'][0]['poses'])
 
 
 def test_low_ceiling_blocks_long_body_even_when_floor_is_valid():
@@ -180,7 +189,7 @@ def test_ground_failure_is_a_mandatory_surface_gate():
 
 
 @pytest.mark.parametrize('value', [-1, float('nan'), float('inf'), True, '20'])
-@pytest.mark.parametrize('key', ['length_m', 'max_slope_deg', 'max_step_m', 'support_spacing_m'])
+@pytest.mark.parametrize('key', ['length_m', 'clearance_m', 'max_slope_deg', 'max_step_m', 'support_spacing_m'])
 def test_invalid_reference_limits_rejected(key, value):
     with pytest.raises(ValueError):
         replace(GroundRobot(), **{key: value})
@@ -264,3 +273,20 @@ def test_blocked_vertical_connector_does_not_normalize_a_zero_detour_heading():
     assert not connector['passed']
     assert connector['placement_repair']['failure'] == 'Anchored vertical connector has no lateral detour'
     assert connector['placement_repair']['windows'] == []
+
+
+def test_progress_distinguishes_floor_body_and_detour_work():
+    from plume_advanced.progress import progress_scope
+
+    mesh = corridor(lambda x, y: .25 if abs(x) <= .3 and abs(y) <= .2 else 0.,
+                    xs=[-5, -.31, -.3, .3, .31, 5], ys=[-2, -.21, -.2, .2, .21, 2])
+    events = []
+    with progress_scope(lambda *event: events.append(event)):
+        report = inspect(mesh, path=np.array([[-4., 0., 1.], [4., 0., 1.]]))
+    assert report['passed']
+    steps = {event[0] for event in events}
+    assert {'Ground spatial indices', 'Ground floor support', 'Ground chassis motion'} <= steps
+    assert any('route 1/1' in event[3] for event in events)
+    assert any('detour window' in event[3] and 'offset' in event[3] for event in events)
+    assert all(event[2] is None or event[1] <= event[2] for event in events)
+    assert not any(event[2] == report['query_budget'] for event in events)

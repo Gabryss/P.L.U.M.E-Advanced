@@ -42,10 +42,13 @@ class GeometryConfig:
     route_placement_max_sweeps: int = 20000
     # Zero length disables the additional ground-robot contract.
     ground_robot_length_m: float = 0.0
+    ground_robot_height_m: float = 0.0
+    ground_robot_clearance_m: float = 0.0
     ground_max_slope_deg: float = 20.0
     ground_max_step_m: float = 0.10
     ground_support_spacing_m: float = 0.10
     ground_repair_attempts: int = 3
+    ground_ramp_max_change_m: float = 0.5
     ground_max_queries: int = 200000
     # Bounded, consistent-grid refinement; never stitch unverified study patches.
     resolution_refinement_attempts: int = 0
@@ -90,17 +93,32 @@ class GeometryConfig:
     cave_displacement_texture: str = "texture/dark_rock_8k/textures/dark_rock_disp_8k.png"
 
     def __post_init__(self) -> None:
+        if (isinstance(self.ground_ramp_max_change_m, bool)
+                or not isinstance(self.ground_ramp_max_change_m, (int, float))
+                or not math.isfinite(self.ground_ramp_max_change_m)
+                or not 0 < self.ground_ramp_max_change_m <= 1):
+            raise ValueError("geometry.ground_ramp_max_change_m must be positive and at most 1 metre")
         if (isinstance(self.ground_robot_length_m, bool)
                 or not isinstance(self.ground_robot_length_m, (int, float))
                 or not math.isfinite(self.ground_robot_length_m) or self.ground_robot_length_m < 0):
             raise ValueError("geometry.ground_robot_length_m must be finite and nonnegative")
+        if (isinstance(self.ground_robot_height_m, bool)
+                or not isinstance(self.ground_robot_height_m, (int, float))
+                or not math.isfinite(self.ground_robot_height_m) or self.ground_robot_height_m < 0):
+            raise ValueError("geometry.ground_robot_height_m must be finite and nonnegative")
+        if (isinstance(self.ground_robot_clearance_m, bool)
+                or not isinstance(self.ground_robot_clearance_m, (int, float))
+                or not math.isfinite(self.ground_robot_clearance_m) or self.ground_robot_clearance_m < 0):
+            raise ValueError("geometry.ground_robot_clearance_m must be finite and nonnegative")
         for name, maximum in (("ground_repair_attempts", 4), ("ground_max_queries", 2_000_000)):
             if type(getattr(self, name)) is not int or not 0 <= getattr(self, name) <= maximum:
                 raise ValueError(f"geometry.{name} must be an integer from 0 to {maximum}")
         from plume_advanced.stages.ground_routes import GroundRobot
         GroundRobot(length_m=self.ground_robot_length_m or .7,
                     width_m=(self.required_route_width_m or .5) if self.ground_robot_length_m else .5,
-                    height_m=(self.required_route_height_m or .5) if self.ground_robot_length_m else .5,
+                    height_m=(self.ground_robot_height_m or self.required_route_height_m or .5)
+                    if self.ground_robot_length_m else .5,
+                    clearance_m=self.ground_robot_clearance_m if self.ground_robot_length_m else 0.,
                     margin_m=self.route_clearance_margin_m,
                     max_slope_deg=self.ground_max_slope_deg, max_step_m=self.ground_max_step_m,
                     support_spacing_m=self.ground_support_spacing_m)
@@ -543,6 +561,7 @@ class CaveGeometry:
     effective_density_opening_voxels: int = 0
     surface_quality_records: tuple[tuple[tuple[str, object], ...], ...] = ()
     mesh_inspection: tuple[tuple[str, object], ...] = ()
+    section_repair: tuple[tuple[str, object], ...] = ()
     # Explicit polylines avoid connecting unrelated branches in traversal tests.
     required_route_paths: tuple[tuple[tuple[float, float, float], ...], ...] = ()
     route_path_segment_ids: tuple[int, ...] = ()

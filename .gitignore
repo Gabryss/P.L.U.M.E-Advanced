@@ -4,8 +4,13 @@ tmp/
 data/reference/
 *.pdf
 
+# Local manuscript workspace, copied campaign results and Overleaf bundles.
+# Keep evaluation recipes, seed lists and tools in the repository.
+/paper/
+
 # Python environments, compiled files, packages and tool caches.
 .venv/
+.venv-*/
 venv/
 env/
 __pycache__/
@@ -20,17 +25,50 @@ dist/
 .mypy_cache/
 .hypothesis/
 .cache/
+.tox/
+.nox/
+.ipynb_checkpoints/
 .coverage*
 htmlcov/
 coverage.xml
 test-results/
 *.log
 
+# Regenerable Unity and Unreal project caches (source assets stay eligible).
+Library/
+Temp/
+Obj/
+Logs/
+UserSettings/
+Binaries/
+Intermediate/
+DerivedDataCache/
+Saved/
+.vs/
+
 # Local editor state and credentials.
 .codex/
+.agents/
 .vscode/
 .idea/
 .env
 .env.*
+!.env.example
+!.env.template
 .pypirc
 .DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files and automatic editor / Blender backups.
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+*.temp
+*.blend[0-9]*
+
+# Do not blanket-ignore meshes, images, JSON, CSV or NumPy archives:
+# docs/ previews and provenance, tests/ fixtures and texture/ LFS assets belong
+# in Git. Save generated packages, scenes and reports under outputs/.

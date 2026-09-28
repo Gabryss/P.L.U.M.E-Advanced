@@ -7,6 +7,7 @@ import threading
 import fast_simplification
 import numpy as np
 
+from plume_advanced.exporters.errors import ExportBudgetError
 from plume_advanced.exporters.precision import repair_face_rounding
 from plume_advanced.progress import report_progress
 from plume_advanced.stages.mesh_inspection import MeshInspectionError, inspect_surface
@@ -218,8 +219,10 @@ def simplify_surface(vertices, faces, arguments, *, target_reduction, max_error_
                         f"accepted {len(new_faces):,} triangles ({report['achieved_reduction']:.0%} reduction)")
         return new_vertices, new_faces
     if triangle_budget and len(faces) > triangle_budget:
-        raise MeshInspectionError(dict(passed=False,
+        raise ExportBudgetError("Visual reduction exhausted", report=dict(passed=False,
             failures=[f"No {purpose.lower()} reduction satisfies both the triangle and surface-error budgets"],
+            repair_action="Keep the generated cave. Increase export.max_visual_triangles or explicitly revise "
+                          "export.visual_max_error_m, then re-export. Partitioning alone cannot satisfy a total triangle budget.",
             reduction=report))
     fallback, precision = stabilize_collision_precision(vertices, faces, max_error_m)
     if not precision["passed"]:

@@ -23,6 +23,7 @@ class GroundRobot:
     length_m: float = .7
     width_m: float = .5
     height_m: float = .5
+    clearance_m: float = 0.
     margin_m: float = .02
     max_slope_deg: float = 20.
     max_step_m: float = .1
@@ -35,6 +36,8 @@ class GroundRobot:
                 raise ValueError(f"Ground robot {name} must be finite and nonnegative")
         if min(self.length_m, self.width_m, self.height_m, self.support_spacing_m) <= 0:
             raise ValueError("Ground body dimensions and support spacing must be positive")
+        if self.clearance_m >= self.height_m:
+            raise ValueError("Ground body clearance must be smaller than body height")
         if not 0 < self.max_slope_deg < 90:
             raise ValueError("Ground maximum slope must be between 0 and 90 degrees")
         if self.support_spacing_m > min(self.length_m, self.width_m)/2:
@@ -50,10 +53,15 @@ class GroundInspector:
 
     def __init__(self, vertices, faces, robot, max_queries):
         self.robot = robot
+        report_progress("Ground spatial indices", detail=f"indexing {len(faces):,} triangles for floor and body queries")
         self.index = TriangleIndex(vertices, faces)
         self.vertical = VerticalTriangleIndex(vertices, faces, triangles=self.index.triangles)
         self.queries = 0
         self.max_queries = max_queries
+        self.context = "ground route"
+        self.phase = "floor support"
+        self.completed = 0
+        self.total = 1
         # The half extents include the declared safety margin, on every side.
         self.half = np.array([robot.length_m, robot.width_m, robot.height_m])/2 + robot.margin_m
         axes = [np.linspace(-size/2, size/2, int(np.ceil(size/robot.support_spacing_m))+1)
@@ -67,8 +75,11 @@ class GroundInspector:
             raise GroundQueryBudget
         self.queries += 1
         if self.queries % 250 == 0:
-            report_progress("Ground robot inspection", self.queries, self.max_queries,
-                            "checking floor support, chassis poses and continuous box motion")
+            self.progress()
+
+    def progress(self):
+        report_progress(f"Ground {self.phase}", self.completed, self.total,
+                        f"{self.context}; {self.queries:,}/{self.max_queries:,} query budget used")
 
     def pose(self, point, heading):
         self.debit()
@@ -90,7 +101,9 @@ class GroundInspector:
         local = residual.reshape(self.shape)
         for axis in (0, 1):
             step = max(step, float(np.abs(np.diff(local, axis=axis)).max(initial=0)))
-        row = dict(passed=False, slope_deg=slope, step_m=step)
+        witnesses = np.column_stack([probes[:, :2], floors])
+        row = dict(passed=False, slope_deg=slope, step_m=step,
+                   floor_points_m=witnesses.tolist(), probe_height_m=float(point[2]))
         if slope > self.robot.max_slope_deg + 1e-7:
             return row | dict(failure="slope_limit")
         if step > self.robot.max_step_m + 1e-7:
@@ -101,12 +114,13 @@ class GroundInspector:
         forward /= np.linalg.norm(forward)
         # A 3 mm numerical skin prevents coincident floor/body contact. It is
         # reported and added above (never deducted from) the requested margin.
+        # Inflate the body down into the declared underbody gap by the safety
+        # margin. Zero-clearance legacy checks still keep the numerical skin.
+        usable_clearance = max(0., self.robot.clearance_m - self.robot.margin_m)
         center = np.array([point[0], point[1], coeff[2]]) + normal * (
-            residual.max()*normal[2] + self.half[2] + .003)
-        witnesses = np.column_stack([probes[:, :2], floors])
+            residual.max()*normal[2] + usable_clearance + self.half[2] + .003)
         return row | dict(passed=True, center_m=center.tolist(), forward=forward.tolist(),
-                          up=normal.tolist(), floor_points_m=witnesses.tolist(),
-                          probe_height_m=float(point[2]))
+                          up=normal.tolist())
 
     def path(self, points, begin=0, end=None, *, fallback_heading=None):
         end = len(points)-1 if end is None else end
@@ -120,13 +134,22 @@ class GroundInspector:
             return dict(passed=False, failed_stations=list(range(begin, end+1)),
                         failed_edges=[], poses=[], sweeps=[], failure="undefined_plan_heading")
         tangent /= lengths[:, None]
-        poses = [self.pose(points[i], tangent[i]) for i in range(begin, end+1)]
+        self.phase, self.completed, self.total = "floor support", 0, end-begin+1
+        self.progress()
+        poses = []
+        for i in range(begin, end+1):
+            poses.append(self.pose(points[i], tangent[i]))
+            self.completed = i-begin+1
+        self.progress()
         return self.check_poses(poses, begin)
 
     def check_poses(self, poses, begin=0):
         bad = [i+begin for i, pose in enumerate(poses) if not pose["passed"]]
         edges, sweeps = [], []
+        self.phase, self.completed, self.total = "chassis motion", 0, max(0, len(poses)-1)
+        self.progress()
         for i, (a, b) in enumerate(zip(poses, poses[1:])):
+            self.completed = i
             if not a["passed"] or not b["passed"]:
                 edges.append(i+begin)
                 continue
@@ -138,6 +161,8 @@ class GroundInspector:
                 edges.append(i+begin)
             else:
                 sweeps.extend(motion)
+        self.completed = self.total
+        self.progress()
         return dict(passed=not bad and not edges, failed_stations=bad, failed_edges=edges,
                     poses=poses, sweeps=sweeps)
 
@@ -147,8 +172,13 @@ class GroundInspector:
         a, b = np.arctan2(first[1], first[0]), np.arctan2(last[1], last[0])
         angle = (b-a+np.pi/2) % np.pi - np.pi/2
         count = max(2, int(np.ceil(np.linalg.norm(self.half[:2])*abs(angle)/self.robot.support_spacing_m))+1)
-        poses = [self.pose(point, np.array([np.cos(yaw), np.sin(yaw), 0.]))
-                 for yaw in np.linspace(a, a+angle, count)]
+        self.phase, self.completed, self.total = "junction support", 0, count
+        self.progress()
+        poses = []
+        for yaw in np.linspace(a, a+angle, count):
+            poses.append(self.pose(point, np.array([np.cos(yaw), np.sin(yaw), 0.])))
+            self.completed += 1
+        self.progress()
         return self.check_poses(poses)
 
 
@@ -179,7 +209,8 @@ def _repair_path(inspector, points, initial, attempts):
     tangent = np.gradient(points, axis=0)[:, :2]
     tangent /= np.linalg.norm(tangent, axis=1)[:, None]
     left = np.column_stack([-tangent[:, 1], tangent[:, 0], np.zeros(len(points))])
-    for begin, end in windows:
+    context = inspector.context
+    for window_index, (begin, end) in enumerate(windows, 1):
         record: dict = dict(window=[begin, end], candidates=[], passed=False)
         records.append(record)
         if end <= begin:
@@ -189,6 +220,8 @@ def _repair_path(inspector, points, initial, attempts):
         for attempt in range(attempts):
             for sign in (1, -1):
                 offset = sign * inspector.robot.width_m * .5 * (2**attempt)
+                inspector.context = (f"{context}; detour window {window_index}/{len(windows)}; "
+                                     f"trial {attempt*2 + (1 if sign == 1 else 2)}/{attempts*2}; offset {offset:+.2f} m")
                 trial = repaired.copy()
                 trial[begin:end+1] += left[begin:end+1] * (offset*weight[:, None])
                 # Preserve graph anchors exactly, including floating point bits.
@@ -201,7 +234,9 @@ def _repair_path(inspector, points, initial, attempts):
             if record["passed"]:
                 break
         if not record["passed"]:
+            inspector.context = context
             return points, dict(passed=False, windows=records)
+    inspector.context = context
     return repaired, dict(passed=all(r["passed"] for r in records), windows=records)
 
 
@@ -227,6 +262,7 @@ def inspect_ground_routes(vertices, faces, paths, segment_ids, *, robot=None,
     endpoints: dict[tuple, list] = {}
     try:
         for number, (path, sid) in enumerate(zip(paths, segment_ids, strict=True)):
+            inspector.context = f"route {number+1}/{len(paths)} (segment {sid})"
             points = np.asarray(resample_route_polyline(path, robot.support_spacing_m), float)
             fallback = None
             if sid < 0 and np.linalg.norm(np.ptp(points[:, :2], axis=0)) < 1e-9:
@@ -276,6 +312,7 @@ def inspect_ground_routes(vertices, faces, paths, segment_ids, *, robot=None,
         if not report["failures"]:
             for point, ends in endpoints.items():
                 for sid, heading in ends[1:]:
+                    inspector.context = f"junction turn {len(report['junctions'])+1}; segments {ends[0][0]} to {sid}"
                     joined = inspector.junction(np.asarray(point), ends[0][1], heading)
                     report["junctions"].append(dict(point_m=list(point), segment_ids=[ends[0][0], sid],
                                                     samples=len(joined['poses']), **joined))
@@ -285,6 +322,6 @@ def inspect_ground_routes(vertices, faces, paths, segment_ids, *, robot=None,
         report["failures"].append("Ground inspection/repair query budget exhausted")
     report["queries"] = inspector.queries
     report["passed"] = not report["failures"] and len(report["paths"]) == len(paths)
-    report_progress("Ground robot inspection", inspector.queries, inspector.queries,
+    report_progress("Ground robot inspection", len(report["paths"]), len(paths),
                     "reference route accepted" if report["passed"] else "reference route rejected")
     return report

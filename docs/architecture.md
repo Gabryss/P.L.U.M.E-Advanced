@@ -1,6 +1,6 @@
 # Architecture and scientific model
 
-[← Project overview](../README.md)
+[← Project overview](../README.md) · [Configuration](configuration.md) · [Evaluation](evaluation.md)
 
 PLUME-Advanced generates underground passage networks for visual inspection,
 procedural environment studies and robotics simulation preparation. A celestial
@@ -32,13 +32,14 @@ and qualifying an asset inside a simulator are different steps. See [Limits](#li
 
 ![Generation, inspection and bounded repair workflow](figures/readme/workflow.png)
 
-*The accepted network, sections and base mesh travel together. A replacement
-network causes downstream data to be rebuilt; old figures are not attached to a
-new mesh. Export failures likewise cannot overwrite a previously accepted package.*
+*The accepted network, sections, mesh and figures share one candidate identity.
+Replacing the network rebuilds downstream data. The outer seed search is shown
+[below](#embedded-inspection-and-repair); export publication requires acceptance.*
 
 | Phase | Representation and operation | Main checks / outputs |
 |---|---|---|
 | Resolve | Recipe, body, material, stage seeds and acceptance policy | Strict configuration; input and runtime identities |
+| Candidate search | Record root/stage seeds; regenerate after retryable rejection | `seed_attempts.json`; optional total-attempt cap |
 | A · Host | 2D fields for elevation, slope, volcanic-layer cover, competence, fractures and growth cost | Grid extent, viable source region; host influence report |
 | B · Network | Directed graph with passage polylines, systems and formation metadata | Connectivity, crossings, turn/grade/width limits and topology-specific morphology |
 | C · Sections | Local frames and asymmetric contours along each passage | Roof/host constraints; adaptive sample spacing and section footprint |
@@ -57,7 +58,29 @@ and scientific measurements in [`evaluation/`](../src/plume_advanced/evaluation/
 
 ## Host-conditioned growth and topology
 
-![Current host fields with accepted passage routes](figures/readme/current_host.png)
+### Single and multi-network top-down views
+
+![Top-down comparisons of single and interacting lava-tube systems for seeds 0 and 17](figures/readme/current_topologies.png)
+
+*Left: [short-single](../config/short-single.toml). Right:
+[short-multi](../config/short-multi.toml), with three interacting systems. Rows use
+seeds 0 and 17; every panel has the same metric limits and equal x/y scale.*
+
+The single system has a dominant gallery with local bypasses and side passages.
+The multi-system examples keep parallel passages over longer distances, with
+shared reaches, merges and later splits. Each preset grows in its configured
+host field; this comparison illustrates the presets, rather than isolating
+source count as the only changed parameter.
+
+These are plan projections of generated section envelopes from stages A–C.
+Surface relief, geological events and final mesh inspection come later.
+[Figure provenance](figures/readme/current_provenance.json) records the seeds,
+resolved settings, generated-data identities and image hashes. The figures live
+under `docs/figures/readme/`, independently of disposable generation outputs.
+
+### Host influence
+
+![Host fields with accepted passage routes](figures/readme/current_host.png)
 
 *Elevation, available cover and routing cost from the short multi-system case,
 seed 0. White polylines show the accepted routes in world coordinates. A shared
@@ -89,9 +112,9 @@ These are procedural formation rules, not a simulation of molten lava transport.
 
 ## Sections, gravity and roof screening
 
-![Three current generated cross-sections](figures/readme/current_sections.png)
+![Three generated cross-sections](figures/readme/current_sections.png)
 
-*Low-junction samples near the 10th, 50th and 90th height percentiles of the current
+*Low-junction samples near the 10th, 50th and 90th height percentiles of the
 short multi case, seed 0. These input contours precede volumetric relief, smoothing
 and event modifications. They are not measured final clearances.*
 
@@ -102,7 +125,7 @@ curvature, width changes and junctions. Junction envelopes and frames must agree
 before the surface is built.
 
 Roof thickness couples width and height. At a fixed floor depth `d`, a cavity of
-height `h` leaves a roof `t = d − h`. The current conservative, simply supported
+height `h` leaves a roof `t = d − h`. The conservative, simply supported
 beam surrogate requires:
 
 $$t \ge \frac{3 S \rho g w^2}{4\sigma_{\mathrm{eff}}}$$
@@ -142,15 +165,75 @@ Export limits constrain the delivered asset; they are not a frame-rate guarantee
 
 ## Embedded inspection and repair
 
+Full-generation search surrounds the bounded local repair stages. Only an explicit
+`acceptance.require_ground_routes = true` requests robot qualification; otherwise
+exports are labelled not robot-qualified. Rejected candidate seeds are journalled
+and replaced deterministically, with no relaxation of acceptance limits.
+The [run settings](configuration.md#one-small-recipe-one-resolved-configuration)
+control attempt and cooperative time limits. Scientific evaluation workers
+measure their requested seeds without replacing rejected cases.
+
+```mermaid
+flowchart TD
+    A["Resolve recipe and initial seed"] --> B["Generate host, network, sections and mesh"]
+    B --> C["Inspect and try bounded repairs<br/>Include robot checks only when requested"]
+    C --> D{"Required checks pass?"}
+    D -->|Yes| E["Export with qualification label<br/>Finalize run manifest"]
+    D -->|No| F["Record seed and failure"]
+    F --> G{"Retryable failure and<br/>attempts remaining?"}
+    G -->|Yes| H["Derive next root seed"]
+    H --> B
+    G -->|No| I["Stop with diagnosis"]
+```
+
+The outer search changes all seeded stages, including the host. Bounded upstream
+network recovery **within one attempt** retains that attempt's host. Both levels
+preserve acceptance limits and record their decisions. The journal is written
+before generation starts; resume reuses an interrupted seed and skips rejected
+ones. Only the accepted candidate supplies the final mesh and stage figures.
+
 | Layer | Inspection | Permitted response |
 |---|---|---|
 | Network / sections | Shape, connectivity, overlaps, host/stability limits, intended topology | Deterministic local repairs and a bounded candidate search |
 | Base surface | Components, orientation, handles, protected routes and thin features | Bounded local field repair, policy-permitted relief adjustment, upstream recovery |
 | Resolution | Input samples across passages; declared refinement/convergence probes | Finer consistent grids only within explicit allocation/attempt limits |
-| Mobility | Continuous capsule clearance; optional chassis/floor/slope/step checks | Bounded route placement/detours and constrained local geometry repair |
+| Mobility | Continuous capsule clearance; optional chassis/floor/slope/step checks | Lateral detours, then up to two bounded local ramp designs if floor grading is explicitly enabled; final mesh checks remain mandatory |
 | Visual / collider | Prepared surface, float precision, reduction deviation and route preservation | Safer reduction/precision candidates; reject when checks still fail |
 | Textures / package | Decoding, normal vectors, color/data bindings, exact embedded maps and adapter files | Normalize usable vectors; declared DirectX conversion; one package rebuild |
 | Publication | All required policy checks and integrity receipts | Atomic replacement only after acceptance |
+
+```mermaid
+flowchart LR
+    A[Measured failure] --> B{Failure type}
+    B -->|Blocked passage probes| C[Local profile expansion]
+    B -->|Floor slope or step| D{Floor grading enabled?}
+    D -->|Yes| E[Bounded ramp design]
+    C --> F[Rebuild and inspect mesh]
+    E --> F
+    F -->|No improvement or budget exhausted| G[Reject candidate]
+    D -->|No| G
+    B -->|Export budget| H[Keep geometry checkpoint]
+    H --> I[Explicit budget change and re-export]
+```
+
+Longitudinal ramp design minimizes floor elevation changes subject to grade,
+transition curvature, headroom and edit bounds. Failed support contacts also
+provide a measured floor gradient: excess sideways incline is corrected near the
+route and the edit tapers toward the walls. The design slope target is 80% of the
+robot's maximum grade, leaving some room for discretization and relief. Combined
+edits stay within the configured vertical bound and fade to zero at the roof
+crest. Section centres/frames and junction profiles remain fixed; terminal profiles can change.
+This does not erase fine relief or certify the resulting terrain without
+inspection. Host, cover,
+aspect and stability guards can reject a proposal before meshing. The recorded
+intervention describes an engineered simulation floor rather than natural
+formation. Each repair family is scheduled at most once per recovery invocation,
+preventing alternating failures from creating an unbounded repair loop.
+
+Blocked-probe failures return to profile repair instead of escalating the whole
+volume to a finer grid. A local expansion that improves neither blocked probes
+nor their density deficit stops that strategy early. Resolution/resource and
+export-budget failures stop seed search; they do not become lottery retries.
 
 Missing input images, corrupt data, unsupported capabilities, programming errors
 and resource exhaustion are not fixed by trying random seeds. Repairs retain their
@@ -172,13 +255,11 @@ passages may remain narrower. These checks do not simulate wheel or track dynami
 
 ## Limits
 
-
-
 | Area | Current limit |
 |---|---|
 | Geological fidelity | Procedural rules and conservative surrogates; no CFD, cooling PDE or full rock-mechanics solution |
 | Celestial coverage | Earth/Mars/Moon scenarios only; Jupiter/Saturn moons and cryovolcanic materials are not implemented |
-| Seed reliability | Some seeds exhaust repair or resource budgets. A clean rejection is expected behaviour, not a valid environment |
+| Seed reliability | Individual seeds can exhaust local repair. Generation retries eligible failures; finite attempt caps and operational/resource errors can stop delivery. Unlimited attempts do not guarantee a feasible cave |
 | Ground mobility | Clearance/support/slope/step screening is implemented; traction, suspension, steering, wheel/track dynamics and sensors remain simulator responsibilities |
 | Numerical coverage | Sampled checks do not prove the absence of every self-intersection or geometric defect |
 | Appearance | One reusable rock tile is not measured basalt calibration; valid maps do not guarantee natural appearance in every view |

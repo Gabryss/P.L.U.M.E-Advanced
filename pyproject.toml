@@ -35,6 +35,7 @@ paper = [
 
 [project.scripts]
 plume-generate = "plume_advanced.cli:main"
+plume-reexport = "plume_advanced.reexport:main"
 plume-validate = "plume_advanced.validation:main"
 plume-evaluate = "plume_advanced.evaluation.cli:main"
 plume-check = "plume_advanced.evaluation.reliability:main"

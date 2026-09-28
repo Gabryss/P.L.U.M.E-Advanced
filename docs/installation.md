@@ -1,6 +1,6 @@
 # Installation details
 
-[← Project overview](../README.md)
+[← Project overview](../README.md) · [Next: generate a cave](usage.md)
 
 ## Recommended setup
 
@@ -41,7 +41,7 @@ installed environment is intentionally tested. See uv's
 | Detailed loose-rock props | `uv run --extra rocks plume-generate …` |
 | Scientific datasets and resource experiments | `uv run --extra paper plume-evaluate …` |
 | All development and scientific tools | `uv sync --locked --all-extras` |
-| Rock image textures | Follow [Textured caves](usage.md#textured-caves) |
+| Rock image textures | Follow [Texture dependencies](#texture-dependencies) below |
 | Native application imports | Follow [Simulators](simulators.md) |
 
 Ellipses above stand for the arguments of your chosen workflow. Extras must also
@@ -58,6 +58,22 @@ the complete dependency list and version constraints.
 With Python 3.12+ and an activated virtual environment, run `python -m pip install -e .`
 from the checkout. You can then call `plume-generate` directly. This does not
 reproduce the locked dependency set automatically.
+
+## Texture dependencies
+
+Textured recipes use the repository's Git LFS image assets. Install
+[Git LFS](https://git-lfs.com/) and ImageMagick with EXR support once, then fetch
+the maps from the repository root:
+
+```bash
+git lfs install
+git lfs pull
+```
+
+On Ubuntu, install the `imagemagick` system package for the `convert` command
+used to decode the EXR masters. The default untextured cave needs neither this
+decoder nor the texture download. Continue with [Textured caves](usage.md#textured-caves)
+or [Showcase generation](usage.md#showcase-generation).
 
 ## Clone without downloading texture masters
 

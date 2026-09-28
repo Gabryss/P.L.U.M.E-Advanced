@@ -1,0 +1,17 @@
+# Isolated diagnostic repeat with the 12 GiB software RSS cap disabled.
+schema_version = 1
+
+[general]
+output_root = "../outputs/evaluation_resource_rerun_5km_seed3"
+project_config = "../config/research.toml"
+asset_directory = "../config"
+
+[scalability]
+body = "earth"
+seed_file = "resource_seeds.txt"
+route_lengths_m = [2000, 5000]
+quality = "standard"
+storage_modes = ["dense"]
+timeout_s = 7200
+memory_limit_gib = 0
+case_ids = ["seed-000003-005000m-dense"]

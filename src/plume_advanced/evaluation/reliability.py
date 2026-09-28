@@ -346,6 +346,7 @@ def execute_case(
                         ),
                         elapsed_seconds=sum(timings.values()),
                         source_root=Path(case.config).parent.parent,
+                        qualification=inspection["robot_qualification"],
                     )
                 with stage("portable_validation"):
                     profile = (

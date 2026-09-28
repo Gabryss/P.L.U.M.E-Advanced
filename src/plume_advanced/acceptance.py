@@ -33,11 +33,14 @@ class AcceptancePolicy:
     require_textures: bool = False
     require_native: bool = False
     require_ground_routes: bool = False
+    repair_ground_routes: bool = False
     route_height_m: float = 0.5
     route_width_m: float = 0.5
     route_margin_m: float = 0.02
     minimum_relief_scale: float = 0.0
     robot_length_m: float = 0.7
+    robot_height_m: float | None = None
+    robot_ground_clearance_m: float = 0.0
     robot_max_slope_deg: float = 20.0
     robot_max_step_m: float = 0.10
     robot_support_spacing_m: float = 0.10
@@ -46,7 +49,9 @@ class AcceptancePolicy:
         from plume_advanced.stages.ground_routes import GroundRobot
         GroundRobot(length_m=self.robot_length_m,
                     width_m=self.route_width_m if self.require_ground_routes else .5,
-                    height_m=self.route_height_m if self.require_ground_routes else .5,
+                    height_m=(self.robot_height_m or self.route_height_m)
+                    if self.require_ground_routes else .5,
+                    clearance_m=self.robot_ground_clearance_m if self.require_ground_routes else 0.,
                     margin_m=self.route_margin_m,
                     max_slope_deg=self.robot_max_slope_deg, max_step_m=self.robot_max_step_m,
                     support_spacing_m=self.robot_support_spacing_m)
@@ -62,10 +67,25 @@ class AcceptancePolicy:
                 raise ValueError(f"acceptance.{name} must be finite and nonnegative")
         if not 0 < self.route_width_m <= self.route_height_m:
             raise ValueError("acceptance requires 0 < route_width_m <= route_height_m")
+        if self.robot_height_m is not None and (
+            isinstance(self.robot_height_m, bool)
+            or not isinstance(self.robot_height_m, (int, float))
+            or not math.isfinite(self.robot_height_m) or self.robot_height_m <= 0
+        ):
+            raise ValueError("acceptance.robot_height_m must be positive when set")
+        if (isinstance(self.robot_ground_clearance_m, bool)
+                or not isinstance(self.robot_ground_clearance_m, (int, float))
+                or not math.isfinite(self.robot_ground_clearance_m)
+                or self.robot_ground_clearance_m < 0):
+            raise ValueError("acceptance.robot_ground_clearance_m must be finite and nonnegative")
         if self.minimum_relief_scale > 1:
             raise ValueError("acceptance.minimum_relief_scale must be in [0, 1]")
         if self.require_ground_routes and not self.require_clearance:
             raise ValueError("Ground-route acceptance requires clearance inspection")
+        if type(self.repair_ground_routes) is not bool:
+            raise ValueError("acceptance.repair_ground_routes must be a boolean")
+        if self.repair_ground_routes and not self.require_ground_routes:
+            raise ValueError("acceptance.repair_ground_routes requires require_ground_routes = true")
         for name in _PROFILE_REQUIREMENTS[self.profile]:
             if not getattr(self, name):
                 raise ValueError(f"acceptance.{name} cannot be disabled for {self.profile}")
@@ -104,10 +124,16 @@ def apply_acceptance_defaults(policy: AcceptancePolicy, geometry: dict, export: 
         export.setdefault("generate_collision", True)
     if policy.require_ground_routes:
         for key, value in (("ground_robot_length_m", policy.robot_length_m),
+                           ("ground_robot_height_m", policy.robot_height_m or policy.route_height_m),
+                           ("ground_robot_clearance_m", policy.robot_ground_clearance_m),
                            ("ground_max_slope_deg", policy.robot_max_slope_deg),
                            ("ground_max_step_m", policy.robot_max_step_m),
                            ("ground_support_spacing_m", policy.robot_support_spacing_m)):
             geometry.setdefault(key, value)
+    else:
+        # Robot checks are explicitly opt-in. A leftover advanced geometry
+        # setting must not silently turn a normal generation into qualification.
+        geometry["ground_robot_length_m"] = 0.0
     if policy.require_export_budgets:
         export.setdefault("max_visual_triangles", 2_000_000)
         export.setdefault("max_asset_bytes", 256 * 1024 * 1024)
@@ -132,6 +158,12 @@ def validate_acceptance_configuration(
     if policy.require_ground_routes:
         if geometry.ground_robot_length_m < policy.robot_length_m:
             raise ValueError("geometry.ground_robot_length_m is smaller than the required robot")
+        if (geometry.ground_robot_height_m or geometry.required_route_height_m) < (
+            policy.robot_height_m or policy.route_height_m
+        ):
+            raise ValueError("geometry.ground_robot_height_m is smaller than the required robot")
+        if geometry.ground_robot_clearance_m > policy.robot_ground_clearance_m:
+            raise ValueError("geometry.ground_robot_clearance_m exceeds the required underbody clearance")
         for key, limit in (("ground_max_slope_deg", policy.robot_max_slope_deg),
                            ("ground_max_step_m", policy.robot_max_step_m),
                            ("ground_support_spacing_m", policy.robot_support_spacing_m)):
@@ -243,7 +275,9 @@ def evaluate_acceptance(
                         and p.get("samples", 0) >= 2 and p.get("sweeps") for p in r["paths"])
                 and all(robot.get(key, 0) >= value for key, value in (
                     ("length_m", policy.robot_length_m), ("width_m", policy.route_width_m),
-                    ("height_m", policy.route_height_m), ("margin_m", policy.route_margin_m)))
+                    ("height_m", policy.robot_height_m or policy.route_height_m),
+                    ("margin_m", policy.route_margin_m)))
+                and robot.get("clearance_m", float("inf")) <= policy.robot_ground_clearance_m
                 and all(0 <= robot.get(key, float("inf")) <= value for key, value in (
                     ("max_slope_deg", policy.robot_max_slope_deg), ("max_step_m", policy.robot_max_step_m),
                     ("support_spacing_m", policy.robot_support_spacing_m))))
@@ -287,9 +321,23 @@ def evaluate_acceptance(
         "Finite export limits; the exporter enforces actual counts/bytes before publication", limits=limits)
     checks["native"] = _check(policy.require_native, None,
         "No integrated native-engine validation; separate editor evidence does not satisfy this requirement")
+    passed = all(not row["required"] or row["status"] == "passed" for row in checks.values())
     return dict(schema="plume.acceptance.v1", policy=asdict(policy), checks=checks,
-                passed=all(not row["required"] or row["status"] == "passed" for row in checks.values()),
+                passed=passed, robot_qualification=robot_qualification(policy, passed),
                 scope="Declared numerical acceptance; not scientific, ground-contact or runtime-performance certification")
+
+
+def robot_qualification(policy: AcceptancePolicy, passed: bool) -> dict:
+    """An explicit status, never inferred from a preset name or successful export."""
+    qualified = policy.require_ground_routes and passed
+    return dict(required=policy.require_ground_routes, qualified=qualified,
+                status="qualified" if qualified else "failed" if policy.require_ground_routes else "not_requested",
+                scope="Reference robot geometric floor/support, slope, step and chassis-clearance checks; not native robot dynamics or controller certification",
+                robot=dict(length_m=policy.robot_length_m, width_m=policy.route_width_m,
+                           height_m=policy.robot_height_m or policy.route_height_m,
+                           clearance_m=policy.robot_ground_clearance_m,
+                           margin_m=policy.route_margin_m,
+                           max_slope_deg=policy.robot_max_slope_deg, max_step_m=policy.robot_max_step_m))
 
 
 def enforce_acceptance(report: dict) -> None:

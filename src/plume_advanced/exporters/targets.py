@@ -24,7 +24,7 @@ from plume_advanced.acceptance import (
     require_available_acceptance,
     validate_acceptance_configuration,
 )
-from plume_advanced.progress import report_progress
+from plume_advanced.progress import progress_items, progress_phase, report_progress
 from plume_advanced.stages.geometry_export import (
     build_cave_visual_surface,
     export_cave_texture_files,
@@ -35,7 +35,9 @@ from plume_advanced.stages.geometry_types import CaveGeometry
 from plume_advanced.world import APPLICATION_EXPORT_FORMATS, ExportConfig
 
 from .atomic import atomic_output_directory
+from .errors import ExportBudgetError
 from .inspection import inspect_package
+from .package_recovery import preserve_size_rejected_package
 from .projected_materials import write_projected_material_bundle
 from .scene import PreparedExportScene, prepare_export_scene
 from .texture_recovery import (
@@ -44,10 +46,6 @@ from .texture_recovery import (
     new_report,
     prepare_texture_assets,
 )
-
-
-class ExportBudgetError(ValueError):
-    """An explicit simulation triangle or file-size budget was exceeded."""
 
 
 @dataclass(frozen=True)
@@ -68,6 +66,7 @@ def export_target_asset(
     asset_name: str = "plume_cave",
     acceptance: AcceptancePolicy = AcceptancePolicy(),
     resolution: dict | None = None,
+    reexport_provenance: dict | None = None,
 ) -> ExportResult:
     """Prepare once, stage a complete package, and publish it atomically."""
 
@@ -124,6 +123,7 @@ def export_target_asset(
                 if glb is not None and all((effective.config.cave_diffuse_texture,
                                            effective.config.cave_normal_texture,
                                            effective.config.cave_roughness_texture)):
+                    report_progress("Continuous materials", detail="packing Blender, Unity and Unreal projection materials")
                     material_files = write_projected_material_bundle(
                         glb, staging / "continuous_material",
                         tile_size_m=effective.config.cave_texture_scale_m,
@@ -154,18 +154,30 @@ def export_target_asset(
             staged.primary_asset.write_text(json.dumps(manifest, indent=2) + "\n")
         inspection = dict(scene.inspection)
         inspection["textures"] = texture_report
+        report_progress("Package inspection", detail="reloading exported geometry and checking coordinates, surfaces and colliders")
         inspection["serialized"] = inspect_package(scene, staged.files, staging)
         report_progress("Acceptance policy", detail=f"evaluating {acceptance.profile} requirements")
         inspection["acceptance"] = evaluate_acceptance(
             acceptance, cave_geometry, inspection, resolution, export_config
         )
         enforce_acceptance(inspection["acceptance"])
+        qualification_path = staging / "robot_qualification.json"
+        qualification_path.write_text(json.dumps(inspection["acceptance"]["robot_qualification"], indent=2) + "\n")
         inspection_path = staging / "pipeline_inspection.json"
         inspection_path.write_text(json.dumps(inspection, indent=2, allow_nan=False) + "\n")
-        staged = replace(staged, files=staged.files + (inspection_path,))
+        staged = replace(staged, files=staged.files + (inspection_path, qualification_path))
+        if reexport_provenance is not None:
+            provenance_path = staging / "reexport.json"
+            provenance_path.write_text(json.dumps(dict(reexport_provenance,
+                primary_asset=staged.primary_asset.relative_to(staging).as_posix()),
+                indent=2, allow_nan=False) + "\n")
+            staged = replace(staged, files=staged.files + (provenance_path,))
         if export_config.target == "all":
             manifest = json.loads(staged.primary_asset.read_text())
             manifest.setdefault("shared_files", []).append(inspection_path.name)
+            manifest["shared_files"].append(qualification_path.name)
+            if reexport_provenance is not None:
+                manifest["shared_files"].append("reexport.json")
             staged.primary_asset.write_text(json.dumps(manifest, indent=2) + "\n")
         sizes = {
             path.relative_to(staging).as_posix(): path.stat().st_size
@@ -177,15 +189,14 @@ def export_target_asset(
             for name, size in sizes.items()
             if export_config.max_asset_bytes and size > export_config.max_asset_bytes
         }
-        if oversized:
-            raise ExportBudgetError(
-                f"Export file size budget exceeded ({export_config.max_asset_bytes:,} bytes): {oversized}"
-            )
+        report_progress("Export file sizes", detail=f"checking {len(sizes)} files; limit {export_config.max_asset_bytes:,} bytes per file (0 = unlimited)")
         report_path = staging / "export_size_report.json"
         report_path.write_text(
             json.dumps(
                 {
                     "schema": "plume.export-size.v1",
+                    "passed": not oversized,
+                    "oversized_files": oversized,
                     "visual_triangles": face_count,
                     "visual_vertices_after_uv_seams": len(scene.canonical_visual["positions"]),
                     "cave_vertex_and_index_bytes": sum(
@@ -207,6 +218,16 @@ def export_target_asset(
             + "\n"
         )
         staged = replace(staged, files=staged.files + (report_path,))
+        if oversized:
+            retained = preserve_size_rejected_package(staging, output,
+                primary_asset=staged.primary_asset, target=staged.target,
+                max_asset_bytes=export_config.max_asset_bytes)
+            message = (f"Export file size budget exceeded ({export_config.max_asset_bytes:,} bytes): {oversized}. "
+                       f"Checked package preserved at {retained}")
+            raise ExportBudgetError(message, report=dict(passed=False, failures=[message],
+                preserved_package=str(retained), oversized_files=oversized,
+                repair_action="Use plume-reexport --recover-package with this directory, a new --output and an explicit --max-asset-bytes limit. No geometry regeneration or export is needed."))
+        report_progress("Publish export", detail=f"all checks passed; publishing {output}")
     return ExportResult(
         target=staged.target,
         primary_asset=output / staged.primary_asset.relative_to(staging),
@@ -324,20 +345,21 @@ def _export_all_targets(
     """Build every application package from one canonical cave geometry."""
 
     results: list[ExportResult] = []
-    for target, file_format in APPLICATION_EXPORT_FORMATS.items():
+    for target_index, (target, file_format) in enumerate(APPLICATION_EXPORT_FORMATS.items(), 1):
         target_config = replace(
             export_config,
             target=target,
             file_format=file_format,
         )
-        results.append(
-            _export_target_asset_in_place(
-                scene,
-                target_config,
-                output / target,
-                asset_name,
+        with progress_phase(f"{target} package {target_index}/{len(APPLICATION_EXPORT_FORMATS)}"):
+            results.append(
+                _export_target_asset_in_place(
+                    scene,
+                    target_config,
+                    output / target,
+                    asset_name,
+                )
             )
-        )
 
     manifest = output / f"{asset_name}.all_exports.json"
     manifest.write_text(
@@ -530,6 +552,7 @@ def _write_blender_validation_report(asset: Path, output_path: Path) -> Path:
         "asset": asset.name,
         "valid": False,
     }
+    report_progress("Blender import validation", detail=f"{asset.name}: independently parsing the exported asset; no internal counter")
     try:
         if asset.suffix.lower() == ".glb":
             data = asset.read_bytes()
@@ -1121,7 +1144,9 @@ def _write_usda(
         )
     )
     lines.extend(("}", ""))
+    report_progress("USD file write", detail=f"{output.name}: joining and writing scene text; no internal counter")
     output.write_text("\n".join(lines), encoding="utf-8")
+    report_progress("USD written", 1, 1, f"{output.name}: {output.stat().st_size / 1048576:,.1f} MiB")
     return tuple(texture_files.values())
 
 
@@ -1145,16 +1170,18 @@ def _usda_mesh_lines(
     # Round to the declared point3f precision before decimal formatting. A
     # float64 value near a float32 midpoint can otherwise round to the other
     # neighbour after nine-digit formatting (notably QEM collider vertices).
+    report_progress("USD mesh preparation", detail=f"{name}: {len(faces):,} triangles")
     vertices = np.asarray(vertices, dtype=np.float32)
     if normals is None:
+        report_progress("USD normal calculation", detail=f"{name}: building vertex adjacency; no internal counter")
         mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
         normal_values = np.asarray(mesh.vertex_normals, dtype=np.float64)
     else:
         normal_values = np.asarray(normals, dtype=np.float64)
-    point_text = ", ".join(_tuple_text(point) for point in vertices)
-    normal_text = ", ".join(_tuple_text(normal) for normal in normal_values)
-    count_text = ", ".join("3" for _ in faces)
-    index_text = ", ".join(str(int(index)) for index in np.asarray(faces).reshape(-1))
+    point_text = ", ".join(_tuple_text(point) for point in progress_items("USD vertices", vertices, detail=name))
+    normal_text = ", ".join(_tuple_text(normal) for normal in progress_items("USD normals", normal_values, detail=name))
+    count_text = ", ".join("3" for _ in progress_items("USD face sizes", faces, detail=name))
+    index_text = ", ".join(str(int(index)) for index in progress_items("USD indices", np.asarray(faces).reshape(-1), detail=name))
     applied_schemas = list(api_schemas)
     if material_path:
         applied_schemas.insert(0, "MaterialBindingAPI")
@@ -1195,7 +1222,7 @@ def _usda_mesh_lines(
         escaped_value = value.replace("\\", "\\\\").replace('"', '\\"')
         lines.append(f'{indent}    custom string {key} = "{escaped_value}"')
     if texcoords is not None:
-        uv_text = ", ".join(_tuple_text(uv) for uv in texcoords)
+        uv_text = ", ".join(_tuple_text(uv) for uv in progress_items("USD texture coordinates", texcoords, detail=name))
         lines.extend(
             (
                 f"{indent}    texCoord2f[] primvars:st = [{uv_text}] (",
@@ -1369,16 +1396,30 @@ def _write_simplified_collision_obj(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as stream:
         stream.write("# PLUME collision: metres, right-handed, Z up\no cave_collision\n")
-        np.savetxt(stream, scene.collision_vertices, fmt="v %.17g %.17g %.17g")
+        _write_collision_rows(stream, scene.collision_vertices, "v %.17g %.17g %.17g",
+                              "Collision OBJ vertices", output_path.name)
         # Gazebo Harmonic's DART/ODE bridge dereferences mesh normals when
         # constructing triangle colliders. Keep positions and topology intact.
+        report_progress("Collision OBJ normal calculation", detail=f"{output_path.name}: {len(scene.collision_faces):,} triangles; no internal counter")
         mesh = trimesh.Trimesh(
             vertices=scene.collision_vertices, faces=scene.collision_faces, process=False,
         )
-        np.savetxt(stream, mesh.vertex_normals, fmt="vn %.17g %.17g %.17g")
-        indices = scene.collision_faces + 1
-        np.savetxt(
-            stream, np.repeat(indices, 2, axis=1),
-            fmt="f %d//%d %d//%d %d//%d",
-        )
+        _write_collision_rows(stream, mesh.vertex_normals, "vn %.17g %.17g %.17g",
+                              "Collision OBJ normals", output_path.name)
+        _write_collision_rows(stream, scene.collision_faces, "f %d//%d %d//%d %d//%d",
+                              "Collision OBJ triangles", output_path.name, faces=True)
+        report_progress("Collision OBJ flush", detail=output_path.name)
+    report_progress("Collision OBJ written", 1, 1, f"{output_path.name}: {output_path.stat().st_size / 1048576:,.1f} MiB")
     return output_path
+
+
+def _write_collision_rows(stream, values, fmt, step, filename, *, faces=False):
+    total = len(values)
+    report_progress(step, 0, total, filename)
+    for start in range(0, total, 65_536):
+        end = min(start + 65_536, total)
+        batch = values[start:end]
+        if faces:
+            batch = np.repeat(batch + 1, 2, axis=1)
+        np.savetxt(stream, batch, fmt=fmt)
+        report_progress(step, end, total, filename)

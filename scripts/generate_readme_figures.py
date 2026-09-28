@@ -176,6 +176,25 @@ def stability_plot(output):
     return save(fig, output, "gravity_screen")
 
 
+def draw_top_down(ax, footprint, color, *, title=None):
+    """Show section envelopes with metric axes and undistorted plan proportions."""
+    mask, x, y, spacing = footprint
+    ax.imshow(
+        mask,
+        origin="lower",
+        extent=[x[0] - spacing / 2, x[-1] + spacing / 2,
+                y[0] - spacing / 2, y[-1] + spacing / 2],
+        cmap=ListedColormap(["white", color]),
+        interpolation="nearest",
+        vmin=0,
+        vmax=1,
+    )
+    ax.set(xlabel="Along-flow distance (m)", ylabel="Lateral distance (m)", aspect="equal")
+    if title:
+        ax.set_title(title)
+    ax.grid(alpha=0.14)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-directory", type=Path, default=Path("docs/figures/readme"))
@@ -190,6 +209,7 @@ def main():
     )
     evidence = []
     footprint_bounds = []
+    previews = []
     for col, mode in enumerate(("single", "multi")):
         for row, seed in enumerate(args.seeds):
             recipe = Path(f"config/short-{mode}.toml")
@@ -202,31 +222,15 @@ def main():
             )
             sections = SectionFieldGenerator(config.section_field).generate(network)
             mask, x, y, spacing = section_footprint(network, sections)
+            footprint = (mask, x, y, spacing)
             footprint_bounds.append((float(x[0]), float(x[-1]), float(y[0]), float(y[-1])))
             ax = axes[row, col]
-            ax.imshow(
-                mask,
-                origin="lower",
-                extent=[
-                    x[0] - spacing / 2,
-                    x[-1] + spacing / 2,
-                    y[0] - spacing / 2,
-                    y[-1] + spacing / 2,
-                ],
-                cmap=ListedColormap(["white", COLORS[col]]),
-                interpolation="nearest",
-                vmin=0,
-                vmax=1,
-            )
-            ax.set(
+            draw_top_down(
+                ax, footprint, COLORS[col],
                 title=f"{'One system' if col == 0 else 'Three interacting systems'} · seed {seed}",
-                xlabel="Distance along dominant route (m)",
-                ylabel="Lateral distance (m)",
-                xlim=(-15, 425),
-                ylim=(-100, 100),
             )
-            ax.set_aspect("equal")
-            ax.grid(alpha=0.14)
+            if row == 0:
+                previews.append((mode, footprint, COLORS[col]))
             evidence.append(
                 dict(
                     recipe=recipe.as_posix(),
@@ -249,12 +253,23 @@ def main():
         ax.set_xlim(bounds[:, 0].min() - 10, bounds[:, 1].max() + 10)
         ax.set_ylim(bounds[:, 2].min() - 10, bounds[:, 3].max() + 10)
     figures.append(save(fig, out, "current_topologies"))
+    # The README uses one compact comparison; the technical guide keeps all
+    # seeds. Use shared bounds within each comparison, never stretch the axes.
+    preview_bounds = np.array([(x[0], x[-1], y[0], y[-1])
+                              for _, (_, x, y, _), _ in previews])
+    for mode, footprint, color in previews:
+        preview, ax = plt.subplots(figsize=(7, 2.8), layout="constrained")
+        draw_top_down(ax, footprint, color)
+        ax.set_xlim(preview_bounds[:, 0].min() - 10, preview_bounds[:, 1].max() + 10)
+        ax.set_ylim(preview_bounds[:, 2].min() - 10, preview_bounds[:, 3].max() + 10)
+        figures.append(save(preview, out, f"{mode}_top_down"))
     provenance = dict(
         schema="plume.readme-figures.v1",
         scope="Current host/network/section generation only; no mesh, texture, collision or native-engine qualification.",
         package_sha256=package_source_hash(),
         builder_sha256=sha256_file(__file__),
         cases=evidence,
+        preview_seed=args.seeds[0],
         figures={p.name: sha256_file(p) for p in figures},
         schematics=["workflow.png", "gravity_screen.png"],
         gravity_parameters=dict(

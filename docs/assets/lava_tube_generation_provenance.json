@@ -1,0 +1,21 @@
+{
+  "kind": "animated_reconstruction_from_accepted_showcase",
+  "description": "Stage B centerline growth reconstructed from saved age_s; later stages represented in plan, ending on the approved Blender still. Not a live capture.",
+  "sources": {
+    "outputs/showcase_optimized/stage_a_host_field.png": "47741e60740868ad111f2fe77a3633a6f43628015ecfff01a1cc365724c9f46c",
+    "outputs/showcase_optimized/stage_b_network.json": "6c4ab92e9daae8b9fb81e5e6313392e8e628c464d296fd51e1f9cc0c719ce56f",
+    "outputs/showcase_optimized/stage_e_event_report.json": "fbdba640c25bd575985f278a5d613c0928f561a48bf1693f99c034d11583d82e",
+    "outputs/showcase_gallery/depth_preview/blender_lava_tube_artist_full.png": "ed1be71ac16fde0d4568765a722e54abdf4608c1e27d58cf0e73c72357cddd77"
+  },
+  "output": "docs/assets/lava_tube_generation.gif",
+  "frame_count": 64,
+  "duration_ms": 10360,
+  "network_max_age_s": 969.2569866476233,
+  "segment_count": 11,
+  "event_count": 563,
+  "dimensions_px": [
+    960,
+    540
+  ],
+  "plan_rotation": "clockwise; world +y points to screen right"
+}

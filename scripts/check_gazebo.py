@@ -19,11 +19,12 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 
-def texture_receipts(package: Path) -> list[dict]:
+def texture_receipts(package: Path, *, allow_neutral: bool = False) -> list[dict]:
     """Require all three packaged PBR maps for this textured import check."""
     package = package.resolve()
     root = ET.parse(package / "model.sdf").getroot()
     receipts = []
+    hashes: dict[Path, str] = {}
     for role in ("albedo_map", "normal_map", "roughness_map"):
         for element in root.findall(f".//pbr/metal/{role}"):
             uri = element.text or ""
@@ -33,9 +34,13 @@ def texture_receipts(package: Path) -> list[dict]:
             source = (package / uri[len(prefix):]).resolve()
             if not source.is_relative_to(package) or not source.is_file():
                 raise ValueError(f"Missing or external texture: {uri}")
+            if source not in hashes:
+                hashes[source] = hashlib.sha256(source.read_bytes()).hexdigest()
             receipts.append({"role": role, "uri": uri,
-                             "sha256": hashlib.sha256(source.read_bytes()).hexdigest()})
-    if {r["role"] for r in receipts} != {"albedo_map", "normal_map", "roughness_map"}:
+                             "sha256": hashes[source]})
+    if not (allow_neutral and not receipts) and {r["role"] for r in receipts} != {
+        "albedo_map", "normal_map", "roughness_map"
+    }:
         raise ValueError("This textured smoke check requires albedo, normal and roughness maps")
     return receipts
 
@@ -102,6 +107,8 @@ def main() -> None:
     parser.add_argument("--view", type=Path, required=True, help="position, direction, floor_z in metres/Z-up")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--timeout", type=float, default=90)
+    parser.add_argument("--allow-neutral", action="store_true",
+                        help="Accept an explicitly neutral adapter with no PBR texture maps")
     args = parser.parse_args()
     # Import here so world construction can be unit tested without native Gazebo.
     from gz.msgs10.contacts_pb2 import Contacts
@@ -114,7 +121,7 @@ def main() -> None:
     output.mkdir(parents=True, exist_ok=True)
     (output / "result.json").write_text('{"passed": false, "status": "starting"}\n')
     (output / "interior.png").unlink(missing_ok=True)
-    textures = texture_receipts(args.package)
+    textures = texture_receipts(args.package, allow_neutral=args.allow_neutral)
     view = json.loads(args.view.read_text())
     world = output / "inspection.world.sdf"
     world.write_text(inspection_world(args.package, view))
@@ -181,7 +188,9 @@ def main() -> None:
         model_sdf_sha256=hashlib.sha256((args.package / "model.sdf").read_bytes()).hexdigest(),
         textures=textures,
         elapsed_seconds=round(time.monotonic()-started, 2),
-        scope="Native textured camera capture and dynamic probe contact; not route or vehicle qualification.",
+        scope=("Native neutral-material camera and dynamic contact probe" if not textures
+               else "Native textured camera and dynamic contact probe")
+              + "; not route or vehicle qualification.",
     )
     (output / "result.json").write_text(json.dumps(observed, indent=2)+"\n")
     print(json.dumps(observed, indent=2))

@@ -38,6 +38,53 @@ def sample(x=0.0, y=0.0, z=0.0):
     )
 
 
+@pytest.mark.parametrize("caps", [(False, False), (True, False), (False, True), (True, True)])
+@pytest.mark.parametrize("roughness", [0.0, 0.4, 2.0])
+def test_axial_culling_matches_unpruned_lofts(caps, roughness, monkeypatch):
+    """Optimized queries preserve every density value, including cap/blend bands."""
+    from plume_advanced.stages.section_field import SectionFieldGenerator
+
+    rng = np.random.default_rng(51)
+    config = GeometryConfig(voxel_size=.2, wall_roughness_amplitude=roughness,
+                            floor_roughness_scale=2.3, roof_roughness_scale=.7)
+    generator = GeometryGenerator(config)
+    first = sample()
+    direction = np.array([1., .16, -.08])
+    direction /= np.linalg.norm(direction)
+    normal, binormal = SectionFieldGenerator._build_frame(tuple(direction), first.normal)
+    last = replace(sample(.6, .04, -.03), tangent=tuple(direction), normal=normal,
+                   binormal=binormal, profile_points=tuple((x*1.15, z*.9) for x,z in first.profile_points))
+    origin = np.array([-2.8, -2.8, -2.8])
+    initial = rng.uniform(-8., -2., (32, 29, 29)).astype(np.float32)
+    optimized = initial.copy()
+    reference = initial.copy()
+    arguments = dict(origin=origin, start=first, end=last, cap_start=caps[0], cap_end=caps[1])
+    generator._stamp_profile_segment(density=optimized, **arguments)
+    monkeypatch.setattr(generator, '_sweep_density_upper_bound', lambda axial, radius: np.full_like(axial, np.inf))
+    generator._stamp_profile_segment(density=reference, **arguments)
+    np.testing.assert_array_equal(optimized, reference)
+    assert np.any(optimized > initial)
+
+
+def test_short_interior_loft_avoids_distant_polygon_queries(monkeypatch):
+    generator = GeometryGenerator(GeometryConfig(voxel_size=.1, wall_roughness_amplitude=0.))
+    distance = generator._interpolated_profile_signed_distance
+    queries = []
+
+    def count(x, *args):
+        queries.append(len(x))
+        return distance(x, *args)
+
+    monkeypatch.setattr(generator, '_interpolated_profile_signed_distance', count)
+    arguments = dict(origin=np.array([-2.5]*3), start=sample(), end=sample(.5), cap_start=False, cap_end=False)
+    generator._stamp_profile_segment(density=np.full((56, 51, 51), -8., np.float32), **arguments)
+    optimized = sum(queries)
+    queries.clear()
+    monkeypatch.setattr(generator, '_sweep_density_upper_bound', lambda axial, radius: np.full_like(axial, np.inf))
+    generator._stamp_profile_segment(density=np.full((56, 51, 51), -8., np.float32), **arguments)
+    assert 0 < optimized < .5 * sum(queries)
+
+
 def test_mismatched_section_profiles_fail_instead_of_forming_an_oversized_union():
     first = np.asarray(sample().profile_points)
     second = first[::2] * 1.5

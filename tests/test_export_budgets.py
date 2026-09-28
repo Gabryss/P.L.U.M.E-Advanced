@@ -36,10 +36,14 @@ def test_triangle_budget_checked_before_surface_preparation(tmp_path):
 
 
 def test_size_budget_failure_does_not_publish_partial_package(tmp_path):
-    with pytest.raises(ValueError, match="size budget"):
+    with pytest.raises(ValueError, match="size budget") as caught:
         export_target_asset(_tiny_geometry(), ExportConfig(max_asset_bytes=16), tmp_path / "export")
     assert not (tmp_path / "export").exists()
-    assert not list(tmp_path.iterdir())
+    retained = next(tmp_path.glob("export.size-rejected-*"))
+    assert caught.value.report["preserved_package"] == str(retained)
+    assert (retained / "size_recovery.json").is_file()
+    assert json.loads((retained / "pipeline_inspection.json").read_text())["serialized"]["passed"]
+    assert not json.loads((retained / "export_size_report.json").read_text())["passed"]
 
 
 def test_export_report_measures_buffers_and_bytes(tmp_path):

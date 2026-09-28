@@ -61,6 +61,7 @@ from plume_advanced.pipeline.inspection import (
     evaluate_sections,
     record_failure,
 )
+from plume_advanced.pipeline.seed_search import SeedSearch, retryable_rejection
 from plume_advanced.run_manifest import write_run_manifest
 from plume_advanced.stages.events import GeologicalEventGenerator
 from plume_advanced.stages.floor_map import FloorMapGenerator, export_floor_atlas
@@ -77,6 +78,10 @@ from plume_advanced.visualization.network import CaveNetworkPlotter
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--debug", action="store_true",
+                        help="Show a traceback for a rejected generation instead of the concise diagnosis.")
+    parser.add_argument("--seed", type=int, default=None,
+                        help="Override the root seed (including all stage seeds and sampled settings).")
     inspect = parser.add_mutually_exclusive_group()
     inspect.add_argument("--show-config", action="store_true",
                          help="Print resolved configuration as JSON without generating anything.")
@@ -212,13 +217,15 @@ class _RunState:
     project: ProjectConfig | None = None
     stage: str = "configuration"
     outputs: list[Path] = field(default_factory=list)
+    search: SeedSearch | None = None
+    overwrite_authorized: bool = False
 
 
 def _run_pipeline(argv: list[str] | None = None, *, state: _RunState) -> int:
     run_started = time.perf_counter()
     stage_timings: dict[str, float] = {}
     args = parse_args(argv)
-    project_config = load_project_config(args.config, world_body=args.body)
+    project_config = state.project or load_project_config(args.config, world_body=args.body, seed_override=args.seed)
     state.project = project_config
     host_output = args.host_output or args.output.with_name("stage_a_host_field.png")
     section_output = args.section_output or args.output.with_name("stage_c_section_field.png")
@@ -258,7 +265,7 @@ def _run_pipeline(argv: list[str] | None = None, *, state: _RunState) -> int:
         require_output_overwrite_confirmation(
             output_directories,
             allow_overwrite=(
-                args.resume or args.force_overwrite or project_config.run.overwrite_outputs
+                state.overwrite_authorized or args.resume or args.force_overwrite or project_config.run.overwrite_outputs
             ),
         )
     except OutputOverwriteRefused as error:
@@ -267,7 +274,14 @@ def _run_pipeline(argv: list[str] | None = None, *, state: _RunState) -> int:
 
     state.started = True
     require_available_acceptance(project_config.acceptance)
-    progress = TerminalProgress(total_stages=12, trace_path=args.output.with_name("progress.jsonl"))
+    attempt = state.search.attempt if state.search else 1
+    mode = "robot qualification required" if project_config.acceptance.require_ground_routes else "not robot-qualified"
+    budget = f"/{project_config.run.max_seed_attempts}" if project_config.run.max_seed_attempts else ""
+    context = f"attempt {attempt}{budget}; seed {project_config.procedural_seed}; {mode}"
+    if state.search:
+        state.search.begin(asdict(project_config.stage_seeds))
+    progress = TerminalProgress(total_stages=12, trace_path=args.output.with_name("progress.jsonl"), context=context)
+    progress.log(f"Generation {context}")
     progress.start("Configuration", "loaded TOML and checked output")
     resolved_config_path = write_project_config_manifest(
         project_config,
@@ -283,6 +297,8 @@ def _run_pipeline(argv: list[str] | None = None, *, state: _RunState) -> int:
     )
     manifest_inputs = _run_inputs(args.config, project_config)
     completed_outputs: list[Path] = [resolved_config_path]
+    if state.search:
+        completed_outputs.append(state.search.path)
     state.outputs = completed_outputs
     checkpoint_root = (
         args.checkpoint_directory
@@ -800,6 +816,10 @@ def _run_pipeline(argv: list[str] | None = None, *, state: _RunState) -> int:
     progress.log(f"Pipeline quality report: {inspection_paths[0]}")
     progress.log(f"Measured passage inspection: {inspection_paths[1]}")
     progress.start("Finalize run", "hashing output files and recording provenance")
+    qualification = json.loads(inspection_paths[0].read_text())["robot_qualification"]
+    if state.search:
+        state.search.finish("accepted", robot_qualification=qualification,
+                            elapsed_seconds=time.perf_counter() - run_started)
     run_manifest_path = write_run_manifest(
         project_config,
         run_manifest_output,
@@ -810,9 +830,13 @@ def _run_pipeline(argv: list[str] | None = None, *, state: _RunState) -> int:
         current_stage="complete",
         inputs=manifest_inputs,
         timings=stage_timings,
+        qualification=qualification,
     )
     progress.finish(f"wrote {run_manifest_path.name}")
     progress.log(f"Run manifest: {run_manifest_path}")
+    progress.log("Robot qualification: " + (
+        "reference geometric checks passed (not dynamics certification)" if qualification["qualified"]
+        else "NOT ROBOT-QUALIFIED; robot checks were not requested"))
 
     return 0
 
@@ -836,45 +860,111 @@ def _run_inputs(config_path: Path, project_config: ProjectConfig) -> tuple[Path,
     return tuple(path for path in candidates if path.is_file())
 
 
+def _record_failed_run(args, state, error, elapsed) -> Path | None:
+    """Best-effort diagnostics never hide the original failure or interrupt."""
+    if state.project is None:
+        return None
+    try:
+        write_run_manifest(
+            state.project, args.output.with_name("run_manifest.json"), outputs=state.outputs,
+            elapsed_seconds=elapsed, source_root=ROOT, status="failed", current_stage=state.stage,
+            failed_stage=state.stage, error=f"{type(error).__name__}: {error}",
+            inputs=_run_inputs(args.config, state.project),
+        )
+        return record_failure(args.output.parent, error, state.stage)
+    except Exception:
+        return None
+
+
+def _discard_rejected_checkpoints(args, project) -> None:
+    # These are disposable stage caches, not the seed history or user's assets.
+    # Match the fingerprint so a shared/custom checkpoint folder is not erased.
+    root = args.checkpoint_directory or args.output.parent / ".plume-checkpoints"
+    fingerprint = pipeline_fingerprint(project, inputs=_run_inputs(args.config, project), source_root=SOURCE_ROOT)
+    for path in root.glob("*.json"):
+        try:
+            record = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if record.get("schema") == "plume.stage-checkpoint.v2" and record.get("fingerprint") == fingerprint:
+            path.with_suffix(".pickle").unlink(missing_ok=True)
+            path.unlink()
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     if args.list_presets:
         from plume_advanced.recipes import available_presets
         print("\n".join(available_presets()))
         return 0
+    project = load_project_config(args.config, world_body=args.body, seed_override=args.seed)
     if args.show_config:
-        project = load_project_config(args.config, world_body=args.body)
         print(json.dumps(project_config_manifest(project), indent=2, sort_keys=True))
         return 0
-    run_started = time.perf_counter()
-    state = _RunState()
-    try:
-        return _run_pipeline(argv, state=state)
-    except (Exception, KeyboardInterrupt) as error:
-        TerminalProgress.close_active()
-        if not state.started or state.project is None:
-            raise
+    from plume_advanced.pipeline.recovery import PipelineRecoveryError, recovery_failure_summary
+    from plume_advanced.progress import GenerationTimeBudgetError, work_budget
+
+    search = SeedSearch(args.output.with_name("seed_attempts.json"), root_seed=project.procedural_seed,
+        fingerprint=pipeline_fingerprint(project, inputs=_run_inputs(args.config, project), source_root=SOURCE_ROOT),
+        required=project.acceptance.require_ground_routes, max_attempts=project.run.max_seed_attempts,
+        resume=args.resume)
+    overwrite_authorized = False
+    while search.seed is not None:
+        current_request = load_project_config(args.config, world_body=args.body, seed_override=args.seed)
+        if search.data["fingerprint"] != pipeline_fingerprint(current_request,
+                inputs=_run_inputs(args.config, current_request), source_root=SOURCE_ROOT):
+            raise ValueError("Pipeline inputs or code changed during seed search; use a new output directory")
+        selected = load_project_config(args.config, world_body=args.body, seed_override=search.seed)
+        state = _RunState(project=selected, search=search, overwrite_authorized=overwrite_authorized)
+        run_started = time.perf_counter()
         try:
-            project_config = state.project
-            manifest_path = args.output.with_name("run_manifest.json")
-            write_run_manifest(
-                project_config,
-                manifest_path,
-                outputs=state.outputs,
-                elapsed_seconds=time.perf_counter() - run_started,
-                source_root=ROOT,
-                status="failed",
-                current_stage=state.stage,
-                failed_stage=state.stage,
-                error=f"{type(error).__name__}: {error}",
-                inputs=_run_inputs(args.config, project_config),
-            )
-            record_failure(args.output.parent, error, state.stage)
-        except Exception:
-            pass
-        raise
-    finally:
-        TerminalProgress.close_active()
+            with work_budget(selected.run.max_attempt_seconds):
+                return _run_pipeline(argv, state=state)
+        except (Exception, KeyboardInterrupt) as error:
+            TerminalProgress.close_active()
+            if not state.started or state.project is None:
+                raise
+            retry = retryable_rejection(error)
+            elapsed = time.perf_counter() - run_started
+            diagnosis = recovery_failure_summary(error.report) if isinstance(error, PipelineRecoveryError) else [str(error)]
+            if search.data["attempts"]:
+                search.finish("interrupted" if isinstance(error, KeyboardInterrupt) else "rejected" if retry else "failed",
+                    stage=state.stage, error_type=type(error).__name__, diagnosis=diagnosis, elapsed_seconds=elapsed)
+            failure_report = _record_failed_run(args, state, error, elapsed)
+            if isinstance(error, GenerationTimeBudgetError) and not args.debug:
+                print(
+                    f"Generation stopped at {state.stage}: the {selected.run.max_attempt_seconds:g}s "
+                    "attempt time budget expired. This run did not complete successfully; "
+                    "existing files are not a validated delivery.",
+                    file=sys.stderr,
+                )
+                print(
+                    "Completed stage checkpoints and failure reports were retained; an unfinished "
+                    "stage must restart. Reduce the workload or adjust run.max_attempt_seconds. "
+                    "Use a new output directory after changing configuration or code.",
+                    file=sys.stderr,
+                )
+                print(f"Detailed diagnosis: {failure_report}; seed history: {search.path}", file=sys.stderr)
+                return 2
+            if not retry:
+                raise
+            print(f"Generation rejected at {state.stage}; seed {state.project.procedural_seed} was not accepted.", file=sys.stderr)
+            for line in diagnosis:
+                print(line, file=sys.stderr)
+            print(f"Detailed diagnosis: {failure_report}; seed history: {search.path}", file=sys.stderr)
+            if search.seed is None:
+                if args.debug:
+                    raise
+                break
+            # Confirm once for the request. Internal retries only replace its own
+            # in-progress outputs and keep the compact, durable seed journal.
+            overwrite_authorized = True
+            _discard_rejected_checkpoints(args, state.project)
+            print(f"Trying generation {search.attempt}, root seed {search.seed}; all qualification limits unchanged.", file=sys.stderr)
+        finally:
+            TerminalProgress.close_active()
+    print(f"Seed attempt limit reached; no accepted cave was produced by this search. See {search.path}.", file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":

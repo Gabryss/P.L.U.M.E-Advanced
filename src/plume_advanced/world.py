@@ -119,6 +119,8 @@ class RunConfig:
     dev_max_lobe_paths: int = 6
     render_diagnostics: bool = True
     overwrite_outputs: bool = False
+    max_seed_attempts: int = 8
+    max_attempt_seconds: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -284,6 +286,12 @@ def build_run_config(raw_config: dict[str, Any] | None) -> RunConfig:
     if "quality" in data:
         data["quality"] = str(data["quality"]).strip().lower()
     config = RunConfig(**data)
+    if type(config.max_seed_attempts) is not int or config.max_seed_attempts < 0:
+        raise ValueError("run.max_seed_attempts must be a nonnegative integer (0 searches until success)")
+    if (isinstance(config.max_attempt_seconds, bool)
+            or not isinstance(config.max_attempt_seconds, (int, float))
+            or not np.isfinite(config.max_attempt_seconds) or config.max_attempt_seconds < 0):
+        raise ValueError("run.max_attempt_seconds must be finite and nonnegative (0 disables the deadline)")
     if config.quality not in SUPPORTED_QUALITY_LEVELS:
         raise ValueError(
             f"run.quality must be one of: {', '.join(sorted(SUPPORTED_QUALITY_LEVELS))}"

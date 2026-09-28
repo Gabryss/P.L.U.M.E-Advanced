@@ -1,8 +1,29 @@
 # Evaluation and simulator qualification
 
-[← Project overview](../README.md)
+[← Project overview](../README.md) · [Generation](usage.md) · [Simulator imports](simulators.md)
+
+Choose the check that matches the claim you need to make:
+
+| Question | Workflow | Evidence |
+|---|---|---|
+| Does this change preserve behavior? | [Development checks](#development-checks) | Regression and policy tests |
+| How often do fixed seeds succeed? | [Seed campaigns](#seed-campaigns) | Per-case failures, repairs, timing and cold replay |
+| Does this cave import and collide correctly? | [Native qualification](#native-engine-qualification) / [Gazebo and Isaac checks](#gazebo-and-isaac-import-checks) | Native material, bounds and contact results |
+| How do morphology and controls compare? | [Scientific evaluation](#scientific-evaluation-and-reproducibility) | Declared experiments and measurements |
+
+The [simulator gallery](simulators.md) demonstrates visual imports. Treat its
+screenshots separately from these measured checks.
 
 ## Seed campaigns
+
+Campaigns evaluate the **requested seeds**, including their failures. They do not
+use `plume-generate`'s outer seed search or its `run.max_seed_attempts` setting;
+each case retains its bounded inspection and repair stages. This keeps failure
+counts meaningful instead of replacing difficult cases with passing ones.
+
+To evaluate ground routes, explicitly enable `acceptance.require_ground_routes = true`
+in the campaign recipe. The `simulation-*` presets alone do not request robot
+qualification. See [generation modes](usage.md#ordinary-generation-or-robot-qualification).
 
 ```bash
 # Ten A-C cases, each with a separate cold reproducibility replay.
@@ -49,6 +70,13 @@ external tools; a skipped test is not evidence of engine compatibility.
 
 ## Native engine qualification
 
+The workflow below checks one specified seed and its cold replay. It tests
+materials and collision in the supplied editors; ground-route checks are added
+only when `acceptance.require_ground_routes = true` is set in the recipe. To
+qualify a candidate found by generation, use its `accepted_seed` from
+`seed_attempts.json` with the same recipe. Native qualification can still reject
+a cave that passed numerical checks.
+
 ```bash
 uv run python scripts/qualify_simulation.py \
   --config config/simulation-single.toml --seed 0 \
@@ -87,6 +115,49 @@ The raw collider OBJ does not carry glTF conversion. Alternative importers requi
 their own axis/bounds check. Configure simulator gravity separately from importing
 geometry. Nanite, collision reduction, texture streaming and compression require
 performance validation in the target simulation.
+
+## Gazebo and Isaac import checks
+
+These helpers inspect an existing textured package and drop a small collision
+probe. Start with the [small textured recipe](usage.md#textured-caves). Select an
+unobstructed viewpoint inside **that generated cave**, then save
+`outputs/textured_cave/view.json` with these fields:
+
+| Field | Value |
+|---|---|
+| `position` | Camera `[x, y, z]` in right-handed Z-up metres |
+| `direction` | Nonzero viewing direction `[dx, dy, dz]` |
+| `floor_z` | Measured mesh floor height directly below that position |
+
+Camera and floor coordinates are specific to a cave; a different seed or repaired
+mesh requires a new selection. The showcase camera is not a default for this recipe.
+
+For Gazebo Harmonic, use the system Python with `gz.transport13`, `gz.msgs10`
+and Pillow available:
+
+```bash
+/usr/bin/python3 scripts/check_gazebo.py \
+  outputs/textured_cave/export_all/gazebo/plume_cave_scene \
+  --view outputs/textured_cave/view.json \
+  --output outputs/textured_cave/gazebo_native
+```
+
+For Isaac Sim, use its bundled Python runtime:
+
+```bash
+ISAAC_SIM_DIR=/path/to/isaacsim/_build/linux-x86_64/release
+"$ISAAC_SIM_DIR/python.sh" --no-ros-env scripts/check_isaac_sim.py \
+  outputs/textured_cave/export_all/omniverse/plume_cave_scene.usd \
+  --view outputs/textured_cave/view.json \
+  --output outputs/textured_cave/isaac_native
+```
+
+Inspect each output's `result.json`, `interior.png` and native logs. The helpers
+check material inputs and floor contact; they do not certify robot routes.
+Gazebo writes its own `inspection.world.sdf`; Isaac adds instruments in a session
+layer and saves `inspection.usda`. The original export remains unchanged.
+For large Isaac stages, `--skip-inspection-export` avoids the additional flattened
+inspection file. Collider cooking can still fail on a visually valid large mesh.
 
 ## Scientific evaluation and reproducibility
 
@@ -141,3 +212,11 @@ resources, external inputs and dependency runtime**. The source identity include
 the shared preset catalog and shipped material adapters. Cold replays use a
 separate process and a different Python hash seed. No finite test campaign proves
 that every possible seed succeeds.
+
+For generation searches, keep the original recipe, `seed_attempts.json` and
+`run_manifest.json` together. The journal identifies the request, each attempted
+root/stage seed, its outcome and the winner. `resolved_project_config.json`
+describes the accepted candidate, rather than every failed candidate. Use
+[replay or resume](usage.md#seed-history-replay-and-resume) to reproduce a
+candidate or continue the same search; use a campaign to measure fixed-seed
+reliability.

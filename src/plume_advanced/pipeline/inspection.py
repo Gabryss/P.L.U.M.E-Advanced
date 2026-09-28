@@ -62,6 +62,9 @@ def complete_inspection(
     enforce_acceptance(evaluated)
     if saved_acceptance != evaluated:
         raise ValueError("Acceptance policy/evidence changed since package inspection")
+    qualification_path = package_path.parent / "robot_qualification.json"
+    if json.loads(qualification_path.read_text()) != evaluated["robot_qualification"]:
+        raise ValueError("Robot qualification label differs from inspected evidence")
     if textures["outcome"] == "repaired":
         warnings.append("Texture maps or material package repaired; see texture_recovery.json for changes.")
     recovery_path = output / "pipeline_recovery.json"
@@ -92,6 +95,7 @@ def complete_inspection(
         schema="plume.pipeline-quality.v1",
         passed=True,
         acceptance=evaluated,
+        robot_qualification=evaluated["robot_qualification"],
         warnings=warnings,
         resolution=resolution,
         resolution_repair=dict(geometry.resolution_repair),

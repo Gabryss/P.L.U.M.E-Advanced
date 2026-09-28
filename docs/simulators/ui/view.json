@@ -1,0 +1,17 @@
+{
+  "position": [
+    5.5,
+    -29.5,
+    164.72
+  ],
+  "direction": [
+    -0.12,
+    0.992,
+    -0.025
+  ],
+  "horizontal_fov_deg": 78.0,
+  "floor_z": 164.19,
+  "coordinate_system": "right-handed Z-up metres",
+  "camera_description": "Eye inside the rockfall cluster on segment 5, looking downstream.",
+  "lighting": "Two inspection point lights: eye + (0,0,0.05) and eye + (-0.2,3,0.35) metres. Power is adjusted in each renderer."
+}

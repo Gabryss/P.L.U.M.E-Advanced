@@ -30,9 +30,15 @@ def run_scalability(config: EvaluationConfig, *, force: bool = False) -> dict:
     timeout_s = float(section.get("timeout_s", 7200.0))
     memory_limit_gib = float(section.get("memory_limit_gib", 12.0))
     quality = str(section.get("quality", "standard"))
-    if timeout_s <= 0 or memory_limit_gib <= 0:
-        raise ValueError("Benchmark time and memory limits must be positive")
+    selected_cases = set(section["case_ids"]) if "case_ids" in section else None
+    if timeout_s <= 0 or memory_limit_gib < 0:
+        raise ValueError("Benchmark timeout must be positive; memory limit must be nonnegative")
     body = str(section.get("body", "earth"))
+    seeds = config.seeds("scalability")
+    declared_cases = {f"seed-{seed:06d}-{int(length):06d}m-{mode}"
+                      for seed in seeds for length in lengths for mode in modes}
+    if selected_cases is not None and not selected_cases <= declared_cases:
+        raise ValueError("scalability.case_ids must name declared seed/length/mode cases")
     provenance = capture_provenance(
         config.project_config.parent.parent,
         resolved_config={"experiment": section, "asset_directory": str(config.asset_directory)},
@@ -40,12 +46,15 @@ def run_scalability(config: EvaluationConfig, *, force: bool = False) -> dict:
     )
     identity = str(provenance["identity_sha256"])
     store = ResultStore(config.output_root, "scalability", provenance_sha256=identity)
-    for seed in config.seeds("scalability"):
+    for seed in seeds:
         for length in lengths:
             for mode in modes:
+                run_id = f"seed-{seed:06d}-{int(length):06d}m-{mode}"
+                if selected_cases is not None and run_id not in selected_cases:
+                    continue
                 template = ExperimentResult(
                     experiment_name="scalability",
-                    run_id=f"seed-{seed:06d}-{int(length):06d}m-{mode}",
+                    run_id=run_id,
                     condition_id=f"{int(length)}m-{mode}",
                     seed=seed,
                     status="complete",
@@ -129,7 +138,7 @@ def monitor_worker(command, directory, timeout_s, memory_limit_gib, psutil):
                     peak_rss = max(peak_rss, sum(p.memory_info().rss for p in family if p.is_running()))
                 except psutil.Error:
                     pass
-                if peak_rss > memory_limit_gib * 1024**3:
+                if memory_limit_gib > 0 and peak_rss > memory_limit_gib * 1024**3:
                     failure = "memory_limit"
                 elif time.perf_counter() - started > timeout_s:
                     failure = "timeout"

@@ -63,6 +63,10 @@ def test_ground_contract_propagates_to_actual_export_and_rejects_missing_evidenc
     path = result.primary_asset.parent/'pipeline_inspection.json'
     report = json.loads(path.read_text())
     assert report['acceptance']['checks']['ground_routes']['status'] == 'passed'
+    qualification = json.loads((path.parent / 'robot_qualification.json').read_text())
+    assert qualification == report['acceptance']['robot_qualification']
+    assert qualification['qualified'] and qualification['required']
+    assert qualification['status'] == 'qualified'
     for name in ('raw', 'visual', 'collision'):
         target = report[name] if name != 'collision' else report[name]['inspection']
         assert target['ground_traversal']['passed']
@@ -97,6 +101,17 @@ def test_profile_resolves_and_fills_only_absent_controls(profile, required):
     assert explicit["required_route_height_m"] == 0
 
 
+def test_ground_robot_height_is_separate_from_upright_capsule_height():
+    policy = build_acceptance_policy({"profile": "simulation", "require_ground_routes": True,
+                                      "route_width_m": .67, "route_height_m": .67,
+                                      "robot_length_m": .99, "robot_height_m": .39,
+                                      "robot_ground_clearance_m": .13})
+    geometry, _ = apply_acceptance_defaults(policy, {}, {})
+    assert geometry["required_route_height_m"] == .67
+    assert geometry["ground_robot_height_m"] == .39
+    assert geometry["ground_robot_clearance_m"] == .13
+
+
 @pytest.mark.parametrize("raw", [
     {"profile": "unknown"}, {"profile": []}, {"requirements": True}, [],
     {"require_native": "true"}, {"require_collision": 1},
@@ -108,6 +123,10 @@ def test_profile_resolves_and_fills_only_absent_controls(profile, required):
     {"route_height_m": float("nan")}, {"route_margin_m": float("inf")},
     {"route_margin_m": -1}, {"route_height_m": True}, {"route_width_m": 0},
     {"route_width_m": 2}, {"minimum_relief_scale": 1.01},
+    {"robot_height_m": 0}, {"robot_height_m": -.1},
+    {"robot_height_m": float("nan")}, {"robot_height_m": True},
+    {"robot_ground_clearance_m": -.1}, {"robot_ground_clearance_m": float("nan")},
+    {"robot_ground_clearance_m": True},
 ])
 def test_invalid_or_downgraded_policy_is_rejected(raw):
     with pytest.raises(ValueError):
@@ -415,8 +434,10 @@ def test_native_preflight_failure_respects_output_overwrite_refusal(tmp_path, mo
 
 def test_packaged_and_comparison_presets_declare_intended_profile():
     inspection = {"project", "short-single", "long-single", "short-multi", "long-multi",
-                  "gallery-long", "simulator-check"}
-    simulation = {"simulation-single", "simulation-multi"}
+                  "gallery-long", "simulator-check", "showcase"}
+    simulation = {"simulation-single", "simulation-multi", "simulation-robot-demo",
+                  "simulation-robot-demo-smooth", "simulation-robot-demo-flat",
+                  "simulation-robot-demo-clearance", "simulation-robot-demo-diagnostic"}
     for path in sorted((Path(__file__).resolve().parents[1] / "config").glob("*.toml")):
         project = load_project_config(path)
         expected = ("simulation" if path.stem in simulation
@@ -460,3 +481,26 @@ def test_failure_after_generation_starts_records_only_current_run(tmp_path, monk
     assert manifest['failure']['stage'] == 'configuration'
     assert manifest['outputs'] == []
     assert (tmp_path / 'pipeline_quality_report.json').is_file()
+
+
+def test_normal_export_is_explicitly_not_robot_qualified(passage, tmp_path):
+    cave, export = passage
+    result = export_target_asset(cave, export, tmp_path / 'out',
+                                 acceptance=build_acceptance_policy({'profile': 'inspection'}))
+    status = result.primary_asset.parent / 'robot_qualification.json'
+    assert status in result.files
+    qualification = json.loads(status.read_text())
+    assert not qualification['qualified'] and not qualification['required']
+    assert qualification['status'] == 'not_requested'
+
+
+def test_modified_robot_label_cannot_override_measured_acceptance(passage, tmp_path):
+    cave, export = passage
+    policy = build_acceptance_policy({'profile': 'inspection'})
+    result = export_target_asset(cave, export, tmp_path / 'out', acceptance=policy)
+    label = result.primary_asset.parent / 'robot_qualification.json'
+    data = json.loads(label.read_text())
+    data['qualified'] = True
+    label.write_text(json.dumps(data))
+    with pytest.raises(ValueError, match='qualification label'):
+        complete_inspection(cave, result, {}, tmp_path, acceptance=policy, export_config=export)

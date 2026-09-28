@@ -1,45 +1,53 @@
 # Simulator imports
 
-[← Project overview](../README.md)
-
-These examples show **the application interfaces**, not just detached renderer output.
-The UI captures use the same 120 m route-target, single-source, rock-free cave
-with 4K maps. Cameras and lighting differ between applications.
-
-| Application | Automated import check | UI capture |
-|---|---|---|
-| Blender | 4.0.1 / Cycles | 5.2.0 LTS |
-| Unity | 6000.6.0f1 / Vulkan | 6000.6.0f1 / OpenGL |
-| Unreal Engine | 5.8.2 | 5.8.2 |
-| Gazebo Harmonic | Sim 8.15.0 | Sim 8.15.0 |
-| NVIDIA Isaac Sim | 6.1.0-rc.26, source build | 6.1.0-rc.26, source build |
-
-The automated checks cover imports, textures and selected collision probes;
-they do not certify ground-robot traversability. [Evaluation](evaluation.md#native-engine-qualification)
-describes the separate qualification workflow.
-
-Screenshots and their [capture index](simulators/ui/gallery.json) live under
-`docs/simulators/`, so clearing `outputs/` does not remove them. The older raw
-render evidence remains in the [render index](simulators/gallery.json).
+[← Project overview](../README.md) · [Generate a cave](usage.md) · [Evaluate an import](evaluation.md#native-engine-qualification)
 
 ## Prepare an export
 
-Start with [a small textured cave](usage.md#textured-caves). In the instructions
-below, `export_all/` refers to that run's export directory. Keep each package and
-its texture files together. Install only the simulator you want to use.
+Generate a [small textured cave](usage.md#textured-caves) for your first import,
+or use the [showcase recipe](usage.md#showcase-generation) for detailed terrain
+and rocks. Both export packages for all five applications.
+
+The paths below are relative to a generation's `export_all/` directory:
+
+| Application | Open or import | Version used for the showcase preview |
+|---|---|---|
+| Blender | `blender/plume_cave_scene.glb` | 5.2.0 LTS |
+| Unity | `unity/plume_cave_scene.glb` | 6000.6.0f1 / URP |
+| Unreal Engine | `ue5/plume_cave_scene.glb` | 5.8.2 |
+| Gazebo Harmonic | `gazebo/plume_cave_scene.world.sdf` | Sim 8.15.0 / Ogre2 |
+| NVIDIA Isaac Sim | `omniverse/plume_cave_scene.usd` | 6.1.0-rc.26, source build |
+
+Keep the whole export directory, including textures, colliders and import
+instructions. All-target packages share one material bundle at
+`export_all/continuous_material/`, alongside the application folders.
+A [re-export](usage.md#retry-an-export-without-regenerating) writes
+these application folders directly into its destination and uses the basename
+`plume_cave`. Use the actual paths in the package's manifest and import guide.
+
+**Rendering and simulation are separate checks.** The screenshots show the full
+visual showcase: three systems, a 300 m downstream target, 560 rocks and boulders,
+8K textures and 15.57 million visual triangles. They share a rockfall viewpoint,
+with lighting and framing adjusted per renderer. They do not certify collider
+performance or robot traversability. The [evaluation guide](evaluation.md#native-engine-qualification)
+describes those checks.
 
 ## Blender
 
-![PLUME cave inside the Blender 5.2 editor](simulators/ui/blender.png)
+![Showcase rockfall in the Blender editor](simulators/ui/blender.png)
 
-*Blender 5.2 editor with the cave, scene hierarchy and render settings visible.
-[Earlier Cycles render](simulators/2026-09-16/blender.png) ·
-[Blender 4.0.1 import measurements](simulators/2026-09-16/blender.json).*
+*Cycles rendered viewport with the native continuous cave material and textured rocks.*
 
-For an ordinary import, choose **File → Import → glTF 2.0** and open
-`export_all/blender/plume_cave_scene.glb`. Its embedded UV textures are visible
-in Material Preview or Rendered shading. To create the illuminated inspection
-scene with the native material and interior views, run from the repository root:
+1. Choose **File → Import → glTF 2.0** and import the GLB.
+2. Switch to **Material Preview** to inspect its embedded textures. Add interior
+   lighting before using Rendered shading or producing a camera render.
+3. For the continuous cave material, open the package's
+   `continuous_material/apply_blender_material.py` in the Scripting workspace
+   and run it. It updates `cave_wall`, packs its images and leaves the rocks intact.
+   Save your scene as a `.blend` file.
+
+For a **rock-free** generation, the inspection helper can create a lit scene
+and select interior cameras automatically:
 
 ```bash
 /path/to/blender --background --python-exit-code 1 \
@@ -48,103 +56,97 @@ scene with the native material and interior views, run from the repository root:
 ```
 
 Open `export_all/blender/plume_continuous_inspection.blend` inside that run.
-The script packs the maps into the scene. Use `--mapping uv` to inspect the
-portable GLB material instead. The same script also accepts a Blender-only
-generation with its `export_blender/` directory.
+The helper expects a single cave-wall mesh; use the manual import steps above
+for a showcase containing rock objects.
 
 ## Unity
 
-![PLUME cave inside the Unity editor](simulators/ui/unity.png)
+![Showcase rockfall in the Unity editor](simulators/ui/unity.png)
 
-*Unity's Game view, hierarchy, project assets and camera inspector.
-[Earlier native render](simulators/2026-09-13/unity.png) ·
-[Recorded native measurements](simulators/2026-09-13/unity.json).*
+*URP Game view with the scene hierarchy and assets visible.*
 
-Use the GLB and separate collision mesh from `export_all/unity/`, together with
-the supplied `continuous_material/unity/` installer and shader. Follow the
-exported `README_IMPORT_UNITY.txt` and `continuous_material/SETUP.txt` for the
-render-pipeline setup. The GLB alone carries the portable UV material; it cannot
-install the native shader. The [native qualifier](evaluation.md#native-engine-qualification)
-creates and tests a Unity project for a new simulation delivery.
+1. Create or open a URP project and activate its render-pipeline asset **before**
+   importing the GLB. Use a glTF importer such as the supplied harness's glTFast.
+2. Import the complete visual scene, then copy the `continuous_material/` bundle
+   under `Assets/`.
+3. Choose **Tools → PLUME → Create continuous rock material (URP)**, select the
+   bundle's `settings.json`, and assign the material to the cave renderer.
+   Rocks keep their imported PBR materials.
+4. Follow `README_IMPORT_UNITY.txt` for the separate static collider. Verify its
+   scale and alignment before adding a robot.
+
+If you switch render pipelines after import, reimport the GLB. Allow shader
+compilation to finish and resolve Console errors before assessing the material.
 
 ## Unreal Engine 5
 
-![PLUME cave inside Unreal Editor](simulators/ui/unreal.png)
+![Showcase rockfall in Unreal Editor](simulators/ui/unreal.png)
 
-*Unreal's level viewport, actor outliner and editor controls.
-[Earlier native render](simulators/2026-09-13/unreal.png) ·
-[Recorded native measurements](simulators/2026-09-13/unreal.json).*
+*Level viewport with the actor outliner and editor controls.*
 
-Use `export_all/ue5/` and follow its `README_IMPORT_UE5.txt`; the material builder
-is in `continuous_material/unreal/`. Retain the separate static collision mesh
-and verify the import settings before enabling Nanite or changing mesh reduction.
-Use the [native qualifier](evaluation.md#native-engine-qualification) to validate a new cave
-with the supplied Unreal adapter. The screenshot is a visualization example,
-not evidence that an arbitrary new seed is simulation-ready.
+1. Import the GLB with Interchange, following `README_IMPORT_UE5.txt`.
+2. Enable **Python Editor Script Plugin**. Choose **Tools → Execute Python Script**
+   and run the bundle's `continuous_material/unreal/create_material.py`.
+3. Assign the generated material to the cave mesh; keep the rocks' PBR materials.
+4. Import and configure the separate static collider as described in the package.
+   Initially disable **Build Nanite** so a reduced fallback does not silently
+   change collision geometry. Validate any later reduction in your simulation.
+
+Allow texture streaming and shader compilation to finish before assessing the view.
 
 ## Gazebo Harmonic
 
-![PLUME cave inside the Gazebo Harmonic interface](simulators/ui/gazebo.png)
+![Showcase rockfall in the Gazebo Harmonic interface](simulators/ui/gazebo.png)
 
-*Gazebo's world view, entity list and simulation controls.
-[Earlier Ogre2 camera output](simulators/2026-09-16/gazebo.png) ·
-[Recorded contact measurements](simulators/2026-09-16/gazebo.json).*
+*Ogre2 world view with the entity list and simulation controls.*
 
-Gazebo receives separate visual and static triangle-collision meshes in metres,
-with Z up. Explicit SDF PBR bindings carry base color, normal and roughness maps.
-Collider normals are exported because Harmonic's DART/ODE mesh path requires
-them. Keep the complete model directory together.
+Open the generated world using `README_RUN_GAZEBO.txt`. It explains how to set
+`GZ_SIM_RESOURCE_PATH` to the model's parent directory and start `gz sim`.
+Keep `model.sdf`, meshes and textures together. Add interior lighting and place
+the camera inside a passage; the export does not include the preview's lighting.
 
-```bash
-# Uses Gazebo's system Python bindings (gz.transport13, gz.msgs10) and Pillow.
-/usr/bin/python3 scripts/check_gazebo.py \
-  outputs/textured_cave/export_all/gazebo/plume_cave_scene \
-  --view docs/simulators/2026-09-16/view.json \
-  --output outputs/textured_cave/gazebo_native
-```
-
-For interactive use, follow `README_RUN_GAZEBO.txt` in the export directory.
-The checker adds an interior camera, point light and contact probe to its own
-`inspection.world.sdf`; it does not modify the exported cave. Its renderer uses
-[Gazebo's headless Ogre2 path](https://gazebosim.org/api/sim/8/headless_rendering.html).
+Gazebo uses separate visual and static triangle-collision meshes in metres,
+with Z up. The SDF binds the color, normal and roughness maps. Its portable UV
+material can show chart seams; some rocks also show darker facets in this preview.
+Run the [Gazebo import/contact check](evaluation.md#gazebo-and-isaac-import-checks)
+before using the package for simulation.
 
 ## NVIDIA Isaac Sim
 
-![PLUME cave inside the NVIDIA Isaac Sim interface](simulators/ui/isaac.png)
+![Showcase rockfall in the NVIDIA Isaac Sim interface](simulators/ui/isaac.png)
 
-*Isaac Sim's viewport, stage tree and simulation controls.
-[Earlier RTX camera output](simulators/2026-09-16/isaac.png) ·
-[Recorded PhysX measurements](simulators/2026-09-16/isaac.json).*
+*RTX viewport with the stage tree and simulation controls.*
 
-Use `export_all/omniverse/plume_cave_scene.usd` (or `export.target = "omniverse"`)
-and keep its texture directory beside it. The stage declares metres and Z up,
-uses repeated UV textures, and marks the hidden static collider with
-`PhysicsMeshCollisionAPI` and `approximation = "none"`. Convex-hull collision
-would fill the cave interior.
+Open the exported USD and retain its adjacent texture directory. The stage
+declares metres and Z up. Add interior lights and a camera, saving inspection
+changes in a separate stage or session layer to preserve the export.
 
-```bash
-ISAAC_SIM_DIR=/path/to/isaacsim/_build/linux-x86_64/release
-"$ISAAC_SIM_DIR/python.sh" --no-ros-env scripts/check_isaac_sim.py \
-  outputs/textured_cave/export_all/omniverse/plume_cave_scene.usd \
-  --view docs/simulators/2026-09-16/view.json \
-  --output outputs/textured_cave/isaac_native
-```
+The hidden static collider uses triangle-mesh collision with
+`approximation = "none"`. A convex hull would fill the cave interior. A successful
+visual import does not establish that PhysX can cook a very large collider;
+run the [Isaac import/contact check](evaluation.md#gazebo-and-isaac-import-checks)
+before starting a robot simulation.
 
-The checker loads the USD in Isaac Sim, checks texture resolution and material
-binding, simulates a small dropped box with PhysX, and saves an RTX camera image.
-It requires a working Isaac runtime and GPU access; ordinary Python tests do not
-launch either simulator.
+## Materials and inspection
 
-Open the checker's `isaac_native/inspection.usda` to inspect its camera, light
-and probe interactively. The original exported cave has no inspection lighting.
-The supplied `view.json` belongs to `config/simulator-check.toml` with its default
-seed; select a new interior position and floor height when checking a different cave.
+| Material path | Applications | Behavior |
+|---|---|---|
+| Portable UV PBR | All five | Travels with the export; texture chart seams can remain visible |
+| Native blended projection | Blender, Unity, Unreal | Reuses the same maps across three blended projections; install from `continuous_material/` |
 
-If SDL fails while building Isaac Sim from source because it discovers optional
-host text/input libraries, see the [recipe patch used for this build](simulators/2026-09-16/isaac-sdl.patch).
-Allow enough disk space for dependencies, extension unpacking and build artifacts.
+GLB import cannot install a custom native shader. The bundle's `SETUP.txt` is
+the detailed material reference, including data-map import settings and shader
+limitations. Gazebo and Isaac use portable UV materials.
 
-Both adapters currently use their portable **UV materials**. The blended
-projection shaders supplied for Blender, Unity and Unreal do not automatically
-transfer to Gazebo or Isaac Sim, so UV-chart seams and differences in lighting
-can remain visible. The screenshots show those actual results.
+| Symptom | Check |
+|---|---|
+| Plain grey cave | Use a textured recipe and material/rendered shading; the first-cave recipe deliberately has a neutral material |
+| Missing or pink materials | Retain texture files, check the importer/render pipeline, and inspect shader errors |
+| Dark interior | Add lights inside the passage and adjust exposure |
+| Persistent bright speckles | Check lighting and normal strength; allow enough samples and enable denoising where supported |
+| Visible floor seams | Apply the native blended material where available; it does not repair mesh defects |
+
+The showcase images, [capture record](simulators/ui/gallery.json) and
+[camera coordinates](simulators/ui/view.json) live under `docs/simulators/ui/`.
+They remain available when `outputs/` is cleared. Camera coordinates belong to
+this specific showcase and must be reselected for another cave.

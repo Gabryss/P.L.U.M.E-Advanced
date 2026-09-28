@@ -223,6 +223,7 @@ def prepare_export_scene(
             visual=inspected,
             visual_attempts=attempts,
             visual_reduction=reduction,
+            section_repair=dict(cave_geometry.section_repair),
             collision=collision_report,
             scope="Actual canonical and float32 visual mesh inspection before serialization",
         ),

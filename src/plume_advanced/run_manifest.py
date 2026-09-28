@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Iterable, Mapping
 
+from plume_advanced.acceptance import robot_qualification
 from plume_advanced.config import ProjectConfig, project_config_manifest
 from plume_advanced.identity import (
     dependency_versions,
@@ -32,6 +33,7 @@ def write_run_manifest(
     error: str | None = None,
     inputs: Iterable[str | Path] = (),
     timings: Mapping[str, float] | None = None,
+    qualification: dict | None = None,
 ) -> Path:
     """Atomically write a run manifest with hashes, versions, and status."""
 
@@ -43,6 +45,8 @@ def write_run_manifest(
     payload = {
         "schema": "plume.run-manifest.v1",
         "status": status,
+        "robot_qualification": qualification if status == "complete" and qualification is not None
+            else robot_qualification(project_config.acceptance, False),
         "elapsed_seconds": float(elapsed_seconds),
         "timings": {
             **{name: float(value) for name, value in (timings or {}).items()},

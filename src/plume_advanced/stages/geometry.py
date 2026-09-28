@@ -334,7 +334,9 @@ class GeometryGenerator:
                         raise SurfaceTopologyError(
                             f"Relief obstructs {len(blocked)} sampled route centres; "
                             f"first indices: {blocked[:8]}",
-                            report={"blocked_points_m": [stamped.route_centers[i] for i in blocked]},
+                            report={"blocked_points_m": [stamped.route_centers[i] for i in blocked],
+                                    "blocked_density_deficit": sum(grid.iso_level-grid.sample_density(stamped.route_centers[i])
+                                                                   for i in blocked)},
                         )
                     # Classify remnants only for an accepted network, after the
                     # route obstruction check. Local collapse studies may have
@@ -410,6 +412,19 @@ class GeometryGenerator:
                 f"accepted relief scale {scale:g} after {index} attempt(s)",
             )
             return replace(result, surface_quality_records=tuple(records))
+        # Finer lattices cannot be assumed to repair a retained relief intrusion.
+        # Return the measured obstruction to upstream local repair immediately;
+        # only topology/resolution faults spend the whole-grid refinement budget.
+        evaluated: list[dict[str, Any]] = [dict(r) for r in records if "inspection" in dict(r)]
+        if evaluated and all(r["inspection"].get("blocked_points_m") for r in evaluated):
+            from plume_advanced.stages.surface_topology import PassageObstructionError
+            points = sorted({tuple(p) for r in evaluated for p in r["inspection"]["blocked_points_m"]})
+            raise PassageObstructionError(
+                "Passage probes remain obstructed after bounded surface trials; repair local profiles before refining",
+                report=dict(blocked_points_m=points, attempts=[dict(r) for r in records],
+                            defect_regions=regions, refinement_skipped=True,
+                            blocked_density_deficit=min(r["inspection"].get("blocked_density_deficit", 0.)
+                                                        for r in evaluated)))
         raise SurfaceTopologyError(
             f"No surface candidate realizes the accepted network after {len(records)} attempts",
             report={"schema": "plume.surface-rejection.v1", "attempts": [dict(r) for r in records],
@@ -1288,42 +1303,36 @@ class GeometryGenerator:
         )
         segments_by_key: defaultdict[
             tuple[int, int, int],
-            list[tuple[SectionSample, ...]],
+            list[tuple[tuple[SectionSample, ...], tuple[int, ...]]],
         ] = defaultdict(list)
         for samples in samples_by_segment.values():
-            segment_keys: set[tuple[int, int, int]] = set()
-            for sample in samples:
+            pairs_by_key: defaultdict[tuple[int, int, int], list[int]] = defaultdict(list)
+            if len(samples) == 1:
+                sample = samples[0]
                 position = np.asarray((sample.x, sample.y, sample.z), dtype=float)
                 radius = self._sample_stamp_radius(sample)
-                segment_keys.update(
-                    self._tile_keys_for_world_bounds(
-                        position - radius,
-                        position + radius,
-                        lower=lower,
-                        shape=shape,
-                        tile_size=tile_size,
-                        maximum_key=maximum_key,
-                    )
-                )
-            for start, end in zip(samples, samples[1:]):
+                for key in self._tile_keys_for_world_bounds(
+                    position - radius, position + radius, lower=lower, shape=shape,
+                    tile_size=tile_size, maximum_key=maximum_key,
+                ):
+                    pairs_by_key[key] = []
+            for pair_index, (start, end) in enumerate(zip(samples, samples[1:])):
                 start_position = np.asarray((start.x, start.y, start.z), dtype=float)
                 end_position = np.asarray((end.x, end.y, end.z), dtype=float)
                 radius = max(
                     self._sample_stamp_radius(start),
                     self._sample_stamp_radius(end),
                 )
-                segment_keys.update(
-                    self._tile_keys_for_world_bounds(
-                        np.minimum(start_position, end_position) - radius,
-                        np.maximum(start_position, end_position) + radius,
-                        lower=lower,
-                        shape=shape,
-                        tile_size=tile_size,
-                        maximum_key=maximum_key,
-                    )
-                )
-            for key in segment_keys:
-                segments_by_key[key].append(samples)
+                for key in self._tile_keys_for_world_bounds(
+                    np.minimum(start_position, end_position) - radius,
+                    np.maximum(start_position, end_position) + radius,
+                    lower=lower, shape=shape, tile_size=tile_size, maximum_key=maximum_key,
+                ):
+                    pairs_by_key[key].append(pair_index)
+            for key, local_pairs in pairs_by_key.items():
+                # Keep global chain indices so local work never adds fake end
+                # caps at tile boundaries. Junction anchors remain chain-wide.
+                segments_by_key[key].append((samples, tuple(local_pairs)))
         tiles: dict[tuple[int, int, int], np.ndarray] = {}
         ordered_keys = sorted(segments_by_key)
         allocated = math.prod(shape[:2])
@@ -1347,11 +1356,12 @@ class GeometryGenerator:
             self._check_allocation_budget(allocated+math.prod(tile_shape), "tiled including halos and plan mask")
             tile = np.full(tile_shape, -8.0, dtype=np.float32)
             tile_origin = lower + tile_start * self.config.voxel_size
-            for samples in segments_by_key.get(key, ()):
+            for samples, pair_indices in segments_by_key[key]:
                 self._stamp_network_chain(
                     density=tile,
                     origin=tile_origin,
                     samples=samples,
+                    pair_indices=pair_indices,
                 )
             projected_void[tile_start[0] : tile_end[0] + 1, tile_start[1] : tile_end[1] + 1] |= (
                 np.any(tile >= self.config.iso_level, axis=2)
@@ -1364,7 +1374,8 @@ class GeometryGenerator:
                 "voxel",
                 index,
                 len(ordered_keys),
-                f"sampled passage tile {index}/{len(ordered_keys)}",
+                f"sampled passage tile {index}/{len(ordered_keys)}; "
+                f"retained {len(tiles)} tiles, density {(allocated-math.prod(shape[:2]))*4/1024**2:.0f} MiB",
             )
         # Global projection, including all vertical levels and tile halos,
         # gives exactly the same remnant mask as the dense implementation.
@@ -1921,6 +1932,7 @@ class GeometryGenerator:
         density: np.ndarray,
         origin: np.ndarray,
         samples: tuple[SectionSample, ...],
+        pair_indices: tuple[int, ...] | None = None,
     ) -> None:
         """Blend incident tunnels once per chain, only near actual confluences.
 
@@ -1936,7 +1948,7 @@ class GeometryGenerator:
                 if influence.weight > anchors.get(influence.junction_id, (0.0, sample))[0]:
                     anchors[influence.junction_id] = (influence.weight, sample)
         if not anchors:
-            self._stamp_sample_chain(density=density, origin=origin, samples=samples)
+            self._stamp_sample_chain(density=density, origin=origin, samples=samples, pair_indices=pair_indices)
             return
         positions = np.asarray([(sample.x, sample.y, sample.z) for sample in samples])
         radii = np.asarray([self._sample_stamp_radius(sample) for sample in samples])
@@ -1956,7 +1968,7 @@ class GeometryGenerator:
         # an unrelated tube even when this chain has no support in its tile.
         incoming = np.full(region.shape, -8.0, dtype=np.float32)
         local_origin = origin + lower * voxel
-        self._stamp_sample_chain(density=incoming, origin=local_origin, samples=samples)
+        self._stamp_sample_chain(density=incoming, origin=local_origin, samples=samples, pair_indices=pair_indices)
         coordinates = np.ogrid[tuple(slice(0, size) for size in region.shape)]
         blend = np.zeros(region.shape, dtype=np.float32)
         for weight, sample in anchors.values():
@@ -2049,13 +2061,15 @@ class GeometryGenerator:
         density: np.ndarray,
         origin: np.ndarray,
         samples: tuple[SectionSample, ...],
+        pair_indices: tuple[int, ...] | None = None,
     ) -> None:
-        for index, (start, end) in enumerate(zip(samples, samples[1:])):
+        indices = range(len(samples) - 1) if pair_indices is None else pair_indices
+        for index in indices:
             self._stamp_profile_segment(
                 density=density,
                 origin=origin,
-                start=start,
-                end=end,
+                start=samples[index],
+                end=samples[index + 1],
                 cap_start=index == 0,
                 cap_end=index == len(samples) - 2,
             )
@@ -2136,6 +2150,28 @@ class GeometryGenerator:
         axial_outside = np.maximum(-start_distance, end_distance)
         projection = np.clip(projection, 0.0, 1.0)
 
+        terminal_radius = max(
+            min(self._profile_bounds_radius(start), self._profile_bounds_radius(end)),
+            self.config.minimum_radius,
+        )
+        terminal = ((start_distance < 0.0) & cap_start) | ((end_distance > 0.0) & cap_end)
+        end_radius = np.where(terminal, terminal_radius, 0.5 * voxel_size)
+        region = density[lower[0] : upper[0], lower[1] : upper[1], lower[2] : upper[2]]
+        # Short lofts have wide bounding boxes. Most queries lie beyond their
+        # section planes and cannot improve the existing density, even with
+        # maximum roughness. Reject them before the expensive polygon distances.
+        contributes = (axial_outside <= 0.0) | (
+            self._sweep_density_upper_bound(axial_outside, end_radius) > region
+        )
+        if not np.any(contributes):
+            return
+        x_grid, y_grid, z_grid = (
+            coordinates[contributes] for coordinates in (x_grid, y_grid, z_grid)
+        )
+        projection = projection[contributes]
+        axial_outside = axial_outside[contributes]
+        end_radius = end_radius[contributes]
+
         closest_x = start_position[0] + projection * segment[0]
         closest_y = start_position[1] + projection * segment[1]
         closest_z = start_position[2] + projection * segment[2]
@@ -2191,14 +2227,8 @@ class GeometryGenerator:
         signed_distance = signed_distance.reshape(section_x.shape)
         # Round the finite sweep ends. Adjacent sweeps overlap continuously;
         # true termini close smoothly without a planar clipping surface.
-        terminal_radius = max(
-            min(self._profile_bounds_radius(start), self._profile_bounds_radius(end)),
-            self.config.minimum_radius,
-        )
         # Only real termini have rounded caps. Interior samples need a small
         # overlap at the shared plane, not another full-size bulb per sample.
-        terminal = ((start_distance < 0.0) & cap_start) | ((end_distance > 0.0) & cap_end)
-        end_radius = np.where(terminal, terminal_radius, 0.5 * voxel_size)
         rounded_end = (
             np.hypot(
                 np.maximum(signed_distance + end_radius, 0.0),
@@ -2216,8 +2246,22 @@ class GeometryGenerator:
             local_vertical=section_z,
         )
 
-        region = density[lower[0] : upper[0], lower[1] : upper[1], lower[2] : upper[2]]
-        np.maximum(region, density_values.astype(np.float32), out=region)
+        region[contributes] = np.maximum(region[contributes], density_values.astype(np.float32))
+
+    def _sweep_density_upper_bound(
+        self, axial_outside: np.ndarray, end_radius: np.ndarray
+    ) -> np.ndarray:
+        """Conservative density bound beyond a finite loft's section planes.
+
+        Rounded distance is at least axial distance minus the cap radius.
+        Roughness harmonics sum to at most 1.9; zone and wall weights are <= 1.
+        Use 2.0 for slack and retain the largest configured terrain gain.
+        This only skips contributions already dominated by the current grid.
+        """
+        roughness_bound = 2.0 * max(self.config.wall_roughness_amplitude, 0.0) * max(
+            1.0, self.config.floor_roughness_scale, self.config.roof_roughness_scale
+        )
+        return (end_radius - axial_outside) / max(self.config.voxel_size, 1e-6) + roughness_bound
 
     def _stamp_profile_cap(
         self,
@@ -2729,6 +2773,8 @@ class GeometryGenerator:
         total: int,
         message: str,
     ) -> None:
+        from plume_advanced.progress import check_work_budget
+        check_work_budget()
         if progress is not None:
             progress(phase, current, max(total, 1), message)
 

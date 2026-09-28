@@ -21,7 +21,7 @@ from scipy import ndimage
 from scipy.spatial import cKDTree
 
 from plume_advanced.procedural import procedural_rng
-from plume_advanced.progress import report_progress
+from plume_advanced.progress import progress_items, progress_phase, report_progress
 from plume_advanced.stages.geometry_types import (
     CaveGeometry,
     GeometryConfig,
@@ -90,6 +90,7 @@ def export_geometry_obj(
     cave_normals = cave_payload["normals"]
 
     mtl_path = output.with_suffix(".mtl")
+    report_progress("OBJ materials", detail=f"{output.name}: writing material references")
     _write_obj_mtl(
         mtl_path,
         cave_geometry,
@@ -104,28 +105,33 @@ def export_geometry_obj(
         handle.write(f"mtllib {mtl_path.name}\n")
         for key, value in cave_geometry.summary().items():
             handle.write(f"# {key}={value:.3f}\n")
+        report_progress("OBJ topology", detail=f"{output.name}: preparing {len(cave_faces):,} triangles; no internal counter")
         mesh = trimesh.Trimesh(
             vertices=cave_vertices,
             faces=cave_faces,
             process=False,
         )
+        report_progress("OBJ watertight check", detail=f"{output.name}: building edge adjacency; no internal counter")
         handle.write(f"# trimesh_is_watertight={float(mesh.is_watertight):.3f}\n")
+        report_progress("OBJ Euler check", detail=f"{output.name}: counting topology; no internal counter")
         handle.write(f"# trimesh_euler_number={float(mesh.euler_number):.3f}\n")
         handle.write("o cave_wall\n")
         handle.write("usemtl cave_wall_material\n")
         handle.write("s 1\n")
-        for vertex in cave_vertices:
+        for vertex in progress_items("OBJ vertices", cave_vertices, detail=output.name):
             handle.write(f"v {vertex[0]:.9f} {vertex[1]:.9f} {vertex[2]:.9f}\n")
-        for u_coord, v_coord in cave_uvs:
+        for u_coord, v_coord in progress_items("OBJ texture coordinates", cave_uvs, detail=output.name):
             handle.write(f"vt {u_coord:.9f} {1.0 - v_coord:.9f}\n")
-        for normal in cave_normals:
+        for normal in progress_items("OBJ normals", cave_normals, detail=output.name):
             handle.write(f"vn {normal[0]:.9f} {normal[1]:.9f} {normal[2]:.9f}\n")
-        for face in cave_faces:
+        for face in progress_items("OBJ triangles", cave_faces, detail=output.name):
             a, b, c = (index + 1 for index in face)
             handle.write(f"f {a}/{a}/{a} {b}/{b}/{b} {c}/{c}/{c}\n")
         vertex_offset = len(cave_vertices)
         uv_vertex_offset = len(cave_uvs)
-        for event_mesh in cave_geometry.event_meshes:
+        for event_index, event_mesh in enumerate(cave_geometry.event_meshes):
+            report_progress("OBJ rocks and events", event_index, len(cave_geometry.event_meshes),
+                            f"{output.name}: event {event_mesh.event_id} ({event_mesh.kind})")
             handle.write(f"\no event_{event_mesh.event_id:04d}_{event_mesh.kind}\n")
             handle.write(f"# material_hint={event_mesh.material_hint}\n")
             handle.write(f"# source_generator={event_mesh.source_generator}\n")
@@ -155,6 +161,8 @@ def export_geometry_obj(
             if has_face_uvs:
                 uv_vertex_offset += len(event_mesh.faces) * 3
 
+        report_progress("OBJ flush", detail=f"{output.name}: flushing file buffers")
+    report_progress("OBJ written", 1, 1, f"{output.name}: {output.stat().st_size / 1048576:,.1f} MiB")
     return output
 
 
@@ -294,39 +302,48 @@ def export_geometry_glb(
         visual_surface=visual_surface,
     )
 
-    for event_mesh in cave_geometry.event_meshes:
-        geometry = _event_mesh_to_glb_payload(
-            event_mesh,
-            builder=builder,
-            material_cache=material_cache,
-            image_cache=image_cache,
-            strict=cave_geometry.config.strict_texture_loading,
-            max_size=cave_geometry.config.embedded_texture_max_size,
-        )
-        node_name = f"event_{event_mesh.event_id:04d}_{event_mesh.kind}"
-        builder.mesh_node(
-            name=node_name,
-            positions=geometry["positions"],
-            faces=geometry["faces"],
-            material_index=geometry["material_index"],
-            texcoords=geometry["texcoords"],
-            normals=geometry["normals"],
-            tangents=geometry["tangents"],
-            translation=geometry["translation"],
-            extras={
-                "kind": event_mesh.kind,
-                "material_hint": event_mesh.material_hint,
-                "source_generator": event_mesh.source_generator,
-                "source_shape_type": event_mesh.source_shape_type,
-                "debris_family_id": event_mesh.debris_family_id,
-                "family_anchor_event_id": event_mesh.family_anchor_event_id,
-                "debris_role": event_mesh.debris_role,
-                "displacement_texture": dict(event_mesh.material_maps).get("displacement", ""),
-            },
-        )
-
+    for event_index, event_mesh in enumerate(cave_geometry.event_meshes, 1):
+        with progress_phase(f"GLB event {event_index}/{len(cave_geometry.event_meshes)} ({event_mesh.kind})"):
+            geometry = _event_mesh_to_glb_payload(
+                event_mesh,
+                builder=builder,
+                material_cache=material_cache,
+                image_cache=image_cache,
+                strict=cave_geometry.config.strict_texture_loading,
+                max_size=cave_geometry.config.embedded_texture_max_size,
+            )
+            node_name = f"event_{event_mesh.event_id:04d}_{event_mesh.kind}"
+            builder.mesh_node(
+                name=node_name,
+                positions=geometry["positions"],
+                faces=geometry["faces"],
+                material_index=geometry["material_index"],
+                texcoords=geometry["texcoords"],
+                normals=geometry["normals"],
+                tangents=geometry["tangents"],
+                translation=geometry["translation"],
+                extras={
+                    "kind": event_mesh.kind,
+                    "material_hint": event_mesh.material_hint,
+                    "source_generator": event_mesh.source_generator,
+                    "source_shape_type": event_mesh.source_shape_type,
+                    "debris_family_id": event_mesh.debris_family_id,
+                    "family_anchor_event_id": event_mesh.family_anchor_event_id,
+                    "debris_role": event_mesh.debris_role,
+                    "displacement_texture": dict(event_mesh.material_maps).get("displacement", ""),
+                },
+            )
     report_progress("GLB serialization", detail="encoding mesh buffers and embedded images")
-    output.write_bytes(builder.to_glb())
+    payload = builder.to_glb()
+    with output.open("wb") as stream:
+        view = memoryview(payload)
+        report_progress("GLB bytes", 0, len(view), output.name)
+        for start in range(0, len(view), 8 * 1024 * 1024):
+            end = min(start + 8 * 1024 * 1024, len(view))
+            stream.write(view[start:end])
+            report_progress("GLB bytes", end, len(view), output.name)
+        report_progress("GLB flush", detail=f"{output.name}: flushing file buffers")
+    report_progress("GLB manifest", detail=f"{output.name}: recording geometry and materials")
     _write_geometry_manifest(
         cave_geometry,
         output.with_suffix(".manifest.json"),
@@ -1418,6 +1435,7 @@ class _StrictGlbBuilder:
         if positions.size == 0 or faces.size == 0:
             raise ValueError(f"Cannot export empty mesh node {name!r}")
 
+        report_progress("GLB positions", detail=f"{name}: packing {len(positions):,} vertices")
         attributes = {
             "POSITION": self._accessor(
                 positions,
@@ -1429,6 +1447,7 @@ class _StrictGlbBuilder:
             )
         }
         if texcoords is not None:
+            report_progress("GLB texture coordinates", detail=f"{name}: packing {len(positions):,} vertices")
             texcoords = np.asarray(texcoords, dtype=np.float32)
             if len(texcoords) != len(positions):
                 raise ValueError(f"Mesh node {name!r} has mismatched texture coordinates")
@@ -1441,6 +1460,7 @@ class _StrictGlbBuilder:
                 maximum=texcoords.max(axis=0).tolist(),
             )
         if normals is not None:
+            report_progress("GLB normals", detail=f"{name}: packing {len(positions):,} vertices")
             normals = np.asarray(normals, dtype=np.float32)
             if len(normals) != len(positions):
                 raise ValueError(f"Mesh node {name!r} has mismatched normals")
@@ -1453,6 +1473,7 @@ class _StrictGlbBuilder:
                 maximum=normals.max(axis=0).tolist(),
             )
         if tangents is not None:
+            report_progress("GLB tangents", detail=f"{name}: packing {len(positions):,} vertices")
             tangents = np.asarray(tangents, dtype=np.float32)
             if len(tangents) != len(positions):
                 raise ValueError(f"Mesh node {name!r} has mismatched tangents")
@@ -1465,6 +1486,7 @@ class _StrictGlbBuilder:
                 maximum=tangents.max(axis=0).tolist(),
             )
 
+        report_progress("GLB indices", detail=f"{name}: packing {len(faces):,} triangles")
         max_index = int(faces.max())
         if max_index <= 65_535:
             index_data = faces.astype(np.uint16)
@@ -1537,8 +1559,10 @@ class _StrictGlbBuilder:
                 {"wrapS": 10497, "wrapT": 10497, "magFilter": 9729, "minFilter": 9987}
             ]
 
+        report_progress("GLB metadata", detail=f"{len(self._meshes):,} meshes; {len(self._images)} images")
         json_bytes = json.dumps(document, separators=(",", ":")).encode("utf-8")
         json_bytes += b" " * ((_alignment_padding(len(json_bytes), 4)))
+        report_progress("GLB binary assembly", detail=f"{len(self._binary) / 1048576:,.1f} MiB; allocating final container; no internal counter")
         bin_bytes = bytes(self._binary)
         bin_bytes += b"\x00" * _alignment_padding(len(bin_bytes), 4)
         length = 12 + 8 + len(json_bytes) + 8 + len(bin_bytes)
@@ -1610,8 +1634,10 @@ class _StrictGlbBuilder:
 
 
 def _image_to_png_bytes(image) -> bytes:
+    report_progress("Texture PNG compression", detail=f"{image.width} × {image.height} pixels; no internal counter")
     with io.BytesIO() as buffer:
         image.save(buffer, format="PNG", optimize=True)
+        report_progress("Texture PNG encoded", 1, 1, f"{buffer.tell() / 1048576:,.1f} MiB")
         return buffer.getvalue()
 
 

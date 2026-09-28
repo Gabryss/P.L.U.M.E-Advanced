@@ -20,6 +20,35 @@ def test_packaged_default_config_is_available() -> None:
     assert not config.events.use_rocky_meshes
 
 
+@pytest.mark.parametrize("debug", [False, True])
+def test_deadline_has_actionable_message_and_no_seed_retry(tmp_path, monkeypatch, capsys, debug):
+    from plume_advanced.progress import GenerationTimeBudgetError
+
+    config = tmp_path / 'project.toml'
+    config.write_text('recipe_version = 1\npreset = "preview"\n[acceptance]\nrequire_ground_routes = true\n')
+    output = tmp_path / 'out/network.png'
+
+    def expire(_generator):
+        raise GenerationTimeBudgetError('attempt expired')
+
+    monkeypatch.setattr(cli.HostFieldGenerator, 'generate', expire)
+    arguments = ['--config', str(config), '--output', str(output)]
+    if debug:
+        with pytest.raises(GenerationTimeBudgetError, match='attempt expired'):
+            cli.main(arguments + ['--debug'])
+    else:
+        assert cli.main(arguments) == 2
+        error = capsys.readouterr().err
+        assert 'stopped at host_field' in error
+        assert 'existing files are not a validated delivery' in error
+        assert 'run.max_attempt_seconds' in error
+        assert 'Traceback' not in error
+    report = json.loads(output.with_name('seed_attempts.json').read_text())
+    assert report['status'] == 'failed' and report['accepted_seed'] is None
+    assert len(report['attempts']) == 1
+    assert report['attempts'][0]['error_type'] == 'GenerationTimeBudgetError'
+
+
 def test_default_complete_scene_uses_portable_asset_name() -> None:
     args = cli.parse_args([])
     assert args.geometry_glb_output is None
@@ -100,6 +129,45 @@ cave_displacement_texture = ""
     assert quality["stage"] == "host_field"
     assert quality["error_type"] == "RuntimeError"
     assert "synthetic host failure" in quality["error"]
+
+
+@pytest.mark.parametrize('debug', [False, True])
+def test_expected_recovery_rejection_is_readable_and_still_fails(tmp_path, monkeypatch, capsys, debug):
+    from plume_advanced.pipeline.recovery import PipelineRecoveryError
+
+    output = tmp_path / 'network.png'
+    config_path = tmp_path / 'bounded.toml'
+    config_path.write_text('recipe_version = 1\npreset = "preview"\n[run]\nmax_seed_attempts = 1\n')
+    project = load_project_config(config_path)
+    report = dict(root_seed=1, stop_reason='Reference ground-route placement exhausted', attempts=[
+        dict(status='rejected', reason='Reference robot limits failed', inspection={'ground_traversal': {
+            'passed': False, 'robot': {'max_slope_deg': 20., 'max_step_m': .1},
+            'paths': [{'passed': False, 'poses': [{'slope_deg': 40.569, 'step_m': .254598}]}],
+        }}),
+    ])
+
+    def reject(argv, *, state):
+        from dataclasses import asdict
+        state.search.begin(asdict(project.stage_seeds))
+        state.started, state.project, state.stage = True, project, 'base_geometry'
+        raise PipelineRecoveryError('Reference ground-route placement exhausted', report=report)
+
+    monkeypatch.setattr(cli, '_run_pipeline', reject)
+    args = ['--config', str(config_path), '--output', str(output), *(['--debug'] if debug else [])]
+    if debug:
+        with pytest.raises(PipelineRecoveryError):
+            cli.main(args)
+    else:
+        assert cli.main(args) == 2
+        message = capsys.readouterr().err
+        assert 'Generation rejected at base_geometry' in message
+        assert '1/1 inspected routes rejected' in message
+        assert '40.6 deg; limit 20 deg' in message
+        assert str(output.with_name('pipeline_quality_report.json')) in message
+        assert 'Traceback' not in message
+    assert json.loads(output.with_name('run_manifest.json').read_text())['status'] == 'failed'
+    assert json.loads(output.with_name('pipeline_quality_report.json').read_text())['inspection'] == report
+    assert not list(tmp_path.rglob('*.glb'))
 
 
 def test_pipeline_resume_reuses_stage_before_continuing_orchestration(
@@ -189,6 +257,11 @@ def test_complete_cli_finishes_progress_and_records_export_provenance(tmp_path: 
     assert {"Host fields", "Cross sections", "UV charts", "Tangent triangles"} <= work
     payload = json.loads(output.with_name("run_manifest.json").read_text())
     assert payload["status"] == payload["current_stage"] == "complete"
+    assert payload["robot_qualification"] == quality["robot_qualification"]
+    assert not payload["robot_qualification"]["qualified"]
+    history = json.loads(output.with_name("seed_attempts.json").read_text())
+    assert history["accepted_seed"] == payload["resolved_config"]["procedural_seed"]
+    assert history["attempts"][-1]["status"] == "accepted"
     records = payload["outputs"]
     names = {Path(record["path"]).name for record in records}
     assert {

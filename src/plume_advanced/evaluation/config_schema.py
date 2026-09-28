@@ -102,7 +102,8 @@ _SCHEMA = _table({
         **_COMMON, "route_lengths_m": _array(_POSITIVE),
         "storage_modes": _array(_choice("dense", "tiled")),
         "quality": _choice("preview", "standard", "production"),
-        "timeout_s": _POSITIVE, "memory_limit_gib": _POSITIVE,
+        "timeout_s": _POSITIVE, "memory_limit_gib": _number(0),
+        "case_ids": _array(_text),
     }),
     "export_consistency": _table({"seed_file": _text, "targets": _array(_choice(
         "blender", "ue5", "unity", "gazebo", "omniverse"))}),

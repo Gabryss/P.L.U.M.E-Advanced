@@ -1,0 +1,53 @@
+# One-seed diagnostic copy of the accepted geometry recipe. Preserve its
+# final-geometry checkpoint before UV export for float32/topology analysis.
+recipe_version = 1
+preset = "simulation-single"
+procedural_seed = 3
+
+[run]
+render_diagnostics = false
+max_seed_attempts = 1
+max_attempt_seconds = 0
+
+[network]
+target_route_length_m = 120.0
+source_count = 1
+
+[network.topology]
+island_count = [0, 0]
+side_branch_count = [0, 0]
+
+[events]
+enabled = false
+
+[section_field]
+floor_flatness_base = 0.95
+floor_relief_base = 0.0
+floor_relief_variation = 0.0
+morphology_floor_relief_max = 0.08
+
+[geometry]
+floor_roughness_scale = 0.0
+surface_floor_relief_m = 0.0
+surface_crust_relief_m = 0.03
+cave_diffuse_texture = "../texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg"
+cave_normal_texture = "../texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr"
+cave_roughness_texture = "../texture/dark_rock_8k/textures/dark_rock_rough_8k.exr"
+cave_texture_scale_m = 4.0
+embedded_texture_max_size = 4096
+
+[acceptance]
+profile = "simulation"
+require_ground_routes = true
+repair_ground_routes = true
+robot_length_m = 0.99
+robot_height_m = 0.39
+robot_ground_clearance_m = 0.13
+route_width_m = 0.67
+route_height_m = 0.67
+route_margin_m = 0.03
+
+[export]
+target = "all"
+max_visual_triangles = 10000000
+max_asset_bytes = 1073741824

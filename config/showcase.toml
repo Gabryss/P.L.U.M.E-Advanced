@@ -1,0 +1,110 @@
+# Detailed Earth showcase. Run from the repository root:
+# uv run --extra rocks plume-generate --config config/showcase.toml --output outputs/showcase/network.png
+# Requires the Git LFS texture masters and ImageMagick with EXR support.
+recipe_version = 1
+preset = "short-multi"
+procedural_seed = 0
+
+[world]
+body = "earth"
+
+[run]
+dev_mode = false
+quality = "production"
+render_diagnostics = true
+# High-detail meshing, Rocky debris and five exports have no wall-clock cutoff.
+max_seed_attempts = 2
+max_attempt_seconds = 0
+
+[network]
+# Downstream extent, not the sum of all parallel passage lengths.
+target_route_length_m = 300.0
+
+[network.systems]
+count = 3
+require_merge = true
+require_split = true
+
+[network.topology]
+style = "interconnected"
+generation_mode = "independent_growth"
+
+# Inherit the short-multi host corridors, persistent parallel growth, formation
+# phases, side branches and drained-pool controls rather than mixing models.
+[section_field]
+minimum_sample_spacing = 0.5
+maximum_sample_spacing = 1.5
+profile_resolution = 96
+
+[floor_map]
+lateral_spacing_m = 1.0
+plan_resolution_m = 0.5
+
+[events]
+enabled = true
+include_rock_props = true
+enabled_kinds = ["rock", "boulder", "collapse", "choke", "infill"]
+use_rocky_meshes = true
+strict_optional_provider = true
+rocky_texture_dir = "../texture/dark_rock_8k/textures"
+rocky_output_dir = ""
+rocky_resolution_scale = 1.25
+rocky_max_subdivisions = 5
+rock_population_multiplier = 3.0
+enable_debris_families = true
+clean_floor_fraction = 0.30
+clustered_debris_fraction = 0.55
+geological_event_density_per_100m = 0.40
+minimum_event_spacing = 30.0
+# Keep inspection passages open; this placement heuristic is not robot qualification.
+preserve_rover_route = true
+
+[geometry]
+# 4 cm master grid: high polygon detail without a silent visual decimation pass.
+# A 2 cm grid costs roughly 8x the volume samples and 4x the surface triangles.
+resolution_policy = "fixed"
+voxel_size = 0.04
+storage_mode = "tiled"
+chunk_size = 64
+density_margin = 4.0
+resolution_refinement_attempts = 1
+resolution_min_voxel_size_m = 0.02
+resolution_max_allocated_voxels = 500000000
+
+# Metre-scale profile variation plus smaller physical accretion/crust relief.
+surface_wall_relief_m = 0.55
+surface_roof_relief_m = 0.65
+surface_floor_relief_m = 0.22
+surface_crust_relief_m = 0.10
+surface_feature_scale_m = 0.85
+cave_smoothing_iterations = 1
+# Image detail is shaded; geometric relief above also reaches the collider.
+cave_displacement_scale_m = 0.0
+cave_displacement_texture = ""
+embedded_texture_max_size = 8192
+cave_texture_scale_m = 4.0
+cave_normal_scale = 1.0
+cave_normal_convention = "opengl"
+cave_diffuse_texture = "../texture/dark_rock_8k/textures/dark_rock_diff_8k.jpg"
+cave_normal_texture = "../texture/dark_rock_8k/textures/dark_rock_nor_gl_8k.exr"
+cave_roughness_texture = "../texture/dark_rock_8k/textures/dark_rock_rough_8k.exr"
+collision_target_reduction = 0.85
+collision_max_error_m = 0.02
+
+[acceptance]
+profile = "inspection"
+require_textures = true
+require_resolution = true
+minimum_relief_scale = 0.75
+# Preserve rugged terrain; successful outputs are explicitly not robot-qualified.
+require_ground_routes = false
+repair_ground_routes = false
+
+[export]
+target = "all"
+generate_collision = true
+max_visual_triangles = 30000000
+# Includes the verbose Omniverse text USD (about 2.32 GiB for this showcase).
+max_asset_bytes = 4294967296
+# A master that exceeds these budgets stops rather than discarding visible detail.
+visual_max_error_m = 0.0

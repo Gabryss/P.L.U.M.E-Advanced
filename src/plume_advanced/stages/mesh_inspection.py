@@ -175,7 +175,9 @@ def route_inspection_arguments(geometry):
     from plume_advanced.stages.ground_routes import GroundRobot
     cfg = geometry.config
     ground = (GroundRobot(length_m=cfg.ground_robot_length_m,
-                          width_m=cfg.required_route_width_m, height_m=cfg.required_route_height_m,
+                          width_m=cfg.required_route_width_m,
+                          height_m=cfg.ground_robot_height_m or cfg.required_route_height_m,
+                          clearance_m=cfg.ground_robot_clearance_m,
                           margin_m=cfg.route_clearance_margin_m, max_slope_deg=cfg.ground_max_slope_deg,
                           max_step_m=cfg.ground_max_step_m, support_spacing_m=cfg.ground_support_spacing_m)
               if cfg.ground_robot_length_m else None)

@@ -1052,7 +1052,6 @@
           "cave_texture_scale_m": 4.0
         },
         "acceptance": {
-          "require_ground_routes": true,
           "profile": "simulation",
           "require_textures": true
         }
@@ -1216,7 +1215,6 @@
           "cave_roughness_texture": "../texture/dark_rock_8k/textures/dark_rock_rough_8k.exr"
         },
         "acceptance": {
-          "require_ground_routes": true,
           "profile": "simulation",
           "require_textures": true
         }

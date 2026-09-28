@@ -21,6 +21,10 @@ class SurfaceTopologyError(ValueError):
         super().__init__(message)
 
 
+class PassageObstructionError(SurfaceTopologyError):
+    """Surface trials all obstruct passage probes; repair profiles before refinement."""
+
+
 def component_count(faces) -> int:
     """Count used-vertex components without Python objects per mesh corner."""
     triangles = np.asarray(faces, dtype=np.int64).reshape(-1, 3)

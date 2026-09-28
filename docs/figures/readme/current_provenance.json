@@ -1,5 +1,5 @@
 {
-  "builder_sha256": "167a08c4221ed20fbdcb27fc3cbe3eaa181d1de6bd7ac0da82d08be7ca971be0",
+  "builder_sha256": "d08065cef501db55ccf84905cb26496a4c0f1aca04159a890e88cbeba6d96fa6",
   "cases": [
     {
       "accepted_attempt": 0,
@@ -495,6 +495,7 @@
           "dev_max_lobe_paths": 6,
           "dev_max_route_length_m": 1500.0,
           "dev_mode": false,
+          "max_seed_attempts": 0,
           "overwrite_outputs": false,
           "quality": "standard",
           "render_diagnostics": false
@@ -1090,6 +1091,7 @@
           "dev_max_lobe_paths": 6,
           "dev_max_route_length_m": 1500.0,
           "dev_mode": false,
+          "max_seed_attempts": 0,
           "overwrite_outputs": false,
           "quality": "standard",
           "render_diagnostics": false
@@ -1691,6 +1693,7 @@
           "dev_max_lobe_paths": 6,
           "dev_max_route_length_m": 1500.0,
           "dev_mode": false,
+          "max_seed_attempts": 0,
           "overwrite_outputs": false,
           "quality": "standard",
           "render_diagnostics": false
@@ -2804,6 +2807,7 @@
           "dev_max_lobe_paths": 6,
           "dev_max_route_length_m": 1500.0,
           "dev_mode": false,
+          "max_seed_attempts": 0,
           "overwrite_outputs": false,
           "quality": "standard",
           "render_diagnostics": false
@@ -2915,8 +2919,10 @@
   "figures": {
     "current_host.png": "825e4ea0d10145f3f050bf708e95c5dc7e24f6a77870b3bb89038707db72136d",
     "current_sections.png": "c9451b46f112abb2903e1e2462f526007ac251673344ca128c8434445100b737",
-    "current_topologies.png": "b159bd68d84f8396ae7acac9d5af1d9c56dbb35f99fe6047a35475f3d6f6403a",
+    "current_topologies.png": "a95b5526513f1f26e5728a442245913ce22ee00dafee6b5b76ded94caaadea1d",
     "gravity_screen.png": "390ce1adf2a32a514cfc1f938e68d7eed8bfefc7bf01247a124188f5fc80c2ec",
+    "multi_top_down.png": "beb5e43084b03ec3fa7ec9d639255184a49c566e815f119a76a883831503ac2b",
+    "single_top_down.png": "c2f0f05ba8b57c024a01c38e0134b018e6bedd252ed3b3ad1ff25168c99aa354",
     "workflow.png": "b9ed4d28c081e97c94be93758e8ffeec26251f6d3cedc73bc837778da0ce4151"
   },
   "gravity_parameters": {
@@ -2924,7 +2930,8 @@
     "effective_strength_pa": 3000000,
     "safety_factor": 1.5
   },
-  "package_sha256": "ba1b708d1f97662b15c0f7f17762739f3050fe0e766dfad5acbcbcc4b74978e4",
+  "package_sha256": "4c8e36a0d99ff778034e3a17ca945d7941b35db4c30b19f9b82af9ef2b61d540",
+  "preview_seed": 0,
   "schema": "plume.readme-figures.v1",
   "schematics": [
     "workflow.png",
