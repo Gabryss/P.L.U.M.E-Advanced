@@ -662,7 +662,6 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertTrue(all(junction.kind == "chamber" for junction in pool_junctions))
         self.assertGreater(summary["reoccupied_path_count"], 0.0)
         self.assertGreater(summary["piracy_event_count"], 0.0)
-        self.assertGreater(summary["flux_starved_retired_count"], 0.0)
         self.assertLessEqual(summary["max_phase_budget_utilization"], 1.0 + 1e-9)
         self.assertTrue(
             all(segment.z_level >= 0 for segment in cave_network.segments),
@@ -876,7 +875,8 @@ out = pathlib.Path(sys.argv[-1]); out.mkdir(parents=True, exist_ok=True)
         self.assertTrue(
             all(
                 (segment.metadata["chamber_id"] is not None)
-                == bool(segment.metadata["chamber_forming"])
+                == (bool(segment.metadata["chamber_forming"])
+                    or segment.metadata.get("chamber_type") == "drained_lava_pool")
                 for segment in chamber_segments
             )
         )

@@ -326,6 +326,15 @@ the shared preset catalog and shipped material adapters. Cold replays use a
 separate process and a different Python hash seed. No finite test campaign proves
 that every possible seed succeeds.
 
+Branch-site selection rounds its dimensionless ranking keys to 12 decimal places
+and gives equal keys their mean rank. This prevents CPU-level rounding of equal
+grid bends from changing their relative preference; the physical measurements
+and geometry acceptance thresholds are unchanged. Regression tests exercise
+fused and unfused vector arithmetic on two failure seeds, requiring the same
+accepted candidate, graph and centreline coordinates within 1 nm. This is a
+numerical consistency check, not a geological accuracy claim or a guarantee of
+byte-identical output across every runtime.
+
 For generation searches, keep the original recipe, `seed_attempts.json` and
 `run_manifest.json` together. The journal identifies the request, each attempted
 root/stage seed, its outcome and the winner. `resolved_project_config.json`

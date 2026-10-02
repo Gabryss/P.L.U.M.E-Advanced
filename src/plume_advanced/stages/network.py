@@ -2468,8 +2468,7 @@ class CaveNetworkGenerator:
         ranked_drivers: dict[str, np.ndarray] = {}
         for name in driver_names:
             values = np.asarray([getattr(site, name) for site in candidates], dtype=float)
-            order = np.argsort(np.argsort(values, kind="stable"), kind="stable")
-            ranked_drivers[name] = order.astype(float) / max(len(values) - 1, 1)
+            ranked_drivers[name] = self._rank_breakout_driver(values)
         controls = self.config.lobe_growth
         calibrated: list[_BreakoutSite] = []
         for index, site in enumerate(candidates):
@@ -2511,6 +2510,25 @@ class CaveNetworkGenerator:
                 if abs(float(geometry.along_grid[site.cell]) - chosen_along) >= minimum_spacing
             ]
         return tuple(sorted(sites, key=lambda site: float(geometry.along_grid[site.cell])))
+
+    @staticmethod
+    def _rank_breakout_driver(values: np.ndarray) -> np.ndarray:
+        """Percentile ranks for dimensionless [0, 1] process proxies.
+
+        Fused and unfused dot products can differ by a few ULPs on identical
+        grid bends. Ordinal ranking amplified that noise into different branch
+        births and could exhaust the network search on another CPU. Quantize
+        only the ranking keys at 1e-12; retain the original physical values.
+        Equal keys share their mean rank, avoiding an index-dependent bias on
+        straight stretches and other constant fields.
+        """
+        if len(values) < 2:
+            return np.zeros_like(values, dtype=float)
+        _, inverse, counts = np.unique(
+            np.round(values, decimals=12), return_inverse=True, return_counts=True
+        )
+        mean_ranks = np.cumsum(counts) - (counts + 1) / 2
+        return mean_ranks[inverse] / (len(values) - 1)
 
     def _breakout_site_metrics(
         self,
