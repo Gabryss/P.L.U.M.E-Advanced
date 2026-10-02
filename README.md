@@ -12,7 +12,7 @@ and terrain maps. Optional connected layers represent passages at different
 elevations. Seeded generation includes inspection and bounded repair; Earth, Mars
 and Moon scenarios are available.
 
-[Installation](#installation) · [Usage](#usage) · [Networks and maps](#networks-and-maps) · [Simulators](#simulators) · [Documentation](#documentation)
+[Installation](#installation) · [Usage](#usage) · [Simulators](#simulators) · [Documentation](#documentation)
 
 ![Textured showcase rockfall inside Blender](docs/simulators/ui/blender.png)
 
@@ -57,32 +57,7 @@ Generation then tries reproducible seeds within the configured budgets;
 | Add rock textures or resume a run | [Generation and materials](docs/usage.md) |
 | Generate a detailed multi-network showcase with rocks | [Showcase recipe](docs/usage.md#showcase-generation) |
 | Open the cave in a simulator | [Simulator imports](docs/simulators.md) |
-| Inspect per-layer elevation, clearance, terrain and traversability ground truth | [Terrain map sets](docs/traversability.md) |
-
-## Networks and maps
-
-![Effect of 2, 3, 4, 5, 6 and 8 aligned inlet sources with one common outlet](docs/figures/readme/source_count_comparison.png)
-
-*Same host, root seed 17, one layer and 400 m downstream target. Only source count
-changes; fixed spacing makes the inlet band wider as sources are added. Teal:
-one-source passages. Orange: shared passages. More inlets do not guarantee more
-loops. These are network width estimates. [Method and reproduction](docs/networks.md#effect-of-inlet-count).*
-
-![Terrain and reference traversability measurements from one layer of a generated cave](docs/figures/readme/traversability_fields.png)
-
-*The same exported surface, six complementary views: reference traversability,
-floor elevation, vertical clearance, slope, step/roughness and obstacles. This
-example contains no loose rocks. Raw arrays accompany the images.*
-
-![Separate traversability maps for the three layers of one generated cave](docs/figures/readme/traversability_layers.png)
-
-*One map set per layer, plus separate ramp maps. Green/orange classify the stated
-reference envelope; they do not certify an arbitrary robot. [All nine views,
-coordinates, limits and NPZ fields](docs/traversability.md).*
-
-[Connected-layer networks](docs/networks.md#optional-connected-layers) ·
-[Single/multi-system top-down views](docs/architecture.md#single-and-multi-network-top-down-views) ·
-[Generation-stage animation](docs/architecture.md#execution-and-data-flow)
+| Explore terrain and traversability ground truth | [Terrain map sets](docs/traversability.md) |
 
 ## Simulators
 
@@ -119,8 +94,8 @@ use the remaining chapters for configuration, internals and validation.
 | [Generation and materials](docs/usage.md) | Recipes, textures, robot qualification, seed retries and resume |
 | [Configuration](docs/configuration.md) | Everyday parameters and advanced controls |
 | [Architecture](docs/architecture.md) | Host fields, network growth, meshing, inspection and repair, with figures |
-| [Networks](docs/networks.md) | Source-count effects, multiple outlets, optional layers and network detail |
-| [Terrain maps](docs/traversability.md) | Per-layer measurements, reference traversability, coordinates and data formats |
+| [Networks](docs/networks.md) | Source-count figures, connected layers, multiple outlets and generation methods |
+| [Terrain maps](docs/traversability.md) | Map gallery, per-layer ground truth, coordinates and data formats |
 | [Simulator imports](docs/simulators.md) | Showcase previews, application versions, materials and import steps |
 | [Evaluation](docs/evaluation.md) | Seed campaigns, tests, scientific comparisons and native qualification |
 

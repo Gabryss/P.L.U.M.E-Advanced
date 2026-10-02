@@ -29,7 +29,7 @@ def markdown_anchors(text):
 def test_readme_has_one_ordered_quickstart():
     text = (ROOT / "README.md").read_text()
     assert re.findall(r"^## (.+)$", text, re.MULTILINE) == [
-        "Installation", "Usage", "Networks and maps", "Simulators", "Documentation", "Limits",
+        "Installation", "Usage", "Simulators", "Documentation", "Limits",
     ]
     blocks = re.findall(r"```bash\n(.*?)```", text, re.DOTALL)
     assert len(blocks) == 2
