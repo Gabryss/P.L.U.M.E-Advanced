@@ -22,6 +22,18 @@ def test_presets_preserve_pre_cleanup_resolved_configuration(case, tmp_path):
     recipe.write_text(f'recipe_version = 1\npreset = "{case["preset"]}"\n')
     options = dict(seed_override=case["seed"], world_body=case["body"])
     manifest = project_config_manifest(load_project_config(recipe, **options))
+    # Regional routing is opt-in; the added defaults do not change old presets.
+    from dataclasses import asdict
+
+    from plume_advanced.stages.network_detail import NetworkDetailConfig
+    from plume_advanced.stages.network_layers import NetworkLayersConfig
+    from plume_advanced.stages.network_regional_routing import RegionalGrowthConfig
+    assert manifest["network"].pop("regional") == asdict(RegionalGrowthConfig())
+    assert manifest["network"].pop("layers") == asdict(NetworkLayersConfig())
+    assert manifest["network"].pop("detail") == asdict(NetworkDetailConfig())
+    # Map export adds measurements without altering the frozen cave parameters.
+    from plume_advanced.traversability.config import TraversabilityConfig
+    assert manifest.pop("traversability") == asdict(TraversabilityConfig())
     # Relative paths are intentionally owned by the user's file, not the package.
     for table, keys in (
         (

@@ -18,9 +18,12 @@ from scipy.ndimage import distance_transform_edt, gaussian_filter, gaussian_filt
 
 from plume_advanced.procedural import procedural_rng
 from plume_advanced.stages.host_field import HostField
+from plume_advanced.stages.network_detail import NetworkDetailConfig
 from plume_advanced.stages.network_interconnected import InterconnectionConfig
+from plume_advanced.stages.network_layers import NetworkLayersConfig
 from plume_advanced.stages.network_metadata import SegmentMetadataValue, metadata_float
 from plume_advanced.stages.network_quality import NetworkQualityConfig
+from plume_advanced.stages.network_regional_routing import RegionalGrowthConfig
 from plume_advanced.stages.network_systems import NetworkSystemsConfig
 from plume_advanced.stages.network_topology import NetworkTopologyConfig
 
@@ -104,9 +107,12 @@ class CaveNetworkConfig:
 
     random_seed: int | None = None
     quality: NetworkQualityConfig = NetworkQualityConfig()
+    detail: NetworkDetailConfig = NetworkDetailConfig()
     systems: NetworkSystemsConfig = NetworkSystemsConfig()
     topology: NetworkTopologyConfig = NetworkTopologyConfig()
     interconnection: InterconnectionConfig = InterconnectionConfig()
+    regional: RegionalGrowthConfig = RegionalGrowthConfig()
+    layers: NetworkLayersConfig = NetworkLayersConfig()
     network_density: float = 1.0
     emplacement_backend: str = "internal"
     flowy_executable: str | None = None
@@ -287,6 +293,15 @@ class CaveNetwork:
             for segment in self.segments
             if segment.kind in primary_branch_kinds and segment.points
         ]
+        if self.config.topology.generation_mode == "regional_growth":
+            branches = defaultdict(list)
+            for segment in self.segments:
+                if "regional_branch_id" in segment.metadata:
+                    branches[segment.metadata["regional_branch_id"]].append(segment)
+            branch_persistence = [
+                sum(s.total_length for s in pieces) / max(np.mean([s.mean_width for s in pieces]), 1e-9)
+                for pieces in branches.values()
+            ]
         weighted_sinuosity_numerator = 0.0
         uphill_distance = 0.0
         sustained_uphill_steps = 0
@@ -299,12 +314,16 @@ class CaveNetwork:
                 segment.total_length / max(chord, 1e-9)
             )
             previous_uphill = False
-            for current, following in zip(segment.points, segment.points[1:]):
+            elevations = [p.elevation for p in segment.points]
+            if self.config.layers.enabled:
+                from plume_advanced.stages.network_layers import segment_xyz
+                elevations = segment_xyz(segment, self.config.layers)[:, 2]
+            for index, (current, following) in enumerate(zip(segment.points, segment.points[1:])):
                 step_length = math.hypot(
                     following.x - current.x,
                     following.y - current.y,
                 )
-                uphill = following.elevation > current.elevation
+                uphill = elevations[index + 1] > elevations[index]
                 if uphill:
                     uphill_distance += step_length
                 if uphill and previous_uphill:
@@ -360,7 +379,7 @@ class CaveNetwork:
             "node_count": float(len(self.nodes)),
             "segment_count": float(len(self.segments)),
             "entry_count": float(sum(node.kind == "entry" for node in self.nodes)),
-            **(system_summary(self) if self.config.systems.count > 1 and (self.config.topology.style == "general" or self.config.topology.generation_mode == "independent_growth") else {}),
+            **(system_summary(self) if self.config.systems.count > 1 and (self.config.topology.style == "general" or self.config.topology.generation_mode in {"independent_growth", "regional_growth"}) else {}),
             **(topology_metrics(self) if self.config.topology.style == "trunk_dominated" else {}),
             "junction_count": float(len(self.junctions)),
             "loop_count": loop_count,
@@ -1024,6 +1043,22 @@ class CaveNetworkGenerator:
         Supplying section_config also screens the post-blend 3D profiles during
         candidate selection. The CLI uses this before starting any meshing.
         """
+        if self.config.detail.enabled and (
+            self.config.topology.generation_mode != "regional_growth" or not self.config.quality.enabled
+        ):
+            raise ValueError("network.detail requires inspected regional_growth (network-only)")
+        if self.config.layers.enabled and self.config.topology.generation_mode != "regional_growth":
+            raise ValueError("Optional layers require regional_growth (network-only)")
+        if self.config.regional.outlet_count > 1 and self.config.topology.generation_mode != "regional_growth":
+            raise ValueError("Multiple regional termini require regional_growth")
+        if self.config.regional.outlet_count > 1 and not self.config.quality.enabled:
+            raise ValueError("Multiple regional termini require network.quality.enabled for connectivity inspection")
+        if self.config.regional.extra_connections and (
+            self.config.topology.generation_mode != "regional_growth" or not self.config.quality.enabled
+        ):
+            raise ValueError("Extra connections require inspected regional_growth with network.quality.enabled")
+        if section_config is not None and self.config.detail.enabled:
+            raise ValueError("network.detail is currently network-only; use plume-network")
         if not self.config.quality.enabled:
             return self._generate_candidate(host_field)
         from plume_advanced.stages.network_acceptance import generate_accepted_network
@@ -1032,6 +1067,9 @@ class CaveNetworkGenerator:
                                          progress=quality_progress)
 
     def _generate_candidate(self, host_field: HostField) -> CaveNetwork:
+        if self.config.topology.generation_mode == "regional_growth":
+            from plume_advanced.stages.network_regional import generate_regional_network
+            return generate_regional_network(self, host_field)
         if self.config.topology.style == "interconnected":
             from plume_advanced.stages.network_gallery_growth import generate_gallery_growth
             return generate_gallery_growth(self, host_field)
@@ -1254,20 +1292,29 @@ class CaveNetworkGenerator:
         )
 
     def _finish_network(self, host_field, geometry, nodes, segments, *,
-                        backend_provenance, skeleton_mask, total_flux):
+                        backend_provenance, skeleton_mask, total_flux,
+                        preserved_segments=None):
         """Apply the common geometry, flow, junction and raster stages."""
-        if self.config.topology.style == "interconnected":
+        regional = self.config.topology.generation_mode == "regional_growth"
+        if self.config.topology.style == "interconnected" and not regional:
             from plume_advanced.stages.network_interconnected import smooth_routes
             segments = smooth_routes(host_field, segments, [geometry.flow_x, geometry.flow_y])
         else:
-            segments = self._smooth_graph_routes(host_field, segments)
-        segments = self._orient_segments_for_flow(nodes, segments)
-        segments = self._repair_source_reachability(nodes, segments)
+            segments = self._smooth_graph_routes(host_field, segments, directed=regional,
+                                                  preserved_segments=preserved_segments,
+                                                  smoothing_widths=(1.2 if regional and
+                                                      self.config.regional.branch_growth == "front" else 2.))
+        if not regional:
+            segments = self._orient_segments_for_flow(nodes, segments)
+            segments = self._repair_source_reachability(nodes, segments)
         segments = self._assign_conserved_flow(nodes, segments)
         if self.config.topology.generation_mode == "independent_growth":
             from plume_advanced.stages.network_gallery_growth import refresh_phase_discharge
             segments = refresh_phase_discharge(self, nodes, segments)
         segments = self._annotate_emplacement_flux_history(segments)
+        if regional:
+            from plume_advanced.stages.network_morphology import annotate_regional_geometry
+            segments = annotate_regional_geometry(segments, self.config.layers)
         dominant_route_node_ids = self._dominant_route(nodes, segments)
         self._validate_generated_graph(nodes, segments, dominant_route_node_ids)
         junctions = self._build_junctions(nodes, segments)
@@ -3233,7 +3280,8 @@ class CaveNetworkGenerator:
         return tuple(result)
 
     @staticmethod
-    def _smooth_graph_routes(host: HostField, segments: list[CaveSegment]) -> list[CaveSegment]:
+    def _smooth_graph_routes(host: HostField, segments: list[CaveSegment], *, directed=False,
+                             preserved_segments=None, smoothing_widths=2.) -> list[CaveSegment]:
         """Fit flowing routes after graph extraction, retaining exact nodes.
 
         Smoothing operates in metres and is bounded by passage width. Cubic
@@ -3241,11 +3289,22 @@ class CaveNetworkGenerator:
         40--140 degree corners produced by snapped host-grid paths.
         """
         incident: dict[int, list[tuple[CaveSegment, np.ndarray]]] = defaultdict(list)
+        preserved_segments = preserved_segments or set()
+        accepted_directions: dict[int, list[np.ndarray]] = defaultdict(list)
         for segment in segments:
             xy = np.asarray([(point.x, point.y) for point in segment.points])
+            first, last = xy[1]-xy[0], xy[-1]-xy[-2]
+            if segment.segment_id in preserved_segments:
+                for node, direction in ((segment.start_node_id, first), (segment.end_node_id, last)):
+                    accepted_directions[node].append(direction / max(float(np.linalg.norm(direction)), 1e-9))
+            if directed:
+                arc = np.array([p.arc_length for p in segment.points])
+                reach = min(2*segment.mean_width, 0.4*arc[-1])
+                first = np.array([np.interp(reach, arc, xy[:, k]) for k in range(2)])-xy[0]
+                last = xy[-1]-np.array([np.interp(arc[-1]-reach, arc, xy[:, k]) for k in range(2)])
             for node, direction in (
-                (segment.start_node_id, xy[1] - xy[0]),
-                (segment.end_node_id, xy[-1] - xy[-2]),
+                (segment.start_node_id, first),
+                (segment.end_node_id, last),
             ):
                 direction = direction / max(float(np.linalg.norm(direction)), 1e-9)
                 incident[node].append((segment, direction))
@@ -3260,8 +3319,24 @@ class CaveNetworkGenerator:
             )[1]
             for node, values in incident.items()
         }
+        if directed:
+            for node, values in incident.items():
+                before = [d for s, d in values if s.end_node_id == node]
+                after = [d for s, d in values if s.start_node_id == node]
+                # Follow the receiving passage at merges and the parent at
+                # splits. Every arm shares this signed flow tangent.
+                direction = np.mean(after if len(after) == 1 else before or after, axis=0)
+                node_directions[node] = direction / max(float(np.linalg.norm(direction)), 1e-9)
+            # A new branch fits the accepted receiving route. Refitting that
+            # route after a cut can manufacture a tight bend in a short piece.
+            for node, directions in accepted_directions.items():
+                direction = np.mean(directions, axis=0)
+                node_directions[node] = direction / max(float(np.linalg.norm(direction)), 1e-9)
         result = []
         for segment in segments:
+            if segment.segment_id in preserved_segments:
+                result.append(segment)
+                continue
             raw = np.asarray([(point.x, point.y) for point in segment.points])
             arc = np.asarray([point.arc_length for point in segment.points])
             length = float(arc[-1])
@@ -3271,14 +3346,17 @@ class CaveNetworkGenerator:
             spacing = max(0.5, min(3.0, 0.3 * segment.mean_width))
             distances = np.linspace(0.0, length, max(5, int(math.ceil(length / spacing)) + 1))
             linear = np.column_stack([np.interp(distances, arc, raw[:, axis]) for axis in range(2)])
-            sigma_m = min(2.0 * segment.mean_width, 0.15 * length)
+            sigma_m = min(smoothing_widths * segment.mean_width, 0.15 * length)
             smooth = gaussian_filter1d(
                 linear, sigma_m / (distances[1] - distances[0]), axis=0, mode="nearest"
             )
             delta = smooth - linear
-            delta *= np.minimum(
-                1.0, segment.mean_width / np.maximum(np.linalg.norm(delta, axis=1), 1e-9)
-            )[:, None]
+            if directed:
+                delta *= min(1.0, segment.mean_width / max(float(np.linalg.norm(delta, axis=1).max()), 1e-9))
+            else:
+                delta *= np.minimum(
+                    1.0, segment.mean_width / np.maximum(np.linalg.norm(delta, axis=1), 1e-9)
+                )[:, None]
             smooth = linear + delta
             smooth[0], smooth[-1] = raw[0], raw[-1]
             curve = CubicSpline(distances, smooth, axis=0)
@@ -3287,7 +3365,7 @@ class CaveNetworkGenerator:
             for index, node in ((0, segment.start_node_id), (-1, segment.end_node_id)):
                 direction = node_directions[node].copy()
                 original = raw[1] - raw[0] if index == 0 else raw[-1] - raw[-2]
-                if np.dot(direction, original) < 0:
+                if not directed and np.dot(direction, original) < 0:
                     direction = -direction
                 if index == 0:
                     transition = CubicHermiteSpline(
@@ -3683,7 +3761,8 @@ class CaveNetworkGenerator:
         entry_strengths: list[float] = []
         for node in entry_nodes:
             initial_capacity = sum(
-                max(segment_lookup[segment_id].mean_width, 1e-6) ** 2
+                1.0 if self.config.topology.generation_mode == "regional_growth"
+                else max(segment_lookup[segment_id].mean_width, 1e-6) ** 2
                 for segment_id in outgoing.get(node.node_id, [])
             )
             source_rng = procedural_rng(
@@ -3718,11 +3797,16 @@ class CaveNetworkGenerator:
             node_age = age_flux[node.node_id] / node_flux
             weights = np.asarray(
                 [
-                    max(segment_lookup[segment_id].mean_width, 1e-6) ** 2
+                    metadata_float(segment_lookup[segment_id].metadata, "regional_capacity")
+                    if self.config.topology.generation_mode == "regional_growth"
+                    and "regional_capacity" in segment_lookup[segment_id].metadata
+                    else max(segment_lookup[segment_id].mean_width, 1e-6) ** 2
                     for segment_id in segment_ids
                 ],
                 dtype=float,
             )
+            if not np.isfinite(weights).all() or np.any(weights <= 0):
+                raise ValueError("Route capacities must be finite and positive")
             weights /= float(np.sum(weights))
             for segment_id, weight in zip(segment_ids, weights, strict=True):
                 segment = segment_lookup[segment_id]
@@ -3743,6 +3827,14 @@ class CaveNetworkGenerator:
         resolved: list[CaveSegment] = []
         for segment in segments:
             flux = flux_by_segment.get(segment.segment_id, 0.0)
+            regional_widths = None
+            if self.config.topology.generation_mode == "regional_growth" and (
+                self.config.regional.hierarchy_strength
+                or self.config.regional.width_log_sigma
+                or segment.metadata.get("regional_route_type") == "blind_branch"
+            ):
+                from plume_advanced.stages.network_morphology import width_profile
+                regional_widths = width_profile(self.config, segment, flux)
             start_temperature = temperature_by_segment.get(
                 segment.segment_id,
                 self.config.source_temperature_k,
@@ -3759,6 +3851,7 @@ class CaveNetworkGenerator:
                 replace(
                     point,
                     width=float(
+                        regional_widths[index] if regional_widths is not None else
                         point.width if self.config.topology.style in {"trunk_dominated", "interconnected"} else
                         np.clip(
                             point.width * flow_scale,
@@ -3775,7 +3868,7 @@ class CaveNetworkGenerator:
                         start_age + point.arc_length / max(self.config.nominal_flow_speed_m_s, 1e-6)
                     ),
                 )
-                for point in segment.points
+                for index, point in enumerate(segment.points)
             )
             resolved.append(replace(segment, points=points))
         if self.config.systems.count > 1 or self.config.topology.style == "trunk_dominated":

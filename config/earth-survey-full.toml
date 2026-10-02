@@ -1,0 +1,48 @@
+# Full single-layer inspection run using the Earth survey width profile.
+# Three interacting sources; no rocks. This does not require robot qualification.
+recipe_version = 1
+preset = "short-multi"
+procedural_seed = 17
+
+[network]
+base_passage_radius = 3.67139400
+minimum_passage_radius = 0.5
+maximum_passage_radius = 5.0
+
+[network.topology]
+generation_mode = "regional_growth"
+
+[network.regional]
+branch_growth = "front"
+width_log_sigma = 0.30000000
+width_correlation_m = 4.60000000
+
+[network.layers]
+enabled = false
+
+[network.detail]
+enabled = false
+
+[network.quality]
+max_attempts = 6
+repair_passes = 2
+
+[events]
+enabled = false
+enabled_kinds = []
+
+[geometry]
+# Inspection resolution, with the normal surface/clearance checks retained.
+voxel_size = 0.15
+
+[export]
+target = "all"
+max_visual_triangles = 3000000
+max_asset_bytes = 536870912
+
+[acceptance]
+require_textures = true
+require_ground_routes = false
+
+[run]
+render_diagnostics = true

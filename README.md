@@ -6,33 +6,18 @@
 
 **Generate reproducible lava-tube environments for simulation and procedural research.**
 
-PLUME grows single or interacting passage networks inside a physical host field,
-builds gravity-constrained cross-sections, and exports textured meshes and static
-colliders. Generation includes inspection and bounded repair. Earth, Mars and
-Moon scenarios are available.
+PLUME grows interacting passage networks inside a physical host field, builds
+gravity-constrained cross-sections, and exports textured meshes, static colliders
+and terrain maps. Optional connected layers represent passages at different
+elevations. Seeded generation includes inspection and bounded repair; Earth, Mars
+and Moon scenarios are available.
 
-[Installation](#installation) · [Usage](#usage) · [Simulators](#simulators) · [Documentation](#documentation)
+[Installation](#installation) · [Usage](#usage) · [Networks and maps](#networks-and-maps) · [Simulators](#simulators) · [Documentation](#documentation)
 
 ![Textured showcase rockfall inside Blender](docs/simulators/ui/blender.png)
 
 *Multi-network showcase with rocks and 8K textures. [Showcase recipe](docs/usage.md#showcase-generation)
 · [The same rockfall in five applications](docs/simulators.md). The basic command below produces an untextured cave.*
-
-| Single system — top down | Three interacting systems — top down |
-|---|---|
-| ![Top-down section footprint of a single lava-tube system](docs/figures/readme/single_top_down.png) | ![Top-down section footprint of three merging and splitting lava-tube systems](docs/figures/readme/multi_top_down.png) |
-
-*400 m route targets · seed 0 · same metric scale. Generated section footprints;
-[more examples and how they grow](docs/architecture.md#single-and-multi-network-top-down-views).*
-
-### See the showcase grow
-
-![Animated reconstruction of the PLUME lava-tube generation stages](docs/assets/lava_tube_generation.gif)
-
-*The network grows according to saved centerline ages from the accepted showcase.
-The animation then shows section widths, the surface stage, grounded events, and
-the finished Blender render. This is a reconstruction from saved outputs, not a
-screen recording of a generation run.*
 
 ## Installation
 
@@ -68,10 +53,36 @@ Generation then tries reproducible seeds within the configured budgets;
 | Next step | Guide |
 |---|---|
 | Change the seed, size, body or number of networks | [Configuration](docs/configuration.md) |
+| Explore connected networks, multiple outlets and layers | [Network guide](docs/networks.md) and [3D viewer](docs/usage.md#inspect-networks-in-3d) |
 | Add rock textures or resume a run | [Generation and materials](docs/usage.md) |
 | Generate a detailed multi-network showcase with rocks | [Showcase recipe](docs/usage.md#showcase-generation) |
-| Require robot qualification or replay a tried seed | [Generation modes](docs/usage.md#ordinary-generation-or-robot-qualification) |
 | Open the cave in a simulator | [Simulator imports](docs/simulators.md) |
+| Inspect per-layer elevation, clearance, terrain and traversability ground truth | [Terrain map sets](docs/traversability.md) |
+
+## Networks and maps
+
+![Effect of 2, 3, 4, 5, 6 and 8 aligned inlet sources with one common outlet](docs/figures/readme/source_count_comparison.png)
+
+*Same host, root seed 17, one layer and 400 m downstream target. Only source count
+changes; fixed spacing makes the inlet band wider as sources are added. Teal:
+one-source passages. Orange: shared passages. More inlets do not guarantee more
+loops. These are network width estimates. [Method and reproduction](docs/networks.md#effect-of-inlet-count).*
+
+![Terrain and reference traversability measurements from one layer of a generated cave](docs/figures/readme/traversability_fields.png)
+
+*The same exported surface, six complementary views: reference traversability,
+floor elevation, vertical clearance, slope, step/roughness and obstacles. This
+example contains no loose rocks. Raw arrays accompany the images.*
+
+![Separate traversability maps for the three layers of one generated cave](docs/figures/readme/traversability_layers.png)
+
+*One map set per layer, plus separate ramp maps. Green/orange classify the stated
+reference envelope; they do not certify an arbitrary robot. [All nine views,
+coordinates, limits and NPZ fields](docs/traversability.md).*
+
+[Connected-layer networks](docs/networks.md#optional-connected-layers) ·
+[Single/multi-system top-down views](docs/architecture.md#single-and-multi-network-top-down-views) ·
+[Generation-stage animation](docs/architecture.md#execution-and-data-flow)
 
 ## Simulators
 
@@ -108,6 +119,8 @@ use the remaining chapters for configuration, internals and validation.
 | [Generation and materials](docs/usage.md) | Recipes, textures, robot qualification, seed retries and resume |
 | [Configuration](docs/configuration.md) | Everyday parameters and advanced controls |
 | [Architecture](docs/architecture.md) | Host fields, network growth, meshing, inspection and repair, with figures |
+| [Networks](docs/networks.md) | Source-count effects, multiple outlets, optional layers and network detail |
+| [Terrain maps](docs/traversability.md) | Per-layer measurements, reference traversability, coordinates and data formats |
 | [Simulator imports](docs/simulators.md) | Showcase previews, application versions, materials and import steps |
 | [Evaluation](docs/evaluation.md) | Seed campaigns, tests, scientific comparisons and native qualification |
 

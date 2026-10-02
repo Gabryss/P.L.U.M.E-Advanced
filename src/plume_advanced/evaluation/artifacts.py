@@ -39,11 +39,19 @@ def host_semantic_hash(host_field: HostField, *, tolerance: float = 1e-9) -> str
 
 def network_payload(network: CaveNetwork) -> dict[str, Any]:
     from plume_advanced.stages.network_interconnected import spatial_metrics
+    from plume_advanced.stages.network_layers import segment_xyz
+    from plume_advanced.stages.network_morphology import morphology_metrics
     from plume_advanced.stages.network_systems import system_summary
     from plume_advanced.stages.network_topology import topology_metrics
 
     return {
         "schema": "plume.cave-network.v1",
+        **({"detail": network.backend_provenance["detail"]} if "detail" in network.backend_provenance else {}),
+        **({"morphology": morphology_metrics(network)}
+           if network.config.topology.generation_mode == "regional_growth" else {}),
+        **({"layers": {"controls": asdict(network.config.layers),
+                        "elevation_convention": "centerline_xyz_m uses host elevation minus layer depth plus explicit detail offsets; CavePoint.elevation remains host elevation"}}
+           if network.config.layers.enabled else {}),
         **(
             {
                 "interconnection": {
@@ -51,7 +59,7 @@ def network_payload(network: CaveNetwork) -> dict[str, Any]:
                     "metrics": spatial_metrics(network),
                 }
             }
-            if network.config.topology.style == "interconnected"
+            if network.config.topology.style == "interconnected" and network.config.topology.generation_mode != "regional_growth"
             else {}
         ),
         **(
@@ -62,7 +70,7 @@ def network_payload(network: CaveNetwork) -> dict[str, Any]:
             if network.config.systems.count > 1
             and (
                 network.config.topology.style == "general"
-                or network.config.topology.generation_mode == "independent_growth"
+                or network.config.topology.generation_mode in {"independent_growth", "regional_growth"}
             )
             else {}
         ),
@@ -93,13 +101,17 @@ def network_payload(network: CaveNetwork) -> dict[str, Any]:
                 "age_start_s": segment.points[0].age_s if segment.points else None,
                 "age_end_s": segment.points[-1].age_s if segment.points else None,
                 "grade": (
-                    (segment.points[-1].elevation - segment.points[0].elevation)
+                    (float(np.diff(segment_xyz(segment, network.config.layers)[[0, -1], 2])[0])
+                     if network.config.layers.enabled else
+                     segment.points[-1].elevation - segment.points[0].elevation)
                     / max(segment.total_length, 1e-12)
                     if segment.points
                     else None
                 ),
                 "metadata": segment.metadata,
                 "centerline": [asdict(point) for point in segment.points],
+                **({"centerline_xyz_m": segment_xyz(segment, network.config.layers).tolist()}
+                   if network.config.layers.enabled else {}),
             }
             for segment in sorted(network.segments, key=lambda item: item.segment_id)
         ],

@@ -377,7 +377,7 @@ def _sinuosity_by_kind(network: CaveNetwork) -> dict[str, dict[str, float | int 
     return {kind: _distribution(grouped[kind]) for kind in sorted(grouped)}
 
 
-def _segment_uphill(segment: CaveSegment) -> dict[str, float | int]:
+def _segment_uphill(segment: CaveSegment, elevations=None) -> dict[str, float | int]:
     points = segment.points
     total = max(float(segment.total_length), 0.0)
     if total <= 0.0 and len(points) > 1:
@@ -390,9 +390,11 @@ def _segment_uphill(segment: CaveSegment) -> dict[str, float | int]:
     uphill_length = 0.0
     uphill_rise = 0.0
     max_grade = 0.0
-    for first, second in zip(points, points[1:]):
+    if elevations is None:
+        elevations = [p.elevation for p in points]
+    for index, (first, second) in enumerate(zip(points, points[1:])):
         spacing = max(float(second.arc_length - first.arc_length), 0.0)
-        rise = float(second.elevation - first.elevation)
+        rise = float(elevations[index + 1] - elevations[index])
         if spacing <= 0.0:
             continue
         if rise > 1.0e-9:
@@ -418,7 +420,11 @@ def _segment_uphill(segment: CaveSegment) -> dict[str, float | int]:
 def _uphill_by_kind(network: CaveNetwork) -> dict[str, dict[str, Any]]:
     grouped: defaultdict[str, list[dict[str, float | int]]] = defaultdict(list)
     for segment in network.segments:
-        grouped[str(segment.kind)].append(_segment_uphill(segment))
+        elevations = None
+        if network.config.layers.enabled:
+            from plume_advanced.stages.network_layers import segment_xyz
+            elevations = segment_xyz(segment, network.config.layers)[:, 2]
+        grouped[str(segment.kind)].append(_segment_uphill(segment, elevations))
     fields = (
         "uphill_length",
         "uphill_fraction",

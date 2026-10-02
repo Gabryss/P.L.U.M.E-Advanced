@@ -1,0 +1,32 @@
+# Earth representative-width scenario. Network only, not a validated eruption model.
+# Fitted from PDC calibration caves; spatial scale informed by Valentine LiDAR.
+# Reproduce: python scripts/calibrate_network_widths.py --output outputs/width-fit
+# Branch/source settings are inherited, NOT fitted to those surveys.
+recipe_version = 1
+preset = "short-multi"
+procedural_seed = 17
+
+[network]
+base_passage_radius = 3.67139400
+minimum_passage_radius = 0.5
+maximum_passage_radius = 5.0
+
+[network.topology]
+generation_mode = "regional_growth"
+
+[network.regional]
+branch_growth = "front"
+width_log_sigma = 0.30000000
+width_correlation_m = 4.60000000
+
+[network.layers]
+# No inter-layer survey calibration is available. Multi-source remains on.
+enabled = false
+
+[network.detail]
+# Avoid fitting width variation and then adding a second uncalibrated amplitude.
+enabled = false
+
+[network.quality]
+max_attempts = 6
+repair_passes = 2

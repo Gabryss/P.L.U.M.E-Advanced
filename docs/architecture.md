@@ -30,6 +30,12 @@ and qualifying an asset inside a simulator are different steps. See [Limits](#li
 
 ## Execution and data flow
 
+![Animated reconstruction of the PLUME generation stages](assets/lava_tube_generation.gif)
+
+*Reconstruction from the accepted showcase's saved centreline ages, followed by
+sections, the surface, events and the Blender render. This is not a recording of
+generation time.*
+
 ![Generation, inspection and bounded repair workflow](figures/readme/workflow.png)
 
 *The accepted network, sections, mesh and figures share one candidate identity.
@@ -47,6 +53,7 @@ Replacing the network rebuilds downstream data. The outer seed search is shown
 | Floor / E · Events | Ray-sampled base floor; supported debris and structural modifications | Local support, spacing, required-route protections |
 | D · Final geometry | Event-aware surface and final floor revalidation | Repeat geometry/clearance checks after changes |
 | Export | Visual preparation, material/UV work, collider reduction and serialization | Actual prepared/serialized surfaces, textures, budgets and atomic publication |
+| Traversability | Rasterize accepted collision triangles, selecting the cavity for each layer or ramp | Raw floor/roof arrays, reference feasibility, portals and map provenance; included in export publication |
 | Native qualification | Cold replay plus imported-engine material/collision controls | Separate `ready/` receipt only after all requested gates pass |
 
 [`cli.py`](../src/plume_advanced/cli.py) coordinates stages;
@@ -55,6 +62,24 @@ recovery. Numerical representations live in [`stages/`](../src/plume_advanced/st
 asset preparation in [`exporters/`](../src/plume_advanced/exporters/), and campaigns
 and scientific measurements in [`evaluation/`](../src/plume_advanced/evaluation/).
 [`scripts/`](../scripts/) contains optional inspection, figure and native-editor tools.
+
+## Terrain and traversability maps
+
+The sparse floor atlas used to place geological events is not the simulation
+ground-truth map. The [traversability exporter](../src/plume_advanced/traversability/)
+uses the accepted export surface after smoothing and collision reduction. Vertical
+rays retain every triangle intersection; section paths select the appropriate
+air interval for each declared layer. Ramps have separate charts so crossing XY
+projections do not merge floors at different elevations.
+
+An explicit reference footprint measures support, fitted-plane slope, detrended
+step/roughness and headroom. Placed props are conservative obstacles, filtered by
+height so a rock does not block another floor. Raw heights remain available for
+different experiment assumptions. Maps and provenance are published with the
+asset; map classification does not change generation acceptance.
+
+See [figures, arrays and coordinate conventions](traversability.md) and
+[map evaluation](evaluation.md#traversability-map-checks).
 
 ## Host-conditioned growth and topology
 
@@ -109,6 +134,24 @@ Formation metadata tracks phase activity, discharge, cooling/age proxies,
 reoccupation and optional drained pools. Pools are selected from local conditions
 and become elongated widenings; junctions do not receive arbitrary spherical rooms.
 These are procedural formation rules, not a simulation of molten lava transport.
+
+## Regional networks and optional layers
+
+Regional growth adds host-routed feeders, locally growing branches, optional
+multiple outlets and connected layers. Width statistics can use the Earth survey
+scenario; branch placement and layer structure remain procedural.
+
+| Capability | How it fits the pipeline |
+|---|---|
+| Several inlets / outlets | Directed source ancestry and conserved reference allocation in one connected graph |
+| Optional layers | Explicit XYZ routes, host-screened descending ramps and layer-aware section fitting |
+| Bounded connectivity repair | Insert compatible links while retaining inlets, outlets and existing passages |
+| Local network detail | Optional network-only refinement; full geometry requires it disabled |
+| Surface ground truth | Separate terrain map sets for each layer and each connecting ramp |
+
+See the [network guide](networks.md) for source-count comparisons, layer figures,
+routing algorithms, controls and limitations. The [full-run recipes](usage.md#inspect-networks-in-3d)
+carry supported regional networks through meshing and export.
 
 ## Sections, gravity and roof screening
 

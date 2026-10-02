@@ -1,0 +1,17 @@
+# Stage A-B only: three total sources distributed over two connected layers.
+recipe_version = 1
+preset = "short-multi"
+procedural_seed = 0
+
+[network.topology]
+generation_mode = "regional_growth"
+
+[network.layers]
+enabled = true
+count = 2
+spacing_m = 12.0
+maximum_connection_grade = 0.25
+
+[network.quality]
+max_attempts = 4
+repair_passes = 2

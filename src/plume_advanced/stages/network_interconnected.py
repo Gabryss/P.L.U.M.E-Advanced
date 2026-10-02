@@ -419,6 +419,9 @@ def assess_interconnected(network, host, sections, check):
                 continue
             xy = np.array([[p.x, p.y] for p in s.points])
             heights = np.array([host.sample(p.x, p.y).elevation for p in s.points])
+            if network.config.layers.enabled:
+                from plume_advanced.stages.network_layers import segment_depths
+                heights -= segment_depths(s, network.config.layers)
             grades = np.diff(heights) / np.maximum(
                 np.linalg.norm(np.diff(xy, axis=0), axis=1), 1e-9
             )
@@ -431,6 +434,10 @@ def assess_interconnected(network, host, sections, check):
             network.config.quality.maximum_uphill_grade,
             uphill,
         )
+    if network.config.topology.generation_mode == "regional_growth":
+        from plume_advanced.stages.network_regional import assess_regional_geometry
+        assess_regional_geometry(network, host, check)
+        return
     try:
         m = spatial_metrics(network, sections)
     except (ValueError, KeyError) as error:

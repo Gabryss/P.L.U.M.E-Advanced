@@ -343,6 +343,11 @@ class SectionFieldGenerator:
                 if segment.segment_id in junction.segment_ids
             )
             arc_positions = self._build_arc_positions(segment, connected_junctions)
+            if cave_network.config.layers.enabled:
+                # Keep every accepted bend and ramp station in the full model.
+                positions = sorted(set(arc_positions) | {p.arc_length for p in segment.points})
+                arc_positions = tuple(p for i, p in enumerate(positions)
+                                      if i == 0 or p - positions[i-1] > 1e-7)
             parent_record = self._directed_parent_morphology(
                 incoming_morphologies.get(segment.start_node_id, ())
             )
@@ -392,10 +397,14 @@ class SectionFieldGenerator:
                     samples=segment_fields_by_id[segment.segment_id].samples,
                 )
             )
-        segment_fields = self._harmonize_connections(cave_network, segment_fields)
+        if not cave_network.config.layers.enabled:
+            segment_fields = self._harmonize_connections(cave_network, segment_fields)
         # A cooled/stranded terminal should close gradually, even when the
         # section morphology would otherwise inflate it back to passage size.
         segment_fields = self._taper_blind_terminals(cave_network, segment_fields)
+        if cave_network.config.layers.enabled:
+            from plume_advanced.stages.section_layers import layer_section_fields
+            segment_fields = layer_section_fields(cave_network, segment_fields, self._build_frame)
         # Assess final profiles after junction blending, grade adjustments and
         # frame transport. Nominal height/cover controls are not the final roof.
         segment_fields = [

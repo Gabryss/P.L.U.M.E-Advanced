@@ -274,3 +274,24 @@ def test_complete_cli_finishes_progress_and_records_export_provenance(tmp_path: 
     } <= names
     for record in records:
         assert sha256_file(output.parent / record["path"]) == record["sha256"]
+    # Maps are part of the delivered package and its provenance, not loose diagnostics.
+    mapped = output.parent / "export_neutral/traversability"
+    map_manifest = json.loads((mapped / "manifest.json").read_text())
+    assert len(map_manifest["charts"]) == 1
+    assert map_manifest["surface"]["kind"] == "collision"
+    assert {"layer_0.npz", "layer_0.png", "layer_0_occupancy.png"} <= names
+    import numpy as np
+
+    from plume_advanced.traversability.cli import main as map_saved
+    assert map_saved(["--source", str(output.parent)]) == 0
+    with np.load(mapped / "layer_0.npz") as inline, np.load(output.parent / "traversability/layer_0.npz") as saved:
+        np.testing.assert_array_equal(inline["status"], saved["status"])
+        np.testing.assert_allclose(inline["floor_z_m"], saved["floor_z_m"], atol=1e-5)
+    # Backfilling never rewrites source data. A modified input cannot claim the run's identity.
+    assert all(sha256_file(output.parent / row["path"]) == row["sha256"] for row in records)
+    sections = output.with_name("stage_c_sections.npz")
+    sections.write_bytes(sections.read_bytes() + b"modified")
+    with pytest.raises(SystemExit) as caught:
+        map_saved(["--source", str(output.parent)])
+    assert caught.value.code == 2
+    assert (output.parent / "traversability/manifest.json").exists()

@@ -1,0 +1,54 @@
+# Stage A-B only: persistent parallel passages, bypasses and optional layers.
+# uv run plume-network --config config/complex-network.toml --output outputs/complex-network
+recipe_version = 1
+preset = "short-multi"
+procedural_seed = 17
+
+[host_field]
+corridor_count = 5
+corridor_spacing = 45.0
+corridor_lateral_variation = 40.0
+corridor_correlation_length = 220.0
+
+[host_field.grid]
+width = 440.0
+height = 1000.0
+nx = 220
+ny = 500
+
+[host_field.ranges]
+seed_point_y = [-460.0, -440.0]
+flow_angle_degrees = [88.0, 92.0]
+longitudinal_drop = [18.0, 26.0]
+
+[network]
+target_route_length_m = 800.0
+
+[network.systems]
+count = 3
+source_spacing_widths = 5.0
+
+[network.topology]
+generation_mode = "regional_growth"
+
+[network.regional]
+correlation_length_m = 140.0
+route_variation = 0.6
+secondary_scale_weight = 0.25
+branches_per_km = 20.0
+minimum_branch_length_m = 60.0
+maximum_branch_length_m = 300.0
+maximum_branches = 24
+attempts_per_branch = 16
+
+[network.layers]
+# Set false for the same experiment in a single layer.
+enabled = true
+count = 3
+preserve_layer_trunks = true
+connection_variation = 0.7
+connection_opportunities_per_km = 10.0
+
+[network.quality]
+max_attempts = 6
+repair_passes = 2

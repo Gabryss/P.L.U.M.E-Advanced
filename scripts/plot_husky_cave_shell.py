@@ -174,13 +174,13 @@ def main() -> None:
     assert np.all(roof > np.asarray([r["pose"][2] for r in traces[0]]))
 
     plt.rcParams.update({
-        "font.family": "DejaVu Sans", "font.size": 12,
-        "axes.titlesize": 15, "axes.labelsize": 13,
-        "xtick.labelsize": 11, "ytick.labelsize": 11,
+        "font.family": "DejaVu Sans", "font.size": 11,
+        "axes.titlesize": 11.5, "axes.labelsize": 11,
+        "xtick.labelsize": 9, "ytick.labelsize": 9,
     })
-    fig, (plan, profile) = plt.subplots(1, 2, figsize=(14.0, 6.4), dpi=180,
+    fig, (plan, profile) = plt.subplots(1, 2, figsize=(8.4, 4.8), dpi=180,
                                         gridspec_kw={"width_ratios": [1.08, 1.0]})
-    fig.subplots_adjust(left=.07, right=.985, top=.89, bottom=.24, wspace=.21)
+    fig.subplots_adjust(left=.09, right=.985, top=.89, bottom=.24, wspace=.24)
 
     plan.fill_betweenx(y_grid, left, right, color="#e0eeec", alpha=.94, zorder=1)
     plan.add_collection(LineCollection(slice_segments, colors=SHELL, linewidths=1.2,
@@ -236,10 +236,10 @@ def main() -> None:
     handles = [cave_handle, start_handle, trial_handles[0], goal_handle,
                trial_handles[1], tolerance_handle, trial_handles[2]]
     fig.legend(handles=handles, loc="lower center", ncol=4, frameon=False,
-               bbox_to_anchor=(.5, .065), fontsize=10.5, columnspacing=1.7,
+               bbox_to_anchor=(.5, .065), fontsize=8.5, columnspacing=1.2,
                handlelength=2.4)
     fig.text(.5, .025, "Cave wall: exported showcase mesh  •  robot lines: recorded Gazebo origins",
-             ha="center", va="center", color="#606d70", fontsize=10)
+             ha="center", va="center", color="#606d70", fontsize=8)
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUTPUT, dpi=180, facecolor="white")
     plt.close(fig)

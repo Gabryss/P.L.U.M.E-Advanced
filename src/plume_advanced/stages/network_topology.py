@@ -37,12 +37,14 @@ class NetworkTopologyConfig:
     def __post_init__(self):
         if self.style not in {"general", "trunk_dominated", "interconnected"}:
             raise ValueError("network.topology.style must be general, trunk_dominated or interconnected")
-        if self.generation_mode not in {"layout", "independent_growth"}:
-            raise ValueError("network.topology.generation_mode must be layout or independent_growth")
+        if self.generation_mode not in {"layout", "independent_growth", "regional_growth"}:
+            raise ValueError("network.topology.generation_mode must be layout, independent_growth or regional_growth")
+        if self.generation_mode == "regional_growth" and self.style != "interconnected":
+            raise ValueError("regional_growth requires interconnected topology")
         if self.generation_mode == "independent_growth" and self.style == "general":
             raise ValueError("independent_growth requires trunk_dominated or interconnected topology")
-        if self.style == "interconnected" and self.generation_mode != "independent_growth":
-            raise ValueError("interconnected topology requires independent_growth")
+        if self.style == "interconnected" and self.generation_mode not in {"independent_growth", "regional_growth"}:
+            raise ValueError("interconnected topology requires independent_growth or regional_growth")
         for name in (
             "island_count",
             "side_branch_count",

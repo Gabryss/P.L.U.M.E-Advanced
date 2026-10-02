@@ -20,6 +20,98 @@ stage figures, and is labelled **not robot-qualified**.
 Use a separate directory for each generation. Check `run_manifest.json` for
 `status: "complete"`, then open the asset listed in its export records.
 
+## Traversability ground truth
+
+Full runs also save `export_<target>/traversability/`: one map set per layer and
+connecting ramp. Open `layer_0_overview.png`, then inspect separate elevation,
+clearance, slope, roughness, obstacle and rejection-reason views. Numeric arrays
+retain the measurements. These maps do not impose robot qualification.
+
+To add maps to an existing completed GLB run:
+
+```bash
+uv run plume-traversability --source outputs/first_cave
+```
+
+See [map files, coordinates, layer connections and experimental limits](traversability.md).
+
+## Inspect networks in 3D
+
+`plume-network` generates only the host and network, and includes an interactive
+`viewer.html` beside its figures. Open that file directly in a browser on any
+computer; it needs no server, internet connection or Python installation.
+
+```bash
+uv run plume-network --config config/varied-network.toml --output outputs/my_network
+```
+
+To combine existing networks in one page, supply their run folders (or evaluation
+campaign folders). Every centerline sample and actual layer elevation is retained.
+
+```bash
+uv run plume-network-view --source outputs/my_network --output outputs/network-viewer.html
+```
+
+| Control | Use |
+|---|---|
+| Drag / right-drag / scroll | Orbit / pan / zoom |
+| Top, Side, 3D, Fit all | Change or reset the view |
+| Layers and inter-layer connections | Isolate levels and connecting ramps |
+| Click a passage | Read its length, width, elevations and connections |
+| Vertical exaggeration | Inspect shallow elevation changes; default **1× true scale** |
+| Download / Save PNG | Transfer the complete offline page / save the current view |
+
+The circular passage shapes illustrate network widths; they are **not cave meshes
+or validated cross-sections**. Network acceptance does not establish robot clearance.
+
+For a measured Earth passage-width scenario with three interacting sources:
+
+```bash
+uv run plume-network --config config/earth-survey-network.toml --output outputs/earth_survey
+```
+
+For six irregularly placed inlets and three downstream termini, use:
+
+```bash
+uv run plume-network --config config/multi-outlet-network.toml --output outputs/multi_outlet
+```
+
+This recipe stops at the network stage. The [outlet controls](configuration.md#regional-network-controls)
+allow a common outlet or several separated termini in one connected network;
+connectivity and all requested termini must pass inspection.
+Open `outputs/multi_outlet/viewer.html` to inspect the network.
+
+The Earth survey recipe fits width statistics only; none of these recipes certifies
+geological topology. See [what was measured and what remains procedural](evaluation.md#earth-network-width-calibration).
+
+To take the three-source Earth survey model through sections, meshing, inspection and textured
+exports, use the full-run recipe:
+
+```bash
+uv run plume-generate --config config/earth-survey-full.toml --output outputs/earth_survey_full/network.png
+```
+
+This uses three interacting sources, a 400 m route target, a 0.15 m voxel grid,
+4K texture maps and all five export packages. Rocks are disabled and stage figures
+are included. Robot qualification is not required. `network.detail` still
+requires the network-only command.
+
+For a complete three-layer cave with six sources, sparse additional connections,
+textures and no rocks:
+
+```bash
+uv run plume-generate --config config/branching-layers-full.toml --output outputs/multilayer_full/network.png
+```
+
+This preserves the network's actual elevations through sections and meshing.
+It checks geometry and exported packages without imposing robot dimensions.
+See [layer controls and resolution limits](configuration.md#optional-layers).
+
+For an HTTP network viewer, add `--serve` to `plume-network-view`; it listens on `127.0.0.1:8765` by default. Set
+`--bind` to a trusted LAN/VPN interface only when remote access is intended. This
+small server serves just the page and has no authentication. A private authenticated
+static host is another option for access from outside that network.
+
 ## Textured caves
 
 Complete the one-time [texture setup](installation.md#texture-dependencies), then run:
@@ -60,6 +152,8 @@ qualify the result for simulation.
 | [short-multi](../config/short-multi.toml) | 400 m | Three interacting | 0.08 m | 4K PBR; inspection |
 | [long-single](../config/long-single.toml) | 3 km | One | 0.20 m | Neutral; inspection |
 | [long-multi](../config/long-multi.toml) | 3 km | Three interacting | 0.20 m | 4K PBR; inspection |
+| [earth-survey-full](../config/earth-survey-full.toml) | 400 m | Three sources, one layer | 0.15 m | 4K PBR, no rocks; inspection |
+| [branching-layers-full](../config/branching-layers-full.toml) | 800 m | Six sources, three layers | 0.25 m | 4K PBR, no rocks; research inspection |
 | [simulation-single](../config/simulation-single.toml) / [simulation-multi](../config/simulation-multi.toml) | 250 m | One / three | 0.04 m | 4K PBR; simulation policy; robot opt-in |
 | [showcase](../config/showcase.toml) | 300 m | Three interacting | 0.04 m | 8K PBR, rocks, rough terrain; inspection |
 
@@ -227,6 +321,18 @@ copies the checked files and updates the size-limit metadata without repeating
 meshing or serialization. It preserves qualification status and the source copy.
 The receipt and all package files must be intact. This mode cannot change geometry
 or textures; the revised byte limit must still accommodate every file.
+
+### Refine local network geometry
+
+```bash
+uv run plume-network --config config/detailed-network.toml --output outputs/detailed-network
+```
+
+This generates the host and network only, using localized host-guided features
+(`strength = 0.8`) and a 3D viewer. Compatible encounters become shared junctions.
+Set `[network.detail] enabled = false` to retain coarse geometry, or
+add the table to another regional recipe. See [detail controls](configuration.md#optional-network-detail)
+and [paired before/after evaluation](evaluation.md#paired-network-detail-evaluation).
 
 ## Inspect the output
 

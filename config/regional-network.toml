@@ -1,0 +1,17 @@
+# Experimental Stage A-B generation. Run with plume-network, not plume-generate.
+recipe_version = 1
+preset = "short-multi"
+procedural_seed = 0
+
+[network.topology]
+generation_mode = "regional_growth"
+
+[network.regional]
+planning_step_m = 6.0
+branches_per_km = 8.0
+minimum_branch_length_m = 70.0
+maximum_branch_length_m = 220.0
+
+[network.quality]
+max_attempts = 4
+repair_passes = 2

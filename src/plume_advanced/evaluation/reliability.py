@@ -210,6 +210,7 @@ def execute_case(
                     check_closed_surface_topology,
                     component_count,
                 )
+                from plume_advanced.traversability.request import from_generation as map_request
                 from plume_advanced.validation import GlbAsset, PortableAssetValidator
 
                 generator = GeometryGenerator(project.geometry)
@@ -305,7 +306,13 @@ def execute_case(
                         output / "export",
                         acceptance=project.acceptance,
                         resolution=resolution,
+                        traversability=map_request(project.traversability, network, sections)
+                        if project.traversability.enabled else None,
                     )
+                    if project.traversability.enabled:
+                        map_manifest = output / "export/traversability/manifest.json"
+                        identity["traversability"] = sha256_file(map_manifest)
+                        metrics["traversability_status"] = json.loads(map_manifest.read_text())["status"]
                     metrics["asset_bytes"] = exported.primary_asset.stat().st_size
                     identity["glb"] = sha256_file(exported.primary_asset)
                     identity["texture_recovery"] = sha256_file(

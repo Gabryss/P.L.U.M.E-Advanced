@@ -14,7 +14,10 @@ from plume_advanced.config import load_project_config
 ROOT = Path(__file__).resolve().parents[1]
 
 
-GUIDES = {"installation", "usage", "configuration", "architecture", "evaluation", "simulators"}
+GUIDES = {
+    "installation", "usage", "configuration", "architecture", "evaluation", "simulators",
+    "networks", "traversability",
+}
 DOCUMENTS = [ROOT / "README.md", *(ROOT / "docs" / f"{name}.md" for name in sorted(GUIDES))]
 
 
@@ -26,7 +29,7 @@ def markdown_anchors(text):
 def test_readme_has_one_ordered_quickstart():
     text = (ROOT / "README.md").read_text()
     assert re.findall(r"^## (.+)$", text, re.MULTILINE) == [
-        "Installation", "Usage", "Simulators", "Documentation", "Limits",
+        "Installation", "Usage", "Networks and maps", "Simulators", "Documentation", "Limits",
     ]
     blocks = re.findall(r"```bash\n(.*?)```", text, re.DOTALL)
     assert len(blocks) == 2

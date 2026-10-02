@@ -40,11 +40,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - run: sudo apt-get update && sudo apt-get install -y imagemagick
       - run: uv sync --locked --group dev --extra rocks --extra paper
       - run: uv run --no-sync ruff check .
       - run: uv run --no-sync mypy src/plume_advanced
       - run: uv run --no-sync python -m compileall -q src scripts tests
+      - run: node --test tests/network_viewer.test.cjs
       - name: Record numerical runtime
         run: |
           mkdir -p test-results
@@ -80,6 +84,9 @@ jobs:
           assert config.export.generate_collision
           assert config.export.max_visual_triangles > 0 and config.export.max_asset_bytes > 0
           assert all(package.joinpath("material_assets", name).read_bytes() for name in ASSET_FILES)
+          assert config.traversability.enabled
+          for asset in ("network_viewer.html", "network_viewer.css", "network_viewer.js"):
+              assert package.joinpath("web_assets", asset).read_bytes()
           with tempfile.TemporaryDirectory() as directory:
               os.chdir(directory)
               evaluation = load_evaluation_config()

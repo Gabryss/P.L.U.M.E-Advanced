@@ -67,6 +67,7 @@ def export_target_asset(
     acceptance: AcceptancePolicy = AcceptancePolicy(),
     resolution: dict | None = None,
     reexport_provenance: dict | None = None,
+    traversability=None,
 ) -> ExportResult:
     """Prepare once, stage a complete package, and publish it atomically."""
 
@@ -166,6 +167,37 @@ def export_target_asset(
         inspection_path = staging / "pipeline_inspection.json"
         inspection_path.write_text(json.dumps(inspection, indent=2, allow_nan=False) + "\n")
         staged = replace(staged, files=staged.files + (inspection_path, qualification_path))
+        if traversability is not None and traversability.config.enabled:
+            from plume_advanced.traversability.export import (
+                TraversabilityBudgetError,
+                export_traversability,
+            )
+            report_progress("Traversability maps", detail="sample the accepted export surface by layer")
+            has_collider = bool(len(scene.collision_faces))
+            try:
+                map_files = export_traversability(
+                    traversability,
+                    scene.collision_vertices if has_collider else scene.canonical_visual["positions"],
+                    scene.collision_faces if has_collider else scene.canonical_visual["faces"],
+                    staging / "traversability",
+                    obstacles=[(m.vertices, m.faces) for m in scene.geometry.event_meshes],
+                    surface_kind="collision" if has_collider else "visual",
+                )
+            except TraversabilityBudgetError as error:
+                # A diagnostic allocation limit must not discard an accepted cave.
+                map_path = staging / "traversability/manifest.json"
+                map_path.write_text(json.dumps(dict(schema="plume.traversability.v1",
+                    status="not_generated", reason=str(error), config=asdict(traversability.config),
+                    recovery="Raise the explicit map budget and run plume-traversability on the completed run."), indent=2) + "\n")
+                map_files = (map_path,)
+                staged = replace(staged, warnings=staged.warnings + (str(error),))
+            inspection["traversability"] = json.loads((staging / "traversability/manifest.json").read_text())
+            inspection_path.write_text(json.dumps(inspection, indent=2, allow_nan=False) + "\n")
+            staged = replace(staged, files=staged.files + map_files)
+            if export_config.target == "all":
+                manifest = json.loads(staged.primary_asset.read_text())
+                manifest.setdefault("shared_files", []).extend(p.relative_to(staging).as_posix() for p in map_files)
+                staged.primary_asset.write_text(json.dumps(manifest, indent=2) + "\n")
         if reexport_provenance is not None:
             provenance_path = staging / "reexport.json"
             provenance_path.write_text(json.dumps(dict(reexport_provenance,

@@ -434,7 +434,10 @@ def test_native_preflight_failure_respects_output_overwrite_refusal(tmp_path, mo
 
 def test_packaged_and_comparison_presets_declare_intended_profile():
     inspection = {"project", "short-single", "long-single", "short-multi", "long-multi",
-                  "gallery-long", "simulator-check", "showcase"}
+                  "gallery-long", "simulator-check", "showcase", "complex-network",
+                  "regional-network", "regional-multilayer", "varied-network", "detailed-network",
+                  "earth-survey-network", "earth-survey-full", "multi-outlet-network",
+                  "branching-layers"}
     simulation = {"simulation-single", "simulation-multi", "simulation-robot-demo",
                   "simulation-robot-demo-smooth", "simulation-robot-demo-flat",
                   "simulation-robot-demo-clearance", "simulation-robot-demo-diagnostic"}

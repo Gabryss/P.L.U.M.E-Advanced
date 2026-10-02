@@ -1,0 +1,101 @@
+# Full three-layer integration check: six inlets, sparse extra links, no rocks.
+# Optional layers have unequal downstream extents and host-relative depths.
+# Survey-inspired procedural rules; not calibrated or a physical eruption simulation.
+# uv run plume-generate --config config/branching-layers-full.toml --output outputs/multilayer_full/network.png
+recipe_version = 1
+preset = "short-multi"
+procedural_seed = 42
+
+[host_field]
+corridor_count = 5
+corridor_spacing = 45.0
+corridor_lateral_variation = 40.0
+corridor_correlation_length = 220.0
+
+[host_field.grid]
+width = 440.0
+height = 1000.0
+nx = 220
+ny = 500
+
+[host_field.ranges]
+seed_point_y = [-460.0, -440.0]
+flow_angle_degrees = [88.0, 92.0]
+longitudinal_drop = [18.0, 26.0]
+
+[network]
+target_route_length_m = 800.0
+base_passage_radius = 3.671394
+
+[network.systems]
+count = 6
+source_spacing_widths = 5.0
+
+[network.topology]
+generation_mode = "regional_growth"
+
+[network.regional]
+branch_growth = "front"
+correlation_length_m = 110.0
+route_variation = 0.6
+secondary_scale_weight = 0.35
+source_stagger_m = 80.0
+source_lateral_jitter_m = 10.0
+width_log_sigma = 0.2
+width_correlation_m = 12.0
+outlet_band_width_m = 160.0
+branches_per_km = 20.0
+branch_localization = 0.65
+hierarchy_strength = 0.8
+minimum_branch_length_m = 60.0
+maximum_branch_length_m = 300.0
+maximum_branches = 24
+# At most two additional links after branch growth: one ramp, one same-level.
+# Unavailable or invalid links are skipped without discarding the cave.
+extra_connections = 2
+attempts_per_branch = 16
+
+[network.layers]
+# Set false for the same experiment in a single layer.
+enabled = true
+count = 3
+preserve_layer_trunks = true
+connection_variation = 0.7
+minimum_extent_fraction = 0.65
+spacing_variation = 0.5
+connection_opportunities_per_km = 10.0
+
+[network.quality]
+max_attempts = 6
+repair_passes = 2
+
+[section_field]
+# The accepted network owns all layer depths. Profiles stay in its 3 m envelope.
+minimum_roof_thickness = 3.0
+
+[events]
+enabled = false
+enabled_kinds = []
+
+[geometry]
+# Preserve geological passages without imposing a robot body envelope.
+required_route_height_m = 0.0
+required_route_width_m = 0.0
+voxel_size = 0.25
+storage_mode = "tiled"
+
+[export]
+target = "all"
+max_visual_triangles = 4000000
+max_asset_bytes = 1073741824
+
+[acceptance]
+profile = "research"
+require_clearance = false
+require_collision = true
+require_export_budgets = true
+require_textures = true
+require_ground_routes = false
+
+[run]
+render_diagnostics = true

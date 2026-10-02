@@ -121,6 +121,10 @@ def shape_hash(network: CaveNetwork) -> str:
                 [[p.x, p.y, p.width, p.elevation, p.flux] for p in segment.points], dtype="<f8"
             ).tobytes()
         )
+        if network.config.layers.enabled:
+            from plume_advanced.stages.network_layers import segment_xyz
+
+            digest.update(np.asarray(segment_xyz(segment, network.config.layers)[:, 2], dtype="<f8").tobytes())
     return digest.hexdigest()
 
 
@@ -137,25 +141,32 @@ def _turn_metrics(xy: np.ndarray, width: np.ndarray) -> tuple[np.ndarray, np.nda
 def _crossings(chains: dict, network: CaveNetwork) -> list[dict]:
     """Exact projected line intersections, with a deterministic spatial broad phase.
 
-    Exempt only the local neighborhood of a shared graph node. Grade-separated
+    Exempt only connected local junction regions, including subdivided arms. Grade-separated
     crossings are retained for actual floor/roof clearance screening in Stage C.
     """
+    from plume_advanced.stages.network_neighborhoods import PassageNeighborhoods
+
+    segments = sorted(network.segments, key=lambda s: s.segment_id)
+    neighborhoods = PassageNeighborhoods(
+        [(s, chains[s.segment_id][0]) for s in segments],
+        widths=[chains[s.segment_id][1] for s in segments],
+    )
+    indices = {s.segment_id: i for i, s in enumerate(segments)}
     pieces, centers, radii = [], [], []
-    for segment in sorted(network.segments, key=lambda s: s.segment_id):
-        coords, widths = chains[segment.segment_id]
+    for segment in segments:
+        coords, _ = chains[segment.segment_id]
         for i in range(len(coords) - 1):
             a, b = coords[i], coords[i + 1]
-            pieces.append((segment, i, a, b, max(widths[i : i + 2])))
+            pieces.append((segment, i, a, b))
             centers.append((a[:2] + b[:2]) * 0.5)
             radii.append(np.linalg.norm(b[:2] - a[:2]) * 0.5)
     if not pieces:
         return []
     pairs = cKDTree(centers).query_pairs(2 * max(radii) + 1e-6, output_type="ndarray")
     found: dict[tuple[int, int], list[dict[str, Any]]] = {}
-    node_xy = {n.node_id: np.array([n.x, n.y]) for n in network.nodes}
     for first, second in sorted(map(tuple, pairs.tolist())):
-        s, i, a, b, w = pieces[first]
-        t, j, c, d, v = pieces[second]
+        s, i, a, b = pieces[first]
+        t, j, c, d = pieces[second]
         if s.segment_id == t.segment_id and abs(i - j) <= 1:
             continue
         u, z, q = b[:2] - a[:2], d[:2] - c[:2], c[:2] - a[:2]
@@ -170,10 +181,10 @@ def _crossings(chains: dict, network: CaveNetwork) -> list[dict]:
         if not (0 <= alpha <= 1 and 0 <= beta <= 1):
             continue
         xy = a[:2] + alpha * u
-        shared = {s.start_node_id, s.end_node_id} & {t.start_node_id, t.end_node_id}
-        if s.segment_id != t.segment_id and any(
-            np.linalg.norm(xy - node_xy[node]) <= 4 * max(w, v) for node in shared
-        ):
+        if s.segment_id != t.segment_id and neighborhoods.local(
+            indices[s.segment_id], i, indices[t.segment_id], np.array([j]),
+            point_fraction=alpha, candidate_fraction=beta,
+        )[0]:
             continue
         key = (s.segment_id, t.segment_id)
         found.setdefault(key, []).append(
@@ -274,7 +285,7 @@ def assess_network(
             continue
         chains[s.segment_id] = (xy, widths)
         lengths = np.linalg.norm(np.diff(xy, axis=0), axis=1)
-        if s.kind == "backbone":
+        if s.kind == "backbone" and network.config.topology.generation_mode != "regional_growth":
             alignment = (np.diff(xy, axis=0) @ flow_direction) / np.maximum(lengths, 1e-9)
             run = 0.0
             for distance, width, downstream in zip(
@@ -441,6 +452,10 @@ def assess_network(
     if checks[0]["passed"] and not invalid and len(chains) == len(network.segments):
         crossings = _crossings(chains, network)
         unmodeled = [h for h in crossings if h["same_level"]]
+        if network.config.layers.enabled:
+            from plume_advanced.stages.network_layers import crossing_clearance
+            segments = {s.segment_id: s for s in network.segments}
+            unmodeled = [h for h in crossings if crossing_clearance(h, segments, network.config.layers) < network.config.layers.minimum_rock_m]
         check(
             "unmodeled_plan_crossings",
             not unmodeled,
@@ -468,6 +483,8 @@ def assess_network(
 def assess_sections(network: CaveNetwork, sections: SectionField) -> dict:
     """Screen the actual post-blend profiles, including their 3D crossings."""
     controls = network.config.quality
+    crossing_clearance = max(controls.minimum_crossing_clearance_m,
+                             network.config.layers.minimum_rock_m if network.config.layers.enabled else 0.)
     checks, bad, steep, uphill, turns, invalid_frames, clearances = [], [], [], [], [], [], []
     chains, fields = {}, {f.segment_id: f for f in sections.segment_fields}
     maximum_grade = 0.0
@@ -556,7 +573,7 @@ def assess_sections(network: CaveNetwork, sections: SectionField) -> dict:
                 )
             a, b = intervals
             gap = max(a[0] - b[1], b[0] - a[1])
-            if gap < controls.minimum_crossing_clearance_m:
+            if gap < crossing_clearance:
                 clearances.extend(hit["segments"])
     else:
         bad.extend(s.segment_id for s in network.segments if s.segment_id not in chains)
@@ -579,7 +596,7 @@ def assess_sections(network: CaveNetwork, sections: SectionField) -> dict:
                 distance = np.linalg.norm(a[2:4] - b[2:4])
                 if (
                     distance < controls.minimum_passage_separation_widths * 0.5 * (a[4] + b[4])
-                    and max(a[5] - b[6], b[5] - a[6]) < controls.minimum_crossing_clearance_m
+                    and max(a[5] - b[6], b[5] - a[6]) < crossing_clearance
                 ):
                     proximity.extend([int(a[0]), int(b[0])])
     connections: dict[int, list[tuple[int, float]]] = {}
@@ -607,7 +624,7 @@ def assess_sections(network: CaveNetwork, sections: SectionField) -> dict:
         (
             "crossing_roof_floor_clearance",
             clearances,
-            controls.minimum_crossing_clearance_m,
+            crossing_clearance,
             len(set(clearances)),
         ),
         (
@@ -628,6 +645,9 @@ def assess_sections(network: CaveNetwork, sections: SectionField) -> dict:
                 segment_ids=sorted(set(map(int, ids))),
             )
         )
+    if network.config.layers.enabled:
+        from plume_advanced.stages.section_layers import assess_layer_sections
+        checks.extend(assess_layer_sections(network, sections))
     return {
         "schema": QUALITY_VERSION,
         "accepted": all(c["passed"] for c in checks),

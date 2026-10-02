@@ -24,6 +24,7 @@ from plume_advanced.exporters import export_target_asset
 from plume_advanced.identity import sha256_file
 from plume_advanced.pipeline.recovery import build_accepted_base
 from plume_advanced.stages.geometry import GeometryGenerator
+from plume_advanced.traversability.request import from_generation as map_request
 
 
 def run_export_consistency(config: EvaluationConfig, *, force: bool = False) -> dict:
@@ -74,6 +75,8 @@ def run_export_consistency(config: EvaluationConfig, *, force: bool = False) -> 
                 asset_name=f"plume_seed_{seed:06d}",
                 acceptance=project.acceptance,
                 resolution=section_resolution_report(accepted.sections, geometry.voxel_grid.voxel_size),
+                traversability=map_request(project.traversability, accepted.network, accepted.sections)
+                if project.traversability.enabled else None,
             )
             manifest = json.loads(result.primary_asset.read_text(encoding="utf-8"))
             canonical_bounds = np.asarray(manifest["canonical_visual_bbox_m"], dtype=float)

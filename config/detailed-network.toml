@@ -1,0 +1,20 @@
+# Network only. Sparse host-guided features and compatible encounter junctions.
+# uv run plume-network --config config/detailed-network.toml --output outputs/detailed-network
+recipe_version = 1
+preset = "short-multi"
+procedural_seed = 17
+
+[network.topology]
+generation_mode = "regional_growth"
+
+[network.regional]
+branch_growth = "front"
+
+[network.layers]
+# Set false for a single layer; three source systems still interact.
+enabled = true
+count = 2
+
+[network.detail]
+enabled = true
+strength = 0.8

@@ -33,11 +33,15 @@ from plume_advanced.stages.network import (
     EmplacementHistoryConfig,
     LobeGrowthConfig,
 )
+from plume_advanced.stages.network_detail import NetworkDetailConfig
 from plume_advanced.stages.network_interconnected import InterconnectionConfig
+from plume_advanced.stages.network_layers import NetworkLayersConfig
 from plume_advanced.stages.network_quality import NetworkQualityConfig
+from plume_advanced.stages.network_regional_routing import RegionalGrowthConfig
 from plume_advanced.stages.network_systems import NetworkSystemsConfig
 from plume_advanced.stages.network_topology import NetworkTopologyConfig
 from plume_advanced.stages.section_field import SectionFieldConfig
+from plume_advanced.traversability.config import TraversabilityConfig
 from plume_advanced.world import (
     SUPPORTED_EVENT_KINDS,
     ExportConfig,
@@ -68,6 +72,7 @@ SUPPORTED_TOP_LEVEL_KEYS = frozenset(
         "events",
         "geometry",
         "acceptance",
+        "traversability",
     }
 )
 
@@ -119,6 +124,7 @@ class ProjectConfig:
     events: GeologicalEventConfig
     geometry: GeometryConfig
     acceptance: AcceptancePolicy = AcceptancePolicy()
+    traversability: TraversabilityConfig = TraversabilityConfig()
 
 
 def load_project_config(
@@ -241,6 +247,9 @@ def load_project_config(
         geometry=geometry,
     )
     validate_acceptance_configuration(acceptance, geometry, export)
+    map_data = raw_config.get("traversability", {})
+    _reject_unknown_keys("traversability", map_data, TraversabilityConfig)
+    traversability = TraversabilityConfig(**map_data)
 
     return ProjectConfig(
         schema_version=schema_version,
@@ -257,6 +266,7 @@ def load_project_config(
         events=events,
         geometry=geometry,
         acceptance=acceptance,
+        traversability=traversability,
     )
 
 
@@ -585,6 +595,9 @@ def _build_network_config(
     quality_data = config_data.pop("quality", {})
     _reject_unknown_keys("network.quality", quality_data, NetworkQualityConfig)
     config_data["quality"] = NetworkQualityConfig(**quality_data)
+    detail_data = config_data.pop("detail", {})
+    _reject_unknown_keys("network.detail", detail_data, NetworkDetailConfig)
+    config_data["detail"] = NetworkDetailConfig(**detail_data)
     systems_data = config_data.pop("systems", {})
     _reject_unknown_keys("network.systems", systems_data, NetworkSystemsConfig)
     config_data["systems"] = NetworkSystemsConfig(**systems_data)
@@ -594,6 +607,12 @@ def _build_network_config(
     interconnection_data = config_data.pop("interconnection", {})
     _reject_unknown_keys("network.interconnection", interconnection_data, InterconnectionConfig)
     config_data["interconnection"] = InterconnectionConfig(**interconnection_data)
+    regional_data = config_data.pop("regional", {})
+    _reject_unknown_keys("network.regional", regional_data, RegionalGrowthConfig)
+    config_data["regional"] = RegionalGrowthConfig(**regional_data)
+    layers_data = config_data.pop("layers", {})
+    _reject_unknown_keys("network.layers", layers_data, NetworkLayersConfig)
+    config_data["layers"] = NetworkLayersConfig(**layers_data)
     if "random_seed" not in config_data:
         config_data["random_seed"] = procedural_seed
     maximum_width = world.body.maximum_passage_width_m
@@ -1044,11 +1063,24 @@ def _validate_pipeline_configs(
         raise ValueError("network.flowy_executable is required when emplacement_backend='flowy'")
     if network.topology.style == "trunk_dominated" and network.emplacement_backend != "internal":
         raise ValueError("trunk_dominated topology requires internal emplacement")
-    if network.topology.generation_mode == "independent_growth":
+    if network.detail.enabled and (
+        network.topology.generation_mode != "regional_growth" or not network.quality.enabled
+    ):
+        raise ValueError("network.detail requires inspected regional_growth (network-only)")
+    if network.layers.enabled:
+        if network.topology.generation_mode != "regional_growth":
+            raise ValueError("network.layers.enabled requires regional_growth (network-only)")
+        if network.systems.count < network.layers.count:
+            raise ValueError("network.systems.count must provide at least one source per layer")
+    if network.regional.extra_connections and (
+        network.topology.generation_mode != "regional_growth" or not network.quality.enabled
+    ):
+        raise ValueError("Extra connections require inspected regional_growth with network.quality.enabled")
+    if network.topology.generation_mode in {"independent_growth", "regional_growth"}:
         if network.systems.count < 2:
-            raise ValueError("independent_growth requires at least two systems")
+            raise ValueError(f"{network.topology.generation_mode} requires at least two systems")
         if network.emplacement_history.stacked_lobe_fraction != 0:
-            raise ValueError("independent_growth currently requires stacked_lobe_fraction = 0 (one layer)")
+            raise ValueError(f"{network.topology.generation_mode} currently requires stacked_lobe_fraction = 0 (one layer)")
     if network.systems.count > 1 and (
         network.emplacement_backend != "internal"
     ):

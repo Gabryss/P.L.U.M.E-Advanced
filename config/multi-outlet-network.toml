@@ -1,0 +1,35 @@
+# One connected network, six irregular inlets and three downstream termini.
+# Network-only scenario; widths use the Earth survey fit, topology is not fitted.
+recipe_version = 1
+preset = "short-multi"
+procedural_seed = 17
+
+[network]
+base_passage_radius = 3.671394
+minimum_passage_radius = 0.5
+maximum_passage_radius = 5.0
+
+[network.topology]
+generation_mode = "regional_growth"
+
+[network.systems]
+count = 6
+
+[network.regional]
+branch_growth = "front"
+source_stagger_m = 80.0
+source_lateral_jitter_m = 10.0
+outlet_count = 3
+outlet_band_width_m = 160.0
+width_log_sigma = 0.3
+width_correlation_m = 4.6
+
+[network.layers]
+enabled = false
+
+[network.detail]
+enabled = false
+
+[network.quality]
+max_attempts = 6
+repair_passes = 2

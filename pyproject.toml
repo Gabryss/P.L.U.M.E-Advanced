@@ -35,6 +35,9 @@ paper = [
 
 [project.scripts]
 plume-generate = "plume_advanced.cli:main"
+plume-network = "plume_advanced.network_cli:main"
+plume-network-view = "plume_advanced.network_viewer:main"
+plume-traversability = "plume_advanced.traversability.cli:main"
 plume-reexport = "plume_advanced.reexport:main"
 plume-validate = "plume_advanced.validation:main"
 plume-evaluate = "plume_advanced.evaluation.cli:main"
@@ -60,7 +63,7 @@ plume_advanced = ["default_project.toml", "presets.json", "material_assets/*.py"
     "material_assets/*.txt", "material_assets/unity/*.hlsl", "material_assets/unity/*.shader",
     "material_assets/unity/Editor/*.cs", "material_assets/unreal/*.py",
     "evaluation/resources/*.toml", "evaluation/resources/seeds/*.txt",
-    "evaluation/resources/splits/*.txt"]
+    "evaluation/resources/splits/*.txt", "web_assets/*.html", "web_assets/*.css", "web_assets/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

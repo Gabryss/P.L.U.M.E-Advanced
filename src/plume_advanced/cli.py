@@ -69,6 +69,7 @@ from plume_advanced.stages.geometry import GeometryGenerator
 from plume_advanced.stages.host_field import HostFieldGenerator, export_host_influence_report
 from plume_advanced.stages.network import CaveNetworkGenerator, export_network_report
 from plume_advanced.stages.section_field import SectionFieldGenerator
+from plume_advanced.traversability.request import from_generation as traversability_request
 from plume_advanced.visualization.events import GeologicalEventPlotter
 from plume_advanced.visualization.floor_map import FloorMapPlotter
 from plume_advanced.visualization.host_field import HostFieldPlotter
@@ -678,6 +679,8 @@ def _run_pipeline(argv: list[str] | None = None, *, state: _RunState) -> int:
         asset_name=selected_output.stem,
         acceptance=project_config.acceptance,
         resolution=resolution_report,
+        traversability=traversability_request(
+            project_config.traversability, cave_network, section_field) if project_config.traversability.enabled else None,
     )
     progress.finish(f"wrote {export_result.primary_asset.name}")
     stage_timings["export_s"] = time.perf_counter() - stage_started

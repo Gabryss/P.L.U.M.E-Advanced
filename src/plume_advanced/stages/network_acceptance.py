@@ -36,13 +36,20 @@ def limit_width_gradient(widths: np.ndarray, arc: np.ndarray, gradient: float) -
     return np.minimum(widths, np.minimum(left, right))
 
 
-def repair_network(generator, host, network, repair_pass, *, failed_checks=None):
+def repair_network(generator, host, network, repair_pass, *, failed_checks=None, localize=False,
+                   work_budget=None):
     """Keep graph nodes and topology fixed; rebuild all dependent geometry/state.
 
     A global displacement bound avoids the sharp derivative discontinuities of
     independently clipping each smoothing offset. No branch is silently deleted.
     """
     config = generator.config
+    if (config.topology.generation_mode == "regional_growth"
+            and config.regional.branch_growth == "front"):
+        from plume_advanced.stages.network_local_repair import repair_local_bends
+
+        return repair_local_bends(generator, host, network, repair_pass, failed_checks or [],
+                                  work_budget=work_budget)
     section_clearance_checks = {
         "nonlocal_passage_overlap", "section_island_clearance", "section_footprint_islands",
     }
@@ -50,12 +57,18 @@ def repair_network(generator, host, network, repair_pass, *, failed_checks=None)
         check["name"] in section_clearance_checks for check in failed_checks
     )
     affected = {sid for check in (failed_checks or []) for sid in check.get("segment_ids", [])}
+    untouched = (
+        {s.segment_id for s in network.segments} - affected
+        if localize and config.topology.generation_mode == "regional_growth" and affected else set()
+    )
     nodes = {n.node_id: n for n in network.nodes}
     outgoing = {s.start_node_id for s in network.segments}
     degrees = network._degrees()
     repaired = []
-    desired_widths: dict[int, np.ndarray | list[float]] = {}
     for segment in network.segments:
+        if segment.segment_id in untouched:
+            repaired.append(segment)
+            continue
         raw = np.array([[p.x, p.y] for p in segment.points])
         if len(raw) < 2 or not np.isfinite(raw).all():
             raise ValueError(f"Segment {segment.segment_id} has no finite repairable route")
@@ -139,13 +152,21 @@ def repair_network(generator, host, network, repair_pass, *, failed_checks=None)
                     growth_cost=substrate.growth_cost,
                 )
             )
-        desired_widths[segment.segment_id] = widths
         repaired.append(replace(segment, points=tuple(points), metadata=metadata))
     # Recompute cooling/travel ages and flux against the repaired lengths.
-    if config.topology.style == "interconnected" and not preserve_routes:
+    if config.topology.style == "interconnected" and config.topology.generation_mode != "regional_growth" and not preserve_routes:
         from plume_advanced.stages.network_interconnected import smooth_routes
         repaired = smooth_routes(host, repaired, network.backend_provenance["flow_direction"])
-        desired_widths = {s.segment_id: [p.width for p in s.points] for s in repaired}
+    if config.topology.generation_mode == "regional_growth" and not preserve_routes:
+        repaired = generator._smooth_graph_routes(host, repaired, directed=True,
+                                                  preserved_segments=untouched)
+    return rebuild_network_geometry(generator, host, network, repaired)
+
+
+def rebuild_network_geometry(generator, host, network, repaired):
+    """Refresh derived fields without redrawing the supplied width envelopes."""
+    config = generator.config
+    desired_widths = {s.segment_id: [p.width for p in s.points] for s in repaired}
     repaired = generator._assign_conserved_flow(list(network.nodes), repaired)
     repaired = [
         replace(
@@ -160,6 +181,9 @@ def repair_network(generator, host, network, repair_pass, *, failed_checks=None)
         from plume_advanced.stages.network_gallery_growth import refresh_phase_discharge
         repaired = refresh_phase_discharge(generator, list(network.nodes), repaired)
     repaired = generator._annotate_emplacement_flux_history(repaired)
+    if config.topology.generation_mode == "regional_growth":
+        from plume_advanced.stages.network_morphology import annotate_regional_geometry
+        repaired = annotate_regional_geometry(repaired, config.layers)
     route = generator._dominant_route(list(network.nodes), repaired)
     generator._validate_generated_graph(list(network.nodes), repaired, route)
     geometry = generator._build_flow_geometry(host)
@@ -266,6 +290,10 @@ def generate_accepted_network(
                     "repair_pass": repair_pass,
                     **assessment,
                 }
+                if config.topology.generation_mode == "regional_growth":
+                    # Failed candidates have no network.json. Preserve their
+                    # construction and repair audit here before advancing seed.
+                    record["construction"] = candidate.backend_provenance
             except GenerationDomainError as error:
                 report.update(status="invalid_input", failure_reason=str(error))
                 publish(str(error))
@@ -291,13 +319,21 @@ def generate_accepted_network(
             failed = [c["name"] for c in record["checks"] if not c["passed"]]
             previous_failed_checks = [c for c in record["checks"] if not c["passed"]]
             if record["accepted"]:
+                assert candidate is not None
+                if config.detail.enabled:
+                    from plume_advanced.stages.network_detail import refine_network
+
+                    publish("Coarse network accepted; inspecting bounded detail refinements")
+                    candidate = refine_network(worker, host, candidate)
+                    report["detail"] = candidate.backend_provenance["detail"]
+                    report["final_assessment"] = assess_network(candidate, host)
                 report.update(
                     status="accepted",
                     accepted=True,
                     selected_attempt=attempt,
                     selected_seed=canonical_seed(seed),
                     selected_repair_pass=repair_pass,
-                    selected_shape_sha256=record["shape_sha256"],
+                    selected_shape_sha256=report.get("final_assessment", record)["shape_sha256"],
                 )
                 publish(
                     f"Accepted network candidate {attempt + 1}, repair {repair_pass}; {len(record['checks'])} checks passed"
@@ -305,6 +341,10 @@ def generate_accepted_network(
                 assert candidate is not None
                 return replace(candidate, quality_report=report)
             publish(f"Rejected candidate {attempt + 1}, repair {repair_pass}: {', '.join(failed)}")
+            if candidate is not None and candidate.backend_provenance.get("regional_growth_completed") is False:
+                # Regional feeder repair already spent both bounded repair
+                # phases. An outer repair cannot resume its construction state.
+                break
             if candidate is None:
                 break
     report["status"] = "rejected"

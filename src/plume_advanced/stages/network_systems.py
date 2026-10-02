@@ -423,6 +423,7 @@ def system_summary(network):
     for segment in _front_segments(network):
         incoming[segment.end_node_id].append(segment)
         outgoing[segment.start_node_id].append(segment)
+    identity_key = "contributing_system_ids" if network.config.topology.generation_mode == "regional_growth" else "system_ids"
     return {
         "system_count": network.config.systems.count,
         "system_merge_count": sum(len(incoming[n.node_id]) > 1 for n in network.nodes),
@@ -431,13 +432,17 @@ def system_summary(network):
         "shared_passage_length_m": sum(
             s.total_length
             for s in network.segments
-            if isinstance(s.metadata.get("system_ids"), list) and len(s.metadata["system_ids"]) > 1
+            if isinstance(s.metadata.get(identity_key), list) and len(s.metadata[identity_key]) > 1
         ),
     }
 
 
 def assess_systems(network, check):
     """Check front identity, source lineage and persistence after every repair."""
+    if network.config.topology.generation_mode == "regional_growth":
+        from plume_advanced.stages.network_regional import assess_regional_systems
+        assess_regional_systems(network, check)
+        return
     controls = network.config.systems
     if controls.count == 1 or (
         network.config.topology.style == "trunk_dominated"

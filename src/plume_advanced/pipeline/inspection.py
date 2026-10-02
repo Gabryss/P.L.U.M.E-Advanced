@@ -45,6 +45,21 @@ def complete_inspection(
         ):
             raise ValueError(f"Inspected export changed before run completion: {record['path']}")
     warnings = list(package["visual"].get("warnings", ()))
+    maps = package.get("traversability")
+    if maps is not None:
+        directory = package_path.parent / "traversability"
+        if json.loads((directory / "manifest.json").read_text()) != maps:
+            raise ValueError("Traversability manifest differs from inspected package")
+        if maps["status"] == "not_generated":
+            warnings.append("Traversability maps not generated: " + maps["reason"])
+        elif maps["status"] == "complete":
+            for chart in maps["charts"]:
+                for name, digest in chart["files_sha256"].items():
+                    asset = directory / name
+                    if not asset.resolve().is_relative_to(directory.resolve()) or sha256_file(asset) != digest:
+                        raise ValueError(f"Traversability map changed before run completion: {name}")
+        else:
+            raise ValueError("Unknown traversability map completion status")
     textures = package.get("textures")
     if not textures or not textures.get("passed"):
         raise ValueError("Export has no passing texture inspection")

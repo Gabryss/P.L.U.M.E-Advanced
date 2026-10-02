@@ -20,6 +20,7 @@ from plume_advanced.progress import (
     report_progress,
     work_budget,
 )
+from plume_advanced.traversability.request import from_generation as traversability_request
 
 
 def _checkpoint_store(root: Path, fingerprint: str) -> StageCheckpointStore:
@@ -134,6 +135,8 @@ def _reexport(args):
         raise ValueError("No matching accepted base checkpoint; keep the original recipe, assets, code and runtime for re-export")
     final_stage = "final_geometry_"+accepted.context_sha256[:16]
     sections = accepted.sections
+    map_request = (traversability_request(project.traversability, accepted.network, sections)
+                   if project.traversability.enabled else None)
     accepted_identity = accepted.report["accepted_identity"]
     # Retain only small section/identity records before loading the final mesh.
     del accepted
@@ -149,7 +152,7 @@ def _reexport(args):
         overrides=overrides)
     export_target_asset(geometry, export, args.output, acceptance=project.acceptance,
         resolution=section_resolution_report(sections, geometry.config.voxel_size),
-        reexport_provenance=provenance)
+        reexport_provenance=provenance, traversability=map_request)
 
 
 if __name__ == "__main__":
