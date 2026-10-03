@@ -7,12 +7,15 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 from plume_advanced.identity import sha256_file
 from plume_advanced.progress import report_progress
 
 from .plots import render_views
 from .raster import cavity_fields, chart_reference, classify, obstacle_cells, vertical_hits
+from .vector import chart_vectors, network_vectors
+from .vector_plots import render_chart, render_network
 
 
 class TraversabilityBudgetError(ValueError):
@@ -69,6 +72,11 @@ def export_traversability(
     )
     records: list[dict] = []
     files: list[Path] = []
+    network = network_vectors(request, vertices, faces)
+    network["surface"] = dict(kind=surface_kind, sha256=surface_hash(vertices, faces))
+    network_path = output / "network_vectors.json"
+    network_path.write_text(json.dumps(network, indent=2, allow_nan=False) + "\n")
+    global_names = [network_path.name, render_network(output, network)]
     for number, chart in enumerate(request.charts):
         report_progress(
             "Traversability charts",
@@ -77,7 +85,9 @@ def export_traversability(
             chart["id"] + "; cavity, support, slope, step, headroom",
         )
         samples = np.concatenate(chart["paths"])
-        margin = samples[:, 3].max() / 2 + config.radius_m + 3 * r
+        # Fixed padding keeps physical data and vector outlines independent of
+        # the chosen robot. chart_reference covers half-width + two cells.
+        margin = samples[:, 3].max() / 2 + 3 * r
         lo = np.maximum(np.floor((samples[:, :2].min(axis=0) - margin - origin) / r).astype(int), 0)
         hi = np.minimum(
             np.ceil((samples[:, :2].max(axis=0) + margin - origin) / r).astype(int), size
@@ -99,9 +109,23 @@ def export_traversability(
             obstacle_height_m=obstacle_height,
             origin_xy_m=local_origin,
             resolution_m=np.asarray(r),
+            chart_domain=np.isfinite(hint),
+            sampled_cavity=np.isfinite(floor) & np.isfinite(roof) & ~uncertain,
         )
+        sampled = fields["sampled_cavity"]
+        fields["cavity_component_id"] = ndimage.label(sampled)[0].astype(np.int32)
+        physical = sampled.astype(np.uint8)
+        physical[sampled & blocked] = 2
+        fields["physical_state"] = physical
         stem = output / chart["id"]
         np.savez_compressed(stem.with_suffix(".npz"), **fields)
+        physical_path = stem.with_name(stem.name + "_physical.png")
+        Image.fromarray(np.flipud(physical)).save(physical_path)
+        report_progress("Vector chart boundaries", number, len(request.charts), chart["id"])
+        vectors = chart_vectors(chart, fields)
+        vector_path = stem.with_name(stem.name + "_vectors.json")
+        vector_path.write_text(json.dumps(vectors, indent=2, allow_nan=False) + "\n")
+        geometry_preview = render_chart(output, chart, fields, vectors, network)
         # Raw aligned raster: PNG row zero is the NORTH edge, NPZ row zero SOUTH.
         occupancy = np.full(fields["status"].shape, 205, np.uint8)
         occupancy[np.isin(fields["status"], [0, 2])] = 0
@@ -134,6 +158,9 @@ def export_traversability(
             npz=stem.with_suffix(".npz").name,
             preview=stem.with_suffix(".png").name,
             occupancy=image_path.name,
+            physical_raster=physical_path.name,
+            vectors=vector_path.name,
+            geometry_preview=geometry_preview,
         )
         if chart["kind"] == "ramp":
             record["centreline_xyz_m"] = chart["paths"][0][:, :3].tolist()
@@ -143,11 +170,15 @@ def export_traversability(
         names = [
             record["npz"],
             record["occupancy"],
+            record["physical_raster"],
+            record["vectors"],
+            record["geometry_preview"],
             record["overview"],
             *(view["file"] for view in record["views"].values()),
         ]
         record["files_sha256"] = {name: sha256_file(output / name) for name in names}
         files.extend(output / name for name in names)
+    files.extend(output / name for name in global_names)
     implementation = hashlib.sha256()
     for module in sorted(Path(__file__).parent.glob("*.py")):
         implementation.update(module.name.encode())
@@ -197,15 +228,22 @@ def export_traversability(
         ),
         robot_qualification=False,
         charts=records,
+        vector_network=dict(file=network_path.name, preview=global_names[1], **network["summary"]),
+        files_sha256={name: sha256_file(output / name) for name in global_names},
+        physical_state_codes={"0": "unmeasured or ambiguous", "1": "sampled cavity",
+                              "2": "conservative placed-prop mask in sampled cavity"},
         display_scales=display,
         preview_convention="Annotated maps use world XY axes; use NPZ or unannotated occupancy PNG for pixel indexing.",
         limitations=[
             "Sampled static geometry, not wheel/track dynamics, friction, steering or continuous path qualification.",
             "Features between cell-centre rays can be missed. Resolution and source mesh convergence must be assessed for each experiment.",
             "Reference limits classify the map only; they never repair, reject or regenerate the cave.",
+            "Different passing-cell components do not prove physical disconnection: footprint dilation and reference limits can remove open passages.",
             "Layer and ramp charts are separate. Connect only through the recorded ramp endpoints, never through XY overlap.",
             "Portals describe network topology. Their sampled status and component identifiers do not certify the whole ramp or a traversable transition.",
             "Event props use exported geometry as conservative obstacles; native engine collider settings may differ.",
+            "Physical cavity components and vector outlines follow cell samples within a restricted chart domain; holes and gaps are not proof of solid rock or physical disconnection.",
+            "Vector centreline witnesses test the closed cave boundary only, without props or robot limits; their failures remain unresolved and do not discard the cave.",
         ],
     )
     path = output / "manifest.json"

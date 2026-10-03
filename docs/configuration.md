@@ -134,7 +134,7 @@ terrain without qualifying, repairing or rejecting a cave.
 
 | Control | Default | Meaning |
 |---|---:|---|
-| `enabled` | `true` | Export terrain arrays, classification, separate measurement views and overviews |
+| `enabled` | `true` | Export vector graph, layer outlines, physical raster arrays and reference classification views |
 | `resolution_m` | `0.25` | Square cell size in metres |
 | `robot_length_m`, `robot_width_m`, `robot_height_m` | `0.7`, `0.5`, `0.5` | Explicit reference envelope in metres |
 | `margin_m` | `0.02` | Additional footprint and headroom safety margin |
@@ -396,8 +396,10 @@ network/section checks still apply. Narrow passages may be under-resolved; check
 Layered sections retain network depth and stay within `passage_height_m` and the
 local network width. `section_field.minimum_roof_thickness` must also fit the
 accepted layer layout (3 m in this recipe). Section depth preferences do not
-relocate the layers. A contradictory roof requirement is rejected by section
-inspection. `network.detail.enabled` must remain false for full generation.
+relocate the layers. An upper centreline shallower than the required roof cover
+is rejected before seed search; increase `network.layers.minimum_rock_m` to make
+those settings compatible. Section inspection then checks the actual profiles.
+`network.detail.enabled` must remain false for full generation.
 
 For a denser experiment, use [complex-network.toml](../config/complex-network.toml).
 It provides an 800 m downstream target on a wider host, three sources, three

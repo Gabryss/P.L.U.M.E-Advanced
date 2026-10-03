@@ -6,8 +6,8 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
+from test_network_quality import network_fixture
 
-from plume_advanced.config import load_project_config
 from plume_advanced.evaluation.metrics.network import network_metrics
 from plume_advanced.evaluation.metrics.sections import section_longitudinal_continuity
 from plume_advanced.evaluation.visualization.dashboard import (
@@ -15,15 +15,14 @@ from plume_advanced.evaluation.visualization.dashboard import (
     dashboard_payload,
     render_diagnostic_dashboard,
 )
-from plume_advanced.stages.host_field import HostFieldGenerator
 from plume_advanced.stages.network import (
     CaveNetwork,
     CaveNetworkConfig,
-    CaveNetworkGenerator,
     CaveNode,
     CavePoint,
     CaveSegment,
 )
+from plume_advanced.stages.network_quality import assess_network
 from plume_advanced.stages.section_field import (
     SectionField,
     SectionFieldConfig,
@@ -171,23 +170,13 @@ def test_uphill_string_provenance_marks_unresolved_backbone() -> None:
     assert report["uphill_provenance_by_kind"]["backbone"] == {"uphill_unresolved": 1}
 
 
-def test_dashboard_accepts_bounded_seeded_stage_b_c_fixture(tmp_path: Path) -> None:
-    project = load_project_config(Path("config/research.toml"))
-    host_config = replace(
-        project.host_field,
-        grid=replace(project.host_field.grid, nx=60, ny=48, width=1800.0, height=1400.0),
-    )
-    host = HostFieldGenerator(host_config).generate()
-    network_config = replace(
-        project.network,
-        random_seed=2,
-        source_count=2,
-        target_route_length_m=800.0,
-        trace_max_steps=100,
-    )
-    network = CaveNetworkGenerator(network_config).generate(host)
+def test_dashboard_accepts_inspected_network_and_generated_sections(tmp_path: Path) -> None:
+    # Rendering must not depend on a procedural seed surviving morphology gates.
+    # Use inspected analytic geometry while exercising real section generation.
+    network = network_fixture()
+    assert assess_network(network)["accepted"]
     section_config = replace(
-        project.section_field,
+        SectionFieldConfig(),
         profile_resolution=12,
         maximum_sample_spacing=80.0,
         minimum_sample_spacing=40.0,

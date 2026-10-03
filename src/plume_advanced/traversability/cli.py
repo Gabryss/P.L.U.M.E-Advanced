@@ -1,4 +1,4 @@
-"""Map a completed GLB export without regenerating or unpickling the cave."""
+"""Export vector and raster maps from a completed run without remeshing the cave."""
 
 import argparse
 import json
@@ -172,7 +172,7 @@ def main(argv=None):
                 surface_kind=kind,
                 source=str(args.source.resolve()),
             )
-        progress.finish(f"{len(request.charts)} map sets; {output.resolve()}")
+        progress.finish(f"vector network and {len(request.charts)} raster/vector chart sets; {output.resolve()}")
     except (ValueError, OSError) as error:
         parser.exit(2, str(error) + "\n")
     finally:

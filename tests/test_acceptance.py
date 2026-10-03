@@ -497,6 +497,37 @@ def test_normal_export_is_explicitly_not_robot_qualified(passage, tmp_path):
     assert qualification['status'] == 'not_requested'
 
 
+def test_robot_showcase_rejection_does_not_invalidate_or_change_export(passage, tmp_path):
+    from plume_advanced.stages.ground_routes import GroundInspector, GroundRobot
+
+    cave, export = passage
+    vertices = np.asarray(cave.assembled_vertices).copy()
+    vertices[:, 2] += vertices[:, 0]*np.tan(np.radians(30))
+    paths = tuple(tuple((x, y, x*np.tan(np.radians(30))) for x, y, _ in path)
+                  for path in cave.required_route_paths)
+    cave = replace(cave, assembled_vertices=tuple(map(tuple, vertices)), required_route_paths=paths,
+                   config=replace(cave.config, cave_texture_scale_m=16.))
+    result = export_target_asset(cave, export, tmp_path/'out',
+                                 acceptance=build_acceptance_policy({'profile': 'inspection'}))
+    before = {p: sha256_file(p) for p in result.files}
+    points = np.linspace(paths[0][0], paths[0][-1], 30)
+    showcase = GroundInspector(vertices, cave.assembled_faces, GroundRobot(), 200000).path(points)
+    assert not showcase['passed']
+    assert any(p.get('failure') == 'slope_limit' for p in showcase['poses'])
+    assert before == {p: sha256_file(p) for p in result.files}
+    report = json.loads((result.primary_asset.parent/'pipeline_inspection.json').read_text())
+    assert report['passed'] and report['acceptance']['passed']
+    assert report['acceptance']['robot_qualification']['status'] == 'not_requested'
+
+
+@pytest.mark.parametrize('profile', ['research', 'inspection', 'simulation'])
+def test_advanced_robot_settings_cannot_enable_default_ground_repairs(profile):
+    policy = build_acceptance_policy({'profile': profile})
+    settings, _ = apply_acceptance_defaults(policy, {'ground_robot_length_m': .99}, {})
+    assert settings['ground_robot_length_m'] == 0
+    assert not policy.require_ground_routes and not policy.repair_ground_routes
+
+
 def test_modified_robot_label_cannot_override_measured_acceptance(passage, tmp_path):
     cave, export = passage
     policy = build_acceptance_policy({'profile': 'inspection'})

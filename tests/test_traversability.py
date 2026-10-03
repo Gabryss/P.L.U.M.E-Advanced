@@ -223,6 +223,9 @@ def test_maps_use_delivered_surface_and_are_registered_in_all_target_package(tmp
     assert meta["surface"]["kind"] == ("collision" if collision else "visual")
     shared = json.loads(result.primary_asset.read_text())["shared_files"]
     assert "traversability/layer_0.npz" in shared
+    assert "traversability/network_vectors.json" in shared
+    assert "traversability/layer_0_vectors.json" in shared
+    assert "traversability/layer_0_physical.png" in shared
     assert tmp_path / "export/traversability/layer_0.npz" in result.files
     inspection = json.loads((tmp_path / "export/pipeline_inspection.json").read_text())
     assert inspection["traversability"]["status"] == "complete"
@@ -305,7 +308,7 @@ def test_saved_map_output_cannot_overwrite_source_or_packages(tmp_path, output):
     assert caught.value.code == 2
 
 
-@pytest.mark.parametrize("damage", ["array", "manifest", "slope_view"])
+@pytest.mark.parametrize("damage", ["array", "manifest", "slope_view", "vector", "outline", "physical"])
 def test_pipeline_completion_rejects_changed_map_data(tmp_path, damage):
     from test_embedded_inspection import geometry
 
@@ -320,7 +323,9 @@ def test_pipeline_completion_rejects_changed_map_data(tmp_path, damage):
         tmp_path / "export",
         traversability=request(),
     )
-    name = {"array": "layer_0.npz", "manifest": "manifest.json", "slope_view": "layer_0_slope.png"}[
+    name = {"array": "layer_0.npz", "manifest": "manifest.json", "slope_view": "layer_0_slope.png",
+            "vector": "network_vectors.json", "outline": "layer_0_vectors.json",
+            "physical": "layer_0_physical.png"}[
         damage
     ]
     path = tmp_path / "export/traversability" / name

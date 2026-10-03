@@ -129,8 +129,10 @@ def test_all_view_files_are_hashed_registered_and_rendering_has_progress(tmp_pat
     assert chart["views"]["slope"]["field"] == "slope_deg"
     assert chart["views"]["slope"]["units"] == "degrees"
     assert chart["overview"] == "layer_0_overview.png"
-    assert len(files) == len(set(files)) == 13
-    for name, digest in chart["files_sha256"].items():
+    assert len(files) == len(set(files))
+    hashes = {**chart["files_sha256"], **manifest["files_sha256"]}
+    assert {p.name for p in files} == {*hashes, "manifest.json"}
+    for name, digest in hashes.items():
         assert tmp_path / name in files
         assert sha256_file(tmp_path / name) == digest
     work = [row for row in steps if row[0] == "Traversability map views"]

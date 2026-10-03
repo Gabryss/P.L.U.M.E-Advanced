@@ -1,4 +1,4 @@
-# Evaluation and simulator qualification
+# Generator evaluation and simulator showcases
 
 [← Project overview](../README.md) · [Generation](usage.md) · [Simulator imports](simulators.md)
 
@@ -13,6 +13,15 @@ Choose the check that matches the claim you need to make:
 
 The [simulator gallery](simulators.md) demonstrates visual imports. Treat its
 screenshots separately from these measured checks.
+
+**A robot is an application showcase, not a validation criterion for the generator.**
+Report requested-cave delivery, geometric checks and native import/contact outcomes
+separately from robot-specific routes. A cave may legitimately contain terrain a
+chosen robot cannot traverse. Neither a successful drive nor a rejected route
+establishes geological realism. Only an explicit
+`acceptance.require_ground_routes = true` makes that robot's geometric checks a
+requirement for that generation; floor grading additionally requires
+`acceptance.repair_ground_routes = true`.
 
 ## Seed campaigns
 
@@ -94,6 +103,14 @@ and map resolutions. Keep the map manifest with the experiment: it records
 surface and implementation hashes, reference limits and coordinate conventions.
 Passing these checks supports sampled geometric correctness; it does not certify
 robot dynamics or an executable path. [Map interpretation](traversability.md).
+
+`tests/test_vector_maps.py` also reconstructs random raster masks from vector
+rings, preserving holes, islands, diagonal separation and world registration.
+Analytic mesh controls cover closed ramps, overlapping but disconnected layers,
+thin partitions at shared graph nodes, open boundaries and duplicated UV-seam
+vertices. Changing robot dimensions must leave physical arrays, vector outlines
+and the graph unchanged. Package tests reject modified vector and physical-raster
+files as well as modified reference maps.
 
 ### Retrospective review after changes
 

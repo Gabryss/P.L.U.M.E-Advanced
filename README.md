@@ -81,7 +81,8 @@ Import checks do not certify that a ground robot can traverse every generated ca
 *One recorded short Husky A200 route in Gazebo. The plan inset animates the logged
 position and heading; the cave view shows Isaac RTX visual reconstructions at
 the same logged poses. The near-stationary opening interval is condensed for
-playback. This animation does not represent an Isaac dynamics run.*
+playback. This animation does not represent an Isaac dynamics run. The robot
+illustrates an application; its route success or failure does not validate the generator.*
 
 ## Documentation
 
@@ -95,7 +96,7 @@ use the remaining chapters for configuration, internals and validation.
 | [Configuration](docs/configuration.md) | Everyday parameters and advanced controls |
 | [Architecture](docs/architecture.md) | Host fields, network growth, meshing, inspection and repair, with figures |
 | [Networks](docs/networks.md) | Source-count figures, connected layers, multiple outlets and generation methods |
-| [Terrain maps](docs/traversability.md) | Map gallery, per-layer ground truth, coordinates and data formats |
+| [Vector and terrain maps](docs/traversability.md) | Passage graphs, per-layer raster ground truth, coordinates and data formats |
 | [Simulator imports](docs/simulators.md) | Showcase previews, application versions, materials and import steps |
 | [Evaluation](docs/evaluation.md) | Seed campaigns, tests, scientific comparisons and native qualification |
 

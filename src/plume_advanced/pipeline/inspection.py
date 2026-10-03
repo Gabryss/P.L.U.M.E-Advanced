@@ -53,8 +53,10 @@ def complete_inspection(
         if maps["status"] == "not_generated":
             warnings.append("Traversability maps not generated: " + maps["reason"])
         elif maps["status"] == "complete":
-            for chart in maps["charts"]:
-                for name, digest in chart["files_sha256"].items():
+            groups = [maps.get("files_sha256", {}),
+                      *(chart["files_sha256"] for chart in maps["charts"])]
+            for group in groups:
+                for name, digest in group.items():
                     asset = directory / name
                     if not asset.resolve().is_relative_to(directory.resolve()) or sha256_file(asset) != digest:
                         raise ValueError(f"Traversability map changed before run completion: {name}")

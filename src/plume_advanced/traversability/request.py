@@ -12,14 +12,20 @@ class TraversabilityRequest:
     config: TraversabilityConfig
     charts: tuple[dict, ...]
     provenance: dict
+    segments: tuple[dict, ...]
 
 
 def from_paths(config, segments, paths, *, layer_count=1, layered=False, provenance=None):
+    graph: list[dict] = []
+    seen = set()
     charts: list[dict] = [
         dict(id=f"layer_{i}", kind="layer", layer=i, segment_ids=[], paths=[], portals=[])
         for i in range(layer_count)
     ]
-    for sid, start_node, end_node, metadata in segments:
+    for sid, start_node, end_node, metadata in sorted(segments, key=lambda s: s[0]):
+        if sid in seen:
+            raise ValueError("Map segment identifiers must be unique")
+        seen.add(sid)
         path = np.asarray(paths[sid], float)
         if (
             path.ndim != 2
@@ -36,6 +42,9 @@ def from_paths(config, segments, paths, *, layer_count=1, layered=False, provena
         )
         if not (0 <= a < layer_count and 0 <= b < layer_count):
             raise ValueError("Traversability layer identifiers are outside the declared layout")
+        graph.append(dict(id=sid, start_node=start_node, end_node=end_node,
+                          from_layer=a, to_layer=b, path=path,
+                          chart_id=f"layer_{a}" if a == b else f"ramp_{sid}"))
         if a == b:
             chart = charts[a]
             chart["segment_ids"].append(sid)
@@ -63,7 +72,7 @@ def from_paths(config, segments, paths, *, layer_count=1, layered=False, provena
             )
     if any(not c["paths"] for c in charts):
         raise ValueError("A declared traversability layer has no section samples")
-    return TraversabilityRequest(config, tuple(charts), provenance or {})
+    return TraversabilityRequest(config, tuple(charts), provenance or {}, tuple(graph))
 
 
 def from_generation(config, network, sections):

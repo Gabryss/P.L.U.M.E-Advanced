@@ -205,6 +205,11 @@ seed. Import the **full scene** to retain the rock objects. See the
 
 ## Ordinary generation or robot qualification
 
+The robot is an optional application example. Ordinary generation validates the
+cave and its exports under the selected policy; a robot's inability to traverse
+the terrain does not invalidate that cave. Terrain maps and later simulator
+showcases do not trigger seed retries or floor repair.
+
 | Recipe setting | Required result | Successful export label |
 |---|---|---|
 | Flag omitted, or `acceptance.require_ground_routes = false` | Cave passes its configured geometry, material and export checks | `qualified: false`, `status: "not_requested"` |
@@ -221,7 +226,10 @@ No preset enables this flag implicitly. PLUME tries bounded local repair, then
 retries eligible failures using deterministic seeds. Only an accepted candidate
 is published. The reference robot is **0.7 m long × 0.5 m wide × 0.5 m high**,
 with a 0.02 m margin, 20° slope limit and 0.10 m step limit. Search never relaxes
-these limits. Wheel/track dynamics still need simulator evaluation.
+these limits. Underbody clearance defaults to **zero**; set
+`acceptance.robot_ground_clearance_m` explicitly for the intended robot.
+Wheel/track dynamics still need simulator evaluation. These checks qualify an
+application-specific route, not the generator or its geological realism.
 
 Set `acceptance.repair_ground_routes = true` to permit measured floor grading.
 It tries bounded ramp and cross-slope edits, preserving roof and host constraints,

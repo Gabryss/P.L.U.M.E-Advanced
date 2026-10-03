@@ -1049,6 +1049,17 @@ class CaveNetworkGenerator:
             raise ValueError("network.detail requires inspected regional_growth (network-only)")
         if self.config.layers.enabled and self.config.topology.generation_mode != "regional_growth":
             raise ValueError("Optional layers require regional_growth (network-only)")
+        if (self.config.layers.enabled and section_config is not None
+                and self.config.layers.depth(0) < section_config.minimum_roof_thickness - .02):
+            # Even a zero-height section cannot satisfy this cover requirement
+            # at the upper layer's terrain-relative nodes. Seed search cannot
+            # repair a contradiction between the two configured envelopes.
+            raise ValueError(
+                f"Upper layer centre depth {self.config.layers.depth(0):g} m cannot provide "
+                f"section_field.minimum_roof_thickness = {section_config.minimum_roof_thickness:g} m. "
+                "Increase network.layers.minimum_rock_m to retain the required roof cover; "
+                "changing seeds cannot fix these incompatible settings."
+            )
         if self.config.regional.outlet_count > 1 and self.config.topology.generation_mode != "regional_growth":
             raise ValueError("Multiple regional termini require regional_growth")
         if self.config.regional.outlet_count > 1 and not self.config.quality.enabled:
